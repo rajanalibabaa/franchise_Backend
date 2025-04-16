@@ -4,8 +4,8 @@ const dotEnv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const connectDatabase = require("./config/DbConnection")
-const errorHandler = require('./Middleware/errorHandler');
+const connectDatabase = require("./src/config/DbConnection")
+const errorHandler = require('./src/Middleware/errorHandler');
 
 
 dotEnv.config();
