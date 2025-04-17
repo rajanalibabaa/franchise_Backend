@@ -1,15 +1,16 @@
-const express = require('express');
+import express from 'express';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import connectDatabase from './src/config/DbConnection.js';
+import errorHandler from './src/Middleware/errorHandler.js';
+import appRouter from "./app.js";
+
 const app = express();
-const dotEnv = require('dotenv');
-const cookieParser = require('cookie-parser');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const connectDatabase = require("./src/config/DbConnection")
-const errorHandler = require('./src/Middleware/errorHandler');
 
+dotenv.config();
 
-dotEnv.config();
- 
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -19,13 +20,20 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // DB Connection
-connectDatabase()
+connectDatabase();
 
+
+app.use('/api',appRouter)
+
+// Routes
 app.get('/', (req, res) => {
     res.send('✅ API is working');
-  });
+});
 
+// Global Error Handler
 app.use(errorHandler);
+
+// Server Listener
 app.listen(process.env.PORT, () => {
-    console.log('Server is running on port ' + process.env.PORT);
-    });
+    console.log(`🚀 Server is running on port ${process.env.PORT}`);
+});

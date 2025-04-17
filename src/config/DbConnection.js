@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import  mongoose from "mongoose";
 
 const connectDabase= async ()=>{
  await mongoose.connect(process.env.DB_URL).then((data) => {
@@ -8,4 +8,4 @@ const connectDabase= async ()=>{
 
 
 };
-module.exports=connectDabase;
+export default connectDabase;
