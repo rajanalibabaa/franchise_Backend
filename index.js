@@ -9,6 +9,7 @@ import appRouter from "./app.js";
 import session from 'express-session';
 import passport from 'passport';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import thirdPartyAuthRouter from './src/Routes/thirdpartyAuthenticationRouters.js'
 import loginRouter from './src/Routes/LoginRoutes.js'
 import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
@@ -17,6 +18,11 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as FacebookStrategy } from 'passport-facebook';
 import thirdPartyAuthRouter from './src/Routes/thirdpartyAuthenticationRouters.js'
 >>>>>>> 984cedd3c91169da5c9b7da3a7fa5ba77a974b75
+=======
+import thirdPartyAuthRouter from './src/Routes/thirdpartyAuthenticationRouters.js'
+import loginRouter from './src/Routes/LoginRoutes.js'
+import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
+>>>>>>> 45b275d88db78de56d6686a242705d46fd263322
 
 const app = express();
 
@@ -40,6 +46,7 @@ app.use(session({
   app.use(passport.initialize());
   app.use(passport.session());
   
+<<<<<<< HEAD
 <<<<<<< HEAD
 
   configureGoogleStrategy();
@@ -82,6 +89,13 @@ app.use(session({
 
 // DB Connection
 >>>>>>> 984cedd3c91169da5c9b7da3a7fa5ba77a974b75
+=======
+
+  configureGoogleStrategy();
+  configureFacebookStrategy();
+  
+  
+>>>>>>> 45b275d88db78de56d6686a242705d46fd263322
 connectDatabase();
 
 
@@ -95,9 +109,13 @@ app.use('/api',appRouter)
 
 app.use('/api/v1/auth/', thirdPartyAuthRouter)
 <<<<<<< HEAD
+<<<<<<< HEAD
 app.use('/api/v1/login/', loginRouter)
 =======
 >>>>>>> 984cedd3c91169da5c9b7da3a7fa5ba77a974b75
+=======
+app.use('/api/v1/login/', loginRouter)
+>>>>>>> 45b275d88db78de56d6686a242705d46fd263322
 
 // Global Error Handler
 app.use(errorHandler);
