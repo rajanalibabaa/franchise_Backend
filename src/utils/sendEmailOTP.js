@@ -12,6 +12,8 @@ const OTP = generateOTP(); // Generate a random OTP
 =======
 
 export const sendEmailOTP = async (email, otp) => {
+
+  console.log("email :", email)
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {

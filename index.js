@@ -10,8 +10,11 @@ import session from 'express-session';
 import passport from 'passport';
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import thirdPartyAuthRouter from './src/Routes/thirdpartyAuthenticationRouters.js'
 import loginRouter from './src/Routes/LoginRoutes.js'
+=======
+>>>>>>> 312cfaec8e5bfca49aa0c913b32405f0d9db3ed3
 import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
 =======
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
@@ -107,6 +110,7 @@ app.get('/', (req, res) => {
 });
 app.use('/api',appRouter)
 
+<<<<<<< HEAD
 app.use('/api/v1/auth/', thirdPartyAuthRouter)
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -116,6 +120,8 @@ app.use('/api/v1/login/', loginRouter)
 =======
 app.use('/api/v1/login/', loginRouter)
 >>>>>>> 45b275d88db78de56d6686a242705d46fd263322
+=======
+>>>>>>> 312cfaec8e5bfca49aa0c913b32405f0d9db3ed3
 
 // Global Error Handler
 app.use(errorHandler);
