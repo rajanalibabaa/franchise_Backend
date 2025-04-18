@@ -71,14 +71,15 @@ app.use(session({
 connectDatabase();
 
 
-app.use('/api',appRouter)
 
-app.use('/api/v1/auth/', thirdPartyAuthRouter)
 
 // Routes
 app.get('/', (req, res) => {
     res.send('✅ API is working');
 });
+app.use('/api',appRouter)
+
+app.use('/api/v1/auth/', thirdPartyAuthRouter)
 
 // Global Error Handler
 app.use(errorHandler);
