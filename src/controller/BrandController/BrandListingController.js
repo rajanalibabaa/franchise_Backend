@@ -1,7 +1,10 @@
 import BrandListingPage from "../../model/Brand/brandListingPage.js";
 import { brandListingSchema } from "../../Validation/BrandListing/BrandListing.js";
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3e7954f980a44a0ff8e0734c11b5fc05bd36c29d
 export const CreateBrandListing = async (req, res) => {
     try {
         const { error } = brandListingSchema.validate(req.body);
@@ -16,6 +19,10 @@ export const CreateBrandListing = async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3e7954f980a44a0ff8e0734c11b5fc05bd36c29d
 export const GetBrandListing = async (req, res) => {
     try {
         const brandListing = await BrandListingPage.find();

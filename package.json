@@ -26,9 +26,13 @@
     "nodemailer": "^6.10.1",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",
+<<<<<<< HEAD
     "passport-google-oauth20": "^2.0.0",
     "passport-oauth2": "^1.8.0",
     "uuid": "^11.1.0"
+=======
+    "passport-google-oauth20": "^2.0.0"
+>>>>>>> 3e7954f980a44a0ff8e0734c11b5fc05bd36c29d
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
