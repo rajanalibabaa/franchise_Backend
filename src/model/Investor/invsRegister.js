@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 
 const invsRegisterSchema = new mongoose.Schema({
   // Personal Info
@@ -38,5 +39,41 @@ const invsRegisterSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+invsRegisterSchema.methods.generateAccessToken = function(){
+  // console.log("hhh")
+  return jwt.sign(
+      {
+          _id : this._id,
+          username: this.username,
+          email: this.email
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+          expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+      }
+  )
+}
+
+invsRegisterSchema.methods.generateRefreshToken = async function() {
+  try {
+      const refreshToken = jwt.sign(
+          {
+              _id: this._id,
+          },
+          process.env.REFRESH_TOKEN_SECRET,
+          {
+              expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+          }
+      );
+
+      this.refreshToken = refreshToken;
+      await this.save();
+
+      return refreshToken;
+  } catch (error) {
+      throw new Error('Error generating refresh token');
+  }
+};
 
 export const InvsRegister = mongoose.model('InvsRegister', invsRegisterSchema);
