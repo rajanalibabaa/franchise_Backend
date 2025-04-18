@@ -8,8 +8,6 @@ import errorHandler from './src/Middleware/errorHandler.js';
 import appRouter from "./app.js";
 import session from 'express-session';
 import passport from 'passport';
-import thirdPartyAuthRouter from './src/Routes/thirdpartyAuthenticationRouters.js'
-import loginRouter from './src/Routes/LoginRoutes.js'
 import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
 
 const app = express();
@@ -50,8 +48,6 @@ app.get('/', (req, res) => {
 });
 app.use('/api',appRouter)
 
-app.use('/api/v1/auth/', thirdPartyAuthRouter)
-app.use('/api/v1/login/', loginRouter)
 
 // Global Error Handler
 app.use(errorHandler);
