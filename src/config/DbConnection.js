@@ -8,4 +8,8 @@ const connectDabase= async ()=>{
 
 
 };
+<<<<<<< HEAD
 export default connectDabase;
+=======
+export default connectDabase;
+>>>>>>> 984cedd3c91169da5c9b7da3a7fa5ba77a974b75
