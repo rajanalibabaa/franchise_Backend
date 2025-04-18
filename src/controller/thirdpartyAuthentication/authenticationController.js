@@ -1,7 +1,8 @@
 
 import { ApiResponse } from "../../Middleware/ApiResponse.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
-import { v4 as uuidv4 } from "uuid";
+
+import uuid from "../../utils/uuid.js";
 
 const googleAuthProfile = async (req,res) => {
     if (req.isAuthenticated()) {
@@ -14,7 +15,8 @@ const googleAuthProfile = async (req,res) => {
         const phone = user.phoneNumbers?.[0]?.value;
         // const accessToken = user.accessToken;
         
-        console.log(req.user);
+        // console.log("===== :", uuid());
+       
 
         const exists = await ThirdPartyAuth.findOne({
             $and: [
@@ -39,7 +41,7 @@ const googleAuthProfile = async (req,res) => {
             profilePhoto,
             phone,
             source: "google",
-            uuid: uuidv4()
+            uuid: uuid()
         })
 
         if (!data) {
@@ -106,7 +108,7 @@ const facebookAuthProfile = async(req,res) => {
             profilePhoto,
             phone,
             source: "facebook",
-            uuid: uuidv4()
+            uuid: uuid()
         })
 
         if (!data) {
