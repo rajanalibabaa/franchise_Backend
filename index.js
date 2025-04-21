@@ -9,7 +9,8 @@ import appRouter from "./app.js";
 import session from 'express-session';
 import passport from 'passport';
 import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
-
+// import {sendEmailOTP} from "./src/utils/sendEmailOTP.js"
+// import {generateOTP} from "./src/utils/generateOTP.js"
 const app = express();
 
 dotenv.config();
@@ -36,10 +37,10 @@ app.use(session({
   configureGoogleStrategy();
   configureFacebookStrategy();
   
-  
-connectDatabase();
+   
+  connectDatabase();
 
-
+  // sendEmailOTP("aravind26052001@gmail.com",generateOTP())
 
 
 // Routes
