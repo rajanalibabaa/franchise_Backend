@@ -13,7 +13,6 @@ const router = express.Router();
 router.use('/brand',brandListingRoutes);
 router.use('/v1/auth/', thirdPartyAuthRouter)
 router.use('/v1/login/', loginRouter)
-
 router.use('/investor',invsRegisterRoutes);
 
 
