@@ -1,0 +1,42 @@
+.row{
+    display: flex;
+    
+}
+
+.firstColumn{
+    display: flex;
+    width: 20%;
+    text-align: left;
+    color: white;
+    background-color: black;
+    padding: 8px;
+    justify-content: center;
+    
+   
+}
+
+.secondColumn{
+    display: flex;
+    flex-grow: 1;
+    text-align: left;
+    padding: 10px;
+    background-color: #f2f2f2;
+    height: 100vh;
+    justify-content: center;
+    
+}
+
+.adminpanal{
+    display: flex;
+   justify-content: center;
+    align-items: center;
+    background-color: #533b3b;
+    padding: 10px;
+    color: white;
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.secondColumncontainer{
+    padding: 10px;
+}

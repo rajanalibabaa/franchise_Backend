@@ -59,7 +59,7 @@ const generateOTPforInvestor = async(req,res) => {
     // console.log(" data: ",data.mobileNumber)
   
     generateNewOTP = Number(generateOTP().toString().trim());
-    // console.log(generateNewOTP)
+    console.log(generateNewOTP)
     // console.log("mobileNumber: ",mobileNumber)
     // console.log("email : ",email)
     if(email === data.email){
