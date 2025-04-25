@@ -1,12 +1,12 @@
 .investortable{
-    font-size: 1.3rem;
+    font-size: 0.7rem;
     background-color: white;
 
     thead{
         background-color: #251b1b;
         color: white;
         th{
-            padding: 15px;
+            /* padding: 8px; */
             text-align: left;
         }
     }

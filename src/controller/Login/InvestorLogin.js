@@ -44,7 +44,7 @@ const generateOTPforInvestor = async(req,res) => {
         { email },
         { mobileNumber }
       ]
-    }).select("-refreshToken");
+    });
   
       if (!data) {
           return res.status(404).json(

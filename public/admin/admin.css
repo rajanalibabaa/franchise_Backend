@@ -1,14 +1,48 @@
+/* body{
+    margin: 0px;
+    padding: 0px;
+    background-color: #614141;
+    color: #ffffff;
+} */
+
+/* .adminpanalHeader{
+    display: flex;
+   justify-content: center;
+    align-items: center;
+    background-color: #470d0d;
+    padding: 10px;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+} */
 .row{
     display: flex;
     
 }
 
-.firstColumn{
+.firstColumnHeader1{
+    padding: 4px;
+    background-color: rgb(243, 160, 77);
+    
+    
+}
+.firstColumnHeader{
+    padding: 4px;
+    border: #98e481 4px solid;
+    color: black;
+    background-color: white;
     display: flex;
+    justify-content: center;
+    align-items: center;
+   
+}
+
+.firstColumn{
+    /* display: flex; */
     width: 20%;
-    text-align: left;
-    color: white;
-    background-color: black;
+    /* text-align: left; */
+    color: rgb(0, 0, 0);
+    background-color: rgb(22, 8, 87);
     padding: 8px;
     justify-content: center;
     
@@ -17,26 +51,26 @@
 
 .secondColumn{
     display: flex;
-    flex-grow: 1;
+    flex-grow: 1; 
     text-align: left;
-    padding: 10px;
+    /* padding: 10px; */
     background-color: #f2f2f2;
     height: 100vh;
     justify-content: center;
     
 }
 
-.adminpanal{
-    display: flex;
-   justify-content: center;
-    align-items: center;
-    background-color: #533b3b;
-    padding: 10px;
-    color: white;
-    font-size: 3rem;
-    font-weight: bold;
-}
+
+
 
 .secondColumncontainer{
     padding: 10px;
+}
+
+
+
+@media (max-width: 768px) {
+    .row {
+        font-size: 0.5rem;
+    }
 }
