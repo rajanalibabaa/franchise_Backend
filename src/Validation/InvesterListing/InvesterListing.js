@@ -31,7 +31,8 @@ whatsappNumber: Joi.string()
   occupation: Joi.string().allow('', null),
   type: Joi.string().valid('Residential', 'Commercial', 'Industrial', 'Agricultural').required(),
   lookingFor: Joi.string().allow('', null),
-  ownProperty: Joi.boolean().required(),
+  ownProperty: Joi.string().valid('Yes', 'No').required()
+
 
   // Optional fields
   state: Joi.string().allow('', null),
