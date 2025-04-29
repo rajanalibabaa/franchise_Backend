@@ -38,12 +38,20 @@ const invsRegisterSchema = new mongoose.Schema({
     required: true,
   },
   lookingFor: { type: String },
-  ownProperty: { type: Boolean, required: true },
+  ownProperty: { type: String, required: true },
 
   createdAt: {
     type: Date,
     default: Date.now,
   },
+
+  thirdParty: {
+    email: { type: String, trim: true },
+    mobileNumber: { type: String, trim: true },
+    firstName: { type: String, trim: true },
+    source: { type: String, trim: true },
+    uuid: { type: String, trim: true },
+  }
 
     
 });

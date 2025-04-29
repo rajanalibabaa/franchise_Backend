@@ -2,6 +2,7 @@
 // import { InvsRegister } from "../../models/Investor/invsRegister.js";
 
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
+import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 
 export const createInvestor = async (req, res) => {
   try {
@@ -20,7 +21,17 @@ export const createInvestor = async (req, res) => {
       city,category,investmentRange,
       capital,occupation,type,
       lookingFor,ownProperty });  
-      
+
+    // const ThirdParty = new ThirdPartyAuth({
+    //   email: req.body.email,
+    //   mobileNumber: req.body.mobileNumber,
+    //   firstName: req.body.firstName,
+    //   source: req.body.source,
+    //   uuid: req.body.uuid,
+    // });
+    // investor.thirdParty = ThirdParty._id; 
+    
+
     await investor.save();
     res.status(201).json(investor);
   } catch (err) {
@@ -54,7 +65,7 @@ export const createInvestor = async (req, res) => {
       res.status(200).json(investor);
     } catch (err) {
       res.status(500).json({ error: err.message });
-    }
+    } ``
   };
   
   export const updateInvestor = async (req, res) => {
