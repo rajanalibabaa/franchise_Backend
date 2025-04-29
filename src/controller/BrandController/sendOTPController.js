@@ -5,8 +5,6 @@ import sendWhatsAppOtp from "../../utils/sendTwilioWhatsapp.js";
 import { generateOTP } from "../../utils/generateOTP.js";
 
 
-
-
 const otpStore = {}; 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";   // Use a secure secret key
 
@@ -29,6 +27,7 @@ const verifyToken = (token) => {
 export const requestEmailOtp = async (req, res) => {
     const { email } = req.body;
     const otp = generateOTP();
+    console.log("OTP:", otp); // Log the OTP for debugging purposes
     const token = generateToken(email, otp);
 
     try {

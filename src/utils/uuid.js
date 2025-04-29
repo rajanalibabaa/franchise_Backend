@@ -1,4 +1,3 @@
-
 const uuid = () => {
     return crypto.randomUUID();
 };

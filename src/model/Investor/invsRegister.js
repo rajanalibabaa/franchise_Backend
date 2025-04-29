@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
+import uuid from '../../utils/uuid.js'
 
 const invsRegisterSchema = new mongoose.Schema({
+  uuid: {
+    type:String, default: uuid,unique: true,
+  },  
   // Personal Info
   firstName: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },
@@ -22,7 +26,10 @@ const invsRegisterSchema = new mongoose.Schema({
     enum: ['Investor', 'Buyer', 'Seller', 'Agent', 'Other'],
     required: true,
   },
-  investmentRange: { type: String, required: true },
+  investmentRange: {
+    type: String,
+    required: true
+  },  
   capital: { type: Number, required: true },
   occupation: { type: String },
   type: {
@@ -37,6 +44,8 @@ const invsRegisterSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+
+    
 });
 
 export const InvsRegister = mongoose.model('InvsRegister', invsRegisterSchema);
