@@ -94,9 +94,9 @@ const investorLogin = async (req, res) => {
 
     
 
-    
+    console.log ("verifyOtp: ",typeof verifyOtp, verifyOtp)
 
-    if(generateNewOTP !== verifyOtp ){
+    if(generateNewOTP !== Number(verifyOtp) ){
       return res.json(
         new ApiResponse(
           400,
@@ -106,7 +106,7 @@ const investorLogin = async (req, res) => {
       )
     }
 
-    if(generateNewOTP === verifyOtp){
+    if(generateNewOTP === Number(verifyOtp)){
 
       const userData = await InvsRegister.findOne({
         $or: [
