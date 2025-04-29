@@ -12,7 +12,7 @@ export const createInvestor = async (req, res) => {
       country,pincode,state,district,
       city,category,investmentRange,
       capital,occupation, type,
-      lookingFor, ownProperty} = req.body;
+      lookingFor, ownProperty} = req.body; 
 
     const investor = new InvsRegister({
       firstName,lastName,mobileNumber,
@@ -30,8 +30,33 @@ export const createInvestor = async (req, res) => {
     //   uuid: req.body.uuid,
     // });
     // investor.thirdParty = ThirdParty._id; 
-    
 
+    // emailORMobileNumber = email || mobileNumber;
+
+    // const ThirdParty = await ThirdPartyAuth.findOne({ 
+    //   $or: [{ email }, 
+    //     { mobileNumber }
+    //   ] 
+    // });
+
+    // console.log("ThirdParty", ThirdParty);
+
+    // if (ThirdParty) {
+    //   investor.thirdParty = ThirdParty._id;
+    // } else {
+    //   const newThirdParty = new ThirdPartyAuth({
+    //     email: req.body.email,
+    //     mobileNumber: req.body.mobileNumber,
+    //     firstName: req.body.firstName,
+    //     source: req.body.source,
+    //     uuid: req.body.uuid,
+    //   });
+    //   await newThirdParty.save(); 
+    //   console.log("new third party created", newThirdParty);
+    //   investor.thirdParty = newThirdParty._id;
+    // }
+    //   console.log("investor.thirdparty set to", investor.thirdParty);   
+  
     await investor.save();
     res.status(201).json(investor);
   } catch (err) {
@@ -65,7 +90,7 @@ export const createInvestor = async (req, res) => {
       res.status(200).json(investor);
     } catch (err) {
       res.status(500).json({ error: err.message });
-    } ``
+    } 
   };
   
   export const updateInvestor = async (req, res) => {
@@ -84,7 +109,7 @@ export const createInvestor = async (req, res) => {
   export const deleteInvestor = async (req, res) => {
     try {
       const investor = await InvsRegister.findByIdAndDelete(req.params.id);
-      if (!investor) return res.status(404).json({ error: 'Investor not found' });++
+      if (!investor) return res.status(404).json({ error: 'Investor not found' });
       res.status(200).json({ message: 'Investor deleted successfully' });
     } catch (err) {
       res.status(500).json({ error: err.message });

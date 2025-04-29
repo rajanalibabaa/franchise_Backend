@@ -45,13 +45,13 @@ const invsRegisterSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-  thirdParty: {
-    email: { type: String, trim: true },
-    mobileNumber: { type: String, trim: true },
-    firstName: { type: String, trim: true },
-    source: { type: String, trim: true },
-    uuid: { type: String, trim: true },
-  }
+  // thirdParty: {
+  //   email: { type: String, trim: true },
+  //   mobileNumber: { type: String, trim: true },
+  //   firstName: { type: String, trim: true },
+  //   source: { type: String, trim: true },
+  //   uuid: { type: String, require: false ,trim: true },
+  // }
 
     
 });
