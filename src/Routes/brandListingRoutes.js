@@ -7,7 +7,7 @@ router.post("/createBrandListing",CreateBrandListing);
 router.get("/getBrandListing",GetBrandListing);
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
-router.post('/verify-gst', verifyGST);
+// router.post('/verify-gst', verifyGST);
 
 export default router  
 
