@@ -1,0 +1,235 @@
+{{!-- <link rel="stylesheet" href="../../../public/admin/admin.css"> --}}
+
+<section>
+   
+
+        <div>
+             {{!-- <div class="adminpanalHeader">Admin Panel</div> --}}
+            <div class="row">
+            <div class="firstColumn" >
+                <div>
+                    <div >
+                        <div class="firstColumnHeader1">
+                        <div class="firstColumnHeader">MR FRANCHIES</div>
+
+                    </div>
+                    </div>
+                    
+                       <div class="dropdown" id="franchiseDropdown">
+                            <div class="dropdown-toggle" id="InvestorDropdownToggle" onclick="toggleDropdown()">Investor</div>
+
+                            <!-- Always render the menu; show/hide with JS/CSS -->
+                            <div class="dropdown-menu" id="franchiseDropdownMenu" style="display: none;">
+                                <ul>
+                                    <li onclick="handleInvestors()"><a  >All Investor</a></li>
+                                    <li><a href="/admin/addFranchise">Add Investor</a></li>
+                                    <li><a href="/admin/updateFranchise">Update Investor</a></li>
+                                    <li><a href="/admin/deleteFranchise">Delete Investor</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                         <div class="dropdown" id="ManageDropdown">
+                            <div class="dropdown-toggle" id="ManageDropdownToggle" onclick="toggleManage()">Manage</div>
+
+                            <!-- Always render the menu; show/hide with JS/CSS -->
+                            <div class="dropdown-menu" id="ManageDropdownMenu" style="display: none;">
+                                <ul>
+                                    <li onclick="handleAdminEditImage()"><a  >Edit</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+
+
+                </div>
+            </div>
+            <div class="secondColumn">
+                <div class="secondColumncontainer">
+
+                    <div class="container" id ="investorContainer" style="display: none;">
+                                    <table border=".3" cellspacing="0" cellpadding="10"  class="investortable">
+                                        <thead>
+                                            <tr>
+                                                <th>First Name</th>
+                                                <th>Last Name</th>
+                                                <th>Mobile Number</th>
+                                                <th>whatsapp Number</th>
+                                                <th>Email</th>
+                                                <th>Looking For</th>
+                                                <th>Investment Range</th>
+                                                <th>Capital</th>
+                                                <th>More info</th>
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody id="franchiseTableBody">
+                                            {{#if investors.length}}
+                                            {{#each investors}}
+                                            <tr>
+                                                <td>{{firstName}}</td>
+                                                <td>{{lastName}}</td>
+                                                <td>{{mobileNumber}}</td>
+                                                <td>{{whatsappNumber}}</td>
+                                                <td>{{email}}</td>
+                                                <td>{{lookingFor}}</td>
+                                                <td>{{investmentRange}}</td>
+                                                <td>{{capital}}</td>
+                                                <td>
+                                                    <button onclick="handleDownloadBTN('{{_id}}')" > Download</button>
+                                                </td>
+                                            </tr>
+                                            {{/each}}
+                                            {{else}}
+                                            <tr>
+                                                <td colspan="8">No investors available.</td>
+                                            </tr>
+                                            {{/if}}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+
+                    <div id="manageContainer" style="display: none;">
+                        <h2>Manage Franchise</h2>
+                        <p>Content for Manage Franchise goes here.</p>
+
+                    </div>
+                </div>
+        </div>
+    </div>
+
+<script>
+    function toggleDropdown() {
+        
+        document.getElementById("manageContainer").style.display = "none";
+        const menu = document.getElementById("franchiseDropdownMenu");
+        const isVisible = menu.style.display === "block";
+        console.log("Dropdown is now");
+        // Toggle the display property of the dropdown menu
+        menu.style.display = isVisible ? "none" : "block";
+
+       const bg =  document.getElementById("InvestorDropdownToggle")
+       const a = menu.style.display === "none"
+       bg.style.backgroundColor = a ? "" : "green";
+         bg.style.color =  a ? "" : "white";
+
+         
+         
+    }
+
+    // Optional: close when clicking outside
+    {{!-- window.addEventListener('click', function(event) {
+        const dropdown = document.getElementById("franchiseDropdown");
+        if (!dropdown.contains(event.target)) {
+            document.getElementById("franchiseDropdownMenu").style.display = "none";
+        }
+    }); --}}
+</script>
+
+<script>
+    function toggleManage() {
+        const menu = document.getElementById("ManageDropdownMenu");
+        const isVisible = menu.style.display === "block";
+        console.log("Dropdown is now");
+        // Toggle the display property of the dropdown menu
+        menu.style.display = isVisible ? "none" : "block";
+
+       const bg =  document.getElementById("ManageDropdownToggle")
+       const a = menu.style.display === "none"
+       bg.style.backgroundColor = a ? "" : "green";
+         bg.style.color =  a ? "" : "white";
+         
+    }
+
+    // Optional: close when clicking outside
+    {{!-- window.addEventListener('click', function(event) {
+        const dropdown = document.getElementById("ManageDropdown");
+        if (!dropdown.contains(event.target)) {
+            document.getElementById("ManageDropdownMenu").style.display = "none";
+        }
+    }); --}}
+
+    function handleAdminEditImage() {
+        console.log("Edit button clicked");
+        document.getElementById("manageContainer").style.display = "block";
+        document.getElementById("investorContainer").style.display = "none";
+    }
+</script>
+
+   
+
+
+    <script>
+        
+
+function handleInvestors() {
+    
+    investorContainer = true
+     document.getElementById("manageContainer").style.display = "none";
+    console.log(investorContainer)
+    if( investorContainer){
+        document.getElementById("investorContainer").style.display = "block";
+    }
+  }
+
+async function handleDownloadBTN(id) {
+  console.log("Download button clicked for ID:", id);
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/v1/admin/getInvestorById/${id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id }) // ID sent in body
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const data = result.data;
+    console.log("Data fetched:", data);
+
+    // Convert JSON to CSV
+    const csvRows = [];
+    const headers = Object.keys(data).join(",");
+    csvRows.push(headers);
+
+    const values = Object.values(data).map(val => {
+      let formattedVal = val;
+
+      // Check if value is a number and has decimals
+      if (typeof val === "number") {
+        // Convert decimal numbers to whole numbers if they are essentially integers (e.g., 5.0 -> 5)
+        formattedVal = Number.isInteger(val) ? val : val.toFixed(2); // Keep 2 decimal places
+      }
+
+      // Escape quotes and wrap in quotes for CSV
+      return `"${String(formattedVal).replace(/"/g, '""')}"`;
+    });
+    csvRows.push(values.join(","));
+
+    const csvContent = csvRows.join("\n");
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `investor_${id}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error("Error fetching investor data:", error);
+  }
+}
+
+   
+    </script>
+
+        
+</section>

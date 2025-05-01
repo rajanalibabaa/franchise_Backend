@@ -1,0 +1,90 @@
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+
+const invsRegisterSchema = new mongoose.Schema({
+  // Personal Info
+  firstName: { type: String, required: true, trim: true },
+  lastName: { type: String, required: true, trim: true },
+  mobileNumber: { type: String, required: true, trim: true },
+  whatsappNumber: { type: String, trim: true },
+  email: { type: String, required: true, lowercase: true, trim: true },
+
+  // Address Info
+  address: { type: String, required: true },
+  country: { type: String, required: true },
+  pincode: { type: String, required: true },
+  state: { type: String },
+  district: { type: String },
+  city: { type: String },
+
+  // Investment Info
+  category: {
+    type: String,
+    enum: ['Investor', 'Buyer', 'Seller', 'Agent', 'Other'],
+    required: true,
+  },
+  investmentRange: { type: String, required: true },
+  capital: { type: Number, required: true },
+  occupation: { type: String },
+  type: {
+    type: String,
+    enum: ['Residential', 'Commercial', 'Industrial', 'Agricultural'],
+    required: true,
+  },
+  lookingFor: { type: String },
+  ownProperty: { type: Boolean, required: true },
+
+  // createdAt: {
+  //   type: Date,
+  //   default: Date.now,
+  // },
+
+  // refreshToken: { type: String, select: true }
+},{
+  timestamps: true
+}
+);
+
+invsRegisterSchema.methods.generateAccessToken = function(){
+ 
+  return jwt.sign(
+      {
+          _id : this._id,
+          username: this.username,
+          email: this.email
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+          expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+      }
+  )
+}
+
+invsRegisterSchema.methods.generateRefreshToken = async function () {
+  try {
+    if (!process.env.REFRESH_TOKEN_SECRET || !process.env.REFRESH_TOKEN_EXPIRY) {
+      throw new Error("Missing REFRESH_TOKEN_SECRET or REFRESH_TOKEN_EXPIRY in environment variables.");
+    }
+
+    const refreshToken = jwt.sign(
+      {
+        _id: this._id.toString(),
+      },
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      }
+    );
+
+    this.refreshToken = refreshToken;
+    await this.save();
+
+    return refreshToken;
+
+  } catch (error) {
+    console.error("Error generating refresh token:", error);
+    throw new Error("Failed to generate refresh token");
+  }
+};
+
+export const InvsRegister = mongoose.model('InvsRegister', invsRegisterSchema);
