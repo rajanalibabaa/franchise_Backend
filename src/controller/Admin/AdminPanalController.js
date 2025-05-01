@@ -1,5 +1,5 @@
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
 
 const getAllInvestors = async (req, res) => {

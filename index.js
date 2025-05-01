@@ -8,10 +8,9 @@ import errorHandler from './src/Middleware/errorHandler.js';
 import appRouter from "./app.js";
 import session from 'express-session';
 import passport from 'passport';
-import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
+import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/ThirdpartUtils/thirdpartyauthutils.js';
 import { engine } from 'express-handlebars';
 import path from 'path';
-import hbs from 'hbs';
 const app = express();
 
 dotenv.config();

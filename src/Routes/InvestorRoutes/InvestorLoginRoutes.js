@@ -1,6 +1,6 @@
 
 import { Router } from "express";
-import { generateOTPforInvestor, getInvestorData, investorLogin } from "../controller/Login/InvestorLogin.js";
+import { generateOTPforInvestor, getInvestorData, investorLogin } from "../../controller/Login/InvestorLogin.js"
 
 const route = Router()
 
