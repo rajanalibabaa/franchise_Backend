@@ -56,7 +56,6 @@ app.use(session({
   connectDatabase();
 
 
-
 // Routes  
 app.get('/', (req, res) => {
     // res.send('✅ API is working');

@@ -12,10 +12,10 @@ const thirdPartyAuthSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      //   required: true,
-      //   unique: true,
-      //   lowercase: true,
-      //   trim: true,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
     },
     profilePhoto: {
       type: String,
@@ -23,7 +23,7 @@ const thirdPartyAuthSchema = new mongoose.Schema(
     source: {
       type: String,
       enum: ["google", "facebook"],
-      //   required: true,
+
     },
     phone: {
       type: String,
