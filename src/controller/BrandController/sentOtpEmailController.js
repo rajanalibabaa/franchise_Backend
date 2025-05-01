@@ -1,5 +1,5 @@
 import BrandListingPage from "../../model/Brand/brandListingPage.js";
-import { generateOTP, getExpiryTime } from "../../utils/generateOtp.js";
+import { generateOTP, getExpiryTime } from "../../utils/generateOTP.js";
 import { sendEmailOTP } from "../../utils/sendEmailOTP.js";
 
 export const requestEmailOtp = async (req, res) => {

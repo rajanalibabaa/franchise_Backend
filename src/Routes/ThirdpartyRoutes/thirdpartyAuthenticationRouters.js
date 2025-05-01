@@ -1,6 +1,6 @@
 import { Router } from "express";
 import passport from "passport"
-import { facebookAuthProfile, googleAuthProfile } from "../controller/thirdpartyAuthentication/authenticationController.js";
+import { facebookAuthProfile, googleAuthProfile } from "../../controller/thirdpartyAuthentication/authenticationController.js";
 
 const route = Router()
 

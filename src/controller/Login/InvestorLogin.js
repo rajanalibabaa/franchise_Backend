@@ -1,31 +1,4 @@
-<<<<<<< HEAD
-
-import { ApiResponse } from "../../Middleware/ApiResponse.js";
-import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
-
-
-// import { ApiResponse } from "../../Middleware/ApiResponse.js";
-// import { sendEmailOTP } from "../../utils/sendEmailOTP.js";
-
-const investorLogin = async (req, res) => {
-  try {
-    const { email, phone } = req.body;
-    console.log(req.body);
-
-    if (!email && !phone) {
-      return res
-        .status(400)
-        .json(
-          new ApiResponse(
-            400,
-            null,
-            "Please provide either email or phone number"
-          )
-        );
-    }
-    // sendEmailOTP(email);
-=======
-import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
 import sendEmailOTP from "../../utils/sendEmailOTP.js";
@@ -178,7 +151,6 @@ const investorLogin = async (req, res) => {
     //       )
     //     );
     // }
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
 
     // if (email && !/^\S+@\S+\.\S+$/.test(email)) {
     //     return res.status(400).json(
@@ -186,42 +158,12 @@ const investorLogin = async (req, res) => {
     //     );
     // }
 
-<<<<<<< HEAD
-    // if (phone && (!/^\d{10}$/.test(phone))) {
-=======
     // if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
     //     return res.status(400).json(
     //         new ApiResponse(400, null, "Phone number must be 10 digits")
     //     );
     // }
 
-<<<<<<< HEAD
-    // const data = await ThirdPartyAuth.findOne({
-    //     $or: [
-    //         email ? { email: email } : {},
-    //         phone ? { phone: phone } : {}
-    //     ]
-    // });
-
-    // if (!data) {
-    //     return res.status(404).json(
-    //         new ApiResponse(
-    //             404,
-    //             null,
-    //             "User not found"
-    //         )
-    //     );
-    // }
-
-    // return res.status(200).json(
-    //     new ApiResponse(
-    //         200,
-    //         data,
-    //         "User found"
-    //     )
-    // );
-=======
     // const data = await InvsRegister.findOne({
     //     $or: [
     //       { email },
@@ -242,7 +184,6 @@ const investorLogin = async (req, res) => {
   //   }
 
    
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
   } catch (error) {
     console.error("Investor login error:", error);
     return res
@@ -251,15 +192,6 @@ const investorLogin = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-
-
-export {
-    investorLogin
-}
-
-
-=======
 const getInvestorData = async (req,res) => {
   try {
     console.log("=====",req.cookies)
@@ -276,4 +208,3 @@ export {
     getInvestorData,
     generateOTPforInvestor,
 }
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019

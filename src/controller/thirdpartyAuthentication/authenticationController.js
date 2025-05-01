@@ -1,9 +1,5 @@
 
-<<<<<<< HEAD
-import { ApiResponse } from "../../Middleware/ApiResponse.js";
-=======
-import { ApiResponse } from "../../utils/ApiResponse.js";
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
+import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 
 import uuid from "../../utils/uuid.js";

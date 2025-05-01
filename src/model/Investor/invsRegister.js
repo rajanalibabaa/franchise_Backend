@@ -1,8 +1,5 @@
 import mongoose from 'mongoose';
-<<<<<<< HEAD
-=======
 import jwt from 'jsonwebtoken';
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
 
 const invsRegisterSchema = new mongoose.Schema({
   // Personal Info
@@ -37,13 +34,6 @@ const invsRegisterSchema = new mongoose.Schema({
   lookingFor: { type: String },
   ownProperty: { type: Boolean, required: true },
 
-<<<<<<< HEAD
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-=======
   // createdAt: {
   //   type: Date,
   //   default: Date.now,
@@ -96,6 +86,5 @@ invsRegisterSchema.methods.generateRefreshToken = async function () {
     throw new Error("Failed to generate refresh token");
   }
 };
->>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
 
 export const InvsRegister = mongoose.model('InvsRegister', invsRegisterSchema);
