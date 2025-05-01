@@ -11,12 +11,25 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+<<<<<<< HEAD
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+=======
+    "axios": "^1.8.4",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cookies": "^0.9.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-handlebars": "^8.0.2",
+    "express-session": "^1.18.1",
+    "hbs": "^4.2.0",
+>>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
     "i18next": "^24.2.3",
     "i18next-fs-backend": "^2.6.0",
     "i18next-http-middleware": "^3.7.2",
@@ -29,7 +42,12 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-oauth2": "^1.8.0",
     "twilio": "^5.5.2",
+<<<<<<< HEAD
     "uuid": "^11.1.0"
+=======
+    "uuid": "^11.1.0",
+    "xlsx": "^0.18.5"
+>>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

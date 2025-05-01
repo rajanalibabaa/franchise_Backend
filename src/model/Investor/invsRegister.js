@@ -1,4 +1,8 @@
 import mongoose from 'mongoose';
+<<<<<<< HEAD
+=======
+import jwt from 'jsonwebtoken';
+>>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
 
 const invsRegisterSchema = new mongoose.Schema({
   // Personal Info
@@ -33,10 +37,65 @@ const invsRegisterSchema = new mongoose.Schema({
   lookingFor: { type: String },
   ownProperty: { type: Boolean, required: true },
 
+<<<<<<< HEAD
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
+=======
+  // createdAt: {
+  //   type: Date,
+  //   default: Date.now,
+  // },
+
+  // refreshToken: { type: String, select: true }
+},{
+  timestamps: true
+}
+);
+
+invsRegisterSchema.methods.generateAccessToken = function(){
+ 
+  return jwt.sign(
+      {
+          _id : this._id,
+          username: this.username,
+          email: this.email
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+          expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+      }
+  )
+}
+
+invsRegisterSchema.methods.generateRefreshToken = async function () {
+  try {
+    if (!process.env.REFRESH_TOKEN_SECRET || !process.env.REFRESH_TOKEN_EXPIRY) {
+      throw new Error("Missing REFRESH_TOKEN_SECRET or REFRESH_TOKEN_EXPIRY in environment variables.");
+    }
+
+    const refreshToken = jwt.sign(
+      {
+        _id: this._id.toString(),
+      },
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      }
+    );
+
+    this.refreshToken = refreshToken;
+    await this.save();
+
+    return refreshToken;
+
+  } catch (error) {
+    console.error("Error generating refresh token:", error);
+    throw new Error("Failed to generate refresh token");
+  }
+};
+>>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
 
 export const InvsRegister = mongoose.model('InvsRegister', invsRegisterSchema);

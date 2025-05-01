@@ -9,10 +9,17 @@ import { generateToken, verifyToken } from "../../utils/generateToken.js";
 // Controller to send OTP
 export const sendOTP = async (req, res) => {
 
+<<<<<<< HEAD
     const { type, identifier } = req.body;
 
 
     console.log("Sending OTP to:", identifier, "Type:", type);
+=======
+    const { type, identifier } = req?.body;
+
+
+    console.log("Sending OTP to:",req.body);
+>>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
     
 
     // Validate required fields
@@ -22,6 +29,11 @@ export const sendOTP = async (req, res) => {
 
     // Generate OTP and token
     const generatedOtp = generateOTP();
+<<<<<<< HEAD
+=======
+
+    console.log("Generated OTP: ", generatedOtp)
+>>>>>>> e34dc82f3035fc8900f28fa2d54d033d58b0e019
     const generatedToken = generateToken({ identifier, otp: generatedOtp }, process.env.JWT_SECRET , "5m"); // Token expires in 5 minutes
 
     try {
