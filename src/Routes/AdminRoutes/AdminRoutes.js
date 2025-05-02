@@ -1,6 +1,6 @@
 
 import { Router } from "express";
-import { getAllInvestors, getInvestorById } from "../controller/Admin/AdminPanalController.js";
+import { getAllInvestors, getInvestorById } from "../../controller/Admin/AdminPanalController.js";
 
 const route = Router()
 

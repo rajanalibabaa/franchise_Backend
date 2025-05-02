@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { generateOTP } from "./generateOTP.js";
 const OTP = generateOTP(); // Generate a random OTP
 
+
 export const sendEmailOTP = async (email, otp) => {
 
   console.log("email :", email,otp)

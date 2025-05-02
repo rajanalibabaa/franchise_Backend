@@ -1,0 +1,18 @@
+<div class="dropdown">
+                        <div class="dropdown-toggle" >Investors</div>
+                        <div class="dropdown-content">
+                            <a href="#" onclick="handleInvestors()">All Investor</a>
+                            {{!-- <a href="#">Investor 2</a>
+                            <a href="#">Investor 3</a> --}}
+                        </div>
+                        </div>
+
+                        <div class="dropdown" id="franchiseDropdown">
+                            <div class="dropdown-toggle" onclick="toggleDropdown()">Franchises</div>
+                            <div class="dropdown-content">
+                                <a href="#">Franchise 1</a>
+                                <a href="#">Franchise 2</a>
+                                <a href="#">Franchise 3</a>
+                            </div>
+                        </div>
+                        <div class="dropdown-center">
