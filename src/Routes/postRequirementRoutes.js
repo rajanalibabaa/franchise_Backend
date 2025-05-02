@@ -4,7 +4,7 @@ import {
   getAllPostRequirement,
   getPostRequirementById,
   getPostRequirementByUUID,
-  updatePostRequirement,
+  updatePostRequirement, 
   deletePostRequirement
 } from '../controller/PostRequirement/postRequirementController.js';
 
@@ -21,3 +21,4 @@ router.put('/getPostRequirement/id/:id', validatePostRequirement, updatePostRequ
 router.put('/getPostRequirement/Uuid/:uuid', validatePostRequirement, updatePostRequirement,preprocessInvestmentRange);
 router.delete('/getPostRequirement/id/:id', deletePostRequirement);
 export default router;
+
