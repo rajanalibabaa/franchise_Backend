@@ -8,8 +8,9 @@ import errorHandler from './src/Middleware/errorHandler.js';
 import appRouter from "./app.js";
 import session from 'express-session';
 import passport from 'passport';
-import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
-
+import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/ThirdpartUtils/thirdpartyauthutils.js';
+import { engine } from 'express-handlebars';
+import path from 'path';
 const app = express();
 
 dotenv.config();
@@ -21,7 +22,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-
+app.use(express.static(path.join(process.cwd(), 'public'))); 
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -35,16 +36,30 @@ app.use(session({
 
   configureGoogleStrategy();
   configureFacebookStrategy();
+
   
+  app.engine('hbs', engine({
+    extname: '.hbs',
+    defaultLayout: 'main',
+    layoutsDir: path.join(process.cwd(), 'src', 'pages', 'layouts'),
+    partialsDir: path.join(process.cwd(), 'src', 'pages', 'partials'),
+    runtimeOptions: {
+      allowProtoPropertiesByDefault: true,
+      allowProtoMethodsByDefault: true
+    }
+  }));
+  app.set('view engine', 'hbs');
   
-connectDatabase();
+  app.set('views', path.join(process.cwd(), 'src','pages')); 
+  // hbs.registerPartials(path.join(process.cwd(), 'src', 'pages', 'partials'));
+   
+  connectDatabase();
 
 
-
-
-// Routes
+// Routes  
 app.get('/', (req, res) => {
-    res.send('✅ API is working');
+    // res.send('✅ API is working');
+    res.render('home');
 });
 app.use('/api',appRouter)
 

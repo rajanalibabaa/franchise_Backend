@@ -1,4 +1,3 @@
-import jwt from "jsonwebtoken";
 import sendEmailOTP from "../../utils/sendEmailOTP.js";
 import sendMobileSMS from "../../utils/sendTwilio.js";
 import sendWhatsAppOtp from "../../utils/sendTwilioWhatsapp.js";
@@ -60,44 +59,28 @@ export const requestMobileOtp = async (req, res) => {
         await sendMobileSMS(mobile, otp);
         res.status(200).json({ message: "Mobile OTP sent successfully.", token });
     } catch (error) {
-        res.status(500).json({ error: "Failed to send Mobile OTP." });
+        return res.status(500).json({ error: "Failed to send OTP", details: error.message });
     }
 };
 
-// Verify Mobile OTP
-export const verifyMobileOtp = (req, res) => {
-    const { token, otp } = req.body;
-    const decoded = verifyToken(token);
+// Controller to verify OTP
+export const verifyOTP = async (req, res) => {
+    const { identifier, otp, token } = req.body;
 
-    if (decoded && decoded.otp === otp) {
-        res.status(200).json({ message: "Mobile OTP verified successfully." });
-    } else {
-        res.status(400).json({ error: "Invalid or expired OTP." });
+    // Validate required fields
+    if (!identifier || !otp || !token) {
+        return res.status(400).json({ error: "Identifier, OTP, and token are required for verification" });
     }
-};
-
-// Send WhatsApp OTP
-export const requestWhatsappOtp = async (req, res) => {
-    const { whatsapp } = req.body;
-    const otp = generateOTP();
-    const token = generateToken(whatsapp, otp);
 
     try {
-        await sendWhatsAppOtp(whatsapp, otp);
-        res.status(200).json({ message: "WhatsApp OTP sent successfully.", token });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to send WhatsApp OTP." });
-    }
-};
+        const decoded = verifyToken(token, JWT_SECRET);
 
-// Verify WhatsApp OTP
-export const verifyWhatsappOtp = (req, res) => {
-    const { token, otp } = req.body;
-    const decoded = verifyToken(token);
-    
-    if (decoded && decoded.otp === otp) {
-        res.status(200).json({ message: "WhatsApp OTP verified successfully." });
-    } else {
-        res.status(400).json({ error: "Invalid or expired OTP." });
+        if (decoded.identifier === identifier && decoded.otp === otp) {
+            return res.status(200).json({ message: "OTP verified successfully" });
+        } else {
+            return res.status(400).json({ error: "Invalid or expired OTP" });
+        }
+    } catch (error) {
+        return res.status(400).json({ error: "Invalid or expired token" });
     }
 };

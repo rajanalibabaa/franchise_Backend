@@ -9,6 +9,7 @@ const router = express.Router();
 // router.get ('/dashboard',verifyJWT,(req,res)=>{
 //     res.json({ message : `Welcome to the dashboard, ${req.user.name}`})
 // })
+
 router.post("/verifyotp", verifyOtp,verifyJWT);
 router.post("/sendotp",requestOtp)
 

@@ -22,40 +22,6 @@ export const createInvestor = async (req, res) => {
       capital,occupation,type,
       lookingFor,ownProperty });  
 
-    // const ThirdParty = new ThirdPartyAuth({
-    //   email: req.body.email,
-    //   mobileNumber: req.body.mobileNumber,
-    //   firstName: req.body.firstName,
-    //   source: req.body.source,
-    //   uuid: req.body.uuid,
-    // });
-    // investor.thirdParty = ThirdParty._id; 
-
-    // emailORMobileNumber = email || mobileNumber;
-
-    // const ThirdParty = await ThirdPartyAuth.findOne({ 
-    //   $or: [{ email }, 
-    //     { mobileNumber }
-    //   ] 
-    // });
-
-    // console.log("ThirdParty", ThirdParty);
-
-    // if (ThirdParty) {
-    //   investor.thirdParty = ThirdParty._id;
-    // } else {
-    //   const newThirdParty = new ThirdPartyAuth({
-    //     email: req.body.email,
-    //     mobileNumber: req.body.mobileNumber,
-    //     firstName: req.body.firstName,
-    //     source: req.body.source,
-    //     uuid: req.body.uuid,
-    //   });
-    //   await newThirdParty.save(); 
-    //   console.log("new third party created", newThirdParty);
-    //   investor.thirdParty = newThirdParty._id;
-    // }
-    //   console.log("investor.thirdparty set to", investor.thirdParty);   
   
     await investor.save();
     res.status(201).json(investor);
