@@ -11,7 +11,7 @@ import passport from 'passport';
 import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/thirdpartyauthutils.js';
 import { engine } from 'express-handlebars';
 import path from 'path';
-import hbs from 'hbs';
+import s3Uploads from './src/Routes/s3Uploads/upload.js';
 const app = express();
 
 dotenv.config();
@@ -64,6 +64,7 @@ app.get('/', (req, res) => {
     res.render('home');
 });
 app.use('/api',appRouter)
+app.use("/api/v1/upload", s3Uploads)
 
 
 // Global Error Handler

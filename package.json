@@ -11,6 +11,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.800.0",
+    "@aws-sdk/lib-storage": "^3.800.0",
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -27,6 +29,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
+    "multer": "^1.4.5-lts.2",
     "nodemailer": "^6.10.1",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",

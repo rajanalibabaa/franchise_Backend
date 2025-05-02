@@ -25,4 +25,5 @@ router.use('/v1/investor/', loginRouter)
 import adminRouter from './src/Routes/AdminRoutes.js'
 router.use('/v1/admin', adminRouter)
 
+
 export default router;
