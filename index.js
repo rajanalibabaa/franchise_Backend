@@ -38,19 +38,19 @@ app.use(session({
   configureFacebookStrategy();
 
   
-  app.engine('hbs', engine({
-    extname: '.hbs',
-    defaultLayout: 'main',
-    layoutsDir: path.join(process.cwd(), 'src', 'pages', 'layouts'),
-    partialsDir: path.join(process.cwd(), 'src', 'pages', 'partials'),
-    runtimeOptions: {
-      allowProtoPropertiesByDefault: true,
-      allowProtoMethodsByDefault: true
-    }
-  }));
-  app.set('view engine', 'hbs');
+  // app.engine('hbs', engine({
+  //   extname: '.hbs',
+  //   defaultLayout: 'main',
+  //   layoutsDir: path.join(process.cwd(), 'src', 'pages', 'layouts'),
+  //   partialsDir: path.join(process.cwd(), 'src', 'pages', 'partials'),
+  //   runtimeOptions: {
+  //     allowProtoPropertiesByDefault: true,
+  //     allowProtoMethodsByDefault: true
+  //   }
+  // }));
+  // app.set('view engine', 'hbs');
   
-  app.set('views', path.join(process.cwd(), 'src','pages')); 
+  // app.set('views', path.join(process.cwd(), 'src','pages')); 
   // hbs.registerPartials(path.join(process.cwd(), 'src', 'pages', 'partials'));
    
   connectDatabase();

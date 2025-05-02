@@ -8,8 +8,8 @@ import invsRegisterRoutes from "./src/Routes/invRegisterRoutes.js"
 import postRequireRoutes  from "./src/Routes/postRequirementRoutes.js"
 // import adminRoutes from "./src/Routes/adminAuthRoutes.js"
 
-import adminRoutes from "./src/Routes/adminAuthRoutes.js"
-
+import adminRoutes from "./src/Routes/AdminRoutes/AdminRoutes.js"
+import adminVideoAdvertiseRouter from './src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js'
 
 const router = express.Router();
 
@@ -19,9 +19,13 @@ router.use('/v1/login/', InvestorloginRouter)
 router.use('/investor',invsRegisterRoutes)
 router.use('/post',postRequireRoutes);
 // router.use("/admin", adminRoutes);
-router.use("/admin", adminRoutes)
 
 
+
+
+router.use("/v1/admin", adminRoutes)
+
+router.use('/v1/admin/videoAdvertise', adminVideoAdvertiseRouter)
 
 
 export default router;
