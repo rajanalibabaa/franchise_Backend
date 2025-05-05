@@ -1,6 +1,6 @@
 import express from "express";
-import brandListingRoutes from "./src/Routes/brandListingRoutes.js";
-
+// import brandListingRoutes from "./src/";
+import { brandRouter } from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 // import invsRegisterRoutes from "./src/Routes/invRegisterRoutes.js"
 import thirdPartyAuthRouter from './src/Routes/ThirdpartyRoutes/thirdpartyAuthenticationRouters.js'
 import InvestorloginRouter from './src/Routes/InvestorRoutes/InvestorLoginRoutes.js'
@@ -13,10 +13,10 @@ import adminVideoAdvertiseRouter from './src/Routes/AdminRoutes/AdminVideoAdvert
 
 const router = express.Router();
 
-router.use('/brand',brandListingRoutes);
+router.use('/v1/brand/',brandRouter);
 router.use('/v1/auth/', thirdPartyAuthRouter)
 router.use('/v1/login/', InvestorloginRouter)
-router.use('/investor',invsRegisterRoutes)
+router.use('/investor/',invsRegisterRoutes)
 router.use('/post',postRequireRoutes);
 // router.use("/admin", adminRoutes);
 
