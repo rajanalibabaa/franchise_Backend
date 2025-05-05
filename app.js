@@ -28,4 +28,5 @@ router.use("/v1/admin", adminRoutes)
 router.use('/v1/admin/videoAdvertise', adminVideoAdvertiseRouter)
 
 
+
 export default router;
