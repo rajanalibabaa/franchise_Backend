@@ -1,6 +1,5 @@
 import sendEmailOTP from "../../utils/sendEmailOTP.js";
 import sendMobileSMS from "../../utils/sendTwilio.js";
-import sendWhatsAppOtp from "../../utils/sendTwilioWhatsapp.js";
 import { generateOTP } from "../../utils/generateOTP.js";
 
 
