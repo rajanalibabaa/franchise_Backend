@@ -1,5 +1,5 @@
 
-import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 
 import uuid from "../../utils/uuid.js";
