@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import Admin from "../../model/Admin/adminModel.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { generateOTP } from "../../utils/generateOTP.js";
-import sendEmailOTP from "../../utils/sendEmailOTP.js";
+import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
 import {
   requestOtpSchema,
   verifyOtpSchema

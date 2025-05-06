@@ -1,16 +1,17 @@
 import express from "express";
-import {CreateBrandListing,GetBrandListing} from "../controller/BrandController/BrandListingController.js" ;
-import {verifyOTP} from "../controller/BrandController/sendOTPController.js"
-const router=express.Router();
+import {
+  CreateBrandListing,
+  GetBrandListing,
+} from "../controller/BrandController/BrandListingController.js";
+import {
+  verifyOTP,
+  requestMobileOtp, // Correctly import requestMobileOtp as a named export
+} from "../controller/BrandController/sendOTPController.js";
 
-router.post("/createBrandListing",CreateBrandListing);
-router.get("/getBrandListing",GetBrandListing);
-// router.post("/send-otp", sendOTP);
-router.post("/verify-otp", verifyOTP);
-
-
-export default router  
-
+const router = express.Router();
 
 
+router.post("/createBrandListing", CreateBrandListing);
+router.get("/getBrandListing", GetBrandListing);
 
+export default router;
