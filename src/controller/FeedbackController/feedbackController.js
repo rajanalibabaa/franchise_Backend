@@ -10,7 +10,7 @@ export const createFeedback = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error creating feedback', error: error.message });
     }
-}
+};
 
 
 
@@ -36,5 +36,5 @@ export const createFeedback = async (req, res) => {
 
 
 
-;
+
 
