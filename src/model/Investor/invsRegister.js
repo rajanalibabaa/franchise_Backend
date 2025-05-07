@@ -36,7 +36,7 @@ const invsRegisterSchema = new mongoose.Schema(
     occupation: { type: String , required: true},
     propertytype: {
       type: String,
-      enum: ["Residential", "Commercial", "Industrial", "Agricultural"],
+      
       required: true,
     },
     lookingFor: { type: String , required: true},
