@@ -1,6 +1,7 @@
 import Joi from 'joi';
 
 const investorSchema = Joi.object({
+  uuid: Joi.string().guid({ version: 'uuidv4' }).optional(),
   firstName: Joi.string().min(1).max(100).required(),
   lastName: Joi.string().min(1).max(100).required(),
   address: Joi.string().min(5).required(),

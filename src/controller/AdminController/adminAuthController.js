@@ -10,6 +10,7 @@ import {
   verifyOtpSchema
 } from "../../Validation/AdminListing/adminAuthValidation.js";
 
+
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key"; // Fallback secret
 
 // Generate JWT token with identifier and OTP, expires in 5 minutes
@@ -99,7 +100,7 @@ export const verifyOtp = async (req, res) => {
 
     return res.status(200).json(new ApiResponse(200, {}, console.log("OTP verified successfully"),"OTP verified successfully"));
   } catch (error) {
-    console.error("OTP Verification Error:", error);
+    // console.error("OTP Verification Error:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
   }
 }; 

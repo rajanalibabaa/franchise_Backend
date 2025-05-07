@@ -1,4 +1,4 @@
-import Joi from 'joi';
+ import Joi from 'joi';
 
 export const postRequirementSchema = Joi.object({
   name: Joi.string().trim().min(1).max(100).required(),
@@ -40,5 +40,18 @@ export const postRequirementSchema = Joi.object({
   timelineToStart: Joi.string().min(2).max(100).required(),
   needLoan: Joi.string().min(2).max(100).required()
 });
+
+
+// Middleware to validate the request body for posting a requirement
+
+
+export const validatePostRequirement = (req, res, next) => {
+  const { error } = postRequirementSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+  next();
+};
+
 
 

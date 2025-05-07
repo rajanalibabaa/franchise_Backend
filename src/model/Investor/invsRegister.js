@@ -11,9 +11,8 @@ const invsRegisterSchema = new mongoose.Schema(
     },
     // Personal Info
     firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
     mobileNumber: { type: String, required: true, trim: true },
-    whatsappNumber: { type: String, trim: true },
+    whatsappNumber: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
 
     // Address Info
@@ -34,15 +33,16 @@ const invsRegisterSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    capital: { type: Number, required: true },
-    occupation: { type: String },
-    type: {
+    // capital: { type: Number, required: true },
+    occupation: { type: String , required: true},
+    propertytype: {
       type: String,
       enum: ["Residential", "Commercial", "Industrial", "Agricultural"],
       required: true,
     },
-    lookingFor: { type: String },
-    ownProperty: { type: String, required: true },
+    lookingFor: { type: String , required: true},
+    // ownProperty: { type: String, required: true },
+  
 
     // createdAt: {
     //   type: Date,
