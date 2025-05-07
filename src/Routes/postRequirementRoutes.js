@@ -13,7 +13,7 @@ import { validatePostRequirement } from '../Middleware/validatePostRequirement.j
 import {preprocessInvestmentRange} from '../Middleware/preprocessInvestmentRange.js'
 const router = Router();
 
-router.post('/createPostRequirement', validatePostRequirement, createPostRequirement,preprocessInvestmentRange);
+router.post('/createPostRequirement',createPostRequirement);
 router.get('/getPostRequirement', getAllPostRequirement);
 router.get('/getPostRequirement/id/:id', getPostRequirementById);
 router.get('/getPostRequirement/Uuid/:uuid', getPostRequirementByUUID);

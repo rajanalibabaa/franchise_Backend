@@ -7,6 +7,7 @@ const invsRegisterSchema = new mongoose.Schema(
     uuid: {
       type: String,
       unique: true,
+      default: uuid,
     },
     // Personal Info
     firstName: { type: String, required: true, trim: true },
