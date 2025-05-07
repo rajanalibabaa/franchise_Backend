@@ -11,7 +11,7 @@ const getAllClientCount = async (req, res) => {
 
     const countsArray = [
       { label: "Investors", count: InvsRegisterCount },
-      { label: "Brands", count: BrandListingCount },
+      { label: "BrandList", count: BrandListingCount },
       { label: "PostRequirements", count: PostRequirementCount },
     ];
 

@@ -12,6 +12,8 @@ import adminRoutes from "./src/Routes/AdminRoutes/AdminRoutes.js"
 import adminVideoAdvertiseRouter from './src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js'
 
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
+import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
+ 
 
 const router = express.Router();
 
@@ -30,5 +32,6 @@ router.use("/v1/admin", adminRoutes)
 router.use('/v1/admin/videoAdvertise', adminVideoAdvertiseRouter)
 
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
+router.use('/v1/brand/register',BrandRegisterRoute)
 
 export default router;
