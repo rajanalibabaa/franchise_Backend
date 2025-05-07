@@ -24,7 +24,7 @@ whatsappNumber: Joi.string()
 
   email: Joi.string().email().required(),
 
-  category: Joi.string().valid('Investor', 'Buyer', 'Seller', 'Agent', 'Other').required(),
+  category: Joi.string().required(),
 
   investmentRange: Joi.string().min(1).required(), // Adjusted based on model
 
