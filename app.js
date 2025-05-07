@@ -22,5 +22,6 @@ router.use("/post", postRequireRoutes);
 router.use("/send-otp", senderMSGRoutes);
 // router.use("/admin", adminRoutes);
 router.use("/admin", adminRoutes);
+router.use("/brand",brandRouter)
 
 export default router;
