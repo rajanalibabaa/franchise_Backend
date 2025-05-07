@@ -29,7 +29,7 @@ whatsappNumber: Joi.string()
   investmentRange: Joi.string().min(1).required(), // Adjusted based on model
 
   occupation: Joi.string().allow('', null),
-  propertytype: Joi.string().valid('Residential', 'Commercial', 'Industrial', 'Agricultural').required(),
+  propertytype: Joi.string().required(),
   lookingFor: Joi.string().allow('', null),
 
 
