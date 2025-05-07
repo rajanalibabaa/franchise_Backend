@@ -38,6 +38,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-oauth2": "^1.8.0",
     "session": "^0.1.0",
+    "sparse-bitfield": "^3.0.3",
     "twilio": "^5.5.2",
     "uuid": "^11.1.0"
   },
