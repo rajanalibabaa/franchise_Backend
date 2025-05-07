@@ -11,6 +11,8 @@ import postRequireRoutes  from "./src/Routes/postRequirementRoutes.js"
 import adminRoutes from "./src/Routes/AdminRoutes/AdminRoutes.js"
 import adminVideoAdvertiseRouter from './src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js'
 
+import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
+
 const router = express.Router();
 
 router.use('/v1/brand/',brandRouter);
@@ -27,6 +29,6 @@ router.use("/v1/admin", adminRoutes)
 
 router.use('/v1/admin/videoAdvertise', adminVideoAdvertiseRouter)
 
-
+router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 
 export default router;

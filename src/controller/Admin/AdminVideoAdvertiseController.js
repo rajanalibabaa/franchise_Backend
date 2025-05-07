@@ -102,29 +102,86 @@ const getAdminVideoAdvertise = async (req, res) => {
     }
 }
 
-const getAdminVideoAdvertiseTopOne = async (req, res) => {
+let TopVideoAdvertises = [];
+
+const postAdminVideoAdvertiseTopOne = async (req, res) => {
     const { videoIds } = req.body;
     
 
     try {
-        const videoAdvertises = await AdminVideoAdvertiseSchema.find({ uuid: { $in: videoIds } });
+         TopVideoAdvertises = await AdminVideoAdvertiseSchema.find({ uuid: { $in: videoIds } });
 
-        console.log("Video Advertise Results:", videoAdvertises);
-        return res.status(200).json(videoAdvertises);
+        console.log("Video Advertise Results:", TopVideoAdvertises);
+        return res.status(200).json(TopVideoAdvertises);
     } catch (error) {
         console.error("Error fetching video advertisements:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };
 
-const getAdminVideoAdvertiseTopTwo  = async (req, res) => {
+const getAdminVideoAdvertiseTopOne  = async (req, res) => {
+    
+    try {
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                TopVideoAdvertises,
+                "Top video advertisements fetched successfully"
+            )
+        );
+        
+    } catch (error) {
+        console.error("Error fetching video advertisements:", error);
+        return res.status(500).json({ message: "Internal server error" });
+        
+    }
+}
+
+let TopTwoVideoAdvertises = [];
+const postAdminVideoAdvertiseTopTwo  = async (req, res) => {
     const { videoIds } = req.body;
    
     try {
-        const videoAdvertises = await AdminVideoAdvertiseSchema.find({ uuid: { $in: videoIds } });
+         TopTwoVideoAdvertises = await AdminVideoAdvertiseSchema.find({ uuid: { $in: videoIds } });
 
-        console.log("Video Advertise Results:", videoAdvertises);
-        return res.status(200).json(videoAdvertises);
+        console.log("Video Advertise Results:", TopTwoVideoAdvertises);
+        return res.status(200).json(TopTwoVideoAdvertises);
+    } catch (error) {
+        console.error("Error fetching video advertisements:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+const getAdminVideoAdvertiseTopTwo  = async (req, res) => {
+    
+    try {
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                TopTwoVideoAdvertises,
+                "Top video advertisements fetched successfully"
+            )
+        );
+        
+    } catch (error) {
+        console.error("Error fetching video advertisements:", error);
+        return res.status(500).json({ message: "Internal server error" });
+        
+    }
+}
+
+
+let TopThreeVideoAdvertises = [];
+const postAdminVideoAdvertiseTopThree  = async (req, res) => {
+    const { videoIds } = req.body;
+    
+    try {
+         TopThreeVideoAdvertises = await AdminVideoAdvertiseSchema.find({ uuid: { $in: videoIds } });
+
+        console.log("Video Advertise Results:", TopThreeVideoAdvertises);
+        return res.status(200).json(TopThreeVideoAdvertises);
     } catch (error) {
         console.error("Error fetching video advertisements:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -132,16 +189,21 @@ const getAdminVideoAdvertiseTopTwo  = async (req, res) => {
 }
 
 const getAdminVideoAdvertiseTopThree  = async (req, res) => {
-    const { videoIds } = req.body;
     
     try {
-        const videoAdvertises = await AdminVideoAdvertiseSchema.find({ uuid: { $in: videoIds } });
 
-        console.log("Video Advertise Results:", videoAdvertises);
-        return res.status(200).json(videoAdvertises);
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                TopThreeVideoAdvertises,
+                "Top video advertisements fetched successfully"
+            )
+        );
+        
     } catch (error) {
         console.error("Error fetching video advertisements:", error);
         return res.status(500).json({ message: "Internal server error" });
+        
     }
 }
 
@@ -153,4 +215,8 @@ export {
     getAdminVideoAdvertiseTopOne,
     getAdminVideoAdvertiseTopTwo,
     getAdminVideoAdvertiseTopThree,
+
+    postAdminVideoAdvertiseTopOne,
+    postAdminVideoAdvertiseTopTwo,
+    postAdminVideoAdvertiseTopThree
 }
