@@ -7,20 +7,20 @@ import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyA
 export const createInvestor = async (req, res) => {
   try {
     const {
-      firstName,lastName,mobileNumber,
+      firstName,mobileNumber,
       whatsappNumber,email,address,
       country,pincode,state,district,
       city,category,investmentRange,
-      capital,occupation, type,
-      lookingFor, ownProperty} = req.body; 
+      occupation, propertytype,
+      lookingFor} = req.body; 
 
     const investor = new InvsRegister({
-      firstName,lastName,mobileNumber,
+      firstName,mobileNumber,
       whatsappNumber,email,address,
       country, pincode,state,district,
       city,category,investmentRange,
-      capital,occupation,type,
-      lookingFor,ownProperty });  
+      occupation,propertytype,
+      lookingFor });  
 
   
     await investor.save();
