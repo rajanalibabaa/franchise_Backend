@@ -26,7 +26,6 @@ const invsRegisterSchema = new mongoose.Schema(
     // Investment Info
     category: {
       type: String,
-      enum: ["Investor", "Buyer", "Seller", "Agent", "Other"],
       required: true,
     },
     investmentRange: {
