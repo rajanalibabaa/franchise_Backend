@@ -4,7 +4,7 @@ import { generateOTPforInvestor, getInvestorData, investorLogin } from "../../co
 
 const route = Router()
 
-route.post('/login',investorLogin)
+route.post('/investor',investorLogin)
 route.post('/getInvestorData',getInvestorData)
 route.post('/generateOTPforInvestor',generateOTPforInvestor)
 
