@@ -3,6 +3,7 @@ import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
 import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
+import { generateToken } from "../../utils/generateToken.js";
 
 let generateNewOTP = null 
 let emailORMobileNumber = null
@@ -111,26 +112,31 @@ const investorLogin = async (req, res) => {
           { email: emailORMobileNumber },
           { mobileNumber: emailORMobileNumber }
         ]
-      }).select(" -refreshToken  -createdAt -firstName");
+      }).select("  -createdAt ");
   console.log("verifyOtp: ",userData)
   
-      const AccessToken = await userData.generateAccessToken()
+      // const AccessToken = await userData.generateAccessToken()
       // const RefreshToken = await userData.generateRefreshToken()
   
+      const investorAccessToken = generateToken(
+        { uuid: userData.uuid, },
+        process.env.ACCESS_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_EXPIRY
+      );
       const cookieOptions = {
         httpOnly: true,
         secure: true,
         sameSite: 'Strict',
       };
-  
+      
       return res.status(200)
-      .cookie("AccessToken",AccessToken,cookieOptions)
+      .cookie("AccessToken",investorAccessToken,cookieOptions)
       // .cookie("RefreshToken",RefreshToken,cookieOptions)
       .json(
           new ApiResponse(
               200,
               {
-                Data: userData,AccessToken
+                UUID: userData.uuid,investorAccessToken
               },
               "User found"
           )
