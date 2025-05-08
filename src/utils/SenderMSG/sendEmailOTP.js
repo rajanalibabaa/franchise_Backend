@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-import { generateOTP } from "./generateOTP.js";
+import { generateOTP } from "../generateOTP.js"; // Import the generateOTP function
 const OTP = generateOTP(); // Generate a random OTP
 
 

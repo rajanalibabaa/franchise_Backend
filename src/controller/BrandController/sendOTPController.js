@@ -1,6 +1,7 @@
-import sendEmailOTP from "../../utils/sendEmailOTP.js";
-import sendMobileSMS from "../../utils/sendTwilio.js";
-import sendWhatsAppOtp from "../../utils/sendTwilioWhatsapp.js";
+import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
+import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
+import sendWhatsAppOtp from "../../utils/SenderMSG/sendTwilioWhatsapp.js";
+import jwt from "jsonwebtoken";
 import { generateOTP } from "../../utils/generateOTP.js";
 
 
@@ -37,23 +38,19 @@ export const requestEmailOtp = async (req, res) => {
     }
 };
 
-// Verify Email OTP
-export const verifyEmailOtp = (req, res) => {
-    const { token, otp } = req.body;
-    const decoded = verifyToken(token);
-
-    if (decoded && decoded.otp === otp) {
-        res.status(200).json({ message: "Email OTP verified successfully." });
-    } else {
-        res.status(400).json({ error: "Invalid or expired OTP." });
-    }
-};
-
-// Send Mobile OTP
 export const requestMobileOtp = async (req, res) => {
     const { mobile } = req.body;
+
+    if (!mobile) {
+        return res.status(400).json({ error: "Mobile number is required" });
+    }
+
+ // Log the mobile number for debugging purposes
     const otp = generateOTP();
     const token = generateToken(mobile, otp);
+    console.log("OTP:", otp); // Log the OTP for debugging purposes
+
+    console.log("Token:", token); // Log the token for debugging purposes
 
     try {
         await sendMobileSMS(mobile, otp);
@@ -62,6 +59,29 @@ export const requestMobileOtp = async (req, res) => {
         return res.status(500).json({ error: "Failed to send OTP", details: error.message });
     }
 };
+
+// Send WhatsApp OTP
+export const requestWhatsAppOtp = async (req, res) => {
+    const { mobile } = req.body;
+
+    if (!mobile) {
+        return res.status(400).json({ error: "Mobile number is required" });
+    }
+
+    const otp = generateOTP();
+    const token = generateToken(mobile, otp);
+    console.log("OTP:", otp); // Log the OTP for debugging purposes
+    console.log("Token:", token); // Log the token for debugging purposes
+
+
+    try {
+        await sendWhatsAppOtp(mobile, otp); // Send OTP via WhatsApp
+        res.status(200).json({ message: "WhatsApp OTP sent successfully.", token });
+    } catch (error) {
+        return res.status(500).json({ error: "Failed to send WhatsApp OTP", details: error.message });
+    }
+};
+
 
 // Controller to verify OTP
 export const verifyOTP = async (req, res) => {
