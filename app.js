@@ -29,12 +29,7 @@ router.use('/brand',brandRoutes )
 
 
 
-<<<<<<< HEAD
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 router.use('/v1/brand/register',BrandRegisterRoute)
 
 export default router;
-=======
-
-export default router;
->>>>>>> 7a716c35bfb92c31badb96514c97dce2a237498e

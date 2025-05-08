@@ -40,10 +40,10 @@ const brandRegisterSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    // agreeToTerms: {
-    //   type: Boolean,
-    //   required: true,
-    // },
+    uuid: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true, 

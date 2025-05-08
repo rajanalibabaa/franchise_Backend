@@ -31,11 +31,11 @@ const generateOTPforInvestor = async(req,res) => {
           );
       }
   
-      if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
-          return res.status(400).json(
-              new ApiResponse(400, null, "Phone number must be 10 digits")
-          );
-      }
+      // if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
+      //     return res.status(400).json(
+      //         new ApiResponse(400, null, "Phone number must be 10 digits")
+      //     );
+      // }
   
     emailORMobileNumber = email || mobileNumber
   
@@ -60,8 +60,6 @@ const generateOTPforInvestor = async(req,res) => {
   
     generateNewOTP = Number(generateOTP().toString().trim());
     console.log(generateNewOTP)
-    // console.log("mobileNumber: ",mobileNumber)
-    // console.log("email : ",email)
     if(email === data.email){
       sendEmailOTP(email, generateNewOTP)
     }else{
@@ -138,50 +136,6 @@ const investorLogin = async (req, res) => {
           )
       );
     }
-
-   
-    // if (!email && !mobileNumber) {
-    //   return res
-    //     .status(400)
-    //     .json(
-    //       new ApiResponse(
-    //         400,
-    //         null,
-    //         "Please provide either email or phone number"
-    //       )
-    //     );
-    // }
-
-    // if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-    //     return res.status(400).json(
-    //         new ApiResponse(400, null, "Invalid email format")
-    //     );
-    // }
-
-    // if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
-    //     return res.status(400).json(
-    //         new ApiResponse(400, null, "Phone number must be 10 digits")
-    //     );
-    // }
-
-    // const data = await InvsRegister.findOne({
-    //     $or: [
-    //       { email },
-    //       { mobileNumber }
-    //     ]
-    // });
-
-    // console.log('data : ', data)
-
-  //   if (!data) {
-  //       return res.status(404).json(
-  //           new ApiResponse(
-  //               404,
-  //               null,
-  //               "User not found"
-  //           )
-  //       );
-  //   }
 
    
   } catch (error) {
