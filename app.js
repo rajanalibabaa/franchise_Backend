@@ -9,6 +9,10 @@ import instaApplyRoutes from './src/Routes/InstaApplyRoutes/instaApplyRoutes.js'
 import brandRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js"
 
+import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
+import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
+ 
+
 const router = express.Router();
 
 router.use('/v1/auth/', thirdPartyAuthRouter)
@@ -25,5 +29,7 @@ router.use('/brand',brandRoutes )
 
 
 
+router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
+router.use('/v1/brand/register',BrandRegisterRoute)
 
 export default router;
