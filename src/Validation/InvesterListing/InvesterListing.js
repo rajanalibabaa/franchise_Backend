@@ -3,7 +3,6 @@ import Joi from 'joi';
 const investorSchema = Joi.object({
   uuid: Joi.string().guid({ version: 'uuidv4' }).optional(),
   firstName: Joi.string().min(1).max(100).required(),
-  lastName: Joi.string().min(1).max(100).required(),
   address: Joi.string().min(5).required(),
   country: Joi.string().min(2).required(),
   pincode: Joi.string().pattern(/^[1-9][0-9]{5}$/).required().messages({
@@ -25,14 +24,14 @@ whatsappNumber: Joi.string()
 
   email: Joi.string().email().required(),
 
-  category: Joi.string().valid('Investor', 'Buyer', 'Seller', 'Agent', 'Other').required(),
+  category: Joi.string().required(),
 
   investmentRange: Joi.string().min(1).required(), // Adjusted based on model
-  // capital: Joi.number().min(0).required(),
+
   occupation: Joi.string().allow('', null),
   propertytype: Joi.string().required(),
   lookingFor: Joi.string().allow('', null),
-  // ownProperty: Joi.string().valid('Yes', 'No').required(),
+
 
 
   // Optional fields
