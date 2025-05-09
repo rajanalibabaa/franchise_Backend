@@ -1,41 +1,64 @@
 import FranchiseBrand from "../../model/Brand/brandListingPage.js";
 import {ApiResponse} from "../../utils/ApiResponse/ApiResponse.js";
+import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
 
-const createBrand = async (req, res) => {
-    // const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation , } = req.body;
-
-    // console.log ("Brand data:", BrandDetails); 
-    console.log("================")
-
-    // Validate required fields
-    // if (!BrandDetails || !ExpansionPlans || !FranchiseModal || !Documentation || !Gallery) {
-    //     return res.status(400).json({ error: "All fields are required" });
-    // }
-
-    const videosLocalPath = req.files?.Gallery[0]?.path;
-
+const createBrandListing = async (req, res) => {
     try {
-        const newBrand = new FranchiseBrand({
-            
-            BrandDetails,
-            ExpansionPlans,
-            FranchiseModal,
-            Documentation,
-            Gallery
-        });
+      console.log("================");
+  
+      // Extract form fields from req.body
+    //   const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation } = req.body;
+  
+    //   // Parse JSON strings if sent via multipart/form-data
+    //   const parsedBrandDetails = typeof BrandDetails === 'string' ? JSON.parse(BrandDetails) : BrandDetails;
+    //   const parsedExpansionPlans = typeof ExpansionPlans === 'string' ? JSON.parse(ExpansionPlans) : ExpansionPlans;
+    //   const parsedFranchiseModal = typeof FranchiseModal === 'string' ? JSON.parse(FranchiseModal) : FranchiseModal;
+    //   const parsedDocumentation = typeof Documentation === 'string' ? JSON.parse(Documentation) : Documentation;
+  
+      // Validate required fields
+    //   if (!parsedBrandDetails || !parsedExpansionPlans || !parsedFranchiseModal || !parsedDocumentation) {
+    //     return res.status(400).json(
+    //       new ApiResponse(400, null, "All required fields must be provided")
+    //     );
+    //   }
+  
+      // Extract media file paths (assuming req.files is populated via multer)
+      const mediaFiles = req.files?.Gallery?.map(file => file.path) || [];
+      console.log("Uploaded media files:", mediaFiles);
+  
+      const uploadedS3Urls = [];
 
-        await newBrand.save();
-        res.status(201).json(
-            new ApiResponse(
-                201,
-                {},
-                "Brand created successfully",
-            )
-        );
-    } catch (error) {
-        res.status(500).json({ error: "Failed to create brand", details: error.message });
+    for (const filePath of mediaFiles) {
+    const url = await uploadFileToS3(filePath);
+    uploadedS3Urls.push(url);
     }
-}
+
+    console.log(uploadedS3Urls)
+      const newBrand = new FranchiseBrand({
+    //     // BrandDetails: parsedBrandDetails,
+    //     // ExpansionPlans: parsedExpansionPlans,
+    //     // FranchiseModal: parsedFranchiseModal,
+    //     // Documentation: parsedDocumentation,
+        Gallery: {
+            mediaFiles: uploadedS3Urls
+        }
+      });
+  
+      await newBrand.save();
+  
+      return res.status(201).json(
+        new ApiResponse(201, newBrand, "Brand created successfully")
+      );
+  
+    } catch (error) {
+      console.error("Error creating brand:", error);
+      return res.status(500).json({
+        error: "Failed to create brand",
+        details: error.message
+      });
+    }
+  };
+  
 
 const getAllBrands = async (req, res) => {
     try {
@@ -138,7 +161,7 @@ const deleteBrand = async (req, res) => {
 
 
 export { 
-    createBrand,
+    createBrandListing,
     getAllBrands,
     getBrandById,
     updateBrand,
