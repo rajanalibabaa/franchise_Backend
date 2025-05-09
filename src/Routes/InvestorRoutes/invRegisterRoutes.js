@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createInvestor, deleteInvestor, getAllInvestors, getInvestorByUUID, updateInvestor } from '../../controller/InvestorsControllers/InvRegisterController.js';
-import { verifyInvestor } from '../../Middleware/Authentication/InvestorAuthMiddleware.js';
+import { verifyInvestor } from '../../Middleware/Authentication/AuthMiddleware.js';
 
 
 const InvestorRouter = Router();

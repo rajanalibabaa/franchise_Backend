@@ -78,7 +78,7 @@ export const createInvestor = async (req, res) => {
 };
 
 
-  export const getAllInvestors = async (req, res) => {
+export const getAllInvestors = async (req, res) => {
     try {
       const investors = await InvsRegister.find({});
       res.status(200).json(investors);
@@ -218,7 +218,7 @@ export const updateInvestor = async (req, res) => {
 };
 
   
-  export const deleteInvestor = async (req, res) => {
+export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;
       // console.log(uuid)
 
@@ -253,4 +253,4 @@ export const updateInvestor = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "Failed to delete brand", details: error.message });
     }
-  };
+  }; 
