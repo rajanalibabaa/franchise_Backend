@@ -2,14 +2,17 @@ import FranchiseBrand from "../../model/Brand/brandListingPage.js";
 import {ApiResponse} from "../../utils/ApiResponse/ApiResponse.js";
 
 const createBrand = async (req, res) => {
-    const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation , Gallery} = req.body;
+    // const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation , } = req.body;
 
-    console.log ("Brand data:", BrandDetails); 
+    // console.log ("Brand data:", BrandDetails); 
+    console.log("================")
 
     // Validate required fields
-    if (!BrandDetails || !ExpansionPlans || !FranchiseModal || !Documentation || !Gallery) {
-        return res.status(400).json({ error: "All fields are required" });
-    }
+    // if (!BrandDetails || !ExpansionPlans || !FranchiseModal || !Documentation || !Gallery) {
+    //     return res.status(400).json({ error: "All fields are required" });
+    // }
+
+    const videosLocalPath = req.files?.Gallery[0]?.path;
 
     try {
         const newBrand = new FranchiseBrand({
