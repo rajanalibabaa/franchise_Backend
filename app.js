@@ -1,7 +1,7 @@
 import express from "express";
 import thirdPartyAuthRouter from './src/Routes/ThirdpartyRoutes/thirdpartyAuthenticationRouters.js';
 import InvestorloginRouter from './src/Routes/InvestorRoutes/InvestorLoginRoutes.js';
-import invsRegisterRoutes from "./src/Routes/invRegisterRoutes.js";
+// import invsRegisterRoutes from "./src/Routes/invRegisterRoutes.js";
 import postRequireRoutes  from "./src/Routes/postRequirementRoutes.js";
 import feedbackRoutes from "./src/Routes/FeedbackRoutes/feedbackRoutes.js";
 import complaintRoutes from './src/Routes/ComplaintRoutes/complaintRoutes.js';
@@ -11,13 +11,15 @@ import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js"
 
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
 import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
+import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
+import { InvestorLogoutRoutes } from "./src/Routes/InvestorRoutes/InvestorLogoutRoutes.js";
  
 
 const router = express.Router();
 
 router.use('/v1/auth/', thirdPartyAuthRouter)
 router.use('/v1/login/', InvestorloginRouter)
-router.use('/investor',invsRegisterRoutes)
+
 router.use('/post',postRequireRoutes);
 router.use("/admin",adminRoutess );
 router.use('/feedback', feedbackRoutes);
@@ -26,10 +28,13 @@ router.use('/instaApply', instaApplyRoutes);
 router.use('/brand',brandRoutes )
 
 
-
+router.use('/v1/investor',InvestorRouter)
 
 
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 router.use('/v1/brand/register',BrandRegisterRoute)
+
+//logout routers
+router.use('/v1/logout', InvestorLogoutRoutes)
 
 export default router;
