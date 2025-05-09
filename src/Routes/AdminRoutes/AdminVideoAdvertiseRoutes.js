@@ -8,7 +8,7 @@ const route = Router()
 
 route.post('/createAdminVideoAdvertise',upload.fields([
     {
-        name: 'videos', maxCount: 10
+        name: 'videos', maxCount: 1000
     },
     {
         name: 'thumbnail', maxCount: 1    
