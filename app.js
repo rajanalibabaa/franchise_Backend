@@ -14,6 +14,7 @@ import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
 import { InvestorLogoutRoutes } from "./src/Routes/InvestorRoutes/InvestorLogoutRoutes.js";
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
+
  
 
 const router = express.Router();
@@ -40,5 +41,6 @@ router.use('/v1/logout', InvestorLogoutRoutes)
 
 //login routers
 router.use('/v1/login', Login)
+
 
 export default router;
