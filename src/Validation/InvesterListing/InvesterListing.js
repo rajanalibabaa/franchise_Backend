@@ -34,7 +34,7 @@ whatsappNumber: Joi.string()
   lookingFor: Joi.string().allow('', null),
   ownProperty: Joi.string().valid('Yes', 'No').required(),
 
-
+  
   // Optional fields
   state: Joi.string().allow('', null),
   district: Joi.string().allow('', null),
