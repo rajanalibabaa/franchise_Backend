@@ -1,9 +1,10 @@
 import FranchiseBrand from "../../model/Brand/brandListingPage.js";
 import {ApiResponse} from "../../utils/ApiResponse/ApiResponse.js";
+import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
 
 const createBrand = async (req, res) => {
-    const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation , Gallery} = req.body;
-
+    
+        const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation , Gallery} = JSON.req.body;
     console.log ("Brand data:", BrandDetails); 
 
     // Validate required fields
