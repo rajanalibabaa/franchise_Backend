@@ -26,7 +26,6 @@ const invsRegisterSchema = new mongoose.Schema(
     // Investment Info
     category: {
       type: String,
-      enum: ["Investor", "Buyer", "Seller", "Agent", "Other"],
       required: true,
     },
     investmentRange: {
@@ -37,8 +36,7 @@ const invsRegisterSchema = new mongoose.Schema(
     occupation: { type: String , required: true},
     propertytype: {
       type: String,
-      enum: ["Residential", "Commercial", "Industrial", "Agricultural"],
-      required: true,
+      // required: true,
     },
     lookingFor: { type: String , required: true},
     // ownProperty: { type: String, required: true },

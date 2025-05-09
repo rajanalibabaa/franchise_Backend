@@ -28,11 +28,11 @@ whatsappNumber: Joi.string()
   category: Joi.string().valid('Investor', 'Buyer', 'Seller', 'Agent', 'Other').required(),
 
   investmentRange: Joi.string().min(1).required(), // Adjusted based on model
-  capital: Joi.number().min(0).required(),
+  // capital: Joi.number().min(0).required(),
   occupation: Joi.string().allow('', null),
-  type: Joi.string().valid('Residential', 'Commercial', 'Industrial', 'Agricultural').required(),
+  propertytype: Joi.string().required(),
   lookingFor: Joi.string().allow('', null),
-  ownProperty: Joi.string().valid('Yes', 'No').required(),
+  // ownProperty: Joi.string().valid('Yes', 'No').required(),
 
 
   // Optional fields

@@ -21,9 +21,4 @@ router.use('/complaint', complaintRoutes);
 router.use('/instaApply', instaApplyRoutes);
 router.use('/brand',brandRoutes )
 
-
-
-
-
-
 export default router;
