@@ -1,8 +1,9 @@
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
-import sendEmailOTP from "../../utils/sendEmailOTP.js";
-import sendMobileSMS from "../../utils/sendTwilio.js";
+import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
+import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
+import { generateToken } from "../../utils/generateToken.js";
 
 let generateNewOTP = null 
 let emailORMobileNumber = null
@@ -31,11 +32,11 @@ const generateOTPforInvestor = async(req,res) => {
           );
       }
   
-      if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
-          return res.status(400).json(
-              new ApiResponse(400, null, "Phone number must be 10 digits")
-          );
-      }
+      // if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
+      //     return res.status(400).json(
+      //         new ApiResponse(400, null, "Phone number must be 10 digits")
+      //     );
+      // }
   
     emailORMobileNumber = email || mobileNumber
   
@@ -60,8 +61,6 @@ const generateOTPforInvestor = async(req,res) => {
   
     generateNewOTP = Number(generateOTP().toString().trim());
     console.log(generateNewOTP)
-    // console.log("mobileNumber: ",mobileNumber)
-    // console.log("email : ",email)
     if(email === data.email){
       sendEmailOTP(email, generateNewOTP)
     }else{
@@ -113,75 +112,36 @@ const investorLogin = async (req, res) => {
           { email: emailORMobileNumber },
           { mobileNumber: emailORMobileNumber }
         ]
-      }).select(" -refreshToken  -createdAt -firstName");
+      }).select("  -createdAt ");
   console.log("verifyOtp: ",userData)
   
-      const AccessToken = await userData.generateAccessToken()
+      // const AccessToken = await userData.generateAccessToken()
       // const RefreshToken = await userData.generateRefreshToken()
   
+      const investorAccessToken = generateToken(
+        { uuid: userData.uuid, },
+        process.env.ACCESS_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_EXPIRY
+      );
       const cookieOptions = {
         httpOnly: true,
         secure: true,
         sameSite: 'Strict',
       };
-  
+      
       return res.status(200)
-      .cookie("AccessToken",AccessToken,cookieOptions)
+      .cookie("AccessToken",investorAccessToken,cookieOptions)
       // .cookie("RefreshToken",RefreshToken,cookieOptions)
       .json(
           new ApiResponse(
               200,
               {
-                Data: userData,AccessToken
+                UUID: userData.uuid,investorAccessToken
               },
               "User found"
           )
       );
     }
-
-   
-    // if (!email && !mobileNumber) {
-    //   return res
-    //     .status(400)
-    //     .json(
-    //       new ApiResponse(
-    //         400,
-    //         null,
-    //         "Please provide either email or phone number"
-    //       )
-    //     );
-    // }
-
-    // if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-    //     return res.status(400).json(
-    //         new ApiResponse(400, null, "Invalid email format")
-    //     );
-    // }
-
-    // if (mobileNumber && (!/^\d{10}$/.test(mobileNumber))) {
-    //     return res.status(400).json(
-    //         new ApiResponse(400, null, "Phone number must be 10 digits")
-    //     );
-    // }
-
-    // const data = await InvsRegister.findOne({
-    //     $or: [
-    //       { email },
-    //       { mobileNumber }
-    //     ]
-    // });
-
-    // console.log('data : ', data)
-
-  //   if (!data) {
-  //       return res.status(404).json(
-  //           new ApiResponse(
-  //               404,
-  //               null,
-  //               "User not found"
-  //           )
-  //       );
-  //   }
 
    
   } catch (error) {

@@ -1,18 +1,12 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { v4 as uuid } from "uuid";
 
 const invsRegisterSchema = new mongoose.Schema(
   {
-    uuid: {
-      type: String,
-      unique: true,
-    },
     // Personal Info
     firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, required: true, trim: true },
     mobileNumber: { type: String, required: true, trim: true },
-    whatsappNumber: { type: String, trim: true },
+    whatsappNumber: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
 
     // Address Info
@@ -26,29 +20,24 @@ const invsRegisterSchema = new mongoose.Schema(
     // Investment Info
     category: {
       type: String,
-      enum: ["Investor", "Buyer", "Seller", "Agent", "Other"],
       required: true,
     },
     investmentRange: {
       type: String,
       required: true,
     },
-    capital: { type: Number, required: true },
-    occupation: { type: String },
-    type: {
+    // capital: { type: Number, required: true },
+    occupation: { type: String , required: true},
+    propertytype: {
       type: String,
-      enum: ["Residential", "Commercial", "Industrial", "Agricultural"],
+      
       required: true,
     },
-    lookingFor: { type: String },
-    ownProperty: { type: String, required: true },
-
-    // createdAt: {
-    //   type: Date,
-    //   default: Date.now,
-    // },
-
-    // refreshToken: { type: String, select: true }
+    lookingFor: { type: String , required: true},
+    uuid:{
+      type: String,
+      required: true,
+    }
   },
   {
     timestamps: true,
