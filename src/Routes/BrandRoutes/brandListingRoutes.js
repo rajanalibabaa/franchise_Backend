@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyOTP } from "../../controller/BrandController/sendOTPController.js";
+import { verifyOTP } from "../../controller/otpController/sendOTPController.js";
 import { createBrandListing, deleteBrand, getAllBrands, getBrandById, updateBrand, updateBrandImage } from "../../controller/BrandController/BrandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
 

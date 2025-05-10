@@ -14,6 +14,7 @@ import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
 import { InvestorLogoutRoutes } from "./src/Routes/InvestorRoutes/InvestorLogoutRoutes.js";
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
+import sendOtpRouter from "./src/Routes/SenderMSGRoutes/senderMSG.js";
 
  
 
@@ -42,5 +43,6 @@ router.use('/v1/logout', InvestorLogoutRoutes)
 //login routers
 router.use('/v1/login', Login)
 
+router.use('/v1/otpverify',sendOtpRouter)
 
 export default router;
