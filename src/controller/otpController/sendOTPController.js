@@ -85,18 +85,28 @@ export const requestWhatsAppOtp = async (req, res) => {
 
 // Controller to verify OTP
 export const verifyOTP = async (req, res) => {
-    const { identifier, otp, token } = req.body;
+    const { identifier, otp, token, type } = req.body;
 
     // Validate required fields
-    if (!identifier || !otp || !token) {
-        return res.status(400).json({ error: "Identifier, OTP, and token are required for verification" });
+    if (!identifier || !otp || !token || !type) {
+        return res.status(400).json({ error: "Identifier, OTP, token, and type are required for verification" });
+    }
+
+    // Validate the type
+    const validTypes = ["email", "mobile", "whatsapp"];
+    if (!validTypes.includes(type)) {
+        return res.status(400).json({ error: "Invalid type. Must be one of 'email', 'mobile', or 'whatsapp'" });
     }
 
     try {
-        const decoded = verifyToken(token, JWT_SECRET);
+        const decoded = verifyToken(token);
+
+        if (!decoded) {
+            return res.status(400).json({ error: "Invalid or expired token" });
+        }
 
         if (decoded.identifier === identifier && decoded.otp === otp) {
-            return res.status(200).json({ message: "OTP verified successfully" });
+            return res.status(200).json({ message: `${type.charAt(0).toUpperCase() + type.slice(1)} OTP verified successfully` });
         } else {
             return res.status(400).json({ error: "Invalid or expired OTP" });
         }
