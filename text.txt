@@ -16,3 +16,176 @@
                             </div>
                         </div>
                         <div class="dropdown-center">
+
+
+
+
+
+
+
+
+
+
+
+
+
+                          service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER, // Use environment variables
+    pass: process.env.EMAIL_PASSWORD
+  }
+};
+
+const EMAIL_DEFAULTS = {
+  from: process.env.EMAIL_USER,
+  subject: "Matching Brand Opportunities"
+};
+
+export const newIncomerInvestorController = async (req, res) => {
+  try {
+    // 1. Input Validation
+    const { userEmail, category, location, investment } = req.body;
+    
+    if (!userEmail || !category || !location || !investment) {
+      return res.status(400).json({ 
+        success: false,
+        message: "All fields are required: userEmail, category, location, investment" 
+      });
+    }
+
+    // Validate email format
+    if (!/^\S+@\S+\.\S+$/.test(userEmail)) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Invalid email format" 
+      });
+    }
+
+       // 2. Debugging: First check if any brands exist at all
+    // const allBrandsCount = await FranchiseBrand.countDocuments({});
+    // console.log(`Total brands in database: ${allBrandsCount}`);
+
+    // 3. Build query conditions step by step
+    const baseConditions = {};
+    
+    // Add category condition
+    baseConditions.categories = { $in: [new RegExp(category, "i")] };
+    console.log("Category condition:", baseConditions.categories);
+
+    
+    // Add location condition - using correct nested path
+    // baseConditions["BrandDetails.location"] = new RegExp(location, "i");
+    baseConditions["BrandDetails.categories"] = { $in: [new RegExp(category, "i")] };
+    // console.log("Location condition:", baseConditions["BrandDetails.location"]);
+    console.log("Category debug query:", {
+        "BrandDetails.categories": { $in: [new RegExp(category, "i")] }
+      });
+      
+    
+    // Add investment condition - using correct nested path and converting string to number
+    baseConditions["FranchiseModal.totalInvestment"] = { 
+      $lte: Number(investment) 
+    };
+    console.log("Investment condition:", baseConditions["FranchiseModal.totalInvestment"]);
+
+    // 4. Execute query with debugging
+    console.log("Final query conditions:", JSON.stringify(baseConditions, null, 2));
+    
+    const matchingBrands = await FranchiseBrand.find(baseConditions)
+      .select('BrandDetails.brandName BrandDetails.email BrandDetails.contactDetails FranchiseM
+totalInvestment categories BrandDetails.location')
+      .lean(); // Using lean() for better debugging
+
+    // console.log("Raw query results:", JSON.stringify(matchingBrands, null, 2));
+
+    if (process.env.NODE_ENV === 'development') {
+        console.log("Raw query results:", JSON.stringify(matchingBrands, null, 2));
+      }
+      
+    console.log(`Found ${matchingBrands.length} matching brands`);
+
+    // 5. Verify why no results might be returned
+    if (matchingBrands.length === 0) {
+      // Debug by checking each condition separately
+      const brandsWithCategory = await FranchiseBrand.countDocuments({
+        categories: { $in: [new RegExp(category, "i")] }
+      });
+      
+      const brandsWithLocation = await FranchiseBrand.countDocuments({
+        "BrandDetails.location": new RegExp(location, "i")
+      });
+      
+      const brandsWithInvestment = await FranchiseBrand.countDocuments({
+        "FranchiseModal.totalInvestment": { $lte: Number(investment) }
+      });
+
+      console.log(`Brands matching category: ${brandsWithCategory}`);
+      console.log(`Brands matching location: ${brandsWithLocation}`);
+      console.log(`Brands matching investment: ${brandsWithInvestment}`);
+
+      return res.status(200).json({ 
+        success: true,
+        message: "No matching brands found",
+        debug: {
+          totalBrands: allBrandsCount,
+          matchingCategory: brandsWithCategory,
+          matchingLocation: brandsWithLocation,
+          matchingInvestment: brandsWithInvestment
+        },
+        suggestions: "Try expanding your search criteria"
+      });
+    }
+
+    // 6. Prepare Email Content
+    // const brandList = matchingBrands.map(brand => 
+    //   `- ${brand.brandName || "Unnamed Brand"} (Investment: ₹${brand.investment})`
+    // ).join('\n');
+
+    const brandList = matchingBrands.map(brand => 
+        `- ${brand.BrandDetails?.brandName || "Unnamed Brand"} (Investment: ₹${brand.FranchiseM
+totalInvestment || "N/A"})`
+      ).join('\n');
+      
+
+    const emailText = `
+      Dear Investor,
+      
+      Based on your preferences:
+      - Category: ${category}
+      - Location: ${location}
+      - Maximum Investment: ₹${investment}
+      
+      We found these matching brands:
+      ${brandList}
+      
+      Best regards,
+      Franchise Matching Team
+    `;
+
+    // 7. Send Email
+    const transporter = nodemailer.createTransport(EMAIL_CONFIG);
+    
+    await transporter.sendMail({
+      ...EMAIL_DEFAULTS,
+      to: userEmail,
+      text: emailText,
+      html: `<pre>${emailText}</pre>` // Simple HTML version
+    });
+
+    // 8. Response
+    return res.status(200).json({
+      success: true,
+      message: "Matching brands found and notification sent to your email",
+      count: matchingBrands.length,
+      brands: matchingBrands.map(b => b.brandName)
+    });
+
+  } catch (error) {
+    console.error("Error in investor controller:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Internal server error",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+}   

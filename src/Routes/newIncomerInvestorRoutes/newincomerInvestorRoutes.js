@@ -2,11 +2,12 @@ import Routes from 'express';
 import { newIncomerInvestorController } from '../../controller/newIncomerInvestorController/newIncomerInvestorController.js';
 
 
-const router = Routes.Router();
+const newIncomerInvestor = Routes.Router();
 
-router.post('/newIncomerInvestor', newIncomerInvestorController);
+newIncomerInvestor.post('/newIncomer', newIncomerInvestorController);
 
 
-export default router;
+export { newIncomerInvestor}
+
 
 
