@@ -14,6 +14,7 @@ import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
+import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
  
 
 const router = express.Router();
