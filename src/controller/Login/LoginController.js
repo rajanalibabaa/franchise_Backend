@@ -50,7 +50,7 @@ const generateOTPforLogin = async (req, res) => {
     if (!investorData && !brandUserData) {
       return res
         .status(404)
-        .json(new ApiResponse(404, null, "User not found"));
+        .json(new ApiResponse(404, null,alert("You are not a registered user")));
     }
 
     generateNewOTP = Number(generateOTP().toString().trim());
