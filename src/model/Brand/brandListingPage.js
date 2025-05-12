@@ -27,7 +27,7 @@ const franchiseBrandSchema = new Schema({
   },
   
 
-  // Expansion Plans
+  // // Expansion Plans
   ExpansionPlans : {
     expansionType: {
       type: String,
@@ -42,7 +42,7 @@ const franchiseBrandSchema = new Schema({
   
   },
   
-  // Franchise Modal
+  // // Franchise Modal
   FranchiseModal : {
     totalInvestment: { type: String },
     franchiseFee: { type: String },
@@ -91,6 +91,6 @@ const franchiseBrandSchema = new Schema({
   timestamps: true
 });
 
-const FranchiseBrand = model('FranchiseBrand', franchiseBrandSchema);
+const BrandListing = model('BrandListing', franchiseBrandSchema);
 
-export default FranchiseBrand;
+export default BrandListing;
