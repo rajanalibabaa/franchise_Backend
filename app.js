@@ -28,7 +28,6 @@ router.use('/complaint', complaintRoutes);
 router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
 
-
 router.use('/v1/investor',InvestorRouter)
 
 
