@@ -4,51 +4,110 @@ import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
 
 const createBrandListing = async (req, res) => {
     try {
-      console.log("================");
-  
-      // Extract form fields from req.body
-    //   const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation } = req.body;
-  
-    //   // Parse JSON strings if sent via multipart/form-data
-    //   const parsedBrandDetails = typeof BrandDetails === 'string' ? JSON.parse(BrandDetails) : BrandDetails;
-    //   const parsedExpansionPlans = typeof ExpansionPlans === 'string' ? JSON.parse(ExpansionPlans) : ExpansionPlans;
-    //   const parsedFranchiseModal = typeof FranchiseModal === 'string' ? JSON.parse(FranchiseModal) : FranchiseModal;
-    //   const parsedDocumentation = typeof Documentation === 'string' ? JSON.parse(Documentation) : Documentation;
-  
-      // Validate required fields
-    //   if (!parsedBrandDetails || !parsedExpansionPlans || !parsedFranchiseModal || !parsedDocumentation) {
-    //     return res.status(400).json(
-    //       new ApiResponse(400, null, "All required fields must be provided")
-    //     );
-    //   }
-  
-      // Extract media file paths (assuming req.files is populated via multer)
-      const mediaFiles = req.files?.Gallery?.map(file => file.path) || [];
-      console.log("Uploaded media files:", mediaFiles);
-  
-      const uploadedS3Urls = [];
 
-    for (const filePath of mediaFiles) {
-    const url = await uploadFileToS3(filePath);
-    uploadedS3Urls.push(url);
-    }
+        const {submissionData} = req.body
 
-    console.log(uploadedS3Urls)
-      const newBrand = new FranchiseBrand({
-    //     // BrandDetails: parsedBrandDetails,
-    //     // ExpansionPlans: parsedExpansionPlans,
-    //     // FranchiseModal: parsedFranchiseModal,
-    //     // Documentation: parsedDocumentation,
-        Gallery: {
-            mediaFiles: uploadedS3Urls
-        }
-      });
+        console.log(req.body)
+
+//         const localbrandLogo = req.files?.brandLogo[0]?.path;
+//   console.log(localbrandLogo)
+//         const localbusinessRegistration = req.files?.businessRegistration[0]?.path;
+
+
+//         const localgstCertificate =await req.files?.gstCertificate[0]?.path;
+//         const localfranchiseAgreement =await req.files?.franchiseAgreement[0]?.path;
+//         const localmenuCatalog =await req.files?.menuCatalog[0]?.path;
+//         const localinteriorPhotos =await req.files?.interiorPhotos[0]?.path;
+//         const localfssaiLicense =await req.files?.fssaiLicense[0]?.path;
+//         const localpanCard =await req.files?.panCard[0]?.path;
+//         const localaadhaarCard =await req.files?.aadhaarCard[0]?.path;
+
+//         if (!localbrandLogo || !localbusinessRegistration ||!localgstCertificate ||!localfranchiseAgreement ||!localmenuCatalog ||!localinteriorPhotos ||!localfssaiLicense ||!localpanCard ||!localaadhaarCard ) {
+//                 return res.status(400).json(
+//                   new ApiResponse(
+//                     400,
+//                     null,
+//                     "All documents files are required"
+//                   )
+//                 );
+//               }
+
+//         const arr = [localbrandLogo,localbusinessRegistration,localgstCertificate, localfranchiseAgreement, localmenuCatalog, localinteriorPhotos,localfssaiLicense, localpanCard, localaadhaarCard]
+
+//         console.log("=== : ",arr)
+//         const awsUplodedlocalbrandLogo =  await uploadFileToS3(localbrandLogo)
+
+//         const awsUplodedlocalbusinessRegistration =  await uploadFileToS3(localbusinessRegistration)
+
+//         const awsUplodedlocalgstCertificate =  await uploadFileToS3(localgstCertificate)
+
+//         const awsUplodedlocalfranchiseAgreement =  await uploadFileToS3(localfranchiseAgreement)
+
+//         const awsUplodedlocalmenuCatalog =  await uploadFileToS3(localmenuCatalog)
+
+//         const awsUplodedlocalinteriorPhotos =  await uploadFileToS3(localinteriorPhotos)
+
+//         const awsUplodedlocalfssaiLicense =  await uploadFileToS3(localfssaiLicense)
+//         const awsUplodedlocalpanCard =  await uploadFileToS3(localpanCard)
+//         const awsUplodedlocalaadhaarCard =  await uploadFileToS3(localaadhaarCard)
+
+
+//         if (!awsUplodedlocalbrandLogo || !awsUplodedlocalbusinessRegistration ||!awsUplodedlocalgstCertificate ||!awsUplodedlocalaadhaarCard ||!awsUplodedlocalfranchiseAgreement ||!awsUplodedlocalmenuCatalog ||!awsUplodedlocalinteriorPhotos ||!awsUplodedlocalfssaiLicense ||!awsUplodedlocalpanCard ) {
+//             return res.status(400).json(
+//               new ApiResponse(
+//                 400,
+//                 null,
+//                 "All documents files are required"
+//               )
+//             );
+//           }
+
   
-      await newBrand.save();
+
+//       const mediaFiles = req.files?.Gallery?.map(file => file.path) || [];
+      
+//       if (!mediaFiles || mediaFiles.length === 0) {
+//         return res.status(400).json(
+//           new ApiResponse(
+//             400,
+//             null,
+//             "Media files are required"
+//           )
+//         );
+//       }
   
-      return res.status(201).json(
-        new ApiResponse(201, newBrand, "Brand created successfully")
-      );
+//       const uploadedS3Urls = [];
+
+//     for (const filePath of mediaFiles) {
+
+//     const url = await uploadFileToS3(filePath);
+//     // console.log("=========:",url)
+//     uploadedS3Urls.push(url);
+//     }
+
+//       const newBrand = new FranchiseBrand({
+       
+//         Documentation :{
+//             brandLogo: awsUplodedlocalbrandLogo,
+//             businessRegistration: awsUplodedlocalbusinessRegistration,
+//             gstCertificate: awsUplodedlocalgstCertificate,
+//             franchiseAgreement: awsUplodedlocalfranchiseAgreement,
+//             menuCatalog: awsUplodedlocalmenuCatalog,
+//             interiorPhotos: awsUplodedlocalinteriorPhotos,
+//             fssaiLicense: awsUplodedlocalfssaiLicense,
+//             panCard: awsUplodedlocalpanCard,
+//             aadhaarCard: awsUplodedlocalaadhaarCard,
+//         },
+//     Gallery: {
+//         mediaFiles: uploadedS3Urls  
+//       }
+//       });
+  
+//       await newBrand.save();
+  
+//       return res.status(201).json(
+//         new ApiResponse(201, newBrand, "Brand created successfully")
+//       );
   
     } catch (error) {
       console.error("Error creating brand:", error);

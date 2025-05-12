@@ -21,13 +21,13 @@ export const uploadFileToS3 = async (file) => {
     try {
         await s3.send(command);
         console.log(`File uploaded successfully. ${fileKey}`);
-         `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
+        fs.unlinkSync(file)
+        return  `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
     } catch (err) {
         console.error('Error uploading file:', err);
         throw new Error('Failed to upload file to S3');
-    } finally {
-        // Clean up local file
-        fs.unlinkSync(file);
+    } finally{
+        //  fs.unlinkSync(file)
     }
 
 

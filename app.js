@@ -12,8 +12,9 @@ import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js"
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
 import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
-import { InvestorLogoutRoutes } from "./src/Routes/InvestorRoutes/InvestorLogoutRoutes.js";
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
+import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
+import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
  
 
 const router = express.Router();
@@ -35,9 +36,12 @@ router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
-router.use('/v1/logout', InvestorLogoutRoutes)
+router.use('/v1/logout', logoutRouter)
+
 
 //login routers
 router.use('/v1/login', Login)
+
+router.use('/v1/otpverify',sendOtpRouter)
 
 export default router;

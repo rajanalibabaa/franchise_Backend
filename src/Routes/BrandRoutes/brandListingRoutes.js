@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyOTP } from "../../controller/BrandController/sendOTPController.js";
+import { verifyOTP } from "../../controller/otpController/sendOTPController.js";
 import { createBrandListing, deleteBrand, getAllBrands, getBrandById, updateBrand, updateBrandImage } from "../../controller/BrandController/BrandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
 
@@ -13,7 +13,16 @@ router.post("/verify-otp", verifyOTP);
 router.post(
     "/createBrandListing",
     upload.fields([
-        { name: 'Gallery', maxCount: 10 }
+        { name: 'Gallery', maxCount: 1000 },
+        { name: 'brandLogo', maxCount: 1 },
+        { name: 'businessRegistration', maxCount: 1 },
+        { name: 'gstCertificate', maxCount: 1 },
+        { name: 'franchiseAgreement', maxCount: 1 },
+        { name: 'menuCatalog', maxCount: 1 },
+        { name: 'interiorPhotos', maxCount: 1 },
+        { name: 'fssaiLicense', maxCount: 1 },
+        { name: 'panCard', maxCount: 1 },
+        { name: 'aadhaarCard', maxCount: 1 },
       ]),
       createBrandListing
     )
