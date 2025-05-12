@@ -10,7 +10,7 @@ const brandRegisterSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
-      match: /^[0-9]{10,15}$/, // Basic pattern for phone numbers
+      // match: /^[0-9]{10,15}$/, // Basic pattern for phone numbers
     },
     email: {
       type: String,
