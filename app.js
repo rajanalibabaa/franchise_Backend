@@ -17,6 +17,7 @@ import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
  import { newIncomerInvestor } from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js";
 import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
+import gstVerify from "./src/utils/gstVerify/gstVerify.js";
 
 
 const router = express.Router();
@@ -46,5 +47,8 @@ router.use('/v1/logout', logoutRouter)
 router.use('/v1/login', Login)
 
 router.use('/v1/otpverify',sendOtpRouter)
+
+//for gst verify
+router.use('/v1/gstverify',gstVerify)
 
 export default router;
