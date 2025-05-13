@@ -25,6 +25,27 @@ const franchiseBrandSchema = new Schema({
     establishedYear: { type: String },
     franchiseSinceYear: { type: String },
   },
+  BrandDetails : {
+    companyName: { type: String, required: true },
+    brandName: { type: String, required: true },
+    gstin: { type: String },
+    categories: [{ type: String }],
+    ownerName: { type: String },
+    description: { type: String },
+    address: { type: String },
+    country: { type: String },
+    pincode: { type: String },
+    location: { type: String },
+    mobileNumber: { type: String },
+    whatsappNumber: { type: String },
+    email: { type: String },
+    website: { type: String },
+    facebook: { type: String },
+    instagram: { type: String },
+    linkedin: { type: String },
+    establishedYear: { type: String },
+    franchiseSinceYear: { type: String },
+  },
   
 
   // Expansion Plans
@@ -66,6 +87,17 @@ const franchiseBrandSchema = new Schema({
 
   // // Documentation
 
+  Documentation : {
+    brandLogo: { type: String },
+    businessRegistration: { type: String },
+    gstCertificate: { type: String },
+    franchiseAgreement: { type: String },
+    menuCatalog: { type: String },
+    interiorPhotos: { type: String },
+    fssaiLicense: { type: String },
+    panCard: { type: String },
+    aadhaarCard: { type: String },
+  },
   Documentation : {
     brandLogo: { type: String },
     businessRegistration: { type: String },
