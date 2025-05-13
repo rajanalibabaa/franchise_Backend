@@ -42,7 +42,7 @@ const generateOTPforLogin = async (req, res) => {
     console.log("Investor data:", investorData);
 
     const brandUserData = await BrandRegister.findOne({
-      $or: [{ email }, { phone:mobileNumber }],
+      $or: [{ email }, { phone  :mobileNumber }],
     })
 
     console.log("Brand user data:", brandUserData);
@@ -107,7 +107,7 @@ const verifyLogin = async (req, res) => {
     const brandUserData = await BrandRegister.findOne({
       $or: [
         { email: emailORMobileNumber },
-        { mobileNumber: emailORMobileNumber }
+        { phone: emailORMobileNumber }
       ]
     }).select("-createdAt -_id");
 

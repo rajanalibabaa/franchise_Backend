@@ -1,127 +1,162 @@
-import FranchiseBrand from "../../model/Brand/brandListingPage.js";
+import BrandListing from "../../model/Brand/brandListingPage.js";
 import {ApiResponse} from "../../utils/ApiResponse/ApiResponse.js";
 import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
 
+
 const createBrandListing = async (req, res) => {
-    try {
 
-        const {submissionData} = req.body
+    const brandDetails = JSON?.parse(req.body.brandDetails);
+    const expansionPlans = JSON?.parse(req.body.expansionPlans);
+    const investmentDetails = JSON?.parse(req.body.investmentDetails);
 
-        console.log(req.body)
+        console.log("brandDetails:", brandDetails);
+    console.log("expansionPlans:", expansionPlans);
+    console.log("investmentDetails:", investmentDetails);
+  try {
+    const fileFields = [
+      'brandLogo',
+      'businessRegistration',
+      'gstCertificate',
+      'franchiseAgreement',
+      'menuCatalog',
+      'interiorPhotos',
+      'fssaiLicense',
+      'panCard',
+      'aadhaarCard',
+      'gallery' // multi-file
+    ];
 
-//         const localbrandLogo = req.files?.brandLogo[0]?.path;
-//   console.log(localbrandLogo)
-//         const localbusinessRegistration = req.files?.businessRegistration[0]?.path;
+    const uploadedFileUrls = {};
 
+    // Upload all files in parallel
+    await Promise.all(
+      fileFields.map(async (field) => {
+        const files = req.files?.[field];
 
-//         const localgstCertificate =await req.files?.gstCertificate[0]?.path;
-//         const localfranchiseAgreement =await req.files?.franchiseAgreement[0]?.path;
-//         const localmenuCatalog =await req.files?.menuCatalog[0]?.path;
-//         const localinteriorPhotos =await req.files?.interiorPhotos[0]?.path;
-//         const localfssaiLicense =await req.files?.fssaiLicense[0]?.path;
-//         const localpanCard =await req.files?.panCard[0]?.path;
-//         const localaadhaarCard =await req.files?.aadhaarCard[0]?.path;
+        if (!files || files.length === 0) {
+          console.warn(`[SKIP] No file uploaded for field: ${field}`);
+          return;
+        }
 
-//         if (!localbrandLogo || !localbusinessRegistration ||!localgstCertificate ||!localfranchiseAgreement ||!localmenuCatalog ||!localinteriorPhotos ||!localfssaiLicense ||!localpanCard ||!localaadhaarCard ) {
-//                 return res.status(400).json(
-//                   new ApiResponse(
-//                     400,
-//                     null,
-//                     "All documents files are required"
-//                   )
-//                 );
-//               }
+        if (field === 'gallery') {
+          const galleryResults = await Promise.all(
+            files.map(async (file, index) => {
+              try {
+                const url = await uploadFileToS3(file.path, file.mimetype);
+                return url;
+              } catch (err) {
+                console.error(`[ERROR] Failed to upload gallery[${index}]:`, err.message);
+                return null;
+              }
+            })
+          );
+          uploadedFileUrls[field] = galleryResults.filter(Boolean);
+        } else {
+          try {
+            const file = files[0]; // ensure files[0] exists
+            if (file?.path) {
+              const url = await uploadFileToS3(file.path, file.mimetype);
+              uploadedFileUrls[field] = url;
+            } else {
+              console.warn(`[SKIP] Invalid file object for field: ${field}`);
+            }
+          } catch (err) {
+            console.error(`[ERROR] Failed to upload ${field}:`, err.message);
+          }
+        }
+      })
+    );
 
-//         const arr = [localbrandLogo,localbusinessRegistration,localgstCertificate, localfranchiseAgreement, localmenuCatalog, localinteriorPhotos,localfssaiLicense, localpanCard, localaadhaarCard]
+    console.log("✅ Uploaded file URLs:", uploadedFileUrls);
 
-//         console.log("=== : ",arr)
-//         const awsUplodedlocalbrandLogo =  await uploadFileToS3(localbrandLogo)
+    // Save to DB
+    const createdBrand = await BrandListing.create({
+        BrandDetails: {
+           companyName: brandDetails.companyName,
+           brandName: brandDetails.brandName,
+           gstin: brandDetails.gstin,
+           categories: brandDetails.categories,
+           ownerName: brandDetails.ownerName,
+           description: brandDetails.description,
+           address: brandDetails.address,
+           country: brandDetails.country,
+           pincode: brandDetails.pincode,
+           location: brandDetails.location,
+           whatsappNumber: brandDetails.whatsappNumber,
+           email: brandDetails.email,
+           website: brandDetails.website,
+        },
+        ExpansionPlans: {
+            expansionType:expansionPlans.expansionType,
+            selectedCountries:expansionPlans.selectedCountries,
+            selectedStates:expansionPlans.selectedStates,
+            selectedCities:expansionPlans.selectedCities,
+            selectedIndianStates:expansionPlans.selectedIndianStates,
+            selectedIndianDistricts:expansionPlans.selectedIndianDistricts,
+        },
+        FranchiseModal: {
+            totalInvestment:investmentDetails.totalInvestment,
+            franchiseFee:investmentDetails.franchiseFee,
+            royaltyFee:investmentDetails.royaltyFee,
+            equipmentCost:investmentDetails.equipmentCost,
+            expectedRevenue:investmentDetails.expectedRevenue,
+            expectedProfit:investmentDetails.expectedProfit,
+            spaceRequired:investmentDetails.spaceRequired,
+            paybackPeriod:investmentDetails.paybackPeriod,
+            minimumCashRequired:investmentDetails.minimumCashRequired,
+            companyOwnedOutlets:investmentDetails.companyOwnedOutlets,
+            franchiseOutlets:investmentDetails.franchiseOutlets,
+            targetCities:investmentDetails.targetCities,
+            targetStates:investmentDetails.targetStates,
+            expansionFranchiseFee:investmentDetails.expansionFranchiseFee,
+            expansionRoyalty:investmentDetails.expansionRoyalty,
+            paymentTerms:investmentDetails.paymentTerms,
+        },
+      Documentation: {
+        brandLogo: uploadedFileUrls.brandLogo,
+        businessRegistration: uploadedFileUrls.businessRegistration,
+        gstCertificate: uploadedFileUrls.gstCertificate,
+        franchiseAgreement: uploadedFileUrls.franchiseAgreement,
+        menuCatalog: uploadedFileUrls.menuCatalog,
+        interiorPhotos: uploadedFileUrls.interiorPhotos,
+        fssaiLicense: uploadedFileUrls.fssaiLicense,
+        panCard: uploadedFileUrls.panCard,
+        aadhaarCard: uploadedFileUrls.aadhaarCard,
+      },
+      Gallery: {
+        mediaFiles: uploadedFileUrls.gallery || [],
+      }
+    });
 
-//         const awsUplodedlocalbusinessRegistration =  await uploadFileToS3(localbusinessRegistration)
-
-//         const awsUplodedlocalgstCertificate =  await uploadFileToS3(localgstCertificate)
-
-//         const awsUplodedlocalfranchiseAgreement =  await uploadFileToS3(localfranchiseAgreement)
-
-//         const awsUplodedlocalmenuCatalog =  await uploadFileToS3(localmenuCatalog)
-
-//         const awsUplodedlocalinteriorPhotos =  await uploadFileToS3(localinteriorPhotos)
-
-//         const awsUplodedlocalfssaiLicense =  await uploadFileToS3(localfssaiLicense)
-//         const awsUplodedlocalpanCard =  await uploadFileToS3(localpanCard)
-//         const awsUplodedlocalaadhaarCard =  await uploadFileToS3(localaadhaarCard)
-
-
-//         if (!awsUplodedlocalbrandLogo || !awsUplodedlocalbusinessRegistration ||!awsUplodedlocalgstCertificate ||!awsUplodedlocalaadhaarCard ||!awsUplodedlocalfranchiseAgreement ||!awsUplodedlocalmenuCatalog ||!awsUplodedlocalinteriorPhotos ||!awsUplodedlocalfssaiLicense ||!awsUplodedlocalpanCard ) {
-//             return res.status(400).json(
-//               new ApiResponse(
-//                 400,
-//                 null,
-//                 "All documents files are required"
-//               )
-//             );
-//           }
-
-  
-
-//       const mediaFiles = req.files?.Gallery?.map(file => file.path) || [];
-      
-//       if (!mediaFiles || mediaFiles.length === 0) {
-//         return res.status(400).json(
-//           new ApiResponse(
-//             400,
-//             null,
-//             "Media files are required"
-//           )
-//         );
-//       }
-  
-//       const uploadedS3Urls = [];
-
-//     for (const filePath of mediaFiles) {
-
-//     const url = await uploadFileToS3(filePath);
-//     // console.log("=========:",url)
-//     uploadedS3Urls.push(url);
-//     }
-
-//       const newBrand = new FranchiseBrand({
-       
-//         Documentation :{
-//             brandLogo: awsUplodedlocalbrandLogo,
-//             businessRegistration: awsUplodedlocalbusinessRegistration,
-//             gstCertificate: awsUplodedlocalgstCertificate,
-//             franchiseAgreement: awsUplodedlocalfranchiseAgreement,
-//             menuCatalog: awsUplodedlocalmenuCatalog,
-//             interiorPhotos: awsUplodedlocalinteriorPhotos,
-//             fssaiLicense: awsUplodedlocalfssaiLicense,
-//             panCard: awsUplodedlocalpanCard,
-//             aadhaarCard: awsUplodedlocalaadhaarCard,
-//         },
-//     Gallery: {
-//         mediaFiles: uploadedS3Urls  
-//       }
-//       });
-  
-//       await newBrand.save();
-  
-//       return res.status(201).json(
-//         new ApiResponse(201, newBrand, "Brand created successfully")
-//       );
-  
-    } catch (error) {
-      console.error("Error creating brand:", error);
-      return res.status(500).json({
-        error: "Failed to create brand",
-        details: error.message
-      });
+    if (!createdBrand) {
+        return req.json(
+            new ApiResponse(
+                500,
+                null,
+                "Error while storing the data in database"
+            )
+        )
     }
-  };
-  
+
+    return res.status(201).json(
+      new ApiResponse(201, createdBrand, '✅ Brand listing created successfully')
+    );
+
+  } catch (error) {
+    console.error('[FATAL] createBrandListing error:', error);
+    return res.status(500).json({
+      error: '❌ Failed to create brand listing',
+      details: error.message,
+    });
+  }
+};
+
+
+
 
 const getAllBrands = async (req, res) => {
     try {
-        const brands = await FranchiseBrand.find({});
+        const brands = await BrandListing.find({});
         res.status(200).json(
             new ApiResponse(
                 200,
@@ -138,7 +173,7 @@ const getBrandById = async (req, res) => {
     const { id } = req.params;
     
     try {
-        const brand = await FranchiseBrand.findById(id);
+        const brand = await BrandListing.findById(id);
         if (!brand) {
             return res.status(404).json({ error: "Brand not found" });
         }
@@ -160,7 +195,7 @@ const updateBrand = async (req, res) => {
     console.log ("Brand data:", BrandDetails);
 
     try {
-        const updatedBrand = await FranchiseBrand.findByIdAndUpdate(id, {
+        const updatedBrand = await BrandListing.findByIdAndUpdate(id, {
             
             BrandDetails : {
                 ...BrandDetails,
@@ -200,7 +235,7 @@ const deleteBrand = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const deletedBrand = await FranchiseBrand.findByIdAndDelete(id);
+        const deletedBrand = await BrandListing.findByIdAndDelete(id);
 
         if (!deletedBrand) {
             return res.status(404).json({ error: "Brand not found" });
