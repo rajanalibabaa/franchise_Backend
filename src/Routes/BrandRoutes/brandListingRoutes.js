@@ -1,15 +1,13 @@
 import express from "express";
-import { verifyOTP } from "../../controller/BrandController/sendOTPController.js";
-import { createBrandListing,  deleteBrandListingByUUID, getAllBrands, getBrandListingByUUID,  updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/BrandListingController.js";
+import { createBrandListing,  deleteBrandListingByUUID, getAllBrands, getBrandListingByUUID,  updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/brandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
 import { verifyJWT } from "../../Middleware/Authentication/AuthMiddleware.js";
 
-const router = express.Router();
+const brandListingRoutes = express.Router();
 
 
 // brandRouter.get("/getBrandListing", GetBrandListing);
 // brandRouter.post("/send-otp", sendOTP);
-router.post("/verify-otp", verifyOTP);
 
 // router.post(
 //     "/createBrandListing",
@@ -27,28 +25,11 @@ router.post("/verify-otp", verifyOTP);
 //       ]),
 //       createBrandListing
 //     ) 
-router.post(
-    "/createBrandListing",
-    upload.fields([
-        
-         { name: 'brandLogo' },
-  { name: 'businessRegistration' },
-  { name: 'gstCertificate' },
-  { name: 'franchiseAgreement' },
-  { name: 'menuCatalog' },
-  { name: 'interiorPhotos' },
-  { name: 'fssaiLicense' },
-  { name: 'panCard' },
-  { name: 'aadhaarCard' },
-  { name: 'gallery'},
-  
-      ]),
-      createBrandListing
-    )
-router.get("/getAllBrand", getAllBrands);
-router.get("/getBrand/:id", getBrandListingByUUID);
-router.patch("/updateBrand/:id", updateBrandListingByUUID)
-router.delete("/deleteBrand/:id", deleteBrandListingByUUID);
-router.patch("/updateBrandImage/:id", updateBrandImageListingByUUID)
+brandListingRoutes.post("/createBrandListing",upload.fields([{ name: 'brandLogo' },{ name: 'businessRegistration' },{ name: 'gstCertificate' },{ name: 'franchiseAgreement' },{ name: 'menuCatalog' },{ name: 'interiorPhotos' },{ name: 'fssaiLicense' }, { name: 'panCard' },{ name: 'aadhaarCard' },{ name: 'gallery'},]),createBrandListing)
+brandListingRoutes.get("/getAllBrand", getAllBrands);
+brandListingRoutes.get("/getBrand/:id", getBrandListingByUUID);
+brandListingRoutes.patch("/updateBrand/:id", updateBrandListingByUUID)
+brandListingRoutes.delete("/deleteBrand/:id", deleteBrandListingByUUID);
+brandListingRoutes.patch("/updateBrandImage/:id", updateBrandImageListingByUUID)
 
-export default router;
+export default brandListingRoutes;

@@ -18,6 +18,7 @@ import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
  import { newIncomerInvestor } from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js";
 import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
 import gstVerify from "./src/utils/gstVerify/gstVerify.js";
+import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 
 
 const router = express.Router();
@@ -34,7 +35,7 @@ router.use('/v1/brand',brandRoutes )
 router.use('/newIncomerInvestor', newIncomerInvestor);
 router.use('/v1/adminAuth', adminAuthRoutes);
 router.use('/v1/investor',InvestorRouter)
-
+router.use('/v1/brandlisting',brandListingRoutes)
 
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 router.use('/v1/brand/register',BrandRegisterRoute)
