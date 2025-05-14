@@ -4,15 +4,13 @@ import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
 
 
 const createBrandListing = async (req, res) => {
-
-    const brandDetails = JSON?.parse(req.body.brandDetails);
-    const expansionPlans = JSON?.parse(req.body.expansionPlans);
-    const investmentDetails = JSON?.parse(req.body.investmentDetails);
-
-        console.log("brandDetails:", brandDetails);
-    console.log("expansionPlans:", expansionPlans);
-    console.log("investmentDetails:", investmentDetails);
   try {
+    // Parse JSON fields safely
+    const brandDetails = JSON.parse(req.body.brandDetails || '{}');
+    const expansionPlans = JSON.parse(req.body.expansionPlans || '{}');
+    const investmentDetails = JSON.parse(req.body.FranchiseModal || '{}');
+
+    // Define file fields to expect
     const fileFields = [
       'brandLogo',
       'businessRegistration',
@@ -23,12 +21,12 @@ const createBrandListing = async (req, res) => {
       'fssaiLicense',
       'panCard',
       'aadhaarCard',
-      'gallery' // multi-file
+      'gallery' // Multi-file
     ];
 
     const uploadedFileUrls = {};
 
-    // Upload all files in parallel
+    // Handle all uploads
     await Promise.all(
       fileFields.map(async (field) => {
         const files = req.files?.[field];
@@ -38,6 +36,7 @@ const createBrandListing = async (req, res) => {
           return;
         }
 
+        // Handle gallery (multi-file)
         if (field === 'gallery') {
           const galleryResults = await Promise.all(
             files.map(async (file, index) => {
@@ -50,18 +49,17 @@ const createBrandListing = async (req, res) => {
               }
             })
           );
-          uploadedFileUrls[field] = galleryResults.filter(Boolean);
+          uploadedFileUrls.gallery = galleryResults.filter(Boolean);
         } else {
-          try {
-            const file = files[0]; // ensure files[0] exists
-            if (file?.path) {
+          // Handle single file fields
+          const file = files[0];
+          if (file?.path) {
+            try {
               const url = await uploadFileToS3(file.path, file.mimetype);
               uploadedFileUrls[field] = url;
-            } else {
-              console.warn(`[SKIP] Invalid file object for field: ${field}`);
+            } catch (err) {
+              console.error(`[ERROR] Failed to upload ${field}:`, err.message);
             }
-          } catch (err) {
-            console.error(`[ERROR] Failed to upload ${field}:`, err.message);
           }
         }
       })
@@ -69,49 +67,48 @@ const createBrandListing = async (req, res) => {
 
     console.log("✅ Uploaded file URLs:", uploadedFileUrls);
 
-    // Save to DB
+    // Create the brand listing
     const createdBrand = await BrandListing.create({
-        BrandDetails: {
-           companyName: brandDetails.companyName,
-           brandName: brandDetails.brandName,
-           gstin: brandDetails.gstin,
-           categories: brandDetails.categories,
-           ownerName: brandDetails.ownerName,
-           description: brandDetails.description,
-           address: brandDetails.address,
-           country: brandDetails.country,
-           pincode: brandDetails.pincode,
-           location: brandDetails.location,
-           whatsappNumber: brandDetails.whatsappNumber,
-           email: brandDetails.email,
-           website: brandDetails.website,
-        },
-        ExpansionPlans: {
-            expansionType:expansionPlans.expansionType,
-            selectedCountries:expansionPlans.selectedCountries,
-            selectedStates:expansionPlans.selectedStates,
-            selectedCities:expansionPlans.selectedCities,
-            selectedIndianStates:expansionPlans.selectedIndianStates,
-            selectedIndianDistricts:expansionPlans.selectedIndianDistricts,
-        },
-        FranchiseModal: {
-            totalInvestment:investmentDetails.totalInvestment,
-            franchiseFee:investmentDetails.franchiseFee,
-            royaltyFee:investmentDetails.royaltyFee,
-            equipmentCost:investmentDetails.equipmentCost,
-            expectedRevenue:investmentDetails.expectedRevenue,
-            expectedProfit:investmentDetails.expectedProfit,
-            spaceRequired:investmentDetails.spaceRequired,
-            paybackPeriod:investmentDetails.paybackPeriod,
-            minimumCashRequired:investmentDetails.minimumCashRequired,
-            companyOwnedOutlets:investmentDetails.companyOwnedOutlets,
-            franchiseOutlets:investmentDetails.franchiseOutlets,
-            targetCities:investmentDetails.targetCities,
-            targetStates:investmentDetails.targetStates,
-            expansionFranchiseFee:investmentDetails.expansionFranchiseFee,
-            expansionRoyalty:investmentDetails.expansionRoyalty,
-            paymentTerms:investmentDetails.paymentTerms,
-        },
+      BrandDetails: {
+        companyName: brandDetails.companyName,
+        brandName: brandDetails.brandName,
+        gstin: brandDetails.gstin,
+        categories: brandDetails.categories,
+        ownerName: brandDetails.ownerName,
+        description: brandDetails.description,
+        address: brandDetails.address,
+        country: brandDetails.country,
+        pincode: brandDetails.pincode,
+        location: brandDetails.location,
+        whatsappNumber: brandDetails.whatsappNumber,
+        email: brandDetails.email,
+        website: brandDetails.website,
+      },
+      ExpansionPlans: {
+        expansionType: expansionPlans.expansionType,
+        selectedCountries: expansionPlans.selectedCountries || [],
+        selectedStates: expansionPlans.selectedStates || [],
+        selectedCities: expansionPlans.selectedCities || [],
+        selectedIndianStates: expansionPlans.selectedIndianStates || [],
+        selectedIndianDistricts: expansionPlans.selectedIndianDistricts || [],
+      },
+      FranchiseModal: {
+        franchiseFee: investmentDetails.franchiseFee,
+        royaltyFee: investmentDetails.royaltyFee,
+        equipmentCost: investmentDetails.equipmentCost,
+        expectedRevenue: investmentDetails.expectedRevenue,
+        expectedProfit: investmentDetails.expectedProfit,
+        spaceRequired: investmentDetails.spaceRequired,
+        paybackPeriod: investmentDetails.paybackPeriod,
+        minimumCashRequired: investmentDetails.minimumCashRequired,
+        companyOwnedOutlets: investmentDetails.companyOwnedOutlets,
+        franchiseOutlets: investmentDetails.franchiseOutlets,
+        targetCities: investmentDetails.targetCities,
+        targetStates: investmentDetails.targetStates,
+        expansionFranchiseFee: investmentDetails.expansionFranchiseFee,
+        expansionRoyalty: investmentDetails.expansionRoyalty,
+        paymentTerms: investmentDetails.paymentTerms,
+      },
       Documentation: {
         brandLogo: uploadedFileUrls.brandLogo,
         businessRegistration: uploadedFileUrls.businessRegistration,
@@ -125,27 +122,27 @@ const createBrandListing = async (req, res) => {
       },
       Gallery: {
         mediaFiles: uploadedFileUrls.gallery || [],
-      }
+      },
     });
 
     if (!createdBrand) {
-        return req.json(
-            new ApiResponse(
-                500,
-                null,
-                "Error while storing the data in database"
-            )
-        )
+      return res.status(500).json({
+        success: false,
+        message: "❌ Error storing data in database",
+      });
     }
 
-    return res.status(201).json(
-      new ApiResponse(201, createdBrand, '✅ Brand listing created successfully')
-    );
+    return res.status(201).json({
+      success: true,
+      message: "✅ Brand listing created successfully",
+      data: createdBrand,
+    });
 
   } catch (error) {
     console.error('[FATAL] createBrandListing error:', error);
     return res.status(500).json({
-      error: '❌ Failed to create brand listing',
+      success: false,
+      message: '❌ Failed to create brand listing',
       details: error.message,
     });
   }
@@ -169,7 +166,7 @@ const getAllBrands = async (req, res) => {
     }
 }
 
-const getBrandById = async (req, res) => {
+const getBrandListingByUUID = async (req, res) => {
     const { id } = req.params;
     
     try {
@@ -189,7 +186,7 @@ const getBrandById = async (req, res) => {
     }
 }
 
-const updateBrand = async (req, res) => {
+const updateBrandListingByUUID = async (req, res) => {
     const { id } = req.params;
     const { BrandDetails, ExpansionPlans, FranchiseModal, Documentation  } = req.body;
     console.log ("Brand data:", BrandDetails);
@@ -227,11 +224,11 @@ const updateBrand = async (req, res) => {
     }
 }
 
-const updateBrandImage = async (req, res) => {
+const updateBrandImageListingByUUID = async (req, res) => {
     const { id } = req.params;
     console.log("Image URL:", id);
 }
-const deleteBrand = async (req, res) => {
+const deleteBrandListingByUUID = async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -257,8 +254,8 @@ const deleteBrand = async (req, res) => {
 export { 
     createBrandListing,
     getAllBrands,
-    getBrandById,
-    updateBrand,
-    deleteBrand,
-    updateBrandImage
+    getBrandListingByUUID,
+    updateBrandListingByUUID,
+    deleteBrandListingByUUID,
+    updateBrandImageListingByUUID
  };

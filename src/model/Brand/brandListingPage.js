@@ -5,8 +5,8 @@ const { Schema, model } = mongoose;
 const franchiseBrandSchema = new Schema({
   // Brand Details
   BrandDetails : {
-    companyName: { type: String, required: true },
-    brandName: { type: String, required: true },
+    companyName: { type: String, },
+    brandName: { type: String, },
     gstin: { type: String },
     categories: [{ type: String }],
     ownerName: { type: String },
@@ -49,19 +49,39 @@ const franchiseBrandSchema = new Schema({
   
 
   // // Expansion Plans
-  ExpansionPlans : {
-    expansionType: {
-      type: String,
-      enum: ['domestic', 'international'],
-      default: 'domestic'
-    },
-    selectedCountries: [{ type: String }],
-    selectedStates: [{ type: String }],
-    selectedCities: [{ type: String }],
-    selectedIndianStates: [{ type: String }],
-    selectedIndianDistricts: [{ type: String }],
-  
+  ExpansionPlans: {
+  expansionType: {
+    type: String,
+    // enum: ['domestic', 'international'],
+    // default: 'domestic'
   },
+  selectedCountries: [{ type: String }],
+
+  selectedStates: [
+    {
+      country: { type: String, },
+      state: { type: String,  }
+    }
+  ],
+
+  selectedCities: [
+    {
+      country: { type: String, },
+      state: { type: String, },
+      city: { type: String, }
+    }
+  ],
+
+  selectedIndianStates: [{ type: String }],
+
+  selectedIndianDistricts: [
+    {
+      state: { type: String,},
+      district: { type: String,  }
+    }
+  ]
+},
+
   
   // // Franchise Modal
   FranchiseModal : {
@@ -117,6 +137,11 @@ const franchiseBrandSchema = new Schema({
       type: [String],  
       default: [],
     }
+  },
+  brandOwnerUUID: {
+    type: String,
+    ref:"BrandRegister",
+    // required: true
   }
   
 }, {

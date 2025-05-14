@@ -4,8 +4,12 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js"
 import jwt from 'jsonwebtoken'
 
 export const verifyJWT = async (req,res,next) => {
+
+    console.log("AccessToken",req.body.AccessToken)
+
+    console.log("req.cookies?.AccessToken :",req.cookies?.AccessToken )
     
-    const token = req.body || req.header("Authorization")?.replace("Bearer ","") || req.header['authorization'] || req.cookies?.AccessToken 
+    const token = req.body.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.header['authorization'] 
 
     // console.log("ttttttttt: ",token)
 
@@ -14,11 +18,20 @@ export const verifyJWT = async (req,res,next) => {
             new ApiResponse(
                 401, 
                 null,
-                "Unauthorized request token not found pleace login"
+                "token not found pleace login"
             )
         )
     }
 
+    if (token !== req.cookies?.AccessToken ) {
+        return res.json(
+            new ApiResponse(
+                401, 
+                null,
+                "Unauthorized request pleace login"
+            )
+        )
+    }
     const decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
 
     //  console.log("decodedToken: ",decodedToken)
