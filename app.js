@@ -18,8 +18,6 @@ import { newIncomerInvestor } from "./src/Routes/newIncomerInvestorRoutes/newinc
 import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
 
 
-
-
 const router = express.Router();
 
 router.use('/v1/auth/', thirdPartyAuthRouter)
@@ -36,6 +34,7 @@ router.use('/v1/adminAuth', adminAuthRoutes);
 
 
 router.use('/v1/investor',InvestorRouter)
+
 
 
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)

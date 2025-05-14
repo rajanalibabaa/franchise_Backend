@@ -26,7 +26,7 @@ export const sendEmailMsg = async (userEmail, category, location, investment, br
             await transporter.sendMail(mailOptions);
             console.log(`Email sent to: ${brand.BrandDetails.email}`);
         } catch (error) {
-            console.error(`Error sending email to ${brand.BrandDetails.email}:`, error);
+            console.error(`Error sending email to : ${brand.BrandDetails.email}`, error);
         }
     }
 };
