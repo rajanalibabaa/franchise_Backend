@@ -1,7 +1,7 @@
 import express from "express";
 import { createBrandListing,  deleteBrandListingByUUID, getAllBrandListing,getBrandListingByUUID,updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/BrandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { verifyJWT } from "../../Middleware/Authentication/AuthMiddleware.js";
+import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ router.post(
       ]),
       createBrandListing
     )
-router.get("/getAllBrandListing",getAllBrandListing);
+router.get("/getAllBrandListing",tgetAllBrandListing);
 router.get("/getBrandListingByUUID/:uuid", getBrandListingByUUID);
 router.patch("/updateBrandListingByUUID/:uuid", updateBrandListingByUUID)
 router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);

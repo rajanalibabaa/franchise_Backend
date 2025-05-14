@@ -1,7 +1,7 @@
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import {ApiResponse} from "../../utils/ApiResponse/ApiResponse.js";
 import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
-
+import { getPreSignedUrl } from "../../utils/Uploads/preSignedUrl.js";
 
 const createBrandListing = async (req, res) => {
   try {
@@ -154,6 +154,32 @@ const createBrandListing = async (req, res) => {
 const getAllBrandListing = async (req, res) => {
     try {
         const brands = await BrandListing.find({});
+        const brandsWithPresignedUrls = await Promise.all(
+            brands.map(async (brand) => {
+                // Generate presigned URLs for Documentation
+                const documentationWithUrls = {};
+                for (const [key, value] of Object.entries(brand.Documentation)) {
+                    if (value) {
+                        documentationWithUrls[key] = await getPreSignedUrl(value);
+                    }
+                }
+                
+                // Generate presigned URLs for Gallery
+                const galleryWithUrls = await Promise.all(
+                    brand.Gallery.mediaFiles.map(async (file) => {
+                        return file ? await getPreSignedUrl(file) : null;
+                    })
+                );
+                
+                return {
+                    ...brand.toObject(),
+                    Documentation: documentationWithUrls,
+                    Gallery: {
+                        mediaFiles: galleryWithUrls.filter(url => url !== null)
+                    }
+                };
+            })
+        );
         res.status(200).json(
             new ApiResponse(
                 200,
@@ -161,6 +187,7 @@ const getAllBrandListing = async (req, res) => {
                 "Brands fetched successfully",
             )
         );
+       
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch brands", details: error.message });
     }
@@ -174,6 +201,28 @@ const getBrandListingByUUID = async (req, res) => {
         if (!brand) {
             return res.status(404).json({ error: "Brand not found" });
         }
+
+        const documentationWithUrls = {};
+        for (const [key, value] of Object.entries(brand.Documentation)) {
+            if (value) {
+                documentationWithUrls[key] = await getPreSignedUrl(value);
+            }
+        }
+        // Generate presigned URLs for Gallery
+        const galleryWithUrls = await Promise.all(
+            brand.Gallery.mediaFiles.map(async (file) => {
+                return file ? await getPreSignedUrl(file) : null;
+            })
+        );
+
+          const brandWithPresignedUrls = {
+            ...brand.toObject(),
+            Documentation: documentationWithUrls,
+            Gallery: {
+                mediaFiles: galleryWithUrls.filter(url => url !== null)
+            }
+        };
+
         res.status(200).json(
             new ApiResponse(
                 200,
