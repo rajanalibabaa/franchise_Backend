@@ -12,11 +12,12 @@ import postRequireRoutes from  './src/Routes/PostRequirementRoutes/postRequireme
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
 import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
-import { InvestorLogoutRoutes } from "./src/Routes/InvestorRoutes/InvestorLogoutRoutes.js";
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { newIncomerInvestor } from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js";
 import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
 
+import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
+ 
 
 const router = express.Router();
 
@@ -41,7 +42,8 @@ router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
-router.use('/v1/logout', InvestorLogoutRoutes)
+router.use('/v1/logout', logoutRouter)
+
 
 //login routers
 router.use('/v1/login', Login)

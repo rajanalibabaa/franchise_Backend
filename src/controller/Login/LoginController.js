@@ -42,8 +42,8 @@ const generateOTPforLogin = async (req, res) => {
     console.log("Investor data:", investorData);
 
     const brandUserData = await BrandRegister.findOne({
-      $or: [{ email }, { mobileNumber }],
-    }).select("-createdAt -_id");
+      $or: [{ email }, { phone  :mobileNumber }],
+    })
 
     console.log("Brand user data:", brandUserData);
 
@@ -107,7 +107,7 @@ const verifyLogin = async (req, res) => {
     const brandUserData = await BrandRegister.findOne({
       $or: [
         { email: emailORMobileNumber },
-        { mobileNumber: emailORMobileNumber }
+        { phone: emailORMobileNumber }
       ]
     }).select("-createdAt -_id");
 
@@ -133,7 +133,7 @@ const verifyLogin = async (req, res) => {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: 'Strict',
     };
 
