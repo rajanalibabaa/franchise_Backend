@@ -151,7 +151,7 @@ const createBrandListing = async (req, res) => {
 
 
 
-const getAllBrands = async (req, res) => {
+const getAllBrandListing = async (req, res) => {
     try {
         const brands = await BrandListing.find({});
         res.status(200).json(
@@ -253,7 +253,7 @@ const deleteBrandListingByUUID = async (req, res) => {
 
 export { 
     createBrandListing,
-    getAllBrands,
+    getAllBrandListing,
     getBrandListingByUUID,
     updateBrandListingByUUID,
     deleteBrandListingByUUID,
