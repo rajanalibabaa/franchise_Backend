@@ -1,7 +1,13 @@
+import mongoose from "mongoose";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import {ApiResponse} from "../../utils/ApiResponse/ApiResponse.js";
 import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
 
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import s3 from "../../utils/Uploads/s3.js";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const createBrandListing = async (req, res) => {
   try {
@@ -123,6 +129,7 @@ const createBrandListing = async (req, res) => {
       Gallery: {
         mediaFiles: uploadedFileUrls.gallery || [],
       },
+      brandOwnerUUID: req.brandUser.uuid
     });
 
     if (!createdBrand) {
@@ -148,7 +155,108 @@ const createBrandListing = async (req, res) => {
   }
 };
 
+// const createBrandListing = async (req, res) => {
+//   try {
+   
 
+//     // Define file fields to expect
+//     const fileFields = [
+//       'brandLogo',
+//       'businessRegistration',
+//       'gstCertificate',
+//       'franchiseAgreement',
+//       'menuCatalog',
+//       'interiorPhotos',
+//       'fssaiLicense',
+//       'panCard',
+//       'aadhaarCard',
+//       'gallery' // Multi-file
+//     ];
+
+//     const uploadedFileUrls = {};
+
+//     // Handle all uploads
+//     await Promise.all(
+//       fileFields.map(async (field) => {
+//         const files = req.files?.[field];
+
+//         if (!files || files.length === 0) {
+//           console.warn(`[SKIP] No file uploaded for field: ${field}`);
+//           return;
+//         }
+
+//         // Handle gallery (multi-file)
+//         if (field === 'gallery') {
+//           const galleryResults = await Promise.all(
+//             files.map(async (file, index) => {
+//               try {
+//                 const url = await uploadFileToS3(file.path, file.mimetype);
+//                 return url;
+//               } catch (err) {
+//                 console.error(`[ERROR] Failed to upload gallery[${index}]:`, err.message);
+//                 return null;
+//               }
+//             })
+//           );
+//           uploadedFileUrls.gallery = galleryResults.filter(Boolean);
+//         } else {
+//           // Handle single file fields
+//           const file = files[0];
+//           if (file?.path) {
+//             try {
+//               const url = await uploadFileToS3(file.path, file.mimetype);
+//               uploadedFileUrls[field] = url;
+//             } catch (err) {
+//               console.error(`[ERROR] Failed to upload ${field}:`, err.message);
+//             }
+//           }
+//         }
+//       })
+//     );
+
+//     console.log("✅ Uploaded file URLs:", uploadedFileUrls);
+
+//     // Create the brand listing
+//     const createdBrand = await BrandListing.create({
+    
+//       Documentation: {
+//         brandLogo: uploadedFileUrls.brandLogo,
+//         businessRegistration: uploadedFileUrls.businessRegistration,
+//         gstCertificate: uploadedFileUrls.gstCertificate,
+//         franchiseAgreement: uploadedFileUrls.franchiseAgreement,
+//         menuCatalog: uploadedFileUrls.menuCatalog,
+//         interiorPhotos: uploadedFileUrls.interiorPhotos,
+//         fssaiLicense: uploadedFileUrls.fssaiLicense,
+//         panCard: uploadedFileUrls.panCard,
+//         aadhaarCard: uploadedFileUrls.aadhaarCard,
+//       },
+//       Gallery: {
+//         mediaFiles: uploadedFileUrls.gallery || [],
+//       },
+//     });
+
+//     if (!createdBrand) {
+//       return res.status(500).json({
+//         success: false,
+//         message: "❌ Error storing data in database",
+//       });
+//     }
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "✅ Brand listing created successfully",
+//       data: createdBrand,
+//     });
+
+//   } catch (error) {
+//     console.error('[FATAL] createBrandListing error:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: '❌ Failed to create brand listing',
+//       details: error.message,
+//     });
+//   }
+// };
 
 
 const getAllBrandListing = async (req, res) => {
@@ -166,25 +274,83 @@ const getAllBrandListing = async (req, res) => {
     }
 }
 
+
+
 const getBrandListingByUUID = async (req, res) => {
-    const { id } = req.params;
-    
-    try {
-        const brand = await BrandListing.findById(id);
-        if (!brand) {
-            return res.status(404).json({ error: "Brand not found" });
-        }
-        res.status(200).json(
-            new ApiResponse(
-                200,
-                brand,
-                "Brand fetched successfully",
-            )
-        );
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch brand", details: error.message });
+  console.log("========================")
+  const {uuid} = req.params
+
+
+  try {
+    const userUUID = req.brandUser?.uuid && uuid;
+    const brand = await BrandListing.findOne({ brandOwnerUUID: userUUID });
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
     }
-}
+
+    console.log("Gallery:", brand.Gallery.mediaFiles.length);
+    console.log("documentationKeys:", Object.keys(brand.Documentation).length);
+
+    const documentation = brand.Documentation;
+    const documentationWithUrls = {};
+
+    // Generate signed URLs for documentation (sequential)
+    for (const [name, value] of Object.entries(documentation)) {
+      try {
+        const command = new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: value,
+        });
+        const url = await getSignedUrl(s3, command, { expiresIn: 30  }); 
+
+        documentationWithUrls[name] = url;
+      } catch (err) {
+        console.error(`Error getting URL for ${name}:`, err.message);
+        documentationWithUrls[name] = null;
+      }
+    }
+
+    // Generate signed URLs for media files (sequential)
+    const mediaFilesWithUrls = [];
+    for (const value of brand.Gallery.mediaFiles) {
+      try {
+        const command = new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: value,
+        });
+        const url = await getSignedUrl(s3, command, { expiresIn: 86400  });
+        mediaFilesWithUrls.push(url);
+      } catch (err) {
+        console.error(`Error getting URL for media file ${value}:`, err.message);
+        mediaFilesWithUrls.push(null);
+      }
+    }
+
+    // Construct full brand data with signed URLs
+    const fullBrandData = {
+      ...brand.toObject(),
+      Documentation: documentationWithUrls,
+      Gallery: {
+        ...brand.Gallery,
+        mediaFiles: mediaFilesWithUrls,
+      },
+    };
+
+    console.log(fullBrandData)
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        fullBrandData,
+        "Brand fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Fetch error:", error.message);
+    res.status(500).json({ error: "Failed to fetch brand", details: error.message });
+  }
+};
+
 
 const updateBrandListingByUUID = async (req, res) => {
     const { id } = req.params;

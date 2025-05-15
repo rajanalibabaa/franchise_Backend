@@ -1,13 +1,14 @@
 import express from "express";
 import { createBrandListing,  deleteBrandListingByUUID,  getAllBrandListing,  getBrandListingByUUID,  updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/BrandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { verifyJWT } from "../../Middleware/Authentication/AuthMiddleware.js";
+import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
+
 
 const router = express.Router();
 
  
 router.post(
-    "/createBrandListing",
+    "/createBrandListing",verifyJWT,
     upload.fields([
         
          { name: 'brandLogo' },
@@ -25,7 +26,9 @@ router.post(
       createBrandListing
     )
 router.get("/getAllBrandListing", getAllBrandListing);
-router.get("/getBrandListingByUUID/:uuid", getBrandListingByUUID);
+// router.get("/getBrandListingByUUID/:uuid", verifyJWT,
+//     getBrandListingByUUID);
+router.get("/getBrandListingByUUID/:uuid",verifyJWT, getBrandListingByUUID);
 router.patch("/updateBrandListingByUUID/:uuid", updateBrandListingByUUID)
 router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 router.patch("/updateBrandImageListingByUUID/:uuid", updateBrandImageListingByUUID)
