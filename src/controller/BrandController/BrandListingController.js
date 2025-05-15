@@ -85,7 +85,7 @@ const createBrandListing = async (req, res) => {
         website: brandDetails.website,
       },
       ExpansionPlans: {
-        expansionType: expansionPlans.expansionType,
+        expansionType: expansionPlans.expansionType, 
         selectedCountries: expansionPlans.selectedCountries || [],
         selectedStates: expansionPlans.selectedStates || [],
         selectedCities: expansionPlans.selectedCities || [],
@@ -93,6 +93,7 @@ const createBrandListing = async (req, res) => {
         selectedIndianDistricts: expansionPlans.selectedIndianDistricts || [],
       },
       FranchiseModal: {
+        totalInvestment:investmentDetails.totalInvestment, 
         franchiseFee: investmentDetails.franchiseFee,
         royaltyFee: investmentDetails.royaltyFee,
         equipmentCost: investmentDetails.equipmentCost,

@@ -1,12 +1,15 @@
 // models/Investment.js
-const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+import mongoose from 'mongoose';
+import uuid from '../../utils/uuid.js'
 
 const leadsSchema = new mongoose.Schema({
-  _id: {
+  uuid: {
     type: String,
-    default: () => uuidv4(),
+    default: () => uuid(),
     required: true
+  },
+  investorName :{
+     type: String,
   },
   investorEmail: {
     type: String,
@@ -26,18 +29,18 @@ const leadsSchema = new mongoose.Schema({
     required: true
   },
   investmentAmount: {
-    type: Number,
+    type: String,
     required: true,
-    min: [1000000, 'Investment amount cannot be negative']
+  
   },
-  brandPerfect: {
-    type: [String],
-    default: []
-  },
-  brandPartial: {
-    type: [String],
-    default: []
-  },
+   brandPerfectMatches: [{
+      email: String,
+      companyName: String
+    }],
+    brandPartialMatches: [{
+      email: String,
+      companyName: String
+    }],
   createdAt: {
     type: Date,
     default: Date.now
@@ -49,20 +52,20 @@ const leadsSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt field before saving
-leadsSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// leadsSchema.pre('save', function(next) {
+  // this.updatedAt = Date.now();
+  // next();
+// });
 
 // Create text index for search functionality
-leadsSchema.index({
-  investorEmail: 'text',
-  category: 'text',
-  location: 'text',
-  brandPerfect: 'text',
-  brandPartial: 'text'
-});
+// leadsSchema.index({
+  // investorEmail: 'text',
+  // category: 'text',
+  // location: 'text',
+  // brandPerfect: 'text',
+  // brandPartial: 'text'
+// });
+// 
+const investerRegisterleadsSchema = mongoose.model('lead', leadsSchema);
 
-const lead = mongoose.model('lead', leadsSchema);
-
-module.exports = lead;
+export default investerRegisterleadsSchema; 

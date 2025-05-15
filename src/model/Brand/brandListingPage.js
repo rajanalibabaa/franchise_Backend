@@ -80,7 +80,7 @@ const franchiseBrandSchema = new Schema({
       district: { type: String,  }
     }
   ]
-},
+}, 
 
   ExpansionPlans : {
     expansionType: {
@@ -92,11 +92,9 @@ const franchiseBrandSchema = new Schema({
     selectedStates: [{ type: String }],
     selectedCities: [{ type: String }],
     selectedIndianStates: [{ type: String }],
-    selectedIndianDistricts: [{ type: String }],
-  // 
+    selectedIndianDistricts: [{ type: String }], 
   },
   
-  // // Franchise Modal
   FranchiseModal : {
     totalInvestment: { type: String },
     franchiseFee: { type: String },
@@ -116,40 +114,7 @@ const franchiseBrandSchema = new Schema({
     expansionRoyalty: { type: String },
     paymentTerms: { type: String },
   },
-  FranchiseModal : {
-    totalInvestment: { type: String },
-    franchiseFee: { type: String },
-    royaltyFee: { type: String },
-    equipmentCost: { type: String },
-    expectedRevenue: { type: String },
-    expectedProfit: { type: String },
-    spaceRequired: { type: String },
-    paybackPeriod: { type: String },
-    minimumCashRequired: { type: String },
-    companyOwnedOutlets: { type: String },
-    franchiseOutlets: { type: String },
-    totalOutlets: { type: String },
-    targetCities: { type: String },
-    targetStates: { type: String },
-    expansionFranchiseFee: { type: String },
-    expansionRoyalty: { type: String },
-    paymentTerms: { type: String },
-  },
-  
 
-  // // Documentation
-
-  Documentation : {
-    brandLogo: { type: String },
-    businessRegistration: { type: String },
-    gstCertificate: { type: String },
-    franchiseAgreement: { type: String },
-    menuCatalog: { type: String },
-    interiorPhotos: { type: String },
-    fssaiLicense: { type: String },
-    panCard: { type: String },
-    aadhaarCard: { type: String },
-  },
   Documentation : {
     brandLogo: { type: String },
     businessRegistration: { type: String },
