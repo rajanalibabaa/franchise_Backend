@@ -5,6 +5,7 @@ const { Schema, model } = mongoose;
 const franchiseBrandSchema = new Schema({
   // Brand Details
   BrandDetails : {
+
     companyName: { type: String, },
     brandName: { type: String, },
     gstin: { type: String },
@@ -97,7 +98,7 @@ const franchiseBrandSchema = new Schema({
     panCard: { type: String },
     aadhaarCard: { type: String },
   },
-  
+
 
   // Gallery
   Gallery: {
