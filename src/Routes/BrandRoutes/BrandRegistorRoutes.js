@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { creatBrandRegister, deleteBrandRegister, getAllBrandRegister, getBrandByRegisterId, updateBrandRegister } from "../../controller/BrandController/brandRegistorController.js";
+import { creatBrandRegister, deleteBrandRegister, getAllBrandRegister, getBrandByRegisterId, updateBrandRegister } from "../../controller/BrandController/BrandRegistorController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 
 const BrandRegisterRoute = Router()
