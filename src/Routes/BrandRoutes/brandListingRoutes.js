@@ -1,5 +1,5 @@
 import express from "express";
-import { createBrandListing,  deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/brandListingController.js";
+import { createBrandListing,  deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/BrandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 
