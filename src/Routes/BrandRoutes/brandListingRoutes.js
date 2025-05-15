@@ -6,6 +6,7 @@ import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 const router = express.Router();
 
  
+ 
 router.post(
     "/createBrandListing",
     upload.fields([
@@ -24,7 +25,7 @@ router.post(
       ]),
       createBrandListing
     )
-router.get("/getAllBrandListing",getAllBrands);
+router.get("/getAllBrandListing", getAllBrands);
 router.get("/getBrandListingByUUID/:uuid", getBrandListingByUUID);
 router.patch("/updateBrandListingByUUID/:uuid", updateBrandListingByUUID)
 router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);

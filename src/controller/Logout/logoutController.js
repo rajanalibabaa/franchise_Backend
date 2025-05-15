@@ -23,7 +23,7 @@ const logOut = async (req,res) => {
       const option = {
          httpOnly: true,
         secure: process.env.NODE_ENV === "production", 
-        sameSite: "strict",
+        sameSite: "Lax",
         path: "/",
       }
 

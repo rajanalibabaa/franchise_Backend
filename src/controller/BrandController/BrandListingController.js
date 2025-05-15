@@ -93,6 +93,7 @@ const createBrandListing = async (req, res) => {
         selectedIndianDistricts: expansionPlans.selectedIndianDistricts || [],
       },
       FranchiseModal: {
+        Investmentrange: investmentDetails.Investmentrange,
         franchiseFee: investmentDetails.franchiseFee,
         royaltyFee: investmentDetails.royaltyFee,
         equipmentCost: investmentDetails.equipmentCost,

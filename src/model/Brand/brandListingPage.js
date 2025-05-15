@@ -64,7 +64,7 @@ const franchiseBrandSchema = new Schema({
   
   // // Franchise Modal
   FranchiseModal : {
-    totalInvestment: { type: String },
+    Investmentrange: { type: String },
     franchiseFee: { type: String },
     royaltyFee: { type: String },
     equipmentCost: { type: String },
