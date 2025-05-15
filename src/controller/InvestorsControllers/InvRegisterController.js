@@ -99,7 +99,7 @@ export const getInvestorByUUID = async (req, res) => {
 
     // console.log(uuid)
 
-    if (req.investorUser.uuid !== uuid) {
+    if (req.investorUser?.uuid !== uuid) {
       return res.json(
         new ApiResponse(
           403,
@@ -109,7 +109,9 @@ export const getInvestorByUUID = async (req, res) => {
       )
     }
 
-    const investor = await InvsRegister.findOne({ uuid:req.investorUser.uuid }).select("-__v -_id -createdAt -updatedAt");
+    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt");
+
+    console.log("investor :",investor)
 
     if (!investor) {
       return res.status(404).json(
@@ -160,7 +162,7 @@ export const updateInvestor = async (req, res) => {
       return res.status(400).json({ error: "UUID parameter is required" });
     }
 
-    if (req.investorUser.uuid !== uuid) {
+    if (req.investorUser?.uuid !== uuid) {
       return res.json(
         new ApiResponse(
           403,
@@ -171,7 +173,7 @@ export const updateInvestor = async (req, res) => {
     }
 
     const updatedInvestor = await InvsRegister.findOneAndUpdate(
-      { uuid:req.investorUser.uuid },
+      { uuid:req.investorUser?.uuid },
       {
         firstName,
         mobileNumber,
@@ -226,7 +228,7 @@ export const deleteInvestor = async (req, res) => {
         return res.status(400).json({ error: "UUID parameter is required" });
       }
   
-      if (req.investorUser.uuid !== uuid) {
+      if (req.investorUser?.uuid !== uuid) {
         return res.json(
           new ApiResponse(
             403,
@@ -237,7 +239,7 @@ export const deleteInvestor = async (req, res) => {
       }
       try {
         // console.log("======================")
-        const deletedBrand = await InvsRegister.findOneAndDelete({uuid :req.investorUser.uuid });
+        const deletedBrand = await InvsRegister.findOneAndDelete({uuid :req.investorUser?.uuid });
         // console.log("==========: ",deletedBrand)
         if (!deletedBrand) {
             return res.status(404).json({ error: "Brand not found" });

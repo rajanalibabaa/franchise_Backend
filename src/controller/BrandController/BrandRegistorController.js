@@ -73,7 +73,7 @@ const getBrandByRegisterId = async (req,res) => {
   // console.log(uuid)
   // console.log(req.brandUser)
 
-  if (uuid !== req.brandUser.uuid) {
+  if (uuid !== req?.brandUser?.uuid) {
     return res.json(
       new ApiResponse(
         401,
@@ -84,7 +84,7 @@ const getBrandByRegisterId = async (req,res) => {
   }
 
   try {
-    const exists = await BrandRegister.findOne({uuid : req.brandUser.uuid}).select("-__v -_id -createdAt -updatedAt");;
+    const exists = await BrandRegister.findOne({uuid : req?.brandUser?.uuid}).select("-__v -_id -createdAt -updatedAt");;
 
     console.log(exists)
   
@@ -146,7 +146,7 @@ const updateBrandRegister = async (req, res) => {
 
   console.log("Update request UUID:", uuid);
   console.log("Request body:", req.body);
-   if (uuid !== req.brandUser.uuid) {
+   if (uuid !== req?.brandUser?.uuid) {
     return res.json(
       new ApiResponse(
         401,
@@ -158,7 +158,7 @@ const updateBrandRegister = async (req, res) => {
 
   try {
     const updatedBrand = await BrandRegister.findOneAndUpdate(
-      { uuid : req.brandUser.uuid }, 
+      { uuid : req?.brandUser?.uuid }, 
       {
         firstName,
         phone,
@@ -192,7 +192,7 @@ const deleteBrandRegister = async (req,res) => {
   const { uuid } = req.params;
   console.log(uuid)
 
-   if (uuid !== req.brandUser.uuid) {
+   if (uuid !== req?.brandUser?.uuid) {
     return res.json(
       new ApiResponse(
         401,
@@ -202,7 +202,7 @@ const deleteBrandRegister = async (req,res) => {
     )
   }
   try {
-    const deletedBrand = await BrandRegister.findOneAndDelete({uuid : req.brandUser.uuid});
+    const deletedBrand = await BrandRegister.findOneAndDelete({uuid : req?.brandUser?.uuid});
 
     if (!deletedBrand) {
         return res.status(404).json({ error: "Brand not found" });

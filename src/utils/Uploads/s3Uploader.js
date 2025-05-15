@@ -25,10 +25,10 @@ export const uploadFileToS3 = async (filePath, mimetype = 'application/octet-str
 
   
     try {
-      // await fs.unlink(filePath);
-      // console.log(`🗑️ Deleted local temp file: ${filePath}`);
+      await fs.unlink(filePath);
+      console.log(`🗑️ Deleted local temp file: ${filePath}`);
     } catch (unlinkErr) {
-      // console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
+      console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
     }
 
     return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
