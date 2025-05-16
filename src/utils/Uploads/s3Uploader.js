@@ -31,7 +31,8 @@ export const uploadFileToS3 = async (filePath, mimetype = 'application/octet-str
       console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
     }
 
-    return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
+    // return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
+    return fileKey
   } catch (err) {
     console.error('❌ Upload failed:', err.message);
     throw new Error('Failed to upload file to S3');

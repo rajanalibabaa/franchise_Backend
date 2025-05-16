@@ -8,7 +8,7 @@ const router = express.Router();
  
  
 router.post(
-    "/createBrandListing",
+    "/createBrandListing",verifyJWT,
     upload.fields([
         
          { name: 'brandLogo' },
@@ -26,7 +26,7 @@ router.post(
       createBrandListing
     )
 router.get("/getAllBrandListing", getAllBrands);
-router.get("/getBrandListingByUUID/:uuid", getBrandListingByUUID);
+router.get("/getBrandListingByUUID/:uuid", verifyJWT,getBrandListingByUUID);
 router.patch("/updateBrandListingByUUID/:uuid", updateBrandListingByUUID)
 router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 router.patch("/updateBrandImageListingByUUID/:uuid", updateBrandImageListingByUUID)

@@ -4,12 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js"
 import jwt from 'jsonwebtoken'
 
 export const verifyJWT = async (req,res,next) => {
-
-    // console.log("AccessToken",req.body?.AccessToken)
-
-    // console.log("req.cookies?.AccessToken :",req.cookies?.AccessToken )
-    
-    // const token = req.body?.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.header['authorization'] 
+ 
     const token =  req.cookies?.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.body?.AccessToken
 
     // console.log("ttttttttt: ",req.cookies?.AccessToken)
