@@ -60,7 +60,7 @@ const franchiseBrandSchema = new Schema({
       district: { type: String,  }
     }
   ]
-},
+}, 
 
   
   // // Franchise Modal

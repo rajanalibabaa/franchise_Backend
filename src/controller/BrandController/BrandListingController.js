@@ -91,7 +91,7 @@ const createBrandListing = async (req, res) => {
         website: brandDetails.website,
       },
       ExpansionPlans: {
-        expansionType: expansionPlans.expansionType,
+        expansionType: expansionPlans.expansionType, 
         selectedCountries: expansionPlans.selectedCountries || [],
         selectedStates: expansionPlans.selectedStates || [],
         selectedCities: expansionPlans.selectedCities || [],

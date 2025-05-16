@@ -1,25 +1,50 @@
 import { sendEmail } from './emailService.js';
 
- const sendBrandEmail = async () => {
+ export const sendBrandEmailPerfect= async (recipientEmail,brandCompanyName,investername,category,location,investment,emailSubject) => {
     try {
         // Dummy data for testing
-        const recipientEmail = "pradeepbabaateam66@gmail.com"; // Replace with a valid email address
-        const emailSubject = "Welcome to Our Service";
-        const emailTemplateName = "index"; // Ensure this matches the template file name in the 'templates' folder
-        const emailData = {
-            name: "John Doe",
-            subject: "Welcome Email",
-            message: "Thank you for signing up for our service!"
+        
+        const subject = "You Have A Good News, New Investor Register"
+        const emailTemplateName = "brandRegister_template"; // Ensure this matches the template file name in the 'templates' folder
+        const emailData = {     
+            subject:emailSubject,
+            companyname:brandCompanyName,
+            name:investername ,
+            category: category,
+            location: location,
+            investment: investment
+
         };
 
     
         // Call the sendEmail function
-        await sendEmail(recipientEmail, emailSubject, emailTemplateName, emailData);
+        await sendEmail(recipientEmail, subject, emailTemplateName, emailData);
     } catch (error) {
         console.error("Failed to send test email:", error);
     }
 };
 
-// Call the function to send the test 
 
-export default sendBrandEmail;
+
+// 
+//  export const sendBrandEmailpartial= async (recipientEmail,name,category,location,investment) => {
+    // try {
+        // const emailSubject = "Welcome to Our Service";
+        // const emailTemplateName = "brandRegister_partial"; // Ensure this matches the template file name in the 'templates' folder
+        //  const emailData = {     
+    //  name: name,
+    //  category: category,
+    //  location: location,
+    //  investment: investment
+//  };
+// 
+    // 
+       
+        // await sendEmail(recipientEmail, emailSubject, emailTemplateName, emailData);
+    // } catch (error) {
+        // console.error("Failed to send test email:", error);
+    // }
+// };
+// 
+
+
