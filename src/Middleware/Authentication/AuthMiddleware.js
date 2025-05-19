@@ -1,5 +1,6 @@
 import { BrandRegister } from "../../model/Brand/BrandRegisterModel.js"
 import { InvsRegister } from "../../model/Investor/invsRegister.js"
+import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js"
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js"
 import jwt from 'jsonwebtoken'
 
@@ -44,10 +45,11 @@ export const verifyJWT = async (req,res,next) => {
 
     const brandUser = await BrandRegister?.findOne({ uuid: decodedToken.brandUserUUID })
     const investorUser = await InvsRegister.findOne({ uuid: decodedToken.investorUUID });
+    const thirdPartyUser = await ThirdPartyAuth?.findOne({ uuid: decodedToken.investorUUID });
     // console.log("brandUser: ",brandUser)
     // console.log("investorUser: ",investorUser)
 
-    if (!brandUser && !investorUser) {
+    if (!brandUser && !investorUser && !thirdPartyUser) {
          res.json(
             new ApiResponse(
                 401, 
@@ -59,5 +61,6 @@ export const verifyJWT = async (req,res,next) => {
 
     req.brandUser = brandUser
     req.investorUser = investorUser
+    req.thirdPartyUser = thirdPartyUser
     next()
 }
