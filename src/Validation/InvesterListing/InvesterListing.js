@@ -2,42 +2,39 @@ import Joi from 'joi';
 
 const investorSchema = Joi.object({
   uuid: Joi.string().guid({ version: 'uuidv4' }).optional(),
-  firstName: Joi.string().min(1).max(100).required(),
-  address: Joi.string().min(5).required(),
-  country: Joi.string().min(2).required(),
-  pincode: Joi.string().pattern(/^[1-9][0-9]{5}$/).required().messages({
-    'string.pattern.base': 'Pincode must be a 6-digit number starting from 1-9'
-  }),
+  firstName: Joi.string().trim().required(),
+  email: Joi.string().email().lowercase().required(),
   mobileNumber: Joi.string()
-  .pattern(/^\+91[6-9][0-9]{9}$/)
-  .required()
-  .messages({
-    'string.pattern.base': 'Mobile number must start with +91 followed by a valid 10-digit Indian mobile number'
-  }),
-
-whatsappNumber: Joi.string()
-  .pattern(/^\+91[6-9][0-9]{9}$/)
-  .allow('', null)
-  .messages({
-    'string.pattern.base': 'WhatsApp number must start with +91 followed by a valid 10-digit Indian mobile number'
-  }),
-
-  email: Joi.string().email().required(),
-
-  category: Joi.string().required(),
-
-  investmentRange: Joi.string().min(1).required(), // Adjusted based on model
-
-  occupation: Joi.string().allow('', null),
-  propertytype: Joi.string().required(),
-  lookingFor: Joi.string().allow('', null),
-
-
-  
-  // Optional fields
-  state: Joi.string().allow('', null),
-  district: Joi.string().allow('', null),
-  city: Joi.string().allow('', null)
+    .pattern(/^\d{10}$/)
+    .required()
+    .messages({ 'string.pattern.base': 'Mobile number must be 10 digits' }),
+  whatsappNumber: Joi.string()
+    .pattern(/^\d{10}$/)
+    .optional()
+    .allow('')
+    .messages({ 'string.pattern.base': 'WhatsApp number must be 10 digits' }),
+  address: Joi.string().required(),
+  pincode: Joi.string().required(),
+  country: Joi.string().required(),
+  state: Joi.string().required(),
+  city: Joi.string().required(),
+  occupation: Joi.string()
+  .valid("Business", "Professional", "Retired", "Student", "Other") // Must match Mongoose enum
+  .required(),
+specifyOccupation: Joi.when('occupation', {
+  is: 'Other',
+  then: Joi.string().trim().min(2).max(50).required(),
+  otherwise: Joi.string().optional().allow('').strip() // Remove if not "Other"
+}),
+  category: Joi.string()
+    .valid(' ') // <-- fill this in your Mongoose too!
+    .required(),
+  investmentRange: Joi.string().required(),
+  investmentAmount: Joi.string().required(),
+  propertyType: Joi.string().required(),
+  propertySize: Joi.string().required(),
+  preferredState: Joi.string().required(),
+  preferredCity: Joi.string().required()
 });
 
 // middleware function to validate investor data

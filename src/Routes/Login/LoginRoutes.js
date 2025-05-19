@@ -8,4 +8,4 @@ Login.post('/',verifyLogin)
 Login.post('/generateOTPforLogin',generateOTPforLogin)
 
 
-export { Login }
+export { Login } 
