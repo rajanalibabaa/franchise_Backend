@@ -47,7 +47,7 @@ const invsRegisterSchema = new mongoose.Schema(
 occupation: {
   type: String,
   required:  false,
-  enum: ["Business", "Professional", "Retired", "Student", "Other"] // Add valid options
+  enum: ["Other"] // Add valid options
 },
 specifyOccupation: {
   type: String,
