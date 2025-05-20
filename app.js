@@ -14,6 +14,8 @@ import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
+import { fbPostsRouter } from "./src/Routes/AdminRoutes/SocialMediaRoutes/fbPostsRoutes.js";
+import { videoAdvertiseRoute } from "./src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js";
  
 
 const router = express.Router();
@@ -22,17 +24,22 @@ router.use('/v1/auth/', thirdPartyAuthRouter)
 // router.use('/v1/login/', InvestorloginRouter)
 
 router.use('/post',postRequireRoutes);
-router.use("/admin",adminRoutess );
+
 router.use('/feedback', feedbackRoutes);
 router.use('/complaint', complaintRoutes);
 router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
 
-
+// investor routes
 router.use('/v1/investor',InvestorRouter)
 
-
+// admin
+router.use("/admin",adminRoutess );
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
+
+// video advertise
+router.use('/v1/admin/videoAdvertise', videoAdvertiseRoute)
+
 router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
@@ -41,5 +48,12 @@ router.use('/v1/logout', logoutRouter)
 
 //login routers
 router.use('/v1/login', Login)
+
+
+// social media routes
+
+//fb posts routes
+router.use('/v1/socialmedia/fb',fbPostsRouter)
+
 
 export default router;
