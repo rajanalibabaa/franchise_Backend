@@ -19,7 +19,7 @@ const investorSchema = Joi.object({
   state: Joi.string().optional(),
   city: Joi.string().optional(),
   occupation: Joi.string()
-  .valid("Business", "Professional", "Retired", "Student", "Other") // Must match Mongoose enum
+  .valid("Student", "Salaried Professional", "Bussiness Owner / Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor", "Other") // Must match Mongoose enum
   .optional(),
 specifyOccupation: Joi.when('occupation', {
   is: 'Other',
