@@ -23,7 +23,7 @@ import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 const router = express.Router();
 
 router.use('/v1/auth/', thirdPartyAuthRouter)
-// router.use('/v1/login/', InvestorloginRouter)
+router.use('/v1/login/', Login) 
 
 router.use('/post',postRequireRoutes);
 router.use("/admin",adminRoutess );

@@ -2,10 +2,10 @@ import investerRegisterleadsSchema from "../../model/NewIncomeInvestor/leadsMode
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { sendBrandEmailPerfect } from "../../utils/Centralized Email/centralizedEmail.js";
 
+
 export const newIncomerInvestorController = async (req, res) => {
     try {
-        const { userEmail, investername, category, location, totalInvestment } = req.body;
-
+       const { userEmail, investername, category, location, totalInvestment } = req.body;
         // 1. Save new investor lead
         const newLead = new investerRegisterleadsSchema({
             investorEmail: userEmail,
@@ -62,6 +62,8 @@ export const newIncomerInvestorController = async (req, res) => {
                         investment: brand.FranchiseModal.totalInvestment,
                         matchType: 'perfect'
                     });
+
+                    
 
                     console.log(`Perfect match email sent to: ${brandEmail}`);
                 } catch (error) {
@@ -145,6 +147,8 @@ export const newIncomerInvestorController = async (req, res) => {
             });
         }
 
+        
+
     } catch (error) {
         console.error("Controller error:", error);
         return res.status(500).json({
@@ -153,4 +157,40 @@ export const newIncomerInvestorController = async (req, res) => {
             error: error.message
         });
     }
-};
+}  
+
+// get all investor lead 
+
+export const getNewInvestorLead = async (req,res)=>{
+      try {
+          const allNewLead = await investerRegisterleadsSchema.find({});
+          res.status(200).json(allNewLead);
+        } catch (err) {
+          res.status(500).json({ error: err.message });  
+        }
+}
+
+
+//get investor lead by id
+
+export const getNewInvestorLeadById = async (req,res)=>{
+   try {
+      const newLead = await investerRegisterleadsSchema.findById(req.params.id);
+      if (!newLead) return res.status(404).json({ error: 'NewInvestor not found' });
+      res.status(200).json({ message: 'NewInvestor fetched successfully', data: newLead });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+}
+
+//  get investor lead by uuid
+
+export const getNewInvestorLeadByUuid = async (req,res) => {
+     try {
+        const newLead = await investerRegisterleadsSchema.findOne({ uuid: req.params.uuid });
+        if (!newLead) return res.status(404).json({ error: 'NewInvestor not found' });
+        res.status(200).json({ message: 'NewInvestor fetched successfully', data: newLead });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+}

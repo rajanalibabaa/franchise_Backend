@@ -6,21 +6,24 @@ import uuid from "../../utils/uuid.js";
 export const createInvestor = async (req, res) => {
   try {
     const {
-      firstName,
-      mobileNumber,
-      whatsappNumber,
-      email,
-      address,
-      country,
-      pincode,
-      state,
-      district,
-      city,
-      category,
-      investmentRange,
-      occupation,
-      propertytype,
-      lookingFor
+     firstName,
+     email,
+     mobileNumber,
+     whatsappNumber,
+     address,
+     pincode,
+     country,
+     state,
+     city,
+     occupation,
+     specifyOccupation,
+     category,
+     investmentRange,
+     investmentAmount,
+     propertyType,
+     propertySize,
+     preferredState,
+     preferredCity
     } = req.body;
 
     // console.log("Incoming data:", req.body);
@@ -45,21 +48,24 @@ export const createInvestor = async (req, res) => {
     }
 
     const investor = new InvsRegister({
-      firstName,
-      mobileNumber,
-      whatsappNumber,
-      email,
-      address,
-      country,
-      pincode,
-      state,
-      district,
-      city,
-      category,
-      investmentRange,
-      occupation,
-      propertytype,
-      lookingFor,
+     firstName,
+     email,
+     mobileNumber,
+     whatsappNumber,
+     address,
+     pincode,
+     country,
+     state,
+     city,
+     occupation,
+     category,
+     specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+     investmentRange,
+     investmentAmount,
+     propertyType,
+     propertySize,
+     preferredState,
+     preferredCity,
       uuid: uuid()
     });
 
@@ -137,28 +143,26 @@ export const updateInvestor = async (req, res) => {
     const { uuid } = req.params;
     const {
       firstName,
-      mobileNumber,
-      whatsappNumber,
       email,
+      mobileNumber,
+    whatsappNumber,
       address,
-      country,
       pincode,
-      state,
-      district,
+      country,
+     state,
       city,
+      occupation,
+      specifyOccupation, 
       category,
       investmentRange,
-      occupation,
-      propertytype,
-      lookingFor
+      investmentAmount,
+      propertyType,
+      propertySize,
+      preferredState,
+      preferredCity
     } = req.body;
 
-
-    // console.log(uuid)
-    // console.log(req.body)
-    // console.log(req.investorUser.uuid)
-    
-    if (!uuid) {
+   if (!uuid) {
       return res.status(400).json({ error: "UUID parameter is required" });
     }
 
@@ -169,31 +173,48 @@ export const updateInvestor = async (req, res) => {
           null,
           "Unauthorized access to this resource"
         )
-      )
+      );
     }
 
+    // Prepare update data
+    const updateData = {
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      category,
+      investmentRange,
+      investmentAmount,
+      propertyType,
+      propertySize,
+      preferredState,
+      preferredCity
+    };
+
+   // Handle specifyOccupation based on occupation
+if (occupation === 'Other') {
+  if (!specifyOccupation || specifyOccupation.trim() === '') {
+    return res.status(400).json(
+      new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
+    );
+  }
+  updateData.specifyOccupation = specifyOccupation;
+} else {
+  // Clear specifyOccupation if occupation is not 'Other'
+  updateData.specifyOccupation = undefined;
+}
+
     const updatedInvestor = await InvsRegister.findOneAndUpdate(
-      { uuid:req.investorUser?.uuid },
-      {
-        firstName,
-        mobileNumber,
-        whatsappNumber,
-        email,
-        address,
-        country,
-        pincode,
-        state,
-        district,
-        city,
-        category,
-        investmentRange,
-        occupation,
-        propertytype,
-        lookingFor
-      }
-    )
-
-
+      { uuid: req.investorUser?.uuid },
+      updateData,
+      { new: true } // Return the updated document
+    ).select("-__v -_id -createdAt -updatedAt");
 
     if (!updatedInvestor) {
       return res.status(404).json(
@@ -201,13 +222,11 @@ export const updateInvestor = async (req, res) => {
       );
     }
 
-    const data = await InvsRegister.findById(updatedInvestor._id).select("-__v -_id -createdAt -updatedAt");
-
-    return res.status(200).json(
+   return res.status(200).json(
       new ApiResponse(
         200,
-        data,
-       "Investor updated successfully"
+        updatedInvestor,
+        "Investor updated successfully"
       )
     );
   } catch (err) {
@@ -216,9 +235,7 @@ export const updateInvestor = async (req, res) => {
       error: "Failed to update investor",
       details: err.message,
     });
-  }
-};
-
+  }};
   
 export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;

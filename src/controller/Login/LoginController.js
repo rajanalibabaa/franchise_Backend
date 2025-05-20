@@ -5,7 +5,7 @@ import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
 import { BrandRegister } from "../../model/Brand/BrandRegisterModel.js";
-
+import BrandListing from "../../model/Brand/brandListingPage.js";
 let generateNewOTP = null 
 let emailORMobileNumber = null
 
@@ -104,7 +104,7 @@ const verifyLogin = async (req, res) => {
       ]
     }).select("-createdAt -_id");
 
-    const brandUserData = await BrandRegister.findOne({
+    const brandUserData = await BrandListing.findOne({
       $or: [
         { email: emailORMobileNumber },
         { phone: emailORMobileNumber }
