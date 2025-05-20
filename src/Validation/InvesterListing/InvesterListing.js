@@ -5,22 +5,22 @@ const investorSchema = Joi.object({
   firstName: Joi.string().trim().required(),
   email: Joi.string().email().lowercase().required(),
   mobileNumber: Joi.string()
-    .pattern(/^\d{10}$/)
+    .pattern(/^\+91\d{10}$/)
     .required()
     .messages({ 'string.pattern.base': 'Mobile number must be 10 digits' }),
   whatsappNumber: Joi.string()
-    .pattern(/^\d{10}$/)
+    .pattern(/^\+91\d{10}$/)
     .optional()
     .allow('')
     .messages({ 'string.pattern.base': 'WhatsApp number must be 10 digits' }),
-  address: Joi.string().required(),
-  pincode: Joi.string().required(),
-  country: Joi.string().required(),
-  state: Joi.string().required(),
-  city: Joi.string().required(),
+  address: Joi.string().optional(),
+  pincode: Joi.string().optional(),
+  country: Joi.string().optional(),
+  state: Joi.string().optional(),
+  city: Joi.string().optional(),
   occupation: Joi.string()
   .valid("Business", "Professional", "Retired", "Student", "Other") // Must match Mongoose enum
-  .required(),
+  .optional(),
 specifyOccupation: Joi.when('occupation', {
   is: 'Other',
   then: Joi.string().trim().min(2).max(50).required(),
@@ -31,8 +31,8 @@ specifyOccupation: Joi.when('occupation', {
     .required(),
   investmentRange: Joi.string().required(),
   investmentAmount: Joi.string().required(),
-  propertyType: Joi.string().required(),
-  propertySize: Joi.string().required(),
+  propertyType: Joi.string().optional(),
+  propertySize: Joi.string().optional(),
   preferredState: Joi.string().required(),
   preferredCity: Joi.string().required()
 });

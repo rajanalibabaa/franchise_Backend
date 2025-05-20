@@ -18,35 +18,35 @@ const invsRegisterSchema = new mongoose.Schema(
   mobileNumber: {
     type: String,
     required: true,
-    match: [/^\d{10}$/, 'Please enter a valid 10-digit mobile number']
+    match: [/^\+91\d{10}$/, 'Please enter a valid mobile number with country code ']
   },
   whatsappNumber: {
     type: String,
-    match: [/^\d{10}$/, 'Please enter a valid 10-digit WhatsApp number']
+    match: [/^\+91\d{10}$/, 'Please enter a valid WhatsApp number with country code']
   },
   address: {
     type: String,
-    required: true
+    required: false
   },
   pincode: {
     type: String,
-    required: true
-  },
+    required:  false
+  }, 
   country : {
      type: String,
-     required : true
+     required :  false
   },
   state: {
     type: String,
-    required: true
+    required:  false
   }, 
   city: {
     type: String,
-    required: true
+    required:  false
   },
 occupation: {
   type: String,
-  required: true,
+  required:  false,
   enum: ["Business", "Professional", "Retired", "Student", "Other"] // Add valid options
 },
 specifyOccupation: {
@@ -71,7 +71,7 @@ specifyOccupation: {
   },
   propertyType: {
     type: String,
-    required: true
+    required:  false
   },
   propertySize: {
     type: String,
