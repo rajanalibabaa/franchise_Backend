@@ -1,122 +1,75 @@
+
 import mongoose from 'mongoose';
+import uuid from '../../utils/uuid.js';
 
-const { Schema, model } = mongoose;
+const BrandListingSchema = new mongoose.Schema({
+  uuid: {
+    type: String,
+    default: uuid, // Ensure uuid is a function if it generates unique IDs
+    unique: true,
+  },
 
-const franchiseBrandSchema = new Schema({
-  // Brand Details
-  BrandDetails : {
-
-    companyName: { type: String, },
-    brandName: { type: String, },
-    gstin: { type: String },
-    categories: [{ type: String }],
-    ownerName: { type: String },
-    description: { type: String },
-    address: { type: String },
-    country: { type: String },
-    pincode: { type: String },
-    location: { type: String },
+personalDetails: {
+    FullName: { type: String , },
+    email: { type: String },
     mobileNumber: { type: String },
     whatsappNumber: { type: String },
-    email: { type: String },
+    brandName: { type: String },
+    companyName: { type: String },
+    country: { type: String },
+    pincode: { type: String },
+    HeadOfficeaddress: { type: String },
+    state: { type: String },
+    city: { type: String },
+    establishedYear: { type: String },
+    franchiseSinceYear: { type: String },
+    brandCategories: [{ type: String }],
+    brandDescription: { type: String },
+    expansionLocation: { type: String },
+    pancardNumber: { type: String },
+    gstNumber: { type: String },
     website: { type: String },
     facebook: { type: String },
     instagram: { type: String },
     linkedin: { type: String },
-    establishedYear: { type: String },
-    franchiseSinceYear: { type: String },
   },
-  
+  franchiseDetails: {
+        investmentRange: [{ type: String }],
+        areaRequired: { type: String },
 
-  // // Expansion Plans
-  ExpansionPlans: {
-  expansionType: {
-    type: String,
-    // enum: ['domestic', 'international'],
-    // default: 'domestic'
-  },
-  selectedCountries: [{ type: String }],
+    franchiseModel: [{ type: String }],
 
-  selectedStates: [
-    {
-      country: { type: String, },
-      state: { type: String,  }
-    }
-  ],
-
-  selectedCities: [
-    {
-      country: { type: String, },
-      state: { type: String, },
-      city: { type: String, }
-    }
-  ],
-
-  selectedIndianStates: [{ type: String }],
-
-  selectedIndianDistricts: [
-    {
-      state: { type: String,},
-      district: { type: String,  }
-    }
-  ]
-}, 
-
-  
-  // // Franchise Modal
-  FranchiseModal : {
-    totalInvestment: { type: String },
+    franchiseType: [{ type: String }],
     franchiseFee: { type: String },
     royaltyFee: { type: String },
-    equipmentCost: { type: String },
-    expectedRevenue: { type: String },
-    expectedProfit: { type: String },
-    spaceRequired: { type: String },
-    paybackPeriod: { type: String },
-    minimumCashRequired: { type: String },
+    interiorcost: { type: String },
+    exteriorCost: { type: String },
+    otherCost: { type: String },
+    Roi: { type: String },
+    breakEven: { type: String },
+    requireInvestmentCapital: { type: String },
     companyOwnedOutlets: { type: String },
     franchiseOutlets: { type: String },
     totalOutlets: { type: String },
-    targetCities: { type: String },
-    targetStates: { type: String },
-    expansionFranchiseFee: { type: String },
-    expansionRoyalty: { type: String },
-    paymentTerms: { type: String },
+    requirementSuport: { type: String },
+    traningProvidedBy: { type: String },
+    aggrementPeriods: { type: String },
+    propertyType: { type: String },
   },
-  
-
-  // // Documentation
-
-  Documentation : {
-    brandLogo: { type: String },
-    businessRegistration: { type: String },
-    gstCertificate: { type: String },
-    franchiseAgreement: { type: String },
-    menuCatalog: { type: String },
-    interiorPhotos: { type: String },
-    fssaiLicense: { type: String },
-    panCard: { type: String },
-    aadhaarCard: { type: String },
+  brandDetails: {
+    pancard: [{ type: String }], // store file paths or URLs
+    gstCertificate: [{ type: String }],
+    gstNumber:{ type: String },
+    brandLogo: [{ type: String }],
+    companyImage: [{ type: String }],
+    exterioroutlet: [{ type: String }],
+    interiorOutlet: [{ type: String }],
+    franchisePromotionVideo: [{ type: String }],
+    brandPromotionVideo: [{ type: String }],
   },
-
-
-  // Gallery
-  Gallery: {
-    mediaFiles: {
-      type: [String],  
-      default: [],
-    }
-  },
-  brandOwnerUUID: {
-    type: String,
-    ref:"BrandRegister",
-    // required: true
-  }
-  
 }, {
-  timestamps: true
+  timestamps: true,
 });
 
-const BrandListing = model('BrandListing', franchiseBrandSchema);
-
+const BrandListing = mongoose.model('BrandListing', BrandListingSchema);
 export default BrandListing;
