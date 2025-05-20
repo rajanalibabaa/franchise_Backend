@@ -25,7 +25,7 @@ const thirdPartyAuthSchema = new mongoose.Schema(
       enum: ["google", "facebook"],
 
     },
-    phone: {
+    mobileNumber: {
       type: String,
       trim: true,
     },

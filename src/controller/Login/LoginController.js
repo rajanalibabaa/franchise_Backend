@@ -4,7 +4,8 @@ import { generateOTP } from "../../utils/generateOTP.js";
 import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
-import { BrandRegister } from "../../model/Brand/BrandRegisterModel.js";
+import BrandListing from "../../model/Brand/brandListingPage.js";
+import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 
 let generateNewOTP = null 
 let emailORMobileNumber = null
@@ -27,11 +28,11 @@ const generateOTPforLogin = async (req, res) => {
         .json(new ApiResponse(400, null, "Invalid email format"));
     }
 
-    // if (mobileNumber && !/^\d{10}$/.test(mobileNumber)) {
-    //   return res
-    //     .status(400)
-    //     .json(new ApiResponse(400, null, "Phone number must be 10 digits"));
-    // }
+    if (mobileNumber && !/^\d{10}$/.test(mobileNumber)) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Phone number must be 10 digits"));
+    }
 
     emailORMobileNumber = email || mobileNumber;
 
@@ -41,13 +42,20 @@ const generateOTPforLogin = async (req, res) => {
 
     console.log("Investor data:", investorData);
 
-    const brandUserData = await BrandRegister.findOne({
-      $or: [{ email }, { phone  :mobileNumber }],
-    })
+    const brandUserData = await BrandListing.findOne({
+      $or: [
+        { "personalDetails.email": email },
+        { "personalDetails.mobileNumber": mobileNumber }
+      ]
+    });
 
     console.log("Brand user data:", brandUserData);
 
-    if (!investorData && !brandUserData) {
+   const thirdPartyUsers = await ThirdPartyAuth.findOne({email:email, mobileNumber:mobileNumber});
+
+    console.log("thirdPartyUsers data:", thirdPartyUsers);
+
+    if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res
         .status(404)
         .json(new ApiResponse(404, null,alert("You are not a registered user")));
@@ -57,9 +65,9 @@ const generateOTPforLogin = async (req, res) => {
     console.log("Generated OTP:", generateNewOTP);
 
     if (email) {
-      sendEmailOTP(email, generateNewOTP);
+      await sendEmailOTP(email, generateNewOTP);
     } else {
-      sendMobileSMS(mobileNumber, generateNewOTP);
+      await sendMobileSMS(mobileNumber, generateNewOTP);
     }
 
     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
@@ -76,6 +84,11 @@ const generateOTPforLogin = async (req, res) => {
 const verifyLogin = async (req, res) => {
   try {
     const { verifyOtp } = req.body;
+
+
+    console.log("emailORMobileNumber:" ,emailORMobileNumber)
+    console.log("generateNewOTP:" ,typeof generateNewOTP, generateNewOTP)
+
 
     if (!verifyOtp) {
       return res.status(400).json(
@@ -104,17 +117,26 @@ const verifyLogin = async (req, res) => {
       ]
     }).select("-createdAt -_id");
 
-    const brandUserData = await BrandRegister.findOne({
+    const brandUserData = await BrandListing.findOne({
       $or: [
-        { email: emailORMobileNumber },
-        { phone: emailORMobileNumber }
+        { "personalDetails.email": emailORMobileNumber },
+        { "personalDetails.mobileNumber": emailORMobileNumber }
       ]
     }).select("-createdAt -_id");
 
+    const thirdPartyUsers = await ThirdPartyAuth.findOne({
+      $or: [
+        {email:emailORMobileNumber},{mobileNumber:emailORMobileNumber}
+      ]
+    }).select("-createdAt -_id");;
+
+    console.log("thirdPartyUsers data:", thirdPartyUsers)
+    
     console.log("investorData:", investorData);
     console.log("brandUserData:", brandUserData);
+    console.log("thirdPartyUsers:", thirdPartyUsers);
 
-    if (!investorData && !brandUserData) {
+    if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res.status(404).json(
         new ApiResponse(404, null, "User not found")
       );
@@ -123,6 +145,7 @@ const verifyLogin = async (req, res) => {
     const payload = {
       investorUUID: investorData?.uuid || null,
       brandUserUUID: brandUserData?.uuid || null,
+      thirdPartyUsersUUID: thirdPartyUsers?.uuid || null,
     };
 
     const AccessToken = generateToken(

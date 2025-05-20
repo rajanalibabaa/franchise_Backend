@@ -41,6 +41,7 @@ const getTemplate = (templateName, data) => {
 };
 
 export const sendEmail =  async(to, subject, templateName, data) => {
+    
 
     console.log("Sending email to:", to);
     console.log("Subject:", subject);
@@ -49,7 +50,6 @@ export const sendEmail =  async(to, subject, templateName, data) => {
 
     const html = getTemplate(templateName,data); 
    
-    
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to,
@@ -66,8 +66,7 @@ export const sendEmail =  async(to, subject, templateName, data) => {
    }catch(error){
      console.log("Error while sending email",error);
   
-     
-   }
+   }
 };
 
 

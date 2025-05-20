@@ -1,11 +1,15 @@
-
 import InstaApply from "../../model/InstaApply/instaModel.js";
+import { sendInstantApplyEmail } from '../../utils/Centralized Email/centralizedEmail.js';
 
 export const createInstaApply = async (req, res) => {
     try {
         const { name, email, mobilenumber, state, city, pincode, address } = req.body;
         const newInstaApply = new InstaApply({ name, email, mobilenumber, state, city, pincode, address });
         await newInstaApply.save();
+        
+        // Send email after successful save
+        await sendInstantApplyEmail(email, name, mobilenumber, state, city, pincode, address);
+        
         res.status(201).json({ message: 'Insta Apply created successfully', data: newInstaApply });
     } catch (error) {
         res.status(500).json({ message: 'Error creating Insta Apply', error: error.message });

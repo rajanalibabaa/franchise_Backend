@@ -221,7 +221,4 @@ const deleteBrandRegister = async (req,res) => {
 }
 
 
-
-
-
 export { creatBrandRegister, getBrandByRegisterId, getAllBrandRegister, updateBrandRegister, deleteBrandRegister};

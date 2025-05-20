@@ -1,48 +1,97 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
+
 const invsRegisterSchema = new mongoose.Schema(
   {
-    // Personal Info
-    firstName: { type: String, required: true, trim: true },
-    mobileNumber: { type: String, required: true, trim: true },
-    whatsappNumber: { type: String, required: true, trim: true },
-    email: { type: String, required: true, lowercase: true, trim: true },
-
-    // Address Info
-    address: { type: String, required: true },
-    country: { type: String, required: true },
-    pincode: { type: String, required: true },
-    state: { type: String },
-    district: { type: String },
-    city: { type: String },
-
-    // Investment Info
-    category: {
-      type: String,
-      required: true,
-    },
-    investmentRange: {
-      type: String,
-      required: true,
-    },
-    // capital: { type: Number, required: true },
-    occupation: { type: String , required: true},
-    propertytype: {
-      type: String,
-      
-      required: true,
-    },
-    lookingFor: { type: String , required: true},
-    uuid:{
-      type: String,
-      required: true,
-    }
+    firstName: {
+    type: String,
+    required: true,
+    trim: true
   },
-  {
-    timestamps: true,
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true
+  },
+  mobileNumber: {
+    type: String,
+    required: true,
+    match: [/^\d{10}$/, 'Please enter a valid 10-digit mobile number']
+  },
+  whatsappNumber: {
+    type: String,
+    match: [/^\d{10}$/, 'Please enter a valid 10-digit WhatsApp number']
+  },
+  address: {
+    type: String,
+    required: true
+  },
+  pincode: {
+    type: String,
+    required: true
+  },
+  country : {
+     type: String,
+     required : true
+  },
+  state: {
+    type: String,
+    required: true
+  }, 
+  city: {
+    type: String,
+    required: true
+  },
+occupation: {
+  type: String,
+  required: true,
+  enum: ["Business", "Professional", "Retired", "Student", "Other"] // Add valid options
+},
+specifyOccupation: {
+  type: String,
+  required: function() {
+    return this.occupation === 'Other';
+  },
+  trim: true
+},
+  category: {
+    type: String,
+    enum: [ ],
+    required: true
+  },
+  investmentRange: {
+    type: String,
+    required: true
+  },
+  investmentAmount: {
+    type: String,
+    required: true
+  },
+  propertyType: {
+    type: String,
+    required: true
+  },
+  propertySize: {
+    type: String,
+    required: true
+  }, 
+  preferredState: {
+    type: String,
+    required: true
+  },
+  preferredCity: {
+    type: String,
+    required: true
+  },
+   uuid: {
+    type: String,
+    unique: true
   }
-);
+}, {
+  timestamps: true // Automatically adds createdAt and updatedAt fields
+});
 
 invsRegisterSchema.methods.generateAccessToken = function () {
   return jwt.sign(
