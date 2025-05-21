@@ -1,4 +1,4 @@
-import { BrandRegister } from "../../model/Brand/BrandRegisterModel.js"
+import BrandListing from "../../model/Brand/brandListingPage.js"
 import { InvsRegister } from "../../model/Investor/invsRegister.js"
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js"
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js"
@@ -9,7 +9,7 @@ export const verifyJWT = async (req,res,next) => {
     const token =  req.cookies?.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.body?.AccessToken
 
     // console.log("ttttttttt: ",req.cookies?.AccessToken)
-    console.log("============== : ",req.header("Authorization")?.replace("Bearer ","") )
+    // console.log("============== : ",req.header("Authorization")?.replace("Bearer ","") )
 
     if (!token) {
         return res.json(
@@ -43,7 +43,7 @@ export const verifyJWT = async (req,res,next) => {
         )
     }
 
-    const brandUser = await BrandRegister?.findOne({ uuid: decodedToken.brandUserUUID })
+    const brandUser = await BrandListing?.findOne({ uuid: decodedToken.brandUserUUID })
     const investorUser = await InvsRegister.findOne({ uuid: decodedToken.investorUUID });
     const thirdPartyUser = await ThirdPartyAuth?.findOne({ uuid: decodedToken.investorUUID });
     // console.log("brandUser: ",brandUser)
