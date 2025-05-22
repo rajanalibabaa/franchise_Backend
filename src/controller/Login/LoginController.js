@@ -42,11 +42,18 @@ const generateOTPforLogin = async (req, res) => {
 
     console.log("Investor data:", investorData);
 
+    // const brandUserData = await BrandListing.findOne({
+    //   $or: [
+    //     { "personalDetails.email": email },
+    //     { "personalDetails.mobileNumber": mobileNumber }
+    //   ]
+    // });
+
     const brandUserData = await BrandListing.findOne({
       $or: [
-        { "personalDetails.email": email },
-        { "personalDetails.mobileNumber": mobileNumber }
-      ]
+        ...(email ? [{ "personalDetails.email": email }] : []),
+        ...(mobileNumber ? [{ "personalDetails.mobileNumber": mobileNumber }] : []),
+      ],
     });
 
     console.log("Brand user data:", brandUserData);
@@ -87,7 +94,7 @@ const verifyLogin = async (req, res) => {
 
 
     console.log("emailORMobileNumber:" ,emailORMobileNumber)
-    console.log("generateNewOTP:" ,typeof generateNewOTP, generateNewOTP)
+    
 
 
     if (!verifyOtp) {
@@ -96,7 +103,8 @@ const verifyLogin = async (req, res) => {
       );
     }
 
-    console.log("verifyOtp:", typeof verifyOtp, verifyOtp);
+    console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
+    console.log("generateNewOTP:" ,typeof generateNewOTP, generateNewOTP)
 
    if (generateNewOTP !== Number(verifyOtp)) {
       return res.status(400).json(

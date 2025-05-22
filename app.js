@@ -12,6 +12,9 @@ import postRequireRoutes from  './src/Routes/PostRequirementRoutes/postRequireme
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
 import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
+import { fbPostsRouter } from "./src/Routes/AdminRoutes/SocialMediaRoutes/fbPostsRoutes.js";
+import { videoAdvertiseRoute } from "./src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js";
+
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
@@ -26,7 +29,7 @@ router.use('/v1/auth/', thirdPartyAuthRouter)
 router.use('/v1/login/', Login) 
 
 router.use('/post',postRequireRoutes);
-router.use("/admin",adminRoutess );
+
 router.use('/feedback', feedbackRoutes);
 router.use('/complaint', complaintRoutes);
 router.use('/instaApply', instaApplyRoutes);
@@ -36,13 +39,19 @@ router.use('/v1/adminAuth', adminAuthRoutes);
 router.use('/v1/investor',InvestorRouter)
 router.use('/v1/brandlisting',brandListingRoutes)
 
-
+// admin
+router.use("/admin",adminRoutess );
 router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
+
+// video advertise
+router.use('/v1/admin/videoAdvertise', videoAdvertiseRoute)
+
 router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
 router.use('/v1/logout', logoutRouter)
 
+router.use('/v1/socialmedia/fb',fbPostsRouter)
 
 //login routers
 router.use('/v1/login', Login)
