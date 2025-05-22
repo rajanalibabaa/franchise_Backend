@@ -17,8 +17,8 @@ upload.fields([
   { name: 'companyImage', maxCount: 10 },
   { name: 'exterioroutlet', maxCount: 10 },
   { name: 'interiorOutlet', maxCount: 10},
-  { name: 'franchisePromotionVideo' , maxCount: 5},
-  { name: 'brandPromotionVideo', maxCount: 5 },
+  { name: 'franchisePromotionVideo' , maxCount: 1},
+  { name: 'brandPromotionVideo', maxCount: 1 },
 ])
 
 ,
