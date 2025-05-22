@@ -16,6 +16,7 @@ import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import { fbPostsRouter } from "./src/Routes/AdminRoutes/SocialMediaRoutes/fbPostsRoutes.js";
 import { videoAdvertiseRoute } from "./src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js";
+import { frontendHomePageBrandsRouter } from "./src/Routes/FeatureRoutes/FrontendhomePageRoutes/frontendHomePageBrandsRoutes.js";
  
 
 const router = express.Router();
@@ -54,6 +55,12 @@ router.use('/v1/login', Login)
 
 //fb posts routes
 router.use('/v1/socialmedia/fb',fbPostsRouter)
+
+
+
+// frondend home page routes
+
+router.use('/v1/homepage', frontendHomePageBrandsRouter)
 
 
 export default router;
