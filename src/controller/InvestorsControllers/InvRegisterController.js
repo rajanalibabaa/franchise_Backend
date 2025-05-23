@@ -256,20 +256,20 @@ export const deleteInvestor = async (req, res) => {
       }
       try {
         // console.log("======================")
-        const deletedBrand = await InvsRegister.findOneAndDelete({uuid :req.investorUser?.uuid });
-        // console.log("==========: ",deletedBrand)
-        if (!deletedBrand) {
-            return res.status(404).json({ error: "Brand not found" });
+        const deletedInvestor = await InvsRegister.findOneAndDelete({uuid :req.investorUser?.uuid });
+        // console.log("==========: ",deletedInvestor)
+        if (!deletedInvestor) {
+            return res.status(404).json({ error: "Investor not found" });
         }
     
         res.status(200).json(
             new ApiResponse(
                 200,
                 {},
-                "Brand deleted successfully",
+                "Investor deleted successfully",
             )
         );
     } catch (error) {
-        res.status(500).json({ error: "Failed to delete brand", details: error.message });
+        res.status(500).json({ error: "Failed to delete Investor ", details: error.message });
     }
   }; 

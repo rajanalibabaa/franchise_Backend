@@ -31,8 +31,19 @@ specifyOccupation: Joi.when('occupation', {
     .required(),
   investmentRange: Joi.string().required(),
   investmentAmount: Joi.string().required(),
-  propertyType: Joi.string().optional(),
-  propertySize: Joi.string().optional(),
+propertyType: Joi.string()
+  .trim()
+  .valid("Own Property", "Rental Property")
+  .optional(),
+
+propertySize: Joi.when('propertyType', {
+  is: 'Own Property',
+  then: Joi.string().required().messages({
+    'any.required': 'Property size is required when property type is Own Property'
+  }),
+  otherwise: Joi.string().optional().allow('').strip()
+}),
+
   preferredState: Joi.string().required(),
   preferredCity: Joi.string().required()
 });

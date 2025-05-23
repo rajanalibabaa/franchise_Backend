@@ -12,5 +12,4 @@ const InstaApplySchema = mongoose.Schema({
 });
 
 const InstaApply = mongoose.model("InstaApply", InstaApplySchema);
-
-export default InstaApply; // Use default export
+export default InstaApply; // Use default export 
