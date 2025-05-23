@@ -89,6 +89,7 @@ propertySize: {
     type: String,
     required: true
   },
+
    uuid: {
     type: String,
     unique: true

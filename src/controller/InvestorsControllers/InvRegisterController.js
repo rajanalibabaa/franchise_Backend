@@ -273,3 +273,77 @@ export const deleteInvestor = async (req, res) => {
         res.status(500).json({ error: "Failed to delete Investor ", details: error.message });
     }
   }; 
+
+  export const likedBrands = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { brandId } = req.body; // Expecting brand ID to like/unlike
+
+    // Verify investor exists and is authorized
+    if (req.investorUser?.uuid !== uuid) {
+      return res.status(403).json(
+        new ApiResponse(403, null, "Unauthorized access to this resource")
+      );
+    }
+
+    const investor = await InvsRegister.findOne({ uuid });
+    if (!investor) {
+      return res.status(404).json(
+        new ApiResponse(404, null, "Investor not found")
+      );
+    }
+
+    // Check if brand is already liked
+    const brandIndex = investor.likedBrands.indexOf(brandId);
+    
+    if (brandIndex === -1) {
+      // Add to liked brands
+      investor.likedBrands.push(brandId);
+    } else {
+      // Remove from liked brands (unlike)
+      investor.likedBrands.splice(brandIndex, 1);
+    }
+
+    await investor.save();
+
+    return res.status(200).json(
+      new ApiResponse(200, investor.likedBrands, "Liked brands updated successfully")
+    );
+  } catch (err) {
+    console.error("Update liked brands error:", err);
+    return res.status(400).json({
+      error: "Failed to update liked brands",
+      details: err.message,
+    });
+  }
+};
+
+export const getLikedBrands = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+
+    // Verify investor exists and is authorized
+    if (req.investorUser?.uuid !== uuid) {
+      return res.status(403).json(
+        new ApiResponse(403, null, "Unauthorized access to this resource")
+      );
+    }
+
+    const investor = await InvsRegister.findOne({ uuid }).populate('likedBrands');
+    if (!investor) {
+      return res.status(404).json(
+        new ApiResponse(404, null, "Investor not found")
+      );
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, investor.likedBrands, "Liked brands retrieved successfully")
+    );
+  } catch (err) {
+    console.error("Get liked brands error:", err);
+    return res.status(400).json({
+      error: "Failed to get liked brands",
+      details: err.message,
+    });
+  }
+};

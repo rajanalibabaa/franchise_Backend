@@ -467,10 +467,14 @@ const singleFileFields = [
 
 const createBrandListing = async (req, res) => {
   try {
+
+    if (!req.body.personalDetails || !req.body.franchiseDetails) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
     // Parse form data from req.body
     const personalDetails = JSON.parse(req.body.personalDetails || '{}');
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
-    const brandDetails = JSON.parse(req.body.brandDetails || '{}');
+    const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
 console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
 console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
 console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
@@ -507,7 +511,6 @@ console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ fr
       pancard: uploadedFiles.pancard || [],
         gstCertificate: uploadedFiles.gstCertificate || [],
         brandLogo: uploadedFiles.brandLogo || [],
-        companyImage: uploadedFiles.companyImage || [],
         exterioroutlet: uploadedFiles.exterioroutlet || [],
         interiorOutlet: uploadedFiles.interiorOutlet || [],
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],

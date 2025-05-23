@@ -14,11 +14,11 @@ upload.fields([
   { name: 'pancard', maxCount: 1 },
   { name: 'gstCertificate', maxCount: 1 },
   { name: 'brandLogo', maxCount: 1 },
-  { name: 'companyImage', maxCount: 10 },
-  { name: 'exterioroutlet', maxCount: 10 },
+  // { name: 'companyImage', maxCount: 10 },
+  { name: 'exteriorOutlet', maxCount: 10 },
   { name: 'interiorOutlet', maxCount: 10},
-  { name: 'franchisePromotionVideo' , maxCount: 1},
-  { name: 'brandPromotionVideo', maxCount: 1 },
+  { name: 'franchisePromotionVideo' , maxCount: 2},
+  { name: 'brandPromotionVideo', maxCount: 2 },
 ])
 
 ,
