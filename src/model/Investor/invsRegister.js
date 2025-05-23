@@ -27,7 +27,7 @@ const invsRegisterSchema = new mongoose.Schema(
   address: {
     type: String,
     required: false
-  },
+  },  
   pincode: {
     type: String,
     required:  false
@@ -69,14 +69,18 @@ specifyOccupation: {
     type: String,
     required: true
   },
-  propertyType: {
-    type: String,
-    required:  false
-  },
-  propertySize: {
-    type: String,
-    required: true
-  }, 
+propertyType: {
+  type: String,
+  required: false,
+  enum: ["Own Property", "Rental Property"],
+  trim: true
+},
+propertySize: {
+  type: String,
+  required: function () {
+    return this.propertyType === "Own Property";
+  }
+},
   preferredState: {
     type: String,
     required: true
