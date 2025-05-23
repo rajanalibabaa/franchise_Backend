@@ -15,12 +15,16 @@ import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js
 import { fbPostsRouter } from "./src/Routes/AdminRoutes/SocialMediaRoutes/fbPostsRoutes.js";
 import { videoAdvertiseRoute } from "./src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js";
 
+import { frontendHomePageBrandsRouter } from "./src/Routes/FeatureRoutes/FrontendhomePageRoutes/frontendHomePageBrandsRoutes.js";
+
+
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
 import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
 import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
+import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
 
 
 const router = express.Router();
@@ -59,5 +63,14 @@ router.use('/v1/login', Login)
 router.use('/v1/otpverify',sendOtpRouter)
 
 
+
+
+// frondend home page routes
+
+router.use('/v1/homepage', frontendHomePageBrandsRouter)
+
+
+// send otp verify otp royutes
+router.use('/v1/otp',sendOTPVerifyOTPRoutes)
 
 export default router;
