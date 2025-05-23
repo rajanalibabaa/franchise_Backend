@@ -28,7 +28,20 @@ export const createInvestor = async (req, res) => {
 
     // console.log("Incoming data:", req.body);
 
-    
+      // Trim propertyType to prevent enum mismatch
+    propertyType = propertyType?.trim();
+
+    // Validate propertySize based on propertyType
+    if (propertyType === 'Own Property') {
+      if (!propertySize || propertySize.trim() === '') {
+        return res.status(400).json(
+          new ApiResponse(400, null, "Property size is required for 'Own Property'")
+        );
+      }
+    } else {
+      propertySize = undefined; // Not needed for Rental
+    }
+
     
     const exists = await InvsRegister.findOne({
       $or: [
@@ -209,6 +222,23 @@ if (occupation === 'Other') {
   // Clear specifyOccupation if occupation is not 'Other'
   updateData.specifyOccupation = undefined;
 }
+
+// Trim propertyType
+const trimmedPropertyType = propertyType?.trim();
+updateData.propertyType = trimmedPropertyType;
+
+// Handle propertySize validation
+if (trimmedPropertyType === 'Own Property') {
+  if (!propertySize || propertySize.trim() === '') {
+    return res.status(400).json(
+      new ApiResponse(400, null, "Property size is required for 'Own Property'")
+    );
+  }
+  updateData.propertySize = propertySize;
+} else {
+  updateData.propertySize = undefined;
+}
+
 
     const updatedInvestor = await InvsRegister.findOneAndUpdate(
       { uuid: req.investorUser?.uuid },
