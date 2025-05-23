@@ -7,7 +7,6 @@ import {
     deleteInstaApply,
 } from "../../controller/InstaApplyController/instaApplyController.js";
 import { validateInstaApply } from "../../Validation/InstaApplyListing/InstaApplyListing.js";
-
 const router = express.Router();
 
 // Routes

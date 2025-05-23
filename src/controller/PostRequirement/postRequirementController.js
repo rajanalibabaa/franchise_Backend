@@ -1,4 +1,6 @@
 import { PostRequirement } from '../../model/Post Requirement/postRequirement.js';
+import {sendPostRequirementEmail} from '../../utils/Centralized Email/centralizedEmail.js'
+
 
 export const createPostRequirement = async (req, res) => {
   try {
@@ -23,13 +25,13 @@ export const createPostRequirement = async (req, res) => {
       name,
       address,
       country,
-      pincode,
+      pincode, 
       city,
       state,
       mobileNumber,
       whatsappNumber,
       email,
-      industryType,
+      industryType, 
       investmentRange,
       floorAreaRequirement,
       timelineToStart,
@@ -37,6 +39,10 @@ export const createPostRequirement = async (req, res) => {
     });
 
     await newRequirement.save();
+    
+     // Send email after successful save
+    await sendPostRequirementEmail(email,name,address,country,pincode,city,state,mobileNumber,whatsappNumber,industryType,investmentRange,floorAreaRequirement,timelineToStart,needLoan);
+
     res.status(201).json({ message: 'PostRequirement created successfully', data: newRequirement });
   } catch (error) {
     res.status(400).json({ error: error.message });

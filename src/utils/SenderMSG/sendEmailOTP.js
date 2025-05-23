@@ -13,8 +13,11 @@ export const sendEmailOTP = async (email, otp) => {
     auth: {
       user: process.env.EMAIL_USER,   // Your Gmail
       pass: process.env.EMAIL_PASS    // App password or your mail pass
-
+    },
+    tls: {
+      rejectUnauthorized: false // <--- THIS FIXES THE SELF-SIGNED CERT ERROR
     }
+     
   });
 
   const mailOptions = {

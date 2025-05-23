@@ -1,36 +1,37 @@
 import express from "express";
-import { createBrandListing,  deleteBrandListingByUUID,  getAllBrandListing,  getBrandListingByUUID,  updateBrandImageListingByUUID, updateBrandListingByUUID } from "../../controller/BrandController/BrandListingController.js";
 import upload from "../../utils/Uploads/multerConfig.js";
+import { createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,updateBrandListingByUUID} from "../../controller/BrandController/BrandListingController.js"
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
-
+import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
 
  
+ 
 router.post(
-    "/createBrandListing",verifyJWT,
-    upload.fields([
-        
-         { name: 'brandLogo' },
-  { name: 'businessRegistration' },
-  { name: 'gstCertificate' },
-  { name: 'franchiseAgreement' },
-  { name: 'menuCatalog' },
-  { name: 'interiorPhotos' },
-  { name: 'fssaiLicense' },
-  { name: 'panCard' },
-  { name: 'aadhaarCard' },
-  { name: 'gallery'},
-  
-      ]),
+    "/createBrandListing",
+upload.fields([
+  { name: 'pancard', maxCount: 1 },
+  { name: 'gstCertificate', maxCount: 1 },
+  { name: 'brandLogo', maxCount: 1 },
+  { name: 'companyImage', maxCount: 10 },
+  { name: 'exterioroutlet', maxCount: 10 },
+  { name: 'interiorOutlet', maxCount: 10},
+  { name: 'franchisePromotionVideo' , maxCount: 1},
+  { name: 'brandPromotionVideo', maxCount: 1 },
+])
+
+,
       createBrandListing
     )
-router.get("/getAllBrandListing", getAllBrandListing);
-// router.get("/getBrandListingByUUID/:uuid", verifyJWT,
-//     getBrandListingByUUID);
-router.get("/getBrandListingByUUID/:uuid",verifyJWT, getBrandListingByUUID);
+router.get("/getAllBrandListing", getAllBrands);
+router.get("/getBrandListingByUUID/:uuid",getBrandListingByUUID);
 router.patch("/updateBrandListingByUUID/:uuid", updateBrandListingByUUID)
 router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
-router.patch("/updateBrandImageListingByUUID/:uuid", updateBrandImageListingByUUID)
+
+//brand Apply form for franchise ROutes
+
+router.post('/createInstaApply',instaApplyBrnadFormController)
 
 export default router;
+

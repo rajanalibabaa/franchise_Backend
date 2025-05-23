@@ -2,13 +2,14 @@ import express from "express";
 import {
   verifyOTP,
   requestMobileOtp,
-    requestWhatsAppOtp, 
-} from "../../controller/BrandController/sendOTPController.js";
+    requestWhatsAppOtp,
+    requestEmailOtp, 
+} from "../../controller/otpController/sendOTPController.js";
 
-const router = express.Router();
+const sendOtpRouter = express.Router();
+sendOtpRouter.post("/send-otp-email", requestEmailOtp);
+sendOtpRouter.post("/send-otp-mobile", requestMobileOtp);
+sendOtpRouter.post("/send-whatsapp-otp", requestWhatsAppOtp);
+sendOtpRouter.post("/verify-otp", verifyOTP);
 
-router.post("/send-otp", requestMobileOtp);
-router.post("/send-whatsapp-otp", requestWhatsAppOtp);
-router.post("/verify-otp", verifyOTP);
-
-export default router;
+export default sendOtpRouter;

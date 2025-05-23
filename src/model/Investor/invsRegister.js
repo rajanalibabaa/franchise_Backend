@@ -1,48 +1,97 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
+
 const invsRegisterSchema = new mongoose.Schema(
   {
-    // Personal Info
-    firstName: { type: String, required: true, trim: true },
-    mobileNumber: { type: String, required: true, trim: true },
-    whatsappNumber: { type: String, required: true, trim: true },
-    email: { type: String, required: true, lowercase: true, trim: true },
-
-    // Address Info
-    address: { type: String, required: true },
-    country: { type: String, required: true },
-    pincode: { type: String, required: true },
-    state: { type: String },
-    district: { type: String },
-    city: { type: String },
-
-    // Investment Info
-    category: {
-      type: String,
-      required: true,
-    },
-    investmentRange: {
-      type: String,
-      required: true,
-    },
-    // capital: { type: Number, required: true },
-    occupation: { type: String , required: true},
-    propertytype: {
-      type: String,
-      
-      required: true,
-    },
-    lookingFor: { type: String , required: true},
-    uuid:{
-      type: String,
-      required: true,
-    }
+    firstName: {
+    type: String,
+    required: true,
+    trim: true
   },
-  {
-    timestamps: true,
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true
+  },
+  mobileNumber: {
+    type: String,
+    required: true,
+    match: [/^\+91\d{10}$/, 'Please enter a valid mobile number with country code ']
+  },
+  whatsappNumber: {
+    type: String,
+    match: [/^\+91\d{10}$/, 'Please enter a valid WhatsApp number with country code']
+  },
+  address: {
+    type: String,
+    required: false
+  },
+  pincode: {
+    type: String,
+    required:  false
+  }, 
+  country : {
+     type: String,
+     required :  false
+  },
+  state: {
+    type: String,
+    required:  false
+  }, 
+  city: {
+    type: String,
+    required:  false
+  },
+occupation: {
+  type: String,
+  required:  false,
+  enum: [ "Student", "Salaried Professional", "Bussiness Owner / Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"] // Add valid options
+},
+specifyOccupation: {
+  type: String,
+  required: function() {
+    return this.occupation === 'Other';
+  },
+  trim: true
+},
+  category: {
+    type: String,
+    enum: [ ],
+    required: true
+  },
+  investmentRange: {
+    type: String,
+    required: true
+  },
+  investmentAmount: {
+    type: String,
+    required: true
+  },
+  propertyType: {
+    type: String,
+    required:  false
+  },
+  propertySize: {
+    type: String,
+    required: true
+  }, 
+  preferredState: {
+    type: String,
+    required: true
+  },
+  preferredCity: {
+    type: String,
+    required: true
+  },
+   uuid: {
+    type: String,
+    unique: true
   }
-);
+}, {
+  timestamps: true // Automatically adds createdAt and updatedAt fields
+});
 
 invsRegisterSchema.methods.generateAccessToken = function () {
   return jwt.sign(
