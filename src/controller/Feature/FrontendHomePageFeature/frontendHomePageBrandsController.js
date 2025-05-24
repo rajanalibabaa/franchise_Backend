@@ -4,7 +4,7 @@ import { ApiResponse } from "../../../utils/ApiResponse.js"
 const getAllnewRegisterBrands = async (req,res) => {
     
     try {
-        const newRegisterBrands = await BrandListing.find({}).sort({ createdAt : -1 }).select(" -_id -__v -createdAt -updatedAt -uuid -personalDetails.email -personalDetails.email -personalDetails.mobileNumber -personalDetails.whatsappNumber -personalDetails.pancardNumber -personalDetails.gstNumber -personalDetails.facebook -personalDetails.instagram  -personalDetails.linkedin -personalDetails.fullName -brandDetails.pancard -brandDetails.gstCertificate ")
+        const newRegisterBrands = await BrandListing.find({}).sort({ createdAt : -1 }).select(" -_id -__v -createdAt -updatedAt  -personalDetails.email -personalDetails.email -personalDetails.mobileNumber -personalDetails.whatsappNumber -personalDetails.pancardNumber -personalDetails.gstNumber -personalDetails.facebook -personalDetails.instagram  -personalDetails.linkedin -personalDetails.fullName -brandDetails.pancard -brandDetails.gstCertificate ")
     
         if (!newRegisterBrands) {
             return res.json(
