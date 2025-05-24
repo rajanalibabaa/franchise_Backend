@@ -1,8 +1,11 @@
 
 
 import  express  from "express";
-import { sendOTP } from "../../controller/otpController/sendOTPandVerifyOTPController.js";
+import { existingEmailOTP, generateNewEmailOTP, verifyExistingEmailOTP, verifynewEmailOTP } from "../../controller/otpController/sendOTPandVerifyOTPController.js";
 
 export const sendOTPVerifyOTPRoutes = express.Router();
 
-sendOTPVerifyOTPRoutes.post('/sendOTP',sendOTP)
+sendOTPVerifyOTPRoutes.post('/generateNewEmailOTP',generateNewEmailOTP)
+sendOTPVerifyOTPRoutes.post('/verifynewEmailOTP',verifynewEmailOTP)
+sendOTPVerifyOTPRoutes.post('/existingEmailOTP',existingEmailOTP)
+sendOTPVerifyOTPRoutes.post('/verifyExistingEmailOTP',verifyExistingEmailOTP)
