@@ -1,7 +1,8 @@
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
+import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
-
+import FavoriteBrandsInvestor from "../../model/Investor/favoriteBrandsInvestor.js";
 
 export const createInvestor = async (req, res) => {
   try {
@@ -274,76 +275,77 @@ export const deleteInvestor = async (req, res) => {
     }
   }; 
 
-  export const likedBrands = async (req, res) => {
+
+export const toggleFavoriteBrand = async (req, res) => {
   try {
-    const { uuid } = req.params;
-    const { brandId } = req.body; // Expecting brand ID to like/unlike
+    const { investorUserId, branduuid, liked } = req.body;
 
-    // Verify investor exists and is authorized
-    if (req.investorUser?.uuid !== uuid) {
-      return res.status(403).json(
-        new ApiResponse(403, null, "Unauthorized access to this resource")
+    const investorDoc = await InvsRegister.findById(investorUserId);
+    if (!investorDoc) return res.status(404).json({ error: "Investor not found" });
+
+    const brandDoc = await BrandListing.findById(branduuid);
+    if (!brandDoc) return res.status(404).json({ error: "Brand not found" });
+
+    let favDoc = await FavoriteBrandsInvestor.findOne({ InvestorUserId: investorUserId });
+    if (!favDoc) {
+      favDoc = await FavoriteBrandsInvestor.create({
+        InvestorUserId: investorUserId,
+        favoriteBrands: [],
+      });
+    }
+
+    const exists = favDoc.favoriteBrands.some((item) => item.branduuid.equals(branduuid));
+
+    if (liked && !exists) {
+      favDoc.favoriteBrands.push({ branduuid });
+    } else if (!liked && exists) {
+      favDoc.favoriteBrands = favDoc.favoriteBrands.filter(
+        (item) => !item.branduuid.equals(branduuid)
       );
     }
 
-    const investor = await InvsRegister.findOne({ uuid });
-    if (!investor) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "Investor not found")
-      );
-    }
-
-    // Check if brand is already liked
-    const brandIndex = investor.likedBrands.indexOf(brandId);
-    
-    if (brandIndex === -1) {
-      // Add to liked brands
-      investor.likedBrands.push(brandId);
-    } else {
-      // Remove from liked brands (unlike)
-      investor.likedBrands.splice(brandIndex, 1);
-    }
-
-    await investor.save();
-
-    return res.status(200).json(
-      new ApiResponse(200, investor.likedBrands, "Liked brands updated successfully")
-    );
-  } catch (err) {
-    console.error("Update liked brands error:", err);
-    return res.status(400).json({
-      error: "Failed to update liked brands",
-      details: err.message,
-    });
+    await favDoc.save();
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("toggleFavoriteBrand error", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-export const getLikedBrands = async (req, res) => {
+// GET: Get all favorite brands for an investor
+export const getFavoriteBrands = async (req, res) => {
   try {
-    const { uuid } = req.params;
+    const { investorUserId } = req.params;
 
-    // Verify investor exists and is authorized
-    if (req.investorUser?.uuid !== uuid) {
-      return res.status(403).json(
-        new ApiResponse(403, null, "Unauthorized access to this resource")
-      );
-    }
+    const doc = await FavoriteBrandsInvestor.findOne({ InvestorUserId: investorUserId })
+      .populate("favoriteBrands.branduuid")
+      .lean();
 
-    const investor = await InvsRegister.findOne({ uuid }).populate('likedBrands');
-    if (!investor) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "Investor not found")
-      );
-    }
+    if (!doc) return res.status(200).json([]);
 
-    return res.status(200).json(
-      new ApiResponse(200, investor.likedBrands, "Liked brands retrieved successfully")
+    res.status(200).json(doc.favoriteBrands.map((b) => b.branduuid));
+  } catch (error) {
+    console.error("getFavoriteBrands error", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// DELETE: Remove a brand from favorites
+export const deleteFavoriteBrand = async (req, res) => {
+  try {
+    const { investorUserId, branduuid } = req.params;
+
+    const doc = await FavoriteBrandsInvestor.findOne({ InvestorUserId: investorUserId });
+    if (!doc) return res.status(404).json({ error: "Investor not found" });
+
+    doc.favoriteBrands = doc.favoriteBrands.filter(
+      (item) => !item.branduuid.equals(branduuid)
     );
-  } catch (err) {
-    console.error("Get liked brands error:", err);
-    return res.status(400).json({
-      error: "Failed to get liked brands",
-      details: err.message,
-    });
+
+    await doc.save();
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("deleteFavoriteBrand error", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
