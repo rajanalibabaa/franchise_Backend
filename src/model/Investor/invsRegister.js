@@ -51,6 +51,7 @@ occupation: {
 },
 specifyOccupation: {
   type: String,
+
   required: function() {
     return this.occupation === 'Other';
   },

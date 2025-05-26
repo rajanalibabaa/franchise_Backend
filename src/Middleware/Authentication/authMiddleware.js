@@ -8,7 +8,7 @@ export const verifyJWT = async (req,res,next) => {
  
     const token =  req.cookies?.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.body?.AccessToken
 
-    // console.log("ttttttttt: ",req.cookies?.AccessToken)
+    // console.log("ttttttttt: ",token)
     // console.log("============== : ",req.header("Authorization")?.replace("Bearer ","") )
 
     if (!token) {
@@ -44,7 +44,7 @@ export const verifyJWT = async (req,res,next) => {
     }
 
     const brandUser = await BrandListing?.findOne({ uuid: decodedToken.brandUserUUID })
-    const investorUser = await InvsRegister.findOne({ uuid: decodedToken.investorUUID });
+    const investorUser = await InvsRegister?.findOne({ uuid: decodedToken.investorUUID });
     const thirdPartyUser = await ThirdPartyAuth?.findOne({ uuid: decodedToken.investorUUID });
     // console.log("brandUser: ",brandUser)
     // console.log("investorUser: ",investorUser)

@@ -4,8 +4,9 @@ const favoriteBrandsInvestorSchema = new mongoose.Schema(
     {
         InvestorUserId:{type:mongoose.Schema.Types.ObjectId,ref:"InvsRegister",required:true},
         favoriteBrands:[{
-            branduuid:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing",required:true},
-            addedAt:{type:Date,default:Date.now}
+            brandID:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing",required:true},
+            addedAt:{type:Date,default:Date.now},
+            _id:false
         }],
         createdAt: { type: Date, default: Date.now },
         
@@ -15,8 +16,28 @@ const favoriteBrandsInvestorSchema = new mongoose.Schema(
     }
 );
 
-const FavoriteBrandsInvestor = mongoose.model(
-    "favoriteBrandsInvestor",
+export const FavoriteBrandsLikedByInvestor = mongoose.model(
+    "FavoriteBrandsLikedByInvestor",
     favoriteBrandsInvestorSchema
 );
-export default FavoriteBrandsInvestor;
+
+const favoriteBrandsSchema = new mongoose.Schema(
+    {
+        brandUserId:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing",required:true},
+        favoriteBrandByInvestors:[{
+            investorID:{type:mongoose.Schema.Types.ObjectId,ref:"InvsRegister",required:true},
+            addedAt:{type:Date,default:Date.now},
+             _id:false
+        }],
+        createdAt: { type: Date, default: Date.now },
+        
+    },
+    {
+        timestamps: true, // adds createdAt and updatedAt
+    }
+);
+
+export const FavoriteBrands = mongoose.model(
+    "FavoriteBrands",
+    favoriteBrandsSchema
+);
