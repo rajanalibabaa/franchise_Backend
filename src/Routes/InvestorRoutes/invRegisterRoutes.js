@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createInvestor, deleteInvestor, getAllInvestors, getInvestorByUUID,  updateInvestor,deleteFavoriteBrand,getFavoriteBrands,toggleFavoriteBrand} from '../../controller/InvestorsControllers/InvRegisterController.js';
+import { createInvestor, deleteInvestor, getAllInvestors, getInvestorByUUID,  updateInvestor,deleteFavoriteBrand,toggleFavoriteBrand, getFavoriteBrandsLikedByInvestorID} from '../../controller/InvestorsControllers/InvRegisterController.js';
 import { verifyJWT } from '../../Middleware/Authentication/authMiddleware.js';
 
 
@@ -16,12 +16,12 @@ InvestorRouter.patch('/updateInvestor/:uuid',verifyJWT, updateInvestor);
 
 InvestorRouter.delete('/deleteInvestor/:uuid',verifyJWT, deleteInvestor);
 
-InvestorRouter.post('/investor_favbrands/likedbrands',toggleFavoriteBrand)
+InvestorRouter.post('/investor_favbrands/likedbrands',verifyJWT,toggleFavoriteBrand)
 
 
-InvestorRouter.get('/investor_favbrands/favbrands',getFavoriteBrands)
+InvestorRouter.get('/investor_favbrands/favbrands/:uuid',verifyJWT,getFavoriteBrandsLikedByInvestorID)
 
-InvestorRouter.delete('/investor_favbrands/:uuid',deleteFavoriteBrand)
+InvestorRouter.delete('/investor_favbrands/delete/:uuid',verifyJWT,deleteFavoriteBrand)
 
 
 
