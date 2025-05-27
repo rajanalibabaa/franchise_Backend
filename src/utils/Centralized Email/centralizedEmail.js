@@ -2,7 +2,7 @@ import { sendEmail } from './emailService.js';
 
  export const sendBrandEmailPerfect= async (recipientEmail,brandCompanyName,investername,category,location,investment,emailSubject) => {
     try {
-        // Dummy data for testing
+
         
         const subject = "You Have A Good News, New Investor Register"
         const emailTemplateName = "brandRegister_template"; // Ensure this matches the template file name in the 'templates' folder

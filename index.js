@@ -11,6 +11,7 @@ import path from 'path';
 import s3Uploads from './src/Routes/s3Uploads/upload.js';
 import { getAllEndpoints } from './src/utils/endpoints/allEndPoints.js';
 import allRouters from './app.js';
+
 const app = express();
 
 dotenv.config();
@@ -29,6 +30,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), 'public')));
 // app.use(bodyParser.json());
 // app.use(bodyParser.urlencoded({ extended: true }));
+
 
 
 app.use(session({

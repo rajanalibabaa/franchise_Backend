@@ -1,71 +1,68 @@
 // models/Investment.js
 import mongoose from 'mongoose';
-import uuid from '../../utils/uuid.js'
+import uuid from '../../utils/uuid.js';
 
-const leadsSchema = new mongoose.Schema({
+const investorLeadSchema = new mongoose.Schema({
   uuid: {
     type: String,
     default: () => uuid(),
-    required: true
+    required: true,
+    unique: true
   },
-  investorName :{
-     type: String,
-  },
-  investorEmail: {
-    type: String,
+  investorEmail: { 
+    type: String, 
     required: true,
     trim: true,
-    lowercase: true,
-    match: [/.+\@.+\..+/, 'Please fill a valid email address']
+    lowercase: true
   },
-  category: {
-    type: String,
+  investorName: { 
+    type: String, 
     required: true,
-    enum: [ ],
-    default: 'Other'
+    trim: true
   },
+  category: [{
+    main: { type: String, required: true },
+    sub: { type: String, required: true },
+    child: { type: String, required: true }
+  }],
   location: {
-    type: String,
-    required: true
+    country: { type: String, required: true },
+    state: { type: String, required: true },
+    city: { type: String, required: true }
   },
-  investmentAmount: {
-    type: String,
+  investmentRange: { 
+    type: String, 
     required: true,
-  
+    enum: ['1_2_crores', '5_10_lakhs', '2_5_crores', '5_10_crores', '10_20_crores', '20+_crores']
   },
-   brandPerfectMatches: [{
-      email: String,
-      companyName: String
-    }],
-    brandPartialMatches: [{
-      email: String,
-      companyName: String
-    }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  brandPerfectMatches: [{
+    email: { type: String, trim: true, lowercase: true },
+    companyName: { type: String, trim: true },
+    brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'BrandListing' }
+  }],
+  brandPartialMatches: [{
+    email: { type: String, trim: true, lowercase: true },
+    companyName: { type: String, trim: true },
+    brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'BrandListing' }
+  }],
+  matchedBrandsCount: {
+    perfect: { type: Number, default: 0 },
+    partial: { type: Number, default: 0 },
+    total: { type: Number, default: 0 }
   }
+}, { 
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Update the updatedAt field before saving
-// leadsSchema.pre('save', function(next) {
-  // this.updatedAt = Date.now();
-  // next();
-// });
+// Add indexes for better query performance
+investorLeadSchema.index({ 'location.country': 1 });
+investorLeadSchema.index({ 'location.state': 1 });
+investorLeadSchema.index({ 'location.city': 1 });
+investorLeadSchema.index({ 'category.child': 1 });
+investorLeadSchema.index({ investmentRange: 1 });
+investorLeadSchema.index({ createdAt: -1 });
 
-// Create text index for search functionality
-// leadsSchema.index({
-  // investorEmail: 'text',
-  // category: 'text',
-  // location: 'text',
-  // brandPerfect: 'text',
-  // brandPartial: 'text'
-// });
-// 
-const investerRegisterleadsSchema = mongoose.model('lead', leadsSchema);
-
-export default investerRegisterleadsSchema; 
+const InvestorLead = mongoose.model('InvestorLead', investorLeadSchema);
+export default InvestorLead;
