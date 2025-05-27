@@ -56,11 +56,8 @@ specifyOccupation: {
   },
   trim: true
 },
-  category: {
-    type: String,
-    enum: [ ],
-    required: true
-  },
+    category: [{ main: { type: String }, sub: { type: String },child: { type: String } }],
+
   investmentRange: {
     type: String,
     required: true
