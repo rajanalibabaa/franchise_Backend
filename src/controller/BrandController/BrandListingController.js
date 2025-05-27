@@ -478,7 +478,16 @@ const createBrandListing = async (req, res) => {
 console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
 console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
 console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
-
+// Check if email already exists
+    const existingBrand = await BrandListing.findOne({
+      "personalDetails.email": personalDetails.email,
+    });
+    if (existingBrand) {
+      return res.status(409).json({
+        success: false,
+        message: "Brand with this email already exists",
+      });
+    }
 
     // Upload files to S3 and store URLs
     const uploadedFiles = {};
