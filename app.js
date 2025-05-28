@@ -24,6 +24,7 @@ import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
 import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
+import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
 
 
 const router = express.Router();
@@ -71,5 +72,7 @@ router.use('/v1/homepage', frontendHomePageBrandsRouter)
 
 // send otp verify otp royutes
 router.use('/v1/otp',sendOTPVerifyOTPRoutes)
+
+router.use('/v1/like',likeRouter)
 
 export default router;
