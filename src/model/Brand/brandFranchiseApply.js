@@ -18,7 +18,8 @@ const formSubmissionSchema = new mongoose.Schema(
     planToInvest: { type: String, required: true },
     readyToInvest: { type: String, required: true },
     brandId: { type: String, required: true },
-  brandName: { type: String }
+  brandName: { type: String },
+  brandEmail: { type: String},
   },
   {
     timestamps: true, // adds createdAt and updatedAt

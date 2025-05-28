@@ -12,7 +12,8 @@ const instaApplyBrnadFormController = async (req, res) => {
       planToInvest,
       readyToInvest,
       brandId,
-      brandName
+      brandName,
+      brandEmail
     } = req.body;
     // Validate required fields
 console.log(req.body);
@@ -36,7 +37,8 @@ console.log(req.body);
       planToInvest,
       readyToInvest,
       brandId,
-      brandName
+      brandName,
+      brandEmail
     });
 
     await newSubmission.save();
