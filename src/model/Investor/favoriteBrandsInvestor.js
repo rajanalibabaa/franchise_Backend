@@ -41,3 +41,24 @@ export const FavoriteBrands = mongoose.model(
     "FavoriteBrands",
     favoriteBrandsSchema
 );
+
+const favoriteBrandLikedsSchema = new mongoose.Schema(
+    {
+        brandUserId:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing",required:true},
+        favoriteBrandBybrand:[{
+            likedBrandID:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing",required:true},
+            addedAt:{type:Date,default:Date.now},
+             _id:false
+        }],
+        createdAt: { type: Date, default: Date.now },
+        
+    },
+    {
+        timestamps: true, // adds createdAt and updatedAt
+    }
+);
+
+export const FavoriteBrandsLikedBybrand = mongoose.model(
+    "FavoriteBrandsLikedBybrand",
+    favoriteBrandLikedsSchema
+);
