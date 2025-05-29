@@ -5,7 +5,6 @@ import thirdPartyAuthRouter from './src/Routes/ThirdpartyRoutes/thirdpartyAuthen
 
 import feedbackRoutes from "./src/Routes/FeedbackRoutes/feedbackRoutes.js";
 import complaintRoutes from './src/Routes/ComplaintRoutes/complaintRoutes.js';
-import instaApplyRoutes from './src/Routes/InstaApplyRoutes/instaApplyRoutes.js';
 import brandRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js"
 import postRequireRoutes from  './src/Routes/PostRequirementRoutes/postRequirementRoutes.js';
@@ -35,7 +34,7 @@ router.use('/post',postRequireRoutes);
 
 router.use('/feedback', feedbackRoutes);
 router.use('/complaint', complaintRoutes);
-router.use('/instaApply', instaApplyRoutes);
+// router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
 router.use('/newIncomerInvestor',incomeInvestor );
 router.use('/v1/adminAuth', adminAuthRoutes);
