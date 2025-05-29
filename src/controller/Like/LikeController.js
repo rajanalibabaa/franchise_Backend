@@ -205,6 +205,8 @@ export const deleteFavoriteBrand = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
+    console.log("body :",brandID)
+
     if (!uuid || !brandID) {
       return res.status(400).json(new ApiResponse(400, {}, "UUID and brandID are required"));
     }
