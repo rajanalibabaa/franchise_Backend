@@ -133,7 +133,6 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    // Determine if investor or brand is requesting
     const isInvestor = !!investor;
     const isBrand = !!brand;
 
@@ -151,17 +150,25 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         return res.status(404).json(new ApiResponse(404, [], "No favorite brands found"));
       }
 
-      const brandIDs = favoriteData.favoriteBrands.map(item => item.brandID);
+      // Sort by newest liked first
+      const sortedFavorites = favoriteData.favoriteBrands.sort(
+        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
+      );
 
-      const favoriteBrands = await BrandListing.find({ _id: { $in: brandIDs } }).select(
+      const brandIDs = sortedFavorites.map(item => item.brandID.toString());
+
+      const allBrands = await BrandListing.find({ _id: { $in: brandIDs } }).select(
         '-_id -__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
       );
 
+      // Ensure order is preserved
+      // const orderedBrands = brandIDs.map(id => allBrands.find(brand => brand._id.toString() === id));
+      const orderedBrands = allBrands.reverse()
       return res.status(200).json(
-        new ApiResponse(200, favoriteBrands, "Favorite brands retrieved successfully")
+        new ApiResponse(200,orderedBrands , "Favorite brands retrieved successfully")
       );
     }
 
@@ -175,17 +182,24 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         return res.status(404).json(new ApiResponse(404, [], "No favorite brands found"));
       }
 
-      const likedBrandIDs = favoriteData.favoriteBrandBybrand.map(item => item.likedBrandID);
+      // Sort by newest liked first
+      const sortedFavorites = favoriteData.favoriteBrandBybrand.sort(
+        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
+      );
 
-      const favoriteBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
+      const likedBrandIDs = sortedFavorites.map(item => item.likedBrandID.toString());
+
+      const allBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
         '-_id -__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
       );
 
+      const orderedBrands = likedBrandIDs.map(id => allBrands.find(brand => brand._id.toString() === id));
+
       return res.status(200).json(
-        new ApiResponse(200, favoriteBrands.length, "Favorite brands retrieved successfully")
+        new ApiResponse(200, orderedBrands, "Favorite brands retrieved successfully")
       );
     }
 
@@ -195,6 +209,7 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
+
 
 
 
@@ -271,7 +286,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     const brand = req.brandUser;
 
     
-    if ((investor && uuid !== investor.uuid) || (brand && uuid !== brand.uuid)) {
+    if (( uuid !== investor?.uuid) && ( uuid !== brand?.uuid)) {
       return res.status(401).json(new ApiResponse(401, {}, "Unauthorized access"));
     }
 

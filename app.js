@@ -5,12 +5,10 @@ import thirdPartyAuthRouter from './src/Routes/ThirdpartyRoutes/thirdpartyAuthen
 
 import feedbackRoutes from "./src/Routes/FeedbackRoutes/feedbackRoutes.js";
 import complaintRoutes from './src/Routes/ComplaintRoutes/complaintRoutes.js';
-import instaApplyRoutes from './src/Routes/InstaApplyRoutes/instaApplyRoutes.js';
 import brandRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js"
 import postRequireRoutes from  './src/Routes/PostRequirementRoutes/postRequirementRoutes.js';
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
-import { BrandRegisterRoute } from "./src/Routes/BrandRoutes/BrandRegistorRoutes.js"
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
 import { fbPostsRouter } from "./src/Routes/AdminRoutes/SocialMediaRoutes/fbPostsRoutes.js";
 import { videoAdvertiseRoute } from "./src/Routes/AdminRoutes/AdminVideoAdvertiseRoutes.js";
@@ -38,7 +36,7 @@ router.use('/post',postRequireRoutes);
 
 router.use('/feedback', feedbackRoutes);
 router.use('/complaint', complaintRoutes);
-router.use('/instaApply', instaApplyRoutes);
+// router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
 router.use('/newIncomerInvestor',incomeInvestor );
 router.use('/v1/adminAuth', adminAuthRoutes);
@@ -52,7 +50,7 @@ router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
 // video advertise
 router.use('/v1/admin/videoAdvertise', videoAdvertiseRoute)
 
-router.use('/v1/brand/register',BrandRegisterRoute)
+// router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
 router.use('/v1/logout', logoutRouter)
