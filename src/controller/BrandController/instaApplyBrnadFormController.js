@@ -48,4 +48,4 @@ console.log(req.body);
   }
 };
 
-export default instaApplyBrnadFormController;
+export default instaApplyBrnadFormController;  
