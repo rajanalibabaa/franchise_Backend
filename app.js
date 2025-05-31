@@ -25,6 +25,7 @@ import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
 import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
 import { ViewedBrandsRouter } from "./src/Routes/ViewedBrandsRoutes/ViewedBrandsRoutes.js";
+import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
 
 
 const router = express.Router();
@@ -77,6 +78,10 @@ router.use('/v1/like',likeRouter)
 
 //view brands
 router.use('/v1/view',ViewedBrandsRouter)
+
+
+//Filter
+router.use('/v1/filter',filterRouter)
 
 
 export default router;

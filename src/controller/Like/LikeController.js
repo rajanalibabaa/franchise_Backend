@@ -158,17 +158,31 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
       const brandIDs = sortedFavorites.map(item => item.brandID.toString());
 
       const allBrands = await BrandListing.find({ _id: { $in: brandIDs } }).select(
-        '-_id -__v -updatedAt -createdAt ' +
+        ' -__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
       );
 
-      // Ensure order is preserved
-      // const orderedBrands = brandIDs.map(id => allBrands.find(brand => brand._id.toString() === id));
-      const orderedBrands = allBrands.reverse()
+
+      const revers = [];
+
+      for (let i = 0; i < brandIDs.length; i++) {
+        const id = brandIDs[i];
+
+        for (let j = 0; j < allBrands.length; j++) {
+          const brand = allBrands[j];
+
+          if (brand._id?.toString() === id) {
+            revers.push(brand);
+            break; // Once matched, stop inner loop
+          }
+        }
+      }
+
+      console.log(" revers: ",revers)  
       return res.status(200).json(
-        new ApiResponse(200,orderedBrands , "Favorite brands retrieved successfully")
+        new ApiResponse(200,revers , "Favorite brands retrieved successfully")
       );
     }
 
@@ -190,16 +204,30 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
       const likedBrandIDs = sortedFavorites.map(item => item.likedBrandID.toString());
 
       const allBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
-        '-_id -__v -updatedAt -createdAt ' +
+        ' -__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
       );
 
-      const orderedBrands = likedBrandIDs.map(id => allBrands.find(brand => brand._id.toString() === id));
+           const revers = [];
+
+      for (let i = 0; i < brandIDs.length; i++) {
+        const id = brandIDs[i];
+
+        for (let j = 0; j < allBrands.length; j++) {
+          const brand = allBrands[j];
+
+          if (brand._id?.toString() === id) {
+            revers.push(brand);
+            break;
+          }
+        }
+      }
+      
 
       return res.status(200).json(
-        new ApiResponse(200, orderedBrands, "Favorite brands retrieved successfully")
+        new ApiResponse(200, revers, "Favorite brands retrieved successfully")
       );
     }
 
