@@ -1,10 +1,114 @@
-import instaApplyBrandForm from "../../model/Brand/brandFranchiseApply.js";
+import {instaApplyBrandForm} from "../../model/Brand/brandFranchiseApply.js";
 import uuid from "../../utils/uuid.js";
 import { sendInstantApplyEmail } from "../../utils/Centralized Email/centralizedEmail.js";
+import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
 // Create
-const instaApplyBrnadFormController = async (req, res) => {
+// export const instaApplyBrnadFormController = async (req, res) => {
+//   try {
+//     const {id} = req.params
+
+//     const user = req?.investorUser || req?.brandUser
+    
+//     const {
+//       fullName,
+//       location,
+//       franchiseModel,
+//       franchiseType,
+//       investmentRange,
+//       planToInvest,
+//       readyToInvest,
+//       brandId,
+//       brandName,
+//       brandEmail,
+//       // investorEmail,
+//       mobileNumber,
+//     } = req.body;
+
+
+//     if (!!req?.investorUser) {
+//           console.log(id)
+//     // console.log(req.body)
+//     // console.log(user)
+//     const newSubmission = new instaApplyBrandForm({
+//       uuid: uuid(),
+//       fullName,
+//       location,
+//       franchiseModel,
+//       franchiseType,
+//       investmentRange,
+//       planToInvest,
+//       readyToInvest,
+//       brandId,
+//       brandName,
+//       brandEmail,
+      
+      
+//       apply : {
+//         applyBy : "Investor",
+//         investor_ID : user.uuid,
+//         investorEmail : investorEmail || user.email,
+//         mobileNumber,
+//       }
+//     });
+
+//     }
+//     if (!!req?.brandUser) {
+//     //       console.log(id)
+//     // console.log(req.body)
+//     console.log(user)
+//     }
+
+//     await newSubmission.save();
+
+//     // const newSubmission = new instaApplyBrandForm({
+//     //   uuid: uuid(),
+//     //   fullName,
+//     //   location,
+//     //   franchiseModel,
+//     //   franchiseType,
+//     //   investmentRange,
+//     //   planToInvest,
+//     //   readyToInvest,
+//     //   brandId,
+//     //   brandName,
+//     //   brandEmail,
+//     //   investorEmail,
+//     //   mobileNumber,
+//     // });
+
+//     // await newSubmission.save();
+
+//     // // Send email after successful save
+//     // await sendInstantApplyEmail(
+//     //   fullName,
+//     //   location,
+//     //   franchiseModel,
+//     //   franchiseType,
+//     //   investmentRange,
+//     //   planToInvest,
+//     //   readyToInvest,
+//     //   brandName,
+//     //   brandEmail,
+//     //   investorEmail,
+//     //   mobileNumber
+//     // );
+
+//     // res
+//     //   .status(201)
+//     //   .json({ message: "Form submitted successfully", data: newSubmission });
+//   } catch (error) {
+//     console.error("Create InstaApply Error:", error);
+//     res.status(500).json({ error: "Server error", details: error.message });
+//   }
+// };
+
+
+export const instaApplyBrandFormController = async (req, res) => {
   try {
+    const {id} = req.params
+    const user = req.investorUser || req.brandUser;
+
     const {
       fullName,
       location,
@@ -16,22 +120,38 @@ const instaApplyBrnadFormController = async (req, res) => {
       brandId,
       brandName,
       brandEmail,
-      investorEmail,
       mobileNumber,
+      investorEmail
     } = req.body;
 
-    if (
-      !brandId ||
-      !brandName ||
-      !brandEmail ||
-      !investorEmail ||
-      !mobileNumber
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "fields are Required",
-      });
+    // console.log(req.body)
+    // console.log(id)
+
+    if (!fullName || !brandId || !mobileNumber) {
+      return res.status(400).json(new ApiResponse(400, {}, "Missing required fields"));
     }
+
+    let applyData = {};
+
+    if (req.investorUser) {
+      applyData = {
+        applyBy: "Investor",
+        investor_ID: user.uuid,
+        investorEmail: investorEmail || user.email,
+        mobileNumber
+      };
+    } else if (req.brandUser) {
+      applyData = {
+        applyBy: "Brand",
+        brand_ID: user.uuid,
+        brandEmail: user.email,
+        mobileNumber
+      };
+    } else {
+      return res.status(403).json(new ApiResponse(403, {}, "Unauthorized user type"));
+    }
+
+    // console.log("applyData :",applyData)
 
     const newSubmission = new instaApplyBrandForm({
       uuid: uuid(),
@@ -45,13 +165,13 @@ const instaApplyBrnadFormController = async (req, res) => {
       brandId,
       brandName,
       brandEmail,
-      investorEmail,
-      mobileNumber,
+      apply: applyData
     });
 
     await newSubmission.save();
 
-    // Send email after successful save
+    
+
     await sendInstantApplyEmail(
       fullName,
       location,
@@ -66,14 +186,14 @@ const instaApplyBrnadFormController = async (req, res) => {
       mobileNumber
     );
 
-    res
-      .status(201)
-      .json({ message: "Form submitted successfully", data: newSubmission });
+    return res.status(201).json(new ApiResponse(201, newSubmission, "Application submitted successfully"));
+
   } catch (error) {
-    console.error("Create InstaApply Error:", error);
-    res.status(500).json({ error: "Server error", details: error.message });
+    console.error("Error in instaApplyBrandFormController:", error);
+    return res.status(500).json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
+
 
 // Get all
 export const getInstaApply = async (req, res) => {
@@ -178,4 +298,3 @@ export const deleteInstaApply = async (req, res) => {
   }
 };
 
-export default instaApplyBrnadFormController;

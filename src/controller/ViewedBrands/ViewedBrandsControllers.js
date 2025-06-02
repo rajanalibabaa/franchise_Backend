@@ -1,4 +1,5 @@
 import BrandListing from "../../model/Brand/brandListingPage.js";
+import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { ViewedBrandsByBrands, ViewedBrandsByInvestor, ViewedToBrands } from "../../model/ViewedBrands/viewedBrands.model.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
@@ -267,7 +268,7 @@ export const postViewBrands = async (req, res) => {
   }
 };
 
-export const getAllViewBrands = async (req,res) => {
+export const getAllViewBrandByID = async (req,res) => {
       const { id } = req.params;
       const investor = req.investorUser;
       const brand = req.brandUser;
@@ -374,3 +375,121 @@ export const getAllViewBrands = async (req,res) => {
         
       }
 }
+
+
+export const deleteViewBrandByID = async (req,res) => {
+      const { id } = req.params;
+      const investor = req.investorUser;
+      const { brandID } = req.body
+      const brand = req.brandUser;
+
+      console.log(id)
+      console.log(!!investor)
+      console.log(!!brand?._id)
+
+       if (id !== investor?.uuid  && id !== brand?.uuid) {
+          return res.json(new ApiResponse(403,{},"Unauthorized request"))
+        }
+
+      const target = await BrandListing.findOne({uuid:brandID})
+
+      if (!!investor && !!investor?._id) {
+        console.log("============")
+
+
+        const updatedView = await ViewedBrandsByInvestor.findOneAndUpdate(
+          { InvestorUserId : investor?._id},
+          {
+            $pull: {
+              viewedByInvestors : { BrandID: target._id}
+            }
+          }
+        )
+
+        if (!updatedView) {
+          new ApiResponse(500, {}, "Error whole deleting the viewed brand id from database")
+        }
+
+        await ViewedToBrands.findOneAndUpdate(
+          {brandUserID : target._id },
+          {
+            $pull: {
+              viewedByInvestors: { InvestorID: investor?._id}
+            }
+          }
+        )
+
+      return res.status(200).json(
+        new ApiResponse(200, updatedView, "Brand removed from investor's views")
+      );        
+      }
+
+
+      if (!!brand && !!brand?._id) {
+        console.log("============")
+
+        const updatedView = ViewedBrandsByBrands.findOneAndUpdate(
+          { brandUserID : brand?._id},
+          {
+            $pull: {
+              viewedByBrands : { BrandID: target._id}
+            }
+          }
+        )
+         if (!updatedView) {
+          new ApiResponse(500, {}, "Error whole deleting the viewed brand id from database")
+        }
+        await ViewedToBrands.findOneAndUpdate(
+          {brandUserID : target._id },
+          {
+            $pull: {
+              viewedByBrands: { BrandID: brand?._id}
+            }
+          }
+        )
+      return res.status(200).json(
+        new ApiResponse(200, updatedView, "Brand removed from brand views")
+      );
+      }    
+}
+
+export const getAllViewBrands = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const brand = req.brandUser;
+
+    if (id !== brand?.uuid) {
+      return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
+    }
+
+    const updatedData = await ViewedToBrands.findOne({ brandUserID: brand?._id });
+
+    console.log(updatedData)
+
+    if (!updatedData || !updatedData.viewedByInvestors?.length) {
+      return res.status(200).json(new ApiResponse(200, {}, "No one viewed yet"));
+    }
+
+    const investors = [];
+
+    for (const view of updatedData.viewedByInvestors) {
+      const investor = await InvsRegister.findById(view.InvestorID);
+      if (investor) {
+        investors.push(investor);
+      }
+    } 
+    const brands = [];
+
+    for (const view of updatedData.viewedByBrands) {
+      const brand = await BrandListing.findById(view.BrandID).select("-_id -_createdAt -_updatedAt -__v");
+      if (brand) {
+        brands.push(brand);
+      }
+    }
+
+    return res.status(200).json(new ApiResponse(200, {investors,brands}, "Investors retrieved successfully"));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json(new ApiResponse(500, {}, "Server error"));
+  }
+};
