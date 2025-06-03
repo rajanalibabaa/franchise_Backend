@@ -136,3 +136,69 @@ export const postViewBrands = async (req, res) => {
   }
 };
 
+export const getAllViewBrands = async (req,res) => {
+      const { id } = req.params;
+      const investor = req.investorUser;
+      const brand = req.brandUser;
+
+      
+      if (investor && investor._id) {
+        // console.log(" ======= :",id)
+        // console.log(" ======= :",investor.uuid)
+        if (id !== investor.uuid) {
+          return res.json(new ApiResponse(403,{},"Unauthorized request"))
+        }
+
+        const allViewedBrands = await ViewedBrandsByInvestor.find({InvestorUserId:investor._id}).select(" -_id -createdAt -updated -__v")
+
+        if (!allViewedBrands) {
+          return res.json(new ApiResponse(301,{},"no brands viewed yet"))
+        }
+
+        const brandIDs = allViewedBrands.flatMap(doc =>
+          (doc.viewedByInvestors || []).map(item => item.BrandID.toString())
+        );
+
+        // console.log(brandIDs);
+
+      const data = await BrandListing.find({ _id: { $in: brandIDs } }).select(
+        '-_id -__v -updatedAt -createdAt ' +
+        '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
+        '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
+        '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
+      );
+
+        return res.json(
+          new ApiResponse(200, data, "Viewed brands retrieved successfully")
+        );
+      }
+
+      if (brand && brand._id) {
+        // console.log(" ======= :",id)
+        if (id !== brand.uuid) {
+          return res.json(new ApiResponse(403,{},"Unauthorized request"))
+        }
+
+        const brandData = await ViewedBrandsByBrands.findOne({brandUserID:brand._id})
+        if (!brandData) {
+          return res.json(new ApiResponse(301,{},"no brands viewed yet"))
+        }
+
+        const brandIDs = brandData.viewedByBrands.map(item => item.BrandID.toString())
+        
+
+
+      const data = await BrandListing.find({ _id: { $in: brandIDs } }).select(
+        '-_id -__v -updatedAt -createdAt ' +
+        '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
+        '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
+        '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
+      );
+
+        return res.json(
+          new ApiResponse(200, data, "Viewed brands retrieved successfully")
+        );
+
+        
+      }
+}
