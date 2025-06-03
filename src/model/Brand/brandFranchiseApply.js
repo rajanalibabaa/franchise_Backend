@@ -69,6 +69,9 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
   brandEmail: {
     type: String
   },
+  brandLogo:{
+    type: String
+  },
   apply : {
 
     applyBy: {
@@ -104,6 +107,6 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
   timestamps: true
 });
 
-export const instaApplyBrandForm = mongoose.model('instaApplyBrandForm', instaApplyBrandFormSchema);
+export const instantApply = mongoose.model('instantApply', instaApplyBrandFormSchema);
 
 // export default instaApplyBrandForm;
