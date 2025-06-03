@@ -133,7 +133,6 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    // Determine if investor or brand is requesting
     const isInvestor = !!investor;
     const isBrand = !!brand;
 
@@ -151,17 +150,39 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         return res.status(404).json(new ApiResponse(404, [], "No favorite brands found"));
       }
 
-      const brandIDs = favoriteData.favoriteBrands.map(item => item.brandID);
+      // Sort by newest liked first
+      const sortedFavorites = favoriteData.favoriteBrands.sort(
+        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
+      );
 
-      const favoriteBrands = await BrandListing.find({ _id: { $in: brandIDs } }).select(
-        '-_id -__v -updatedAt -createdAt ' +
+      const brandIDs = sortedFavorites.map(item => item.brandID.toString());
+
+      const allBrands = await BrandListing.find({ _id: { $in: brandIDs } }).select(
+        ' -__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
       );
 
+
+      const revers = [];
+
+      for (let i = 0; i < brandIDs.length; i++) {
+        const id = brandIDs[i];
+
+        for (let j = 0; j < allBrands.length; j++) {
+          const brand = allBrands[j];
+
+          if (brand._id?.toString() === id) {
+            revers.push(brand);
+            break; // Once matched, stop inner loop
+          }
+        }
+      }
+
+      console.log(" revers: ",revers)  
       return res.status(200).json(
-        new ApiResponse(200, favoriteBrands, "Favorite brands retrieved successfully")
+        new ApiResponse(200,revers , "Favorite brands retrieved successfully")
       );
     }
 
@@ -175,17 +196,38 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         return res.status(404).json(new ApiResponse(404, [], "No favorite brands found"));
       }
 
-      const likedBrandIDs = favoriteData.favoriteBrandBybrand.map(item => item.likedBrandID);
+      // Sort by newest liked first
+      const sortedFavorites = favoriteData.favoriteBrandBybrand.sort(
+        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
+      );
 
-      const favoriteBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
-        '-_id -__v -updatedAt -createdAt ' +
+      const likedBrandIDs = sortedFavorites.map(item => item.likedBrandID.toString());
+
+      const allBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
+        ' -__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
       );
 
+           const revers = [];
+
+      for (let i = 0; i < brandIDs.length; i++) {
+        const id = brandIDs[i];
+
+        for (let j = 0; j < allBrands.length; j++) {
+          const brand = allBrands[j];
+
+          if (brand._id?.toString() === id) {
+            revers.push(brand);
+            break;
+          }
+        }
+      }
+      
+
       return res.status(200).json(
-        new ApiResponse(200, favoriteBrands.length, "Favorite brands retrieved successfully")
+        new ApiResponse(200, revers, "Favorite brands retrieved successfully")
       );
     }
 
@@ -198,12 +240,15 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
 
 
 
+
 export const deleteFavoriteBrand = async (req, res) => {
   try {
     const { uuid } = req.params;
     const { brandID } = req.body;
     const investor = req.investorUser;
     const brand = req.brandUser;
+
+    console.log("body :",brandID)
 
     if (!uuid || !brandID) {
       return res.status(400).json(new ApiResponse(400, {}, "UUID and brandID are required"));
@@ -269,7 +314,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     const brand = req.brandUser;
 
     
-    if ((investor && uuid !== investor.uuid) || (brand && uuid !== brand.uuid)) {
+    if (( uuid !== investor?.uuid) && ( uuid !== brand?.uuid)) {
       return res.status(401).json(new ApiResponse(401, {}, "Unauthorized access"));
     }
 
