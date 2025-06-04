@@ -7,4 +7,3 @@ export const frontendHomePageBrandsRouter = Router();
 frontendHomePageBrandsRouter.get("/getAllnewRegisterBrands", getAllnewRegisterBrands)
 frontendHomePageBrandsRouter.get("/getbrandsbyCityName", getbrandsbyCityName)
 frontendHomePageBrandsRouter.get("/getbrandsbyInvestmentRange", getbrandsbyInvestmentRange)
-
