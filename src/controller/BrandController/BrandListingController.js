@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
+import { InvsRegister } from "../../model/Investor/invsRegister.js";
 
 // Fields expected as file uploads (keyed by req.files)
 const singleFileFields = [
@@ -20,14 +21,12 @@ const createBrandListing = async (req, res) => {
     if (!req.body.personalDetails || !req.body.franchiseDetails) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-    // Parse form data from req.body
+    
     const personalDetails = JSON.parse(req.body.personalDetails || '{}');
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
     const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
-console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
-console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
-console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
-// Check if email already exists
+
+
     const existingBrand = await BrandListing.findOne({
       "personalDetails.email": personalDetails.email,
     });
@@ -36,6 +35,10 @@ console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ fr
         success: false,
         message: "Brand with this email already exists",
       });
+    }
+    const exists = await InvsRegister.find({email :personalDetails.email})
+    if (!exists) {
+      return res.json(new ApiResponse(403,null,"Email already exists"))
     }
 
     // Upload files to S3 and store URLs
@@ -55,7 +58,7 @@ console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ fr
       }
     }
 
-    console.log("✅ Uploaded File URLs:", uploadedFiles);
+    // console.log("✅ Uploaded File URLs:", uploadedFiles);
     // Construct brand data for MongoDB
     const newBrand = await BrandListing.create({
       personalDetails: {
@@ -78,6 +81,7 @@ console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ fr
     });
     await newBrand.save();
 
+
     if (!newBrand) {
       return res
         .status(500)
@@ -85,9 +89,9 @@ console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ fr
     }
 
     return res
-      .status(201)
+      .status(200)
       .json(
-        new ApiResponse(201, newBrand, "✅ Brand listing created successfully")
+        new ApiResponse(200, newBrand, "✅ Brand listing created successfully")
       );
   } catch (error) {
     console.error("❌ createBrandListing error:", error);
