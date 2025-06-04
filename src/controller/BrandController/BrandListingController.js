@@ -58,7 +58,7 @@ const createBrandListing = async (req, res) => {
       }
     }
 
-    // console.log("✅ Uploaded File URLs:", uploadedFiles);
+    console.log("✅ Uploaded File URLs:", uploadedFiles);
     // Construct brand data for MongoDB
     const newBrand = await BrandListing.create({
       personalDetails: {
