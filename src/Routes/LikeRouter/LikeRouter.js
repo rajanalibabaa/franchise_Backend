@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { verifyJWT } from '../../Middleware/Authentication/authMiddleware.js';
-import { deleteFavoriteBrand, getAllFavoriteBrandsByID, getAllLikedAndUnlikedBrand, toggleFavoriteBrand } from '../../controller/Like/LikeController.js';
+import { deleteFavoriteBrand, getAllFavoriteBrandsByID, getAllLikedAndUnlikedBrand, getBrandLikedByAll, toggleFavoriteBrand } from '../../controller/Like/LikeController.js';
 
 
 const likeRouter = Router();
@@ -16,6 +16,7 @@ likeRouter.delete('/delete-favbrand/:uuid',verifyJWT,deleteFavoriteBrand)
 
 likeRouter.get('/favbrands/getAllLikedAndUnlikedBrand/:uuid',verifyJWT,getAllLikedAndUnlikedBrand)
 
+likeRouter.get('/getBrandLikedByAll/:uuid',verifyJWT,getBrandLikedByAll)
 
 
 export { likeRouter };

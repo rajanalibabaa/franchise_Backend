@@ -128,18 +128,35 @@ const getAllBrands = async (req, res) => {
 const getBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
-    const brand = await BrandListing.findById(id);
-    if (!brand) return res.status(404).json({ error: "Brand not found" });
+    const brandData = req.brandUser;
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
+    if (id !== brandData?.uuid) {
+      return res.status(403).json(
+        new ApiResponse(403, null, "Unauthorized request")
+      );
+    }
+
+    const brand = await BrandListing.findOne({ uuid: brandData.uuid })
+      .select("-_id -createdAt -updatedAt -__v");
+
+    if (!brand) {
+      return res.status(404).json(
+        new ApiResponse(404, null, "Brand not found")
+      );
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, brand, "✅ Brand fetched successfully")
+    );
+
   } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Failed to fetch brand", details: error.message });
+    console.error("getBrandListingByUUID error:", error);
+    return res.status(500).json(
+      new ApiResponse(500, null, "Failed to fetch brand")
+    );
   }
 };
+
 
 const updateBrandListingByUUID = async (req, res) => {
   try {

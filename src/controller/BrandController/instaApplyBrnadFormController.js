@@ -108,6 +108,9 @@ export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {id} = req.params
     const user = req.investorUser || req.brandUser;
+    if (id !== user.uuid) {
+      return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
+    }
 
     const {
       fullName,
