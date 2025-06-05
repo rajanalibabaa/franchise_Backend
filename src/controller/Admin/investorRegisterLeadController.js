@@ -205,7 +205,6 @@ export const newIncomerInvestorController = async (req, res) => {
         },
       },
     });
-
     // 5. Final response
     if (results.length > 0) {
       return res.status(200).json({
