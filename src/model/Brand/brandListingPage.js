@@ -16,6 +16,9 @@ const FranchiseModelSchema = new mongoose.Schema(
     roi: { type: String },
     breakEven: { type: String },
     requiredInvestmentCapital: { type: String },
+    
+    marginOnSales : { type: String },
+    fixedReturn : { type: String },
     propertyType: { type: String },
   },
   { _id: false }
