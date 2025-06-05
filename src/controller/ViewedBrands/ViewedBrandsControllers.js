@@ -493,11 +493,11 @@ export const getAllViewBrands = async (req, res) => {
       }
     }
 
-    const reversebrands = brands.reverse()
-    const reverseinvestors = investors.reverse()
+    const updatedbrandsviews = brands.reverse()
+    const updatedinvestorsviews = investors.reverse()
 
     return res.status(200).json(
-      new ApiResponse(200, {reverseinvestors  , reversebrands }, "View data retrieved successfully")
+      new ApiResponse(200, {updatedinvestorsviews  , updatedbrandsviews }, "View data retrieved successfully")
     );
 
   } catch (error) {
