@@ -374,3 +374,48 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
   }
 };
 
+
+export const getBrandLikedByAll = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const brand = req.brandUser;
+
+    // console.log("Requesting Likes for Brand UUID:", uuid);
+
+    if (!brand || uuid !== brand.uuid) {
+      return res.status(401).json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+    const allLiked = await FavoriteBrands.findOne({ brandUserId: brand._id });
+    // console.log("All Liked Data:", allLiked);
+
+   
+    if (!allLiked || !Array.isArray(allLiked.favoriteBrandByInvestors) || allLiked.favoriteBrandByInvestors.length === 0) {
+      return res.status(404).json(new ApiResponse(404, [], "No users have liked this brand yet."));
+    }
+
+    const data = [];
+
+    for (const likeEntry of allLiked.favoriteBrandByInvestors) {
+      const investorId = likeEntry?.investorID;
+
+      if (investorId) {
+        const investor = await InvsRegister.findById(investorId).select("-_id -createdAt -updatedAt -__v") ||
+                         await BrandListing.findById(investorId).select("-_id -createdAt -updatedAt -__v");
+
+        if (investor) {
+          data.push(investor);
+        }
+      }
+    }
+
+    const updatedLike = data.reverse()
+
+    return res.status(200).json(new ApiResponse(200, updatedLike, "Brand liked by users retrieved successfully."));
+  } catch (error) {
+    console.error("Error fetching liked users for brand:", error);
+    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+};
+
+
