@@ -25,8 +25,8 @@ upload.fields([
       createBrandListing
     )
 router.get("/getAllBrandListing", getAllBrands);
-router.get("/getBrandListingByUUID/:uuid",getBrandListingByUUID);
-router.patch("/updateBrandListingByUUID/:uuid", updateBrandListingByUUID)
+router.get("/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
+router.patch("/updateBrandListingByUUID/:id", updateBrandListingByUUID)
 router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 
 //brand Apply form for franchise ROutes
