@@ -211,7 +211,7 @@ export const getAllInstaApply = async (req, res) => {
     )
   }
   try {
-    const instaApply = await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v");
+    const instaApply = (await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v")).reverse();
     return res.json(
       new ApiResponse(200,instaApply,"All instant apply application fetch successfully")
     )
