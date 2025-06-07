@@ -47,7 +47,7 @@ const invsRegisterSchema = new mongoose.Schema(
 occupation: {
   type: String,
   required:  false,
-  enum: [ "Student", "Salaried Professional", "Bussiness Owner / Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"] // Add valid options
+  enum: [ "Student", "Salaried Professional", "Bussiness Owner/ Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"] // Add valid options
 },
 specifyOccupation: {
   type: String,
@@ -57,7 +57,7 @@ specifyOccupation: {
   },
   trim: true
 },
-    category: [{ main: { type: String }, sub: { type: String },child: { type: String } }],
+    category: [{ main: { type: String , required: true}, sub: { type: String , required: true },child: { type: String , required: true } }],
 
   investmentRange: {
     type: String,
@@ -65,7 +65,6 @@ specifyOccupation: {
   },
   investmentAmount: {
     type: String,
-    required: true
   },
 propertyType: {
   type: String,
@@ -81,6 +80,10 @@ propertySize: {
 },
   preferredState: {
     type: String,
+    required: true
+  },
+  preferredDistrict: {
+    type: String, 
     required: true
   },
   preferredCity: {

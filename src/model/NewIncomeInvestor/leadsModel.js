@@ -20,11 +20,7 @@ const investorLeadSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  category: [{
-    main: { type: String, required: true },
-    sub: { type: String, required: true },
-    child: { type: String, required: true }
-  }],
+  category: [{ main: { type: String }, sub: { type: String },child: { type: String } }],
   location: {
     country: { type: String, required: true },
     state: { type: String, required: true },
@@ -33,7 +29,7 @@ const investorLeadSchema = new mongoose.Schema({
   investmentRange: { 
     type: String, 
     required: true,
-    enum: ['1_2_crores', '5_10_lakhs', '2_5_crores', '5_10_crores', '10_20_crores', '20+_crores']
+    // enum: ['1_2_crores', '5_10_lakhs', '2_5_crores', '5_10_crores', '10_20_crores', '20+_crores']
   },
   brandPerfectMatches: [{
     email: { type: String, trim: true, lowercase: true },

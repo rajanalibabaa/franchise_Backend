@@ -45,6 +45,7 @@ propertySize: Joi.when('propertyType', {
 }),
 
   preferredState: Joi.string().required(),
+  preferredDistrict: Joi.string().required(),
   preferredCity: Joi.string().required()
 });
 

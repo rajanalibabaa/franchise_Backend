@@ -4,8 +4,11 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
 import { FavoriteBrands, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import mongoose from "mongoose";
+import {newIncomerInvestorController} from "../../utils/All Leads/investerRegisterLeads.js";
 
 export const createInvestor = async (req, res) => {
+
+  console.log("Incoming request to create investor:", req.body);
   try {
     const {
      firstName,
@@ -25,6 +28,7 @@ export const createInvestor = async (req, res) => {
      propertyType,
      propertySize,
      preferredState,
+     preferredDistrict,
      preferredCity
     } = req.body;
 
@@ -67,11 +71,16 @@ export const createInvestor = async (req, res) => {
      propertyType,
      propertySize,
      preferredState,
+     preferredDistrict,
      preferredCity,
       uuid: uuid()
     });
 
     await investor.save();
+
+     newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
+
+
 
     return res.status(201).json(
       new ApiResponse(201, null, "Investor created successfully")
@@ -161,6 +170,7 @@ export const updateInvestor = async (req, res) => {
       propertyType,
       propertySize,
       preferredState,
+      preferredDistrict,
       preferredCity
     } = req.body;
 
@@ -196,6 +206,7 @@ export const updateInvestor = async (req, res) => {
       propertyType,
       propertySize,
       preferredState,
+      preferredDistrict,
       preferredCity
     };
 

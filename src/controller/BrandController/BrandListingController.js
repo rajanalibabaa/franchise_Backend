@@ -24,19 +24,19 @@ const createBrandListing = async (req, res) => {
     const personalDetails = JSON.parse(req.body.personalDetails || '{}');
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
     const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
-console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
-console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
-console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
+    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
+    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
+    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
 // Check if email already exists
-    const existingBrand = await BrandListing.findOne({
-      "personalDetails.email": personalDetails.email,
-    });
-    if (existingBrand) {
-      return res.status(409).json({
-        success: false,
-        message: "Brand with this email already exists",
-      });
-    }
+    // const existingBrand = await BrandListing.findOne({
+    //   "personalDetails.email": personalDetails.email,
+    // });
+    // if (existingBrand) {
+    //   return res.status(409).json({
+    //     success: false,
+    //     message: "Brand with this email already exists",
+    //   });
+    // }
 
     // Upload files to S3 and store URLs
     const uploadedFiles = {};
