@@ -1,4 +1,4 @@
-import {instaApplyBrandForm} from "../../model/Brand/brandFranchiseApply.js";
+import {instantApply} from "../../model/Brand/brandFranchiseApply.js";
 import uuid from "../../utils/uuid.js";
 import { sendInstantApplyEmail } from "../../utils/Centralized Email/centralizedEmail.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
@@ -108,6 +108,9 @@ export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {id} = req.params
     const user = req.investorUser || req.brandUser;
+    if (id !== user.uuid) {
+      return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
+    }
 
     const {
       fullName,
@@ -121,7 +124,8 @@ export const instaApplyBrandFormController = async (req, res) => {
       brandName,
       brandEmail,
       mobileNumber,
-      investorEmail
+      investorEmail,
+      brandLogo
     } = req.body;
 
     // console.log(req.body)
@@ -153,7 +157,7 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     // console.log("applyData :",applyData)
 
-    const newSubmission = new instaApplyBrandForm({
+    const newSubmission = new instantApply({
       uuid: uuid(),
       fullName,
       location,
@@ -165,6 +169,7 @@ export const instaApplyBrandFormController = async (req, res) => {
       brandId,
       brandName,
       brandEmail,
+      brandLogo,
       apply: applyData
     });
 
@@ -172,19 +177,19 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     
 
-    await sendInstantApplyEmail(
-      fullName,
-      location,
-      franchiseModel,
-      franchiseType,
-      investmentRange,
-      planToInvest,
-      readyToInvest,
-      brandName,
-      brandEmail,
-      investorEmail,
-      mobileNumber
-    );
+    // await sendInstantApplyEmail(
+    //   fullName,
+    //   location,
+    //   franchiseModel,
+    //   franchiseType,
+    //   investmentRange,
+    //   planToInvest,
+    //   readyToInvest,
+    //   brandName,
+    //   brandEmail,
+    //   investorEmail,
+    //   mobileNumber
+    // );
 
     return res.status(201).json(new ApiResponse(201, newSubmission, "Application submitted successfully"));
 
@@ -196,12 +201,20 @@ export const instaApplyBrandFormController = async (req, res) => {
 
 
 // Get all
-export const getInstaApply = async (req, res) => {
+export const getAllInstaApply = async (req, res) => {
+  const {id} = req.params
+  const BrandData = req.brandUser
+
+  if (id !== BrandData.uuid) {
+    return res.json(
+      new ApiResponse(401,{},"Unauthorized requset")
+    )
+  }
   try {
-    const instaApply = await instaApplyBrandForm.find();
-    res
-      .status(200)
-      .json({ message: "Insta Apply fetched successfully", data: instaApply });
+    const instaApply = await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v");
+    return res.json(
+      new ApiResponse(200,instaApply,"All instant apply application fetch successfully")
+    )
   } catch (error) {
     res
       .status(500)
@@ -213,13 +226,48 @@ export const getInstaApply = async (req, res) => {
 export const getInstaApplyById = async (req, res) => {
   try {
     const { id } = req.params;
-    const instaApply = await instaApplyBrandForm.findById(id);
-    if (!instaApply) {
-      return res.status(404).json({ message: "Insta Apply not found" });
+    const investor = req.investorUser 
+    const Brand = req.brandUser
+
+    if (id !== investor?.uuid && id !== Brand?.uuid) {
+      return res.json(
+      new ApiResponse(401,{},"Unauthorized requset")
+    )
     }
-    res
-      .status(200)
-      .json({ message: "Insta Apply fetched successfully", data: instaApply });
+
+    if (investor && investor.uuid) {
+            const data = await instantApply.find({"apply.investor_ID":investor.uuid}).select("-_id  -updatedAt -__v").sort({ createdAt: -1 });;
+      if (!data) {
+        return res.json(
+          new ApiResponse(309,{},"no brand apply yet")
+        )
+      }
+
+      return res.json(
+        new ApiResponse(200,data,"All instant apply fetch successfully")
+      )
+    }
+    if (Brand && Brand.uuid) {
+
+      const data = await instantApply.find({"apply.brand_ID":Brand.uuid}).select("-_id -createdAt -updatedAt -__v");
+      if (!data) {
+        return res.json(
+          new ApiResponse(309,{},"no brand apply yet")
+        )
+      }
+
+      return res.json(
+        new ApiResponse(200,data,"All instant apply fetch successfully")
+      )
+    }
+
+    // const instaApply = await instantApply.findById(id);
+    // if (!instaApply) {
+    //   return res.status(404).json({ message: "Insta Apply not found" });
+    // }
+    // res
+    //   .status(200)
+    //   .json({ message: "Insta Apply fetched successfully", data: instaApply });
   } catch (error) {
     res
       .status(500)

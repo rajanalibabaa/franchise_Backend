@@ -36,8 +36,8 @@ router.use('/v1/login/', Login)
 
 router.use('/post',postRequireRoutes);
 
-router.use('/feedback', feedbackRoutes);
-router.use('/complaint', complaintRoutes);
+router.use('/v1/feedback', feedbackRoutes);
+router.use('/v1/complaint', complaintRoutes);
 // router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
 // router.use('/newIncomerInvestor',incomeInvestor );

@@ -463,33 +463,46 @@ export const getAllViewBrands = async (req, res) => {
     }
 
     const updatedData = await ViewedToBrands.findOne({ brandUserID: brand?._id });
+    
 
-    console.log(updatedData)
-
-    if (!updatedData || !updatedData.viewedByInvestors?.length) {
-      return res.status(200).json(new ApiResponse(200, {}, "No one viewed yet"));
+    if (!updatedData) {
+      return res.status(200).json(new ApiResponse(200, {}, "No viewing data found"));
     }
 
     const investors = [];
-
-    for (const view of updatedData.viewedByInvestors) {
-      const investor = await InvsRegister.findById(view.InvestorID);
-      if (investor) {
-        investors.push(investor);
-      }
-    } 
     const brands = [];
 
-    for (const view of updatedData.viewedByBrands) {
-      const brand = await BrandListing.findById(view.BrandID).select("-_id -_createdAt -_updatedAt -__v");
-      if (brand) {
-        brands.push(brand);
+    if (updatedData.viewedByInvestors?.length) {
+      for (const view of updatedData.viewedByInvestors) {
+        const investor = await InvsRegister.findById(view.InvestorID);
+        if (investor) {
+          investors.push(investor);
+        }
       }
     }
 
-    return res.status(200).json(new ApiResponse(200, {investors,brands}, "Investors retrieved successfully"));
+    const seenBrandIds = new Set();
+    for (const view of updatedData.viewedByBrands || []) {
+      const brandIdStr = view.BrandID.toString();
+      if (!seenBrandIds.has(brandIdStr)) {
+        seenBrandIds.add(brandIdStr);
+        const brandData = await BrandListing.findById(view.BrandID).select("-_id -createdAt -updatedAt -__v");
+        if (brandData) {
+          brands.push(brandData);
+        }
+      }
+    }
+
+    const updatedbrandsviews = brands.reverse()
+    const updatedinvestorsviews = investors.reverse()
+
+    return res.status(200).json(
+      new ApiResponse(200, {updatedinvestorsviews  , updatedbrandsviews }, "View data retrieved successfully")
+    );
+
   } catch (error) {
-    console.error(error);
+    console.error("getAllViewBrands error:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Server error"));
   }
 };
+

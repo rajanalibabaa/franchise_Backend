@@ -1,10 +1,9 @@
 import { Router } from 'express';
 import { createFeedback } from '../../controller/FeedbackController/feedbackController.js';
-
-import {validateFeedback } from '../../Validation/feedbackListing/feedbackListing.js'; // Ensure the correct path
+import { verifyJWT } from '../../Middleware/Authentication/authMiddleware.js';
 
 const router = Router();
 
-router.post('/createFeedback', validateFeedback ,createFeedback);
+router.post('/createFeedback/:id',verifyJWT,createFeedback);
 
 export default router;
