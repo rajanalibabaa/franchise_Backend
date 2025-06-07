@@ -138,17 +138,19 @@ const verifyLogin = async (req, res) => {
       ]
     }).select("-createdAt -_id");;
 
-    console.log("thirdPartyUsers data:", thirdPartyUsers)
+    // console.log("thirdPartyUsers data:", thirdPartyUsers)
     
-    console.log("investorData:", investorData);
-    console.log("brandUserData:", brandUserData);
-    console.log("thirdPartyUsers:", thirdPartyUsers);
+    // console.log("investorData:", investorData);
+    // console.log("brandUserData:", brandUserData);
+    // console.log("thirdPartyUsers:", thirdPartyUsers);
 
     if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res.status(404).json(
         new ApiResponse(404, null, "User not found")
       );
     }
+
+    const userData = investorData || brandUserData
 
     const payload = {
       investorUUID: investorData?.uuid || null,
@@ -173,7 +175,8 @@ const verifyLogin = async (req, res) => {
       .json(
         new ApiResponse(200, {
           ...payload,
-          AccessToken
+          AccessToken,
+          userData
         }, "User verified and logged in")
       );
 

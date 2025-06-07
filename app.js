@@ -23,6 +23,10 @@ import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
 import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
+import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
+import { ViewedBrandsRouter } from "./src/Routes/ViewedBrandsRoutes/ViewedBrandsRoutes.js";
+import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
+import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.js";
 
 
 const router = express.Router();
@@ -32,8 +36,8 @@ router.use('/v1/login/', Login)
 
 router.use('/post',postRequireRoutes);
 
-router.use('/feedback', feedbackRoutes);
-router.use('/complaint', complaintRoutes);
+router.use('/v1/feedback', feedbackRoutes);
+router.use('/v1/complaint', complaintRoutes);
 // router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
 router.use('/newIncomerInvestor',incomeInvestor );
@@ -70,5 +74,19 @@ router.use('/v1/homepage', frontendHomePageBrandsRouter)
 
 // send otp verify otp royutes
 router.use('/v1/otp',sendOTPVerifyOTPRoutes)
+
+router.use('/v1/like',likeRouter)
+
+//view brands
+router.use('/v1/view',ViewedBrandsRouter)
+
+
+//Filter
+router.use('/v1/filter',filterRouter)
+
+
+// InstantApplyRouter
+router.use("/v1/instantapply",InstantApplyRouter)
+
 
 export default router;

@@ -60,6 +60,8 @@ export const sendInstantApplyEmail = async (
       readyToInvest: readyToInvest,
     };
 
+    console.log(" ============== :",emailData)
+
     // Call the sendEmail function
     await sendEmail(brandEmail, subject, emailTemplateName, emailData);
     
