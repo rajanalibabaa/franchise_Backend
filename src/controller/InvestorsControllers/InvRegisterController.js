@@ -78,6 +78,8 @@ export const createInvestor = async (req, res) => {
 
     await investor.save();
 
+    console.log("Investor created successfully:",email, firstName, category, country, state, preferredCity, investmentAmount );
+
      newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
 
 
