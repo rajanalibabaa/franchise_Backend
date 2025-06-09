@@ -1,16 +1,16 @@
-import Routes from 'express';
-import { newIncomerInvestorController, getNewInvestorLead} from '../../controller/Admin/investorRegisterLeadController.js';
+// import Routes from 'express';
+// import { newIncomerInvestorController, getNewInvestorLead} from '../../controller/Admin/investorRegisterLeadController.js';
 
-const newIncomerInvestor = Routes.Router();
+// const newIncomerInvestor = Routes.Router();
 
-newIncomerInvestor.post('/newIncomer', newIncomerInvestorController);
+// newIncomerInvestor.post('/newIncomer', newIncomerInvestorController);
 
-newIncomerInvestor.get('/getNewIncomer', getNewInvestorLead)
-
-
+// newIncomerInvestor.get('/getNewIncomer', getNewInvestorLead)
 
 
-export default newIncomerInvestor
+
+
+// export default newIncomerInvestor
 
 
 
