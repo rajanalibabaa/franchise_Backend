@@ -193,7 +193,7 @@
 //       }
 //     }
 
-//     // 4. Update lead with match data
+    // 4. Update lead with match data
 //     await InvestorLead.findByIdAndUpdate(newLead._id, {
 //       $set: {
 //         brandPerfectMatches: perfectMatchesData,
@@ -205,7 +205,6 @@
 //         },
 //       },
 //     });
-
 //     // 5. Final response
 //     if (results.length > 0) {
 //       return res.status(200).json({
@@ -233,7 +232,7 @@
 //     });
 //   }
 // };
-// // get all investor lead
+// get all investor lead
 
 // export const getNewInvestorLead = async (req, res) => {
 //   try {
