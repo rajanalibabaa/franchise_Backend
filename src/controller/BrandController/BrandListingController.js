@@ -25,7 +25,7 @@ const createBrandListing = async (req, res) => {
     const personalDetails = JSON.parse(req.body.personalDetails || '{}');
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
     const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
-<<<<<<< HEAD
+ 
     console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
     console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
     console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
@@ -39,7 +39,7 @@ const createBrandListing = async (req, res) => {
     //     message: "Brand with this email already exists",
     //   });
     // }
-=======
+
 
 
     const existingBrand = await BrandListing.findOne({
@@ -55,7 +55,7 @@ const createBrandListing = async (req, res) => {
     if (!exists) {
       return res.json(new ApiResponse(403,null,"Email already exists"))
     }
->>>>>>> dc41c17341e0301aea358a9aa41e1b20a28e91b7
+ 
 
     // Upload files to S3 and store URLs
     const uploadedFiles = {};
