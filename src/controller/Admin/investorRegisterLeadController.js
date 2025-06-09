@@ -2,33 +2,40 @@ import InvestorLead from "../../model/NewIncomeInvestor/leadsModel.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { sendBrandEmailPerfect } from "../../utils/Centralized Email/centralizedEmail.js";
 
-export const newIncomerInvestorController = async (req, res) => {
+export const newIncomerInvestorController = async (email,firstName,category,country,state,city,investmentRange) => {
   try {
-    const {
-      investorEmail,
-      investorName,
-      category,
-      country,
-      state,
-      city,
-      investmentRange,
-    } = req.body;
+    // const {
+    //   investorEmail,
+    //   investorName,
+    //   category,
+    //   country,
+    //   state,
+    //   city,
+    //   investmentRange,
+    // } = req.body;
+
+    const investorEmail = email
+    const investorName = firstName
+
+    // console.log(" ======data==== :",email,firstName,category,country,state,city,investmentRange)
+
 
     // Prepare query conditions
     const investorLocation = { country, state, city };
     const investorCategory = category.map((cat) => cat.child);
+    // console.log("Investor category:", investorCategory);
     // const investorCategorymain = category.map(cat => cat.main);
     // const investorCategorysub = category.map(cat => cat.sub);
 
-    console.log("Controller input:", {
-      investorEmail,
-      investorName,
-      category,
-      country,
-      state,
-      city,
-      investmentRange,
-    });
+    // console.log("Controller input:", {
+    //   investorEmail,
+    //   investorName,
+    //   category,
+    //   country,
+    //   state,
+    //   city,
+    //   investmentRange,
+    // });
     // Validate required fields
     const requiredFields = [
       investorEmail,
@@ -58,7 +65,7 @@ export const newIncomerInvestorController = async (req, res) => {
       investmentRange: investmentRange,
     });
     await newLead.save();
-    console.log(`New investor lead saved: ${investorEmail}`);
+    // console.log(`New investor lead saved: ${investorEmail}`);
 
     const emailedBrands = new Set();
     const results = [];
@@ -66,26 +73,27 @@ export const newIncomerInvestorController = async (req, res) => {
     const partialMatchesData = [];
 
     // Using child category from the input
-    console.log("Investor location and category:", {
-      investorLocation,
-      investorCategory,
-    });
+    // console.log("Investor location and category:", {
+    //   investorLocation,
+    //   investorCategory,
+    // });
+
+    // console.log("city :", investorLocation.city);
     // 2. Find PERFECT matches (category, location, and investment range)
     const perfectMatches = await BrandListing.find({
-      "personalDetails.brandCategories.child": investorCategory,
+      "personalDetails.brandCategories.child": { $in: investorCategory },
       "personalDetails.expansionLocation": {
         $elemMatch: {
           country: investorLocation.country,
           state: investorLocation.state,
-          $or: [{ city: investorLocation.city }, { city: "Not available" }],
-        },
+          city: { $in: [investorLocation.city, "Not available"] }
+        }
       },
       "franchiseDetails.modelsOfFranchise.investmentRange": investmentRange,
-      "personalDetails.email": { $ne: null },
+      "personalDetails.email": { $ne: null }
     });
-    console.log(
-      `Found ${perfectMatches.length} perfect matches for investor: ${investorEmail}`
-    );
+
+      console.log(" Perfect matches found:", perfectMatches.length);
 
     for (const brand of perfectMatches) {
       const brandEmail = brand.personalDetails.email;
@@ -145,6 +153,7 @@ export const newIncomerInvestorController = async (req, res) => {
       "personalDetails.email": { $ne: null },
       "personalDetails.email": { $nin: Array.from(emailedBrands) },
     });
+
 
     for (const brand of partialMatches) {
       const brandEmail = brand.personalDetails.email;
@@ -206,31 +215,34 @@ export const newIncomerInvestorController = async (req, res) => {
       },
     });
 
-    // 5. Final response
-    if (results.length > 0) {
-      return res.status(200).json({
-        status: 200,
-        message: `Matches found (${perfectMatchesData.length} perfect, ${partialMatchesData.length} partial)`,
-        data: results,
-        stats: {
-          total: results.length,
-          perfectMatches: perfectMatchesData.length,
-          partialMatches: partialMatchesData.length,
-        },
-      });
-    } else {
-      return res.status(404).json({
-        status: 404,
-        message: "No matching brands found",
-      });
-    }
+
+    console.log("partialMatchesData :",partialMatchesData)
+
+    // // 5. Final response
+    // if (results.length > 0) {
+    //   return res.status(200).json({
+    //     status: 200,
+    //     message: `Matches found (${perfectMatchesData.length} perfect, ${partialMatchesData.length} partial)`,
+    //     data: results,
+    //     stats: {
+    //       total: results.length,
+    //       perfectMatches: perfectMatchesData.length,
+    //       partialMatches: partialMatchesData.length,
+    //     },
+    //   });
+    // } else {
+    //   return res.status(404).json({
+    //     status: 404,
+    //     message: "No matching brands found",
+    //   });
+    // }
   } catch (error) {
     console.error("Controller error:", error);
-    return res.status(500).json({
-      status: 500,
-      message: "Internal server error",
-      error: error.message,
-    });
+    // return res.status(500).json({
+    //   status: 500,
+    //   message: "Internal server error",
+    //   error: error.message,
+    // });
   }
 };
 // get all investor lead
