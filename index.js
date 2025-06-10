@@ -11,6 +11,7 @@ import path from 'path';
 import s3Uploads from './src/Routes/s3Uploads/upload.js';
 import { getAllEndpoints } from './src/utils/endpoints/allEndPoints.js';
 import allRouters from './app.js';
+import { log } from 'console';
 
 const app = express();
 
@@ -20,7 +21,7 @@ dotenv.config();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors( {
-    origin: ['http://localhost:5173'],
+    origin: ['http://localhost:5173','https://foodbeverage.mrfranchise.in/'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -102,3 +103,7 @@ app.use(errorHandler);
 app.listen(process.env.PORT, () => {
     console.log(`🚀 Server is running on port ${process.env.PORT}`);
 });
+
+app.listen(process.env.PORT,'0.0.0.0',() =>{
+    console.log(`Server is running on port ${process.env.PORT}...`);
+})
