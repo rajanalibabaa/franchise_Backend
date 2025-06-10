@@ -4,7 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
 import { FavoriteBrands, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import mongoose from "mongoose";
-import {newIncomerInvestorController} from "../../utils/All Leads/investerRegisterLeads.js";
+import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
 
 export const createInvestor = async (req, res) => {
 
@@ -64,32 +64,7 @@ export const createInvestor = async (req, res) => {
 
     await investor.save();
 
-    // console.log("Investor created successfully:",email, firstName, category, country, state, preferredCity, investmentAmount );
-    
-const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
-
-    console.log(
-  "Investor created successfully:",
-    email,
-    firstName,
-    mainPref.category,
-    country,
-    state,
-    mainPref.preferredCity,
-    mainPref.investmentAmount
-    );
-    //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
-       newIncomerInvestorController(
-      email,
-      firstName,
-      mainPref.category,
-      country,
-      state,
-      mainPref.preferredCity,
-      mainPref.investmentAmount
-    );
- 
-
+    newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
     return res.status(201).json(
       new ApiResponse(201, null, "Investor created successfully")
