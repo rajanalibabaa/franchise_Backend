@@ -16,18 +16,18 @@ import { log } from 'console';
 const app = express();
 
 dotenv.config();
-
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cors( {
     origin: ['https://foodbeverage.mrfranchise.in','http://localhost:5173'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "Access-Control-Allow-Origin"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
     credentials: true,
     optionsSuccessStatus: 200,
 }));
+// Middlewares
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), 'public')));
 // app.use(bodyParser.json());
