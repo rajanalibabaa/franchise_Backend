@@ -21,7 +21,7 @@ app.use(cors( {
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-    
+    credentials: true,
     optionsSuccessStatus: 200,
 }));
 // Middlewares
