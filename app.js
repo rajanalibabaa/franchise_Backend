@@ -27,6 +27,7 @@ import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
 import { ViewedBrandsRouter } from "./src/Routes/ViewedBrandsRoutes/ViewedBrandsRoutes.js";
 import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
 import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.js";
+import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
 
 
 const router = express.Router();
@@ -87,6 +88,9 @@ router.use('/v1/filter',filterRouter)
 
 // InstantApplyRouter
 router.use("/v1/instantapply",InstantApplyRouter)
+
+// subscribe routes
+router.use('/v1/subcribe',subscribeRouter)
 
 
 export default router;

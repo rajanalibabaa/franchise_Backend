@@ -107,7 +107,7 @@ const createBrandListing = async (req, res) => {
 
 const getAllBrands = async (req, res) => {
   try {
-    const brands = await BrandListing.find();
+    const brands = await BrandListing.find().select(" -brandDetails?.brandPromotionVideo");
 
     brands.forEach((brand) => {
       console.log("brand videos :", {
