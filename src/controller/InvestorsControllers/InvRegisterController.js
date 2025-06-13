@@ -112,7 +112,6 @@ export const getInvestorByUUID = async (req, res) => {
 
     const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt");
 
-    console.log("investor :",investor)
 
     if (!investor) {
       return res.status(404).json(
