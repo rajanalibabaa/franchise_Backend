@@ -123,7 +123,14 @@ const createBrandListing = async (req, res) => {
 
 const getAllBrands = async (req, res) => {
   try {
-    const brands = await BrandListing.find();
+    const brands = await BrandListing.find().select(" -brandDetails?.brandPromotionVideo");
+
+    brands.forEach((brand) => {
+      console.log("brand videos :", {
+        franchisePromotionVideo: brand.brandDetails?.franchisePromotionVideo,
+        brandPromotionVideo: brand.brandDetails?.brandPromotionVideo,
+      });
+    });
     return res
       .status(200)
       .json(new ApiResponse(200, brands, "✅ Brands fetched successfully"));
