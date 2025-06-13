@@ -5,6 +5,7 @@ import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import s3 from './s3.js';
 import dotenv from 'dotenv';
 import path from 'path';
+import { readFile, unlink } from 'fs/promises';
 import mime from 'mime-types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -89,7 +90,7 @@ export const uploadFileToR2 = async (filePath, mimetype) => {
     throw new Error(`File not found at ${filePath}`);
   }
 
-  const fileContent = await fs.readFile(filePath);
+  const fileContent = await readFile(filePath);
 
   const command = new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
@@ -102,14 +103,13 @@ export const uploadFileToR2 = async (filePath, mimetype) => {
   console.log(`✅ Uploaded to R2: ${fileKey}`);
 
   try {
-    await fs.unlink(filePath);
+    await unlink(filePath); // using fs.promises.unlink properly
     console.log(`🗑️ Deleted local temp file: ${filePath}`);
   } catch (unlinkErr) {
     console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
   }
 
-  // Return public URL — use your public R2 URL + fileKey
-  const r2Url = `${process.env.R2_PUBLIC_URL}/${fileKey}`; 
+  const r2Url = `${process.env.R2_PUBLIC_URL}/${fileKey}`;
   return r2Url;
 };
 

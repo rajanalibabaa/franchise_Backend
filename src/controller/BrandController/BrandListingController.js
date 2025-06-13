@@ -129,9 +129,9 @@ const createBrandListing = async (req, res) => {
       "franchisePromotionVideo", "brandPromotionVideo"
     ];
 
-        if (!req.body.personalDetails || !req.body.franchiseDetails) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+    //     if (!req.body.personalDetails || !req.body.franchiseDetails) {
+    //   return res.status(400).json({ error: "Missing required fields" });
+    // }
     
     const personalDetails = JSON.parse(req.body.personalDetails || '{}');
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
