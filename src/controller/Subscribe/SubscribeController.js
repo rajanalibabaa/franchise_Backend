@@ -15,10 +15,25 @@ export const getSubscribe = async (req,res) => {
         )
     }
 
+
+
      if (email && !/^\S+@\S+\.\S+$/.test(email)) {
       return res
         .json(new ApiResponse(400, null, "Invalid email format"));
+        
     }
+
+
+    // email already esixts
+
+    const exists = await SubscribeModel.findOne({email})
+
+    if (exists) {
+        return res
+        .json(new ApiResponse(400, null, "email already exists"));
+    }
+    
+
 
     const data = await SubscribeModel.create(
         {
@@ -26,7 +41,9 @@ export const getSubscribe = async (req,res) => {
         }
     )
 
-    console.log(data)
+    // console.log(data)
+
+ 
 
     if (!data) {
          return res.json(
