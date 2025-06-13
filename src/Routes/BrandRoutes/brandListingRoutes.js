@@ -10,17 +10,14 @@ const router = express.Router();
  
 router.post(
     "/createBrandListing",
-upload.fields([
-  { name: 'pancard', maxCount: 1 },
-  { name: 'gstCertificate', maxCount: 1 },
-  { name: 'brandLogo', maxCount: 1 },
-  // { name: 'companyImage', maxCount: 10 },
-  { name: 'exteriorOutlet', maxCount: 10 },
-  { name: 'interiorOutlet', maxCount: 10},
-  { name: 'franchisePromotionVideo' , maxCount: 2},
-  { name: 'brandPromotionVideo', maxCount: 2 },
-])
-
+  upload.fields([
+    { name: 'pancard', maxCount: 1 },
+    { name: 'gstCertificate', maxCount: 1 },
+    { name: 'brandLogo', maxCount: 1 },
+   { name: 'exteriorOutlet', maxCount: 10 },
+    { name: 'interiorOutlet', maxCount: 10 },
+    { name: 'franchisePromotionVideo', maxCount: 1 },
+  ])
 ,
       createBrandListing
     )

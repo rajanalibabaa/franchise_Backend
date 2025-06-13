@@ -1,11 +1,12 @@
 
 import fs from 'fs/promises';
 import { existsSync } from 'fs'; // <-- add this for sync file check
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import s3 from './s3.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import mime from 'mime-types';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ export const uploadFileToS3 = async (filePath, mimetype = 'application/octet-str
     const fileContent = await fs.readFile(filePath);
 
     const command = new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET_NAME,
+      Bucket: process.env.BUCKET_NAME,
       Key: fileKey,
       Body: fileContent,
       ContentType: contentType,
@@ -65,5 +66,64 @@ export const uploadFileToS3 = async (filePath, mimetype = 'application/octet-str
   } catch (err) {
     console.error('❌ Upload to S3 failed:', err.message);
     throw new Error('Failed to upload file to S3');
+  }
+};
+
+
+export const uploadFileToR2 = async (filePath, mimetype) => {
+  const originalFileName = path.basename(filePath);
+  const ext = path.extname(originalFileName);
+  const baseName = path.basename(originalFileName, ext);
+
+  const contentType = mimetype || mime.lookup(filePath) || 'application/octet-stream';
+
+  const folder =
+    contentType.startsWith('image/') ? 'images' :
+    contentType.startsWith('video/') ? 'videos' :
+    contentType.startsWith('application/') ? 'documents' :
+    'misc';
+
+  const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
+
+  if (!existsSync(filePath)) {
+    throw new Error(`File not found at ${filePath}`);
+  }
+
+  const fileContent = await fs.readFile(filePath);
+
+  const command = new PutObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: fileKey,
+    Body: fileContent,
+    ContentType: contentType,
+  });
+
+  await s3.send(command);
+  console.log(`✅ Uploaded to R2: ${fileKey}`);
+
+  try {
+    await fs.unlink(filePath);
+    console.log(`🗑️ Deleted local temp file: ${filePath}`);
+  } catch (unlinkErr) {
+    console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
+  }
+
+  // Return public URL — use your public R2 URL + fileKey
+  const r2Url = `${process.env.R2_PUBLIC_URL}/${fileKey}`; 
+  return r2Url;
+};
+
+
+export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
+  const command = new GetObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: fileKey,
+  });
+
+  try {
+    return await getSignedUrl(s3, command, { expiresIn });
+  } catch (error) {
+    console.error("❌ Error generating signed URL:", error.message);
+    throw error;
   }
 };
