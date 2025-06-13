@@ -87,6 +87,8 @@ export const newIncomerInvestorController = async (req, res) => {
       `Found ${perfectMatches.length} perfect matches for investor: ${investorEmail}`
     );
 
+    
+
     for (const brand of perfectMatches) {
       const brandEmail = brand.personalDetails.email;
       const brandCompanyName = brand.personalDetails.companyName;
