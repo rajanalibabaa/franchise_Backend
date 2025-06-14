@@ -10,7 +10,7 @@ const singleFileFields = [
   "gstCertificate",
   "pancard",
   // "companyImage",
-  "exterioroutlet",
+  "exteriorOutlet",
   "interiorOutlet",
   "franchisePromotionVideo",
   // "brandPromotionVideo",
@@ -126,7 +126,7 @@ const createBrandListing = async (req, res) => {
   try {
     const fields = [
       "brandLogo", "gstCertificate", "pancard", "exteriorOutlet", "interiorOutlet",
-      "franchisePromotionVideo", "brandPromotionVideo"
+      "franchisePromotionVideo", 
     ];
 
     //     if (!req.body.personalDetails || !req.body.franchiseDetails) {
@@ -179,7 +179,7 @@ const createBrandListing = async (req, res) => {
         pancard: uploadedFiles.pancard || [],
         gstCertificate: uploadedFiles.gstCertificate || [],
         brandLogo: uploadedFiles.brandLogo || [],
-        exterioroutlet: uploadedFiles.exterioroutlet || [],
+        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
         interiorOutlet: uploadedFiles.interiorOutlet || [],
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
