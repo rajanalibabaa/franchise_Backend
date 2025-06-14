@@ -8,8 +8,8 @@ import Counter from "../model/Brand/Counter.js";
   );
 
   const numberPart = String(counter.seq).padStart(4, '0'); 
-  console.log`MRF-FMB-${group}${numberPart}` // 4-digit zero padding
-  return `MRF-FMB-${group}${numberPart}`;
+  // console.log`MRF-FMB-${group}${numberPart}` // 4-digit zero padding
+  return `MrF-FB-${group}${numberPart}`;
 }
 
  export default generateCustomId

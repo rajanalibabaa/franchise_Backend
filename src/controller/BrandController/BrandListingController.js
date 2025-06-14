@@ -160,6 +160,7 @@ const createBrandListing = async (req, res) => {
 
     // or 'B', 'C', etc. based on your logic
     const customId = await generateCustomId(group);
+console.log("customId", customId);
 
     // const existingBrand = await BrandListing.findOne({
     //   "personalDetails.email": personalDetails.email,

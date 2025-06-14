@@ -28,6 +28,7 @@ import { ViewedBrandsRouter } from "./src/Routes/ViewedBrandsRoutes/ViewedBrands
 import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
 import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.js";
 import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
+import {OtherIndustriesRouter} from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
 
 
 const router = express.Router();
@@ -91,6 +92,8 @@ router.use("/v1/instantapply",InstantApplyRouter)
 
 // subscribe routes
 router.use('/v1/subcribe',subscribeRouter)
+// OtherIndustries
+router.use("/v1/otherindustries", OtherIndustriesRouter)
 
 
 export default router;
