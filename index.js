@@ -98,6 +98,7 @@ app.get('/endpoints', (req, res) => {
     res.json(endpoints);
 });
 
+
 // Global Error Handler
 app.use(errorHandler);
 

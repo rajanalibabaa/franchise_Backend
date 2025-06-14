@@ -1,9 +1,13 @@
 import mongoose from "mongoose";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
-import { generateSignedUrl, uploadFileToR2, uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
+import {
+  generateSignedUrl,
+  uploadFileToR2,
+  uploadFileToS3,
+} from "../../utils/Uploads/s3Uploader.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-
+import generateCustomId from "../../helpers/brandIdGenerater.js";
 // Fields expected as file uploads (keyed by req.files)
 const singleFileFields = [
   "brandLogo",
@@ -21,11 +25,10 @@ const singleFileFields = [
 //     // if (!req.body.personalDetails || !req.body.franchiseDetails) {
 //     //   return res.status(400).json({ error: "Missing required fields" });
 //     // }
-    
+
 //     // const personalDetails = JSON.parse(req.body.personalDetails || '{}');
 //     // const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
 //     // const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
-
 
 //     // const existingBrand = await BrandListing.findOne({
 //     //   "personalDetails.email": personalDetails.email,
@@ -74,8 +77,6 @@ const singleFileFields = [
 //     }
 //     console.log("✅ Uploaded File URLs:", uploadedFiles);
 
-
-
 //     // Construct brand data for MongoDB
 //     const newBrand = await BrandListing.create({
 //       // personalDetails: {
@@ -97,7 +98,6 @@ const singleFileFields = [
 //       // brandOwnerUUID: req.brandUser?.uuid || null,
 //     });
 //     await newBrand.save();
-
 
 //     if (!newBrand) {
 //       return res
@@ -125,18 +125,41 @@ const singleFileFields = [
 const createBrandListing = async (req, res) => {
   try {
     const fields = [
-      "brandLogo", "gstCertificate", "pancard", "exteriorOutlet", "interiorOutlet",
-      "franchisePromotionVideo", 
+      "brandLogo",
+      "gstCertificate",
+      "pancard",
+      "exteriorOutlet",
+      "interiorOutlet",
+      "franchisePromotionVideo",
+      "brandPromotionVideo",
     ];
 
     //     if (!req.body.personalDetails || !req.body.franchiseDetails) {
     //   return res.status(400).json({ error: "Missing required fields" });
     // }
-    
-    const personalDetails = JSON.parse(req.body.personalDetails || '{}');
-    const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
-    const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
 
+    const personalDetails = JSON.parse(req.body.personalDetails || "{}");
+    const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
+    const brandDetails = req.body.brandDetails
+      ? JSON.parse(req.body.brandDetails || "{}")
+      : {};
+
+    console.log("personalDetails", personalDetails);
+
+    // Get groupId from first brandCategory
+    let group = "A"; // default fallback
+    if (
+      Array.isArray(personalDetails.brandCategories) &&
+      personalDetails.brandCategories.length > 0 &&
+      personalDetails.brandCategories[0].groupId
+    ) {
+      group = personalDetails.brandCategories[0].groupId;
+    }
+
+    console.log(group);
+
+    // or 'B', 'C', etc. based on your logic
+    const customId = await generateCustomId(group);
 
     // const existingBrand = await BrandListing.findOne({
     //   "personalDetails.email": personalDetails.email,
@@ -157,7 +180,7 @@ const createBrandListing = async (req, res) => {
       const files = req.files?.[field];
       if (files && files.length > 0) {
         const urls = await Promise.all(
-          files.map(file => {
+          files.map((file) => {
             const isVideo = field.includes("Video");
             const contentType = isVideo ? "video/mp4" : file.mimetype;
             return uploadFileToR2(file.path, contentType);
@@ -167,7 +190,8 @@ const createBrandListing = async (req, res) => {
       }
     }
 
-    const brand =  await BrandListing.create({
+    const brand = await BrandListing.create({
+      brandID: customId,
       personalDetails: {
         ...personalDetails,
       },
@@ -188,17 +212,20 @@ const createBrandListing = async (req, res) => {
 
     await brand.save();
 
-    res.status(201).json({ success: true, message: "Brand listing created", data: brand });
+    res
+      .status(201)
+      .json({ success: true, message: "Brand listing created", data: brand });
   } catch (error) {
     console.error("❌ Brand Creation Error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
 const getAllBrands = async (req, res) => {
   try {
-    const brands = await BrandListing.find().select(" -brandDetails?.brandPromotionVideo");
+    const brands = await BrandListing.find().select(
+      " -brandDetails?.brandPromotionVideo"
+    );
 
     brands.forEach((brand) => {
       console.log("brand videos :", {
@@ -248,15 +275,15 @@ const getAllBrands = async (req, res) => {
 //   }
 // };
 
- const getBrandListingByUUID = async (req, res) => {
+const getBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
-        const brandData = req.brandUser;
+    const brandData = req.brandUser;
 
     if (id !== brandData?.uuid) {
-      return res.status(403).json(
-        new ApiResponse(403, null, "Unauthorized request")
-      );
+      return res
+        .status(403)
+        .json(new ApiResponse(403, null, "Unauthorized request"));
     }
 
     let brand = await BrandListing.findOne({ uuid: id }).select(
@@ -264,7 +291,9 @@ const getAllBrands = async (req, res) => {
     );
 
     if (!brand) {
-      return res.status(404).json(new ApiResponse(404, null, "Brand not found"));
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Brand not found"));
     }
 
     const mediaFields = [
@@ -295,13 +324,16 @@ const getAllBrands = async (req, res) => {
       }
     }
 
-    return res.status(200).json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
   } catch (error) {
     console.error("getBrandListingByUUID error:", error);
-    return res.status(500).json(new ApiResponse(500, null, "Failed to fetch brand"));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
-
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
