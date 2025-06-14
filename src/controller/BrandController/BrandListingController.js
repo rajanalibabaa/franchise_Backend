@@ -10,7 +10,7 @@ const singleFileFields = [
   "gstCertificate",
   "pancard",
   // "companyImage",
-  "exterioroutlet",
+  "exteriorOutlet",
   "interiorOutlet",
   "franchisePromotionVideo",
   // "brandPromotionVideo",
@@ -126,7 +126,7 @@ const createBrandListing = async (req, res) => {
   try {
     const fields = [
       "brandLogo", "gstCertificate", "pancard", "exteriorOutlet", "interiorOutlet",
-      "franchisePromotionVideo", "brandPromotionVideo"
+      "franchisePromotionVideo", 
     ];
 
     //     if (!req.body.personalDetails || !req.body.franchiseDetails) {
