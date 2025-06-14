@@ -87,6 +87,10 @@ propertySize: {
     type: String,
     required: true
   },
+  inveterID: {
+    type: String,
+    required: true
+  },
 
    uuid: {
     type: String,
