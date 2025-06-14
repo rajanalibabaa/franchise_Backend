@@ -29,36 +29,52 @@ export const createInvestor = async (req, res) => {
 
     
     
-    const exists = await InvsRegister.findOne({
-      $or: [
-        { email },
-        { mobileNumber }
-      ]
-    });
+    // const exists = await InvsRegister.findOne({
+    //   $or: [
+    //     { email },
+    //     { mobileNumber }
+    //   ]
+    // });
 
-    if (exists) {
-      return res.status(409).json(
-        new ApiResponse(
-          409,
-          null,
-          "Investor already exists"
-        )
-      );
-    }
+    // if (exists) {
+    //   return res.status(409).json(
+    //     new ApiResponse(
+    //       409,
+    //       null,
+    //       "Investor already exists"
+    //     )
+    //   );
+    // }
+
+  const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
+
+  console.log("current last data:",currentLastData?.inveterID)
+
+  const newID = currentLastData?.inveterID?.split('-')[2] || '000'; 
+  const nextID = String(parseInt(newID, 10) + 1).padStart(3, '0');  
+  const inveterID = `MrF-INV-${nextID}`;
+  console.log("========", inveterID)
 
     const investor = new InvsRegister({
      firstName,
-      email,
-      mobileNumber,
-      whatsappNumber,
-      address,
-      pincode,
-      country,
-      state,
-      city,
-      occupation,
-      specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-      preferences, 
+     email,
+     mobileNumber,
+     whatsappNumber,
+     address,
+     pincode,
+     country,
+     state,
+     city,
+     occupation,
+     category,
+     specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+     investmentRange,
+     investmentAmount,
+     propertyType,
+     propertySize,
+     preferredState,
+     preferredCity,
+     inveterID,
       uuid: uuid()
     });
 
@@ -66,8 +82,9 @@ export const createInvestor = async (req, res) => {
 
     newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
+    
     return res.status(201).json(
-      new ApiResponse(201, null, "Investor created successfully")
+      new ApiResponse(201, investor, "Investor created successfully")
     );
   } catch (err) {
     console.error("Create Investor Error:", err);
