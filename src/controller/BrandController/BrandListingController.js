@@ -10,7 +10,7 @@ const singleFileFields = [
   "gstCertificate",
   "pancard",
   "companyImage",
-  "exterioroutlet",
+  "exteriorOutlet",
   "interiorOutlet",
   "franchisePromotionVideo",
   "brandPromotionVideo",
@@ -25,6 +25,21 @@ const createBrandListing = async (req, res) => {
     const personalDetails = JSON.parse(req.body.personalDetails || '{}');
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
     const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
+ 
+    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
+    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
+    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
+// Check if email already exists
+    // const existingBrand = await BrandListing.findOne({
+    //   "personalDetails.email": personalDetails.email,
+    // });
+    // if (existingBrand) {
+    //   return res.status(409).json({
+    //     success: false,
+    //     message: "Brand with this email already exists",
+    //   });
+    // }
+
 
 
     const existingBrand = await BrandListing.findOne({
@@ -40,6 +55,7 @@ const createBrandListing = async (req, res) => {
     if (!exists) {
       return res.json(new ApiResponse(403,null,"Email already exists"))
     }
+ 
 
     // Upload files to S3 and store URLs
     const uploadedFiles = {};
@@ -72,7 +88,7 @@ const createBrandListing = async (req, res) => {
         pancard: uploadedFiles.pancard || [],
         gstCertificate: uploadedFiles.gstCertificate || [],
         brandLogo: uploadedFiles.brandLogo || [],
-        exteriorOutlet: uploadedFiles.exterioroutlet || [],
+        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
         interiorOutlet: uploadedFiles.interiorOutlet || [],
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],

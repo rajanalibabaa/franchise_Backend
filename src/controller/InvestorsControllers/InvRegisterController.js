@@ -4,28 +4,25 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
 import { FavoriteBrands, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import mongoose from "mongoose";
+import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
 
 export const createInvestor = async (req, res) => {
+
+  console.log("Incoming request to create investor:", req.body);
   try {
     const {
-     firstName,
-     email,
-     mobileNumber,
-     whatsappNumber,
-     address,
-     pincode,
-     country,
-     state,
-     city,
-     occupation,
-     specifyOccupation,
-     category,
-     investmentRange,
-     investmentAmount,
-     propertyType,
-     propertySize,
-     preferredState,
-     preferredCity
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      specifyOccupation,
+      preferences
     } = req.body;
 
     // console.log("Incoming data:", req.body);
@@ -51,27 +48,23 @@ export const createInvestor = async (req, res) => {
 
     const investor = new InvsRegister({
      firstName,
-     email,
-     mobileNumber,
-     whatsappNumber,
-     address,
-     pincode,
-     country,
-     state,
-     city,
-     occupation,
-     category,
-     specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-     investmentRange,
-     investmentAmount,
-     propertyType,
-     propertySize,
-     preferredState,
-     preferredCity,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+      preferences, 
       uuid: uuid()
     });
 
     await investor.save();
+
+    newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
     return res.status(201).json(
       new ApiResponse(201, null, "Investor created successfully")
@@ -144,24 +137,18 @@ export const updateInvestor = async (req, res) => {
   try {
     const { uuid } = req.params;
     const {
-      firstName,
-      email,
-      mobileNumber,
-    whatsappNumber,
-      address,
-      pincode,
-      country,
-     state,
-      city,
-      occupation,
-      specifyOccupation, 
-      category,
-      investmentRange,
-      investmentAmount,
-      propertyType,
-      propertySize,
-      preferredState,
-      preferredCity
+       firstName,
+  email,
+  mobileNumber,
+  whatsappNumber,
+  address,
+  pincode,
+  country,
+  state,
+  city,
+  occupation,
+  specifyOccupation,
+  preferences
     } = req.body;
 
    if (!uuid) {
@@ -181,22 +168,16 @@ export const updateInvestor = async (req, res) => {
     // Prepare update data
     const updateData = {
       firstName,
-      email,
-      mobileNumber,
-      whatsappNumber,
-      address,
-      pincode,
-      country,
-      state,
-      city,
-      occupation,
-      category,
-      investmentRange,
-      investmentAmount,
-      propertyType,
-      propertySize,
-      preferredState,
-      preferredCity
+  email,
+  mobileNumber,
+  whatsappNumber,
+  address,
+  pincode,
+  country,
+  state,
+  city,
+  occupation,
+  preferences
     };
 
    // Handle specifyOccupation based on occupation

@@ -30,6 +30,11 @@ const BrandListingSchema = new mongoose.Schema(
       default: uuid, // auto-generated unique ID
       unique: true,
     },
+    brandID: {
+    type: String,
+    default: uuid,
+    unique: true
+  },
     personalDetails: {
       fullName: { type: String },
       email: { type: String },

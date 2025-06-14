@@ -160,14 +160,14 @@ export const postViewBrands = async (req, res) => {
       return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
     }
 
-    const targetBrand = await BrandListing.findOne({ uuid: viewedID });
+    const targetBrand = await BrandListing.find({ uuid: viewedID });
     if (!targetBrand) {
       return res.status(404).json(new ApiResponse(404, {}, "Target brand not found"));
     }
 
     // === Investor Viewing a Brand ===
     if (investor?.uuid && paramsID === investor.uuid) {
-      const investorView = await ViewedBrandsByInvestor.findOne({
+      const investorView = await ViewedBrandsByInvestor.find({
         InvestorUserId: investor._id,
         "viewedByInvestors.BrandID": targetBrand._id
       });
@@ -210,7 +210,7 @@ export const postViewBrands = async (req, res) => {
         { new: true, upsert: true }
       );
 
-      return res.status(200).json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
+      return res.json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
     }
 
     // === Brand Viewing Another Brand ===
@@ -493,11 +493,11 @@ export const getAllViewBrands = async (req, res) => {
       }
     }
 
-    const reversebrands = brands.reverse()
-    const reverseinvestors = investors.reverse()
+    const updatedbrandsviews = brands.reverse()
+    const updatedinvestorsviews = investors.reverse()
 
     return res.status(200).json(
-      new ApiResponse(200, {reverseinvestors  , reversebrands }, "View data retrieved successfully")
+      new ApiResponse(200, {updatedinvestorsviews  , updatedbrandsviews }, "View data retrieved successfully")
     );
 
   } catch (error) {

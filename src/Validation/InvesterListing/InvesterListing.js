@@ -1,7 +1,24 @@
 import Joi from 'joi';
 
+const preferenceSchema = Joi.object({
+  category: Joi.string().required(),
+  investmentRange: Joi.string().required(),
+  investmentAmount: Joi.string().optional().allow(''),
+  preferredState: Joi.string().required(),
+  preferredDistrict: Joi.string().required(),
+  preferredCity: Joi.string().required(),
+  propertyType: Joi.string().valid("Own Property", "Rental Property").optional(),
+  propertySize: Joi.when('propertyType', {
+    is: 'Own Property',
+    then: Joi.string().required().messages({
+      'any.required': 'Property size is required when property type is Own Property'
+    }),
+    otherwise: Joi.string().optional().allow('').strip()
+  })
+});
+
 const investorSchema = Joi.object({
-  uuid: Joi.string().guid({ version: 'uuidv4' }).optional(),
+  uuid: Joi.string().optional(),
   firstName: Joi.string().trim().required(),
   email: Joi.string().email().lowercase().required(),
   mobileNumber: Joi.string()
@@ -19,38 +36,26 @@ const investorSchema = Joi.object({
   state: Joi.string().optional(),
   city: Joi.string().optional(),
   occupation: Joi.string()
-  .valid("Student", "Salaried Professional", "Bussiness Owner / Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor", "Other") // Must match Mongoose enum
-  .optional(),
-specifyOccupation: Joi.when('occupation', {
-  is: 'Other',
-  then: Joi.string().trim().min(2).max(50).required(),
-  otherwise: Joi.string().optional().allow('').strip() // Remove if not "Other"
-}),
-  category: Joi.string()
-    .valid(' ') // <-- fill this in your Mongoose too!
-    .required(),
-  investmentRange: Joi.string().required(),
-  investmentAmount: Joi.string().required(),
-propertyType: Joi.string()
-  .trim()
-  .valid("Own Property", "Rental Property")
-  .optional(),
-
-propertySize: Joi.when('propertyType', {
-  is: 'Own Property',
-  then: Joi.string().required().messages({
-    'any.required': 'Property size is required when property type is Own Property'
+    .valid(
+      "Student",
+      "Salaried Professional",
+      "Bussiness Owner/ Self-Employed",
+      "Retired",
+      "Freelancer/ Consultant",
+      "Homemaker",
+      "Investor",
+      "Other"
+    )
+    .optional(),
+  specifyOccupation: Joi.when('occupation', {
+    is: 'Other',
+    then: Joi.string().trim().min(2).max(50).required(),
+    otherwise: Joi.string().optional().allow('').strip()
   }),
-  otherwise: Joi.string().optional().allow('').strip()
-}),
-
-  preferredState: Joi.string().required(),
-  preferredCity: Joi.string().required()
+  preferences: Joi.array().items(preferenceSchema).min(1).required(),
 });
 
-// middleware function to validate investor data
-
-export const validateInvestor = (req, res, next) => {
+ export const validateInvestor = (req, res, next) => {
   const { error } = investorSchema.validate(req.body, { abortEarly: false });
 
   if (error) {
@@ -59,5 +64,4 @@ export const validateInvestor = (req, res, next) => {
   }
 
   next();
-};
-
+ };
