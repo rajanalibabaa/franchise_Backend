@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import uuid from "../../utils/uuid.js"; // Custom function to generate unique IDs
 
+
 const FranchiseModelSchema = new mongoose.Schema(
   {
     investmentRange: { type: String },
@@ -32,7 +33,6 @@ const BrandListingSchema = new mongoose.Schema(
     },
     brandID: {
     type: String,
-    default: uuid,
     unique: true
   },
     personalDetails: {
@@ -49,12 +49,11 @@ const BrandListingSchema = new mongoose.Schema(
       city: { type: String },
       establishedYear: { type: String },
       franchiseSinceYear: { type: String },
-      brandCategories: [{ main: { type: String }, sub: { type: String },child: { type: String } }],
+      brandCategories: [{ main: { type: String }, sub: { type: String },child: { type: String } ,groupId:{type:String}}],
       brandDescription: { type: String },
       expansionLocation:[{country: { type: String }, state: { type: String },district: { type: String }, city: { type: String }}],
       pancardNumber: { type: String },
       gstNumber: { type: String },
-
       website: { type: String },
       facebook: { type: String },
       instagram: { type: String },

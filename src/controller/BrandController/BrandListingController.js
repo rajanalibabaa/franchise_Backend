@@ -1,35 +1,166 @@
 import mongoose from "mongoose";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
-import { uploadFileToS3 } from "../../utils/Uploads/s3Uploader.js";
+import {
+  generateSignedUrl,
+  uploadFileToR2,
+  uploadFileToS3,
+} from "../../utils/Uploads/s3Uploader.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-
+import generateCustomId from "../../helpers/brandIdGenerater.js";
 // Fields expected as file uploads (keyed by req.files)
 const singleFileFields = [
   "brandLogo",
   "gstCertificate",
   "pancard",
-  "companyImage",
-  "exteriorOutlet",
+  // "companyImage",
+  "exterioroutlet",
   "interiorOutlet",
   "franchisePromotionVideo",
-  "brandPromotionVideo",
+  // "brandPromotionVideo",
 ];
+
+// const createBrandListing = async (req, res) => {
+//   try {
+//     // if (!req.body.personalDetails || !req.body.franchiseDetails) {
+//     //   return res.status(400).json({ error: "Missing required fields" });
+//     // }
+
+//     // const personalDetails = JSON.parse(req.body.personalDetails || '{}');
+//     // const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
+//     // const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
+
+//     // const existingBrand = await BrandListing.findOne({
+//     //   "personalDetails.email": personalDetails.email,
+//     // });
+//     // if (existingBrand) {
+//     //   return res.status(409).json({
+//     //     success: false,
+//     //     message: "Brand with this email already exists",
+//     //   });
+//     // }
+//     // const exists = await InvsRegister.find({email :personalDetails.email})
+//     // if (!exists) {
+//     //   return res.json(new ApiResponse(403,null,"Email already exists"))
+//     // }
+
+//     // Upload files to S3 and store URLs
+//     const uploadedFiles = {};
+//     // for (const field of singleFileFields) {
+//     //   const files = req.files?.[field];
+
+//     //   if (files && files.length > 0) {
+//     //     const isVideoField = field.includes("Video");
+//     //     const contentType = isVideoField ? "video/mp4" : undefined;
+
+//     //     const urls = await Promise.all(
+//     //       files.map((file) => uploadFileToR2(file.path, file.mimetype))
+//     //     );
+
+//     //     uploadedFiles[field] = urls; // Store single or array
+//     //   }
+//     // }
+
+//     for (const field of singleFileFields) {
+//       const files = req.files?.[field];
+//       if (files && files.length > 0) {
+//         const urls = await Promise.all(
+//           files.map((file) => {
+//             const isVideo = field.includes("Video");
+//             const contentType = isVideo ? "video/mp4" : file.mimetype;
+//             return uploadFileToR2(file.path, contentType);
+//           })
+//         );
+
+//         uploadedFiles[field] = urls.length === 1 ? urls[0] : urls;
+//       }
+//     }
+//     console.log("✅ Uploaded File URLs:", uploadedFiles);
+
+//     // Construct brand data for MongoDB
+//     const newBrand = await BrandListing.create({
+//       // personalDetails: {
+//       //   ...personalDetails,
+//       // },
+//       // franchiseDetails: {
+//       //   ...franchiseDetails,
+//       // },
+//       brandDetails: {
+//         // ...brandDetails,
+//         pancard: uploadedFiles.pancard || [],
+//         gstCertificate: uploadedFiles.gstCertificate || [],
+//         brandLogo: uploadedFiles.brandLogo || [],
+//         exterioroutlet: uploadedFiles.exterioroutlet || [],
+//         interiorOutlet: uploadedFiles.interiorOutlet || [],
+//         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+//         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+//       },
+//       // brandOwnerUUID: req.brandUser?.uuid || null,
+//     });
+//     await newBrand.save();
+
+//     if (!newBrand) {
+//       return res
+//         .status(500)
+//         .JSON({ success: false, message: "Failed to create brand listing" });
+//     }
+
+//     return res
+//       .status(200)
+//       .json(
+//         new ApiResponse(200, newBrand, "✅ Brand listing created successfully")
+//       );
+//   } catch (error) {
+//     console.error("❌ createBrandListing error:", error);
+//     return res
+//       .status(500)
+//       .json({
+//         success: false,
+//         message: "Failed to create brand listing",
+//         error: error.message,
+//       });
+//   }
+// };
 
 const createBrandListing = async (req, res) => {
   try {
-    if (!req.body.personalDetails || !req.body.franchiseDetails) {
-      return res.status(400).json({ error: "Missing required fields" });
+    const fields = [
+      "brandLogo",
+      "gstCertificate",
+      "pancard",
+      "exteriorOutlet",
+      "interiorOutlet",
+      "franchisePromotionVideo",
+      "brandPromotionVideo",
+    ];
+
+    //     if (!req.body.personalDetails || !req.body.franchiseDetails) {
+    //   return res.status(400).json({ error: "Missing required fields" });
+    // }
+
+    const personalDetails = JSON.parse(req.body.personalDetails || "{}");
+    const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
+    const brandDetails = req.body.brandDetails
+      ? JSON.parse(req.body.brandDetails || "{}")
+      : {};
+
+    console.log("personalDetails", personalDetails);
+
+    // Get groupId from first brandCategory
+    let group = "A"; // default fallback
+    if (
+      Array.isArray(personalDetails.brandCategories) &&
+      personalDetails.brandCategories.length > 0 &&
+      personalDetails.brandCategories[0].groupId
+    ) {
+      group = personalDetails.brandCategories[0].groupId;
     }
-    
-    const personalDetails = JSON.parse(req.body.personalDetails || '{}');
-    const franchiseDetails = JSON.parse(req.body.franchiseDetails || '{}');
-    const brandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails || '{}') : {};
- 
-    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ brandDetails:", brandDetails);
-    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ personalDetails:", personalDetails);
-    console.log("🚀 ~ file: BrandListingController.js:97 ~ createBrandListing ~ franchiseDetails:", franchiseDetails);
-// Check if email already exists
+
+    console.log(group);
+
+    // or 'B', 'C', etc. based on your logic
+    const customId = await generateCustomId(group);
+
     // const existingBrand = await BrandListing.findOne({
     //   "personalDetails.email": personalDetails.email,
     // });
@@ -39,44 +170,28 @@ const createBrandListing = async (req, res) => {
     //     message: "Brand with this email already exists",
     //   });
     // }
-
-
-
-    const existingBrand = await BrandListing.findOne({
-      "personalDetails.email": personalDetails.email,
-    });
-    if (existingBrand) {
-      return res.status(409).json({
-        success: false,
-        message: "Brand with this email already exists",
-      });
-    }
-    const exists = await InvsRegister.find({email :personalDetails.email})
-    if (!exists) {
-      return res.json(new ApiResponse(403,null,"Email already exists"))
-    }
- 
-
-    // Upload files to S3 and store URLs
+    // const exists = await InvsRegister.find({email :personalDetails.email})
+    // if (!exists) {
+    //   return res.json(new ApiResponse(403,null,"Email already exists"))
+    // }
     const uploadedFiles = {};
-    for (const field of singleFileFields) {
+
+    for (const field of fields) {
       const files = req.files?.[field];
-
       if (files && files.length > 0) {
-        const isVideoField = field.includes("Video");
-        const contentType = isVideoField ? "video/mp4" : undefined;
-
         const urls = await Promise.all(
-          files.map((file) => uploadFileToS3(file.path, file.mimetype))
+          files.map((file) => {
+            const isVideo = field.includes("Video");
+            const contentType = isVideo ? "video/mp4" : file.mimetype;
+            return uploadFileToR2(file.path, contentType);
+          })
         );
-
-        uploadedFiles[field] = urls; // Store single or array
+        uploadedFiles[field] = urls.length === 1 ? urls[0] : urls;
       }
     }
 
-    console.log("✅ Uploaded File URLs:", uploadedFiles);
-    // Construct brand data for MongoDB
-    const newBrand = await BrandListing.create({
+    const brand = await BrandListing.create({
+      brandID: customId,
       personalDetails: {
         ...personalDetails,
       },
@@ -93,37 +208,24 @@ const createBrandListing = async (req, res) => {
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
       },
-      // brandOwnerUUID: req.brandUser?.uuid || null,
     });
-    await newBrand.save();
 
+    await brand.save();
 
-    if (!newBrand) {
-      return res
-        .status(500)
-        .JSON({ success: false, message: "Failed to create brand listing" });
-    }
-
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(200, newBrand, "✅ Brand listing created successfully")
-      );
+    res
+      .status(201)
+      .json({ success: true, message: "Brand listing created", data: brand });
   } catch (error) {
-    console.error("❌ createBrandListing error:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to create brand listing",
-        error: error.message,
-      });
+    console.error("❌ Brand Creation Error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 const getAllBrands = async (req, res) => {
   try {
-    const brands = await BrandListing.find();
+    const brands = await BrandListing.find().select(
+      " -brandDetails?.brandPromotionVideo"
+    );
 
     brands.forEach((brand) => {
       console.log("brand videos :", {
@@ -141,38 +243,97 @@ const getAllBrands = async (req, res) => {
   }
 };
 
+// const getBrandListingByUUID = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const brandData = req.brandUser;
+
+//     if (id !== brandData?.uuid) {
+//       return res.status(403).json(
+//         new ApiResponse(403, null, "Unauthorized request")
+//       );
+//     }
+
+//     const brand = await BrandListing.findOne({ uuid: brandData.uuid })
+//       .select("-_id -createdAt -updatedAt -__v");
+
+//     if (!brand) {
+//       return res.status(404).json(
+//         new ApiResponse(404, null, "Brand not found")
+//       );
+//     }
+
+//     return res.status(200).json(
+//       new ApiResponse(200, brand, "✅ Brand fetched successfully")
+//     );
+
+//   } catch (error) {
+//     console.error("getBrandListingByUUID error:", error);
+//     return res.status(500).json(
+//       new ApiResponse(500, null, "Failed to fetch brand")
+//     );
+//   }
+// };
+
 const getBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
     const brandData = req.brandUser;
 
     if (id !== brandData?.uuid) {
-      return res.status(403).json(
-        new ApiResponse(403, null, "Unauthorized request")
-      );
+      return res
+        .status(403)
+        .json(new ApiResponse(403, null, "Unauthorized request"));
     }
 
-    const brand = await BrandListing.findOne({ uuid: brandData.uuid })
-      .select("-_id -createdAt -updatedAt -__v");
+    let brand = await BrandListing.findOne({ uuid: id }).select(
+      "-_id -createdAt -updatedAt -__v"
+    );
 
     if (!brand) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "Brand not found")
-      );
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Brand not found"));
     }
 
-    return res.status(200).json(
-      new ApiResponse(200, brand, "✅ Brand fetched successfully")
-    );
+    const mediaFields = [
+      "pancard",
+      "gstCertificate",
+      "brandLogo",
+      "interiorOutlet",
+      "franchisePromotionVideo",
+      "brandPromotionVideo",
+      "exteriorOutlet",
+    ];
 
+    brand = brand.toObject();
+
+    for (const field of mediaFields) {
+      if (Array.isArray(brand[field])) {
+        brand[field] = await Promise.all(
+          brand[field].map(async (key) => {
+            if (!key) return null;
+            try {
+              return await generateSignedUrl(key);
+            } catch {
+              return null;
+            }
+          })
+        );
+        brand[field] = brand[field].filter(Boolean);
+      }
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
   } catch (error) {
     console.error("getBrandListingByUUID error:", error);
-    return res.status(500).json(
-      new ApiResponse(500, null, "Failed to fetch brand")
-    );
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
-
 
 const updateBrandListingByUUID = async (req, res) => {
   try {

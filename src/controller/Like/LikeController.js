@@ -360,14 +360,14 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
 
     // Compose result with isLiked flag
     const result = allBrands.map(brand => {
-      const { _id, updatedAt, createdAt, __v, ...rest } = brand.toObject();
+      const { _id, updatedAt, createdAt, __v,brandDetails, ...rest } = brand.toObject();
       return {
         ...rest,
         isLiked: likedBrandIds.includes(_id.toString())
       };
     });
 
-    return res.status(200).json(new ApiResponse(200, result, "All brands with liked status"));
+    return res.status(200).json(new ApiResponse(200, {}, "All brands with liked status"));
   } catch (error) {
     console.error("getAllLikedAndUnlikedBrand error:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));

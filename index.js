@@ -14,6 +14,7 @@ import allRouters from './app.js';
 
 const app = express();
 
+
 dotenv.config();
 app.use(cors( {
     origin: ['https://foodbeverage.mrfranchise.in','http://localhost:5173'],
@@ -96,6 +97,7 @@ app.get('/endpoints', (req, res) => {
 
     res.json(endpoints);
 });
+
 
 // Global Error Handler
 app.use(errorHandler);
