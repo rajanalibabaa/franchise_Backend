@@ -162,7 +162,7 @@ export const updateInvestor = async (req, res) => {
   try {
     const { uuid } = req.params;
     const {
-       firstName,
+  firstName,
   email,
   mobileNumber,
   whatsappNumber,
@@ -192,7 +192,7 @@ export const updateInvestor = async (req, res) => {
 
     // Prepare update data
     const updateData = {
-      firstName,
+  firstName,
   email,
   mobileNumber,
   whatsappNumber,

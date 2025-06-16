@@ -115,8 +115,8 @@ export const instaApplyBrandFormController = async (req, res) => {
     const {
       fullName,
       location,
-      franchiseModel,
-      franchiseType,
+      // franchiseModel,
+      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -128,8 +128,8 @@ export const instaApplyBrandFormController = async (req, res) => {
       brandLogo
     } = req.body;
 
-    // console.log(req.body)
-    // console.log(id)
+    console.log(req.body)
+    console.log(id)
 
     if (!fullName || !brandId || !mobileNumber) {
       return res.status(400).json(new ApiResponse(400, {}, "Missing required fields"));
@@ -161,8 +161,8 @@ export const instaApplyBrandFormController = async (req, res) => {
       uuid: uuid(),
       fullName,
       location,
-      franchiseModel,
-      franchiseType,
+      // franchiseModel,
+      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -282,8 +282,8 @@ export const updateInstaApply = async (req, res) => {
     const {
       fullName,
       location,
-      franchiseModel,
-      franchiseType,
+      // franchiseModel,
+      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -299,8 +299,8 @@ export const updateInstaApply = async (req, res) => {
       {
         fullName,
         location,
-        franchiseModel,
-        franchiseType,
+        // franchiseModel,
+        // franchiseType,
         investmentRange,
         planToInvest,
         readyToInvest,

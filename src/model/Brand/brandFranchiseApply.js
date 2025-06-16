@@ -44,12 +44,12 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
   location: {
     type: String
   },
-  franchiseModel: {
-    type: String
-  },
-  franchiseType: {
-    type: String
-  },
+  // franchiseModel: {
+  //   type: String
+  // },
+  // franchiseType: {
+  //   type: String
+  // },
   investmentRange: {
     type: String
   },
@@ -57,7 +57,7 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
     type: String
   },
   readyToInvest: {
-    type: Boolean
+    type: String
   },
   brandId: {
     type: String,

@@ -2,6 +2,43 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
 
+
+const PreferenceSchema = new mongoose.Schema(
+ {
+        category:[{ main: { type: String }, sub: { type: String },child: { type: String } }],
+        investmentRange: {
+          type: String,
+          required: true
+        },
+        investmentAmount: {
+          type: String
+        },
+        preferredState: {
+          type: String,
+          required: true
+        },
+        preferredDistrict: {
+          type: String,
+          required: true
+        },
+        preferredCity: {
+          type: String,
+          required: true
+        },
+        propertyType: {
+          type: String,
+          trim: true
+        },
+        propertySize: {
+          type: String,
+          required: function () {
+            return this.propertyType === "Own Property";
+          }
+        }
+      }
+)
+
+
 const invsRegisterSchema = new mongoose.Schema(
   {
     firstName: {
@@ -50,50 +87,14 @@ const invsRegisterSchema = new mongoose.Schema(
       enum: [ "Student", "Salaried Professional", "Bussiness Owner/ Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"]
     },
     specifyOccupation: {
-      type: String,
+      type: String,        
       required: function() {
         return this.occupation === 'Other';
       },
       trim: true
     },
-    preferences: [
-      {
-        category: {
-          type: String,
-          required: true
-        },
-        investmentRange: {
-          type: String,
-          required: true
-        },
-        investmentAmount: {
-          type: String
-        },
-        preferredState: {
-          type: String,
-          required: true
-        },
-        preferredDistrict: {
-          type: String,
-          required: true
-        },
-        preferredCity: {
-          type: String,
-          required: true
-        },
-        propertyType: {
-          type: String,
-          enum: ["Own Property", "Rental Property"],
-          trim: true
-        },
-        propertySize: {
-          type: String,
-          required: function () {
-            return this.propertyType === "Own Property";
-          }
-        }
-      }
-    ],
+    preferences: [PreferenceSchema],
+    
     uuid: {
       type: String,
       unique: true
