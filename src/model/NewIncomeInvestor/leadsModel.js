@@ -29,7 +29,7 @@ const investorLeadSchema = new mongoose.Schema({
   investmentRange: { 
     type: String, 
     required: true,
-    // enum: ['1_2_crores', '5_10_lakhs', '2_5_crores', '5_10_crores', '10_20_crores', '20+_crores']
+    enum: ['Below-50,000', 'Rs.50,000-2L', 'Rs.2L-5L', 'Rs.5L-10L', 'Rs.10L-20L', '20+Rs.20L-30L', 'Rs.30L-50L', 'Rs.50L-1Cr', 'Rs.1Cr-2Cr', 'Rs.2Cr-5Cr', 'Rs.5Cr-above']
   },
   brandPerfectMatches: [{
     email: { type: String, trim: true, lowercase: true },

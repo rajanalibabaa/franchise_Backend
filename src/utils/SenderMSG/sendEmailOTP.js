@@ -8,7 +8,23 @@ export const sendEmailOTP = async (email, otp) => {
 
   console.log("email :", email,otp)
 
-  const transporter = nodemailer.createTransport({
+//   const transporter = nodemailer.createTransport({
+//     host: "smtp.hostinger.com",
+//     port: 465,
+//     secure: true,
+//     auth: {
+//       user: process.env.EMAIL_USER_SUPPORT,   // Your Gmail
+//       pass: process.env.EMAIL_PASS_SUPPORT    // App password or your mail pass
+//     },
+//     tls: {
+//       rejectUnauthorized: false // <--- THIS FIXES THE SELF-SIGNED CERT ERROR
+//     }
+     
+//   });
+// console.log('SMTP Email:', process.env.EMAIL_USER_SUPPORT);
+// console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ Missing');
+
+const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
       user: process.env.EMAIL_USER,   // Your Gmail
@@ -19,6 +35,16 @@ export const sendEmailOTP = async (email, otp) => {
     }
      
   });
+
+
+//   const mailOptions = {
+//     from: process.env.EMAIL_USER_SUPPORT,
+//     to: email,
+//     subject: "Your Email OTP",
+
+//     text: `Your OTP is: ${otp}. It will expire in 5 minutes.`
+
+// };
 
   const mailOptions = {
     from: process.env.EMAIL_USER,

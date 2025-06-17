@@ -108,6 +108,7 @@ export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {id} = req.params
     const user = req.investorUser || req.brandUser;
+    console.log("user",user)
     if (id !== user.uuid) {
       return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
     }
@@ -191,7 +192,7 @@ export const instaApplyBrandFormController = async (req, res) => {
     //   mobileNumber
     // );
 
-    return res.status(201).json(new ApiResponse(201, newSubmission, "Application submitted successfully"));
+    return res.status(201).json( "Application submitted successfully");
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
@@ -211,7 +212,7 @@ export const getAllInstaApply = async (req, res) => {
     )
   }
   try {
-    const instaApply = await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v");
+    const instaApply = (await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v")).reverse();
     return res.json(
       new ApiResponse(200,instaApply,"All instant apply application fetch successfully")
     )

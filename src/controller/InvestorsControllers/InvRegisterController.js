@@ -4,12 +4,12 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
 import { FavoriteBrands, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import mongoose from "mongoose";
-import {newIncomerInvestorController} from "../../utils/All Leads/investerRegisterLeads.js";
+import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
 
 export const createInvestor = async (req, res) => {
 
   console.log("Incoming request to create investor:", req.body);
-  try {
+try {
     const {
       firstName,
       email,
@@ -25,29 +25,49 @@ export const createInvestor = async (req, res) => {
       preferences
     } = req.body;
 
+    const pref = preferences?.[0] || {}; // Get the first preference object safely
+  const {
+      category = [],
+      investmentRange = '',
+      investmentAmount = '',
+      propertyType = '',
+      propertySize = '',
+      preferredState = '',
+      preferredCity = ''
+    } = pref;
+
     // console.log("Incoming data:", req.body);
 
     
     
-    const exists = await InvsRegister.findOne({
-      $or: [
-        { email },
-        { mobileNumber }
-      ]
-    });
+    // const exists = await InvsRegister.findOne({
+    //   $or: [
+    //     { email },
+    //     { mobileNumber }
+    //   ]
+    // });
 
-    if (exists) {
-      return res.status(409).json(
-        new ApiResponse(
-          409,
-          null,
-          "Investor already exists"
-        )
-      );
-    }
+    // if (exists) {
+    //   return res.status(409).json(
+    //     new ApiResponse(
+    //       409,
+    //       null,
+    //       "Investor already exists"
+    //     )
+    //   );
+    // }
 
-    const investor = new InvsRegister({
-     firstName,
+  const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
+
+  console.log("current last data:",currentLastData?.inveterID)
+
+  const newID = currentLastData?.inveterID?.split('-')[2] || '000'; 
+  const nextID = String(parseInt(newID, 10) + 1).padStart(3, '0');  
+  const inveterID = `MrF-INV-${nextID}`;
+  console.log("========", inveterID)
+
+     const investor = new InvsRegister({
+      firstName,
       email,
       mobileNumber,
       whatsappNumber,
@@ -57,42 +77,26 @@ export const createInvestor = async (req, res) => {
       state,
       city,
       occupation,
+      category, // ✅ now correctly defined
       specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-      preferences, 
+      investmentRange,
+      investmentAmount,
+      propertyType,
+      propertySize: propertyType === 'Own Property' ? propertySize : '',
+      preferredState,
+      preferredCity,
+      inveterID,
       uuid: uuid()
     });
 
     await investor.save();
 
-    // console.log("Investor created successfully:",email, firstName, category, country, state, preferredCity, investmentAmount );
+
+    newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
+
     
-const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
-
-    console.log(
-  "Investor created successfully:",
-    email,
-    firstName,
-    mainPref.category,
-    country,
-    state,
-    mainPref.preferredCity,
-    mainPref.investmentAmount
-    );
-    //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
-       newIncomerInvestorController(
-      email,
-      firstName,
-      mainPref.category,
-      country,
-      state,
-      mainPref.preferredCity,
-      mainPref.investmentAmount
-    );
- 
-
-
     return res.status(201).json(
-      new ApiResponse(201, null, "Investor created successfully")
+      new ApiResponse(201, investor, "Investor created successfully")
     );
   } catch (err) {
     console.error("Create Investor Error:", err);
@@ -137,7 +141,6 @@ export const getInvestorByUUID = async (req, res) => {
 
     const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt");
 
-    console.log("investor :",investor)
 
     if (!investor) {
       return res.status(404).json(
