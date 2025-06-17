@@ -15,12 +15,12 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
   location: {
     type: String
   },
-  franchiseModel: {
-    type: String
-  },
-  franchiseType: {
-    type: String
-  },
+  // franchiseModel: {
+  //   type: String
+  // },
+  // franchiseType: {
+  //   type: String
+  // },
   investmentRange: {
     type: String
   },
