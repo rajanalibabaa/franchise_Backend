@@ -25,16 +25,16 @@ try {
       preferences
     } = req.body;
 
-    const pref = preferences?.[0] || {}; // Get the first preference object safely
-  const {
-      category = [],
-      investmentRange = '',
-      investmentAmount = '',
-      propertyType = '',
-      propertySize = '',
-      preferredState = '',
-      preferredCity = ''
-    } = pref;
+    // const pref = preferences?.[0] || {}; // Get the first preference object safely
+  // const {
+  //     category = [],
+  //     investmentRange = '',
+  //     investmentAmount = '',
+  //     propertyType = '',
+  //     propertySize = '',
+  //     preferredState = '',
+  //     preferredCity = ''
+  //   } = pref;
 
     // console.log("Incoming data:", req.body);
 
@@ -77,14 +77,15 @@ try {
       state,
       city,
       occupation,
-      category, // ✅ now correctly defined
+      // category, // ✅ now correctly defined
       specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-      investmentRange,
-      investmentAmount,
-      propertyType,
-      propertySize: propertyType === 'Own Property' ? propertySize : '',
-      preferredState,
-      preferredCity,
+      // investmentRange,
+      // investmentAmount,
+      // propertyType,
+      // propertySize: propertyType === 'Own Property' ? propertySize : '',
+      // preferredState,
+      // preferredCity,
+      preferences,
       inveterID,
       uuid: uuid()
     });
@@ -92,8 +93,30 @@ try {
     await investor.save();
 
 
-    newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
+const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
+
+    console.log(
+  "Investor created successfully:",
+    email,
+    firstName,
+    mainPref.category,
+    country,
+    state,
+    mainPref.preferredCity,
+    mainPref.investmentAmount
+    );
+    //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
+       newIncomerInvestorController(
+      email,
+      firstName,
+      mainPref.category,
+      country,
+      state,
+      mainPref.preferredCity,
+      mainPref.investmentAmount
+    );
+ 
     
     return res.status(201).json(
       new ApiResponse(201, investor, "Investor created successfully")
