@@ -1,109 +1,121 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
-
-
-const PreferenceSchema = new mongoose.Schema(
- {
-        category:[{ main: { type: String }, sub: { type: String },child: { type: String } }],
-        investmentRange: {
-          type: String,
-          required: true
-        },
-        investmentAmount: {
-          type: String
-        },
-        preferredState: {
-          type: String,
-          required: true
-        },
-        preferredDistrict: {
-          type: String,
-          required: true
-        },
-        preferredCity: {
-          type: String,
-          required: true
-        },
-        propertyType: {
-          type: String,
-          trim: true
-        },
-        propertySize: {
-          type: String,
-          required: function () {
-            return this.propertyType === "Own Property";
-          }
-        }
-      }
-)
-
+const PreferenceSchema = new mongoose.Schema({
+  category: [
+    { main: { type: String }, sub: { type: String }, child: { type: String } },
+  ],
+  investmentRange: {
+    type: String,
+    required: true,
+  },
+  investmentAmount: {
+    type: String,
+  },
+  preferredState: {
+    type: String,
+    required: true,
+  },
+  preferredDistrict: {
+    type: String,
+    required: true,
+  },
+  preferredCity: {
+    type: String,
+    required: true,
+  },
+  propertyType: {
+    type: String,
+    trim: true,
+  },
+  propertySize: {
+    type: String,
+    required: function () {
+      return this.propertyType === "Own Property";
+    },
+  },
+});
 
 const invsRegisterSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true
+      lowercase: true,
     },
     mobileNumber: {
       type: String,
       required: true,
-      match: [/^\+91\d{10}$/, 'Please enter a valid mobile number with country code ']
+      match: [
+        /^\+91\d{10}$/,
+        "Please enter a valid mobile number with country code ",
+      ],
     },
     whatsappNumber: {
       type: String,
-      match: [/^\+91\d{10}$/, 'Please enter a valid WhatsApp number with country code']
+      match: [
+        /^\+91\d{10}$/,
+        "Please enter a valid WhatsApp number with country code",
+      ],
     },
     address: {
       type: String,
-      required: false
-    },  
+      required: false,
+    },
     pincode: {
       type: String,
-      required:  false
-    }, 
-    country : {
+      required: false,
+    },
+    country: {
       type: String,
-      required :  false
+      required: false,
     },
     state: {
       type: String,
-      required:  false
-    }, 
+      required: false,
+    },
     city: {
       type: String,
-      required:  false
+      required: false,
     },
     occupation: {
       type: String,
-      required:  false,
-      enum: [ "Student", "Salaried Professional", "Bussiness Owner/ Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"]
+      required: false,
+      enum: [
+        "Student",
+        "Salaried Professional",
+        "Bussiness Owner/ Self-Employed",
+        "Retired",
+        "Freelancer/ Consultant",
+        "Homemaker",
+        "Investor",
+        "Other",
+      ],
     },
     specifyOccupation: {
-      type: String,        
-      required: function() {
-        return this.occupation === 'Other';
+      type: String,
+      required: function () {
+        return this.occupation === "Other";
       },
-      trim: true
+      trim: true,
     },
     preferences: [PreferenceSchema],
-    
+
     uuid: {
       type: String,
-      unique: true
-    }
+      unique: true,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
-);  
+);
 
 invsRegisterSchema.methods.generateAccessToken = function () {
   return jwt.sign(
