@@ -367,7 +367,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
       };
     });
 
-    return res.status(200).json(new ApiResponse(200, {}, "All brands with liked status"));
+    return res.status(200).json(new ApiResponse(200, result, "All brands with liked status"));
   } catch (error) {
     console.error("getAllLikedAndUnlikedBrand error:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
