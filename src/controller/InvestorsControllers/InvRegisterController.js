@@ -9,7 +9,7 @@ import { newIncomerInvestorController } from "../Admin/investorRegisterLeadContr
 export const createInvestor = async (req, res) => {
 
   console.log("Incoming request to create investor:", req.body);
-  try {
+try {
     const {
       firstName,
       email,
@@ -24,6 +24,17 @@ export const createInvestor = async (req, res) => {
       specifyOccupation,
       preferences
     } = req.body;
+
+    const pref = preferences?.[0] || {}; // Get the first preference object safely
+  const {
+      category = [],
+      investmentRange = '',
+      investmentAmount = '',
+      propertyType = '',
+      propertySize = '',
+      preferredState = '',
+      preferredCity = ''
+    } = pref;
 
     // console.log("Incoming data:", req.body);
 
@@ -55,30 +66,31 @@ export const createInvestor = async (req, res) => {
   const inveterID = `MrF-INV-${nextID}`;
   console.log("========", inveterID)
 
-    const investor = new InvsRegister({
-     firstName,
-     email,
-     mobileNumber,
-     whatsappNumber,
-     address,
-     pincode,
-     country,
-     state,
-     city,
-     occupation,
-     category,
-     specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-     investmentRange,
-     investmentAmount,
-     propertyType,
-     propertySize,
-     preferredState,
-     preferredCity,
-     inveterID,
+     const investor = new InvsRegister({
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      category, // ✅ now correctly defined
+      specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+      investmentRange,
+      investmentAmount,
+      propertyType,
+      propertySize: propertyType === 'Own Property' ? propertySize : '',
+      preferredState,
+      preferredCity,
+      inveterID,
       uuid: uuid()
     });
 
     await investor.save();
+
 
     newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
