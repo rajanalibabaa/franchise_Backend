@@ -72,6 +72,8 @@ export const uploadFileToS3 = async (filePath, mimetype = 'application/octet-str
 
 
 export const uploadFileToR2 = async (filePath, mimetype) => {
+
+  console.log("=============== ;",filePath)
   const originalFileName = path.basename(filePath);
   const ext = path.extname(originalFileName);
   const baseName = path.basename(originalFileName, ext);

@@ -7,27 +7,34 @@ import mongoose from "mongoose";
 import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
 
 export const createInvestor = async (req, res) => {
-  try {
+
+  console.log("Incoming request to create investor:", req.body);
+try {
     const {
-     firstName,
-     email,
-     mobileNumber,
-     whatsappNumber,
-     address,
-     pincode,
-     country,
-     state,
-     city,
-     occupation,
-     specifyOccupation,
-     category,
-     investmentRange,
-     investmentAmount,
-     propertyType,
-     propertySize,
-     preferredState,
-     preferredCity
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      specifyOccupation,
+      preferences
     } = req.body;
+
+    // const pref = preferences?.[0] || {}; // Get the first preference object safely
+  // const {
+  //     category = [],
+  //     investmentRange = '',
+  //     investmentAmount = '',
+  //     propertyType = '',
+  //     propertySize = '',
+  //     preferredState = '',
+  //     preferredCity = ''
+  //   } = pref;
 
     // console.log("Incoming data:", req.body);
 
@@ -59,33 +66,57 @@ export const createInvestor = async (req, res) => {
   const inveterID = `MrF-INV-${nextID}`;
   console.log("========", inveterID)
 
-    const investor = new InvsRegister({
-     firstName,
-     email,
-     mobileNumber,
-     whatsappNumber,
-     address,
-     pincode,
-     country,
-     state,
-     city,
-     occupation,
-     category,
-     specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-     investmentRange,
-     investmentAmount,
-     propertyType,
-     propertySize,
-     preferredState,
-     preferredCity,
-     inveterID,
+     const investor = new InvsRegister({
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      // category, // ✅ now correctly defined
+      specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+      // investmentRange,
+      // investmentAmount,
+      // propertyType,
+      // propertySize: propertyType === 'Own Property' ? propertySize : '',
+      // preferredState,
+      // preferredCity,
+      preferences,
+      inveterID,
       uuid: uuid()
     });
 
     await investor.save();
 
-    newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
+
+const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
+
+    console.log(
+  "Investor created successfully:",
+    email,
+    firstName,
+    mainPref.category,
+    country,
+    state,
+    mainPref.preferredCity,
+    mainPref.investmentAmount
+    );
+    //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
+       newIncomerInvestorController(
+      email,
+      firstName,
+      mainPref.category,
+      country,
+      state,
+      mainPref.preferredCity,
+      mainPref.investmentAmount
+    );
+ 
     
     return res.status(201).json(
       new ApiResponse(201, investor, "Investor created successfully")
@@ -133,7 +164,6 @@ export const getInvestorByUUID = async (req, res) => {
 
     const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt");
 
-    console.log("investor :",investor)
 
     if (!investor) {
       return res.status(404).json(
@@ -158,18 +188,18 @@ export const updateInvestor = async (req, res) => {
   try {
     const { uuid } = req.params;
     const {
-      firstName,
-      email,
-      mobileNumber,
-      whatsappNumber,
-      address,
-      pincode,
-      country,
-      state,
-      city,
-      occupation,
-      specifyOccupation,
-      preferences = []
+  firstName,
+  email,
+  mobileNumber,
+  whatsappNumber,
+  address,
+  pincode,
+  country,
+  state,
+  city,
+  occupation,
+  specifyOccupation,
+  preferences
     } = req.body;
 
     console.log("req.body :", req.body);
@@ -200,17 +230,17 @@ export const updateInvestor = async (req, res) => {
     }
 
     const updateData = {
-      firstName,
-      email,
-      mobileNumber,
-      whatsappNumber,
-      address,
-      pincode,
-      country,
-      state,
-      city,
-      occupation,
-      preferences: newPreferences
+  firstName,
+  email,
+  mobileNumber,
+  whatsappNumber,
+  address,
+  pincode,
+  country,
+  state,
+  city,
+  occupation,
+  preferences
     };
 
     // Handle specifyOccupation if "Other"

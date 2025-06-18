@@ -108,6 +108,7 @@ export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {id} = req.params
     const user = req.investorUser || req.brandUser;
+    console.log("user",user)
     if (id !== user.uuid) {
       return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
     }
@@ -115,8 +116,8 @@ export const instaApplyBrandFormController = async (req, res) => {
     const {
       fullName,
       location,
-      franchiseModel,
-      franchiseType,
+      // franchiseModel,
+      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -128,8 +129,8 @@ export const instaApplyBrandFormController = async (req, res) => {
       brandLogo
     } = req.body;
 
-    // console.log(req.body)
-    // console.log(id)
+    console.log(req.body)
+    console.log(id)
 
     if (!fullName || !brandId || !mobileNumber) {
       return res.status(400).json(new ApiResponse(400, {}, "Missing required fields"));
@@ -161,8 +162,8 @@ export const instaApplyBrandFormController = async (req, res) => {
       uuid: uuid(),
       fullName,
       location,
-      franchiseModel,
-      franchiseType,
+      // franchiseModel,
+      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -191,7 +192,7 @@ export const instaApplyBrandFormController = async (req, res) => {
     //   mobileNumber
     // );
 
-    return res.status(201).json(new ApiResponse(201, newSubmission, "Application submitted successfully"));
+    return res.status(201).json( "Application submitted successfully");
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
@@ -282,8 +283,8 @@ export const updateInstaApply = async (req, res) => {
     const {
       fullName,
       location,
-      franchiseModel,
-      franchiseType,
+      // franchiseModel,
+      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -299,8 +300,8 @@ export const updateInstaApply = async (req, res) => {
       {
         fullName,
         location,
-        franchiseModel,
-        franchiseType,
+        // franchiseModel,
+        // franchiseType,
         investmentRange,
         planToInvest,
         readyToInvest,

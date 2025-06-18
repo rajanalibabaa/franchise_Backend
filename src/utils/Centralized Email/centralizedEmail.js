@@ -57,7 +57,7 @@ export const sendInstantApplyEmail = async (
       franchiseType: franchiseType,
       investmentRange: investmentRange,
       planToInvest: planToInvest,
-      readyInvest: readyToInvest,
+      readyToInvest: readyToInvest,
     };
 
     console.log(" ============== :",emailData)

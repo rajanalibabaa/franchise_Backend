@@ -20,11 +20,7 @@ const investorLeadSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  category: [{
-    main: { type: String, required: true },
-    sub: { type: String, required: true },
-    child: { type: String, required: true }
-  }],
+  category: [{ main: { type: String }, sub: { type: String },child: { type: String } }],
   location: {
     country: { type: String, required: true },
     state: { type: String, required: true },

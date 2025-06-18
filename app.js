@@ -20,7 +20,7 @@ import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
 import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
-import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
+// import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
 import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
@@ -28,6 +28,7 @@ import { ViewedBrandsRouter } from "./src/Routes/ViewedBrandsRoutes/ViewedBrands
 import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
 import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.js";
 import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
+import {OtherIndustriesRouter} from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
 
 
 const router = express.Router();
@@ -41,7 +42,7 @@ router.use('/v1/feedback', feedbackRoutes);
 router.use('/v1/complaint', complaintRoutes);
 // router.use('/instaApply', instaApplyRoutes);
 router.use('/v1/brand',brandRoutes )
-router.use('/newIncomerInvestor',incomeInvestor );
+// router.use('/newIncomerInvestor',incomeInvestor );
 router.use('/v1/adminAuth', adminAuthRoutes);
 router.use('/v1/investor',InvestorRouter)
 router.use('/v1/brandlisting',brandListingRoutes)
@@ -91,6 +92,8 @@ router.use("/v1/instantapply",InstantApplyRouter)
 
 // subscribe routes
 router.use('/v1/subcribe',subscribeRouter)
+// OtherIndustries
+router.use("/v1/otherindustries", OtherIndustriesRouter)
 
 
 export default router;
