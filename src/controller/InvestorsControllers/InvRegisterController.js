@@ -161,38 +161,44 @@ export const updateInvestor = async (req, res) => {
       firstName,
       email,
       mobileNumber,
-    whatsappNumber,
+      whatsappNumber,
       address,
       pincode,
       country,
-     state,
+      state,
       city,
       occupation,
-      specifyOccupation, 
-      category,
-      investmentRange,
-      investmentAmount,
-      propertyType,
-      propertySize,
-      preferredState,
-      preferredCity
+      specifyOccupation,
+      preferences = []
     } = req.body;
 
-   if (!uuid) {
-      return res.status(400).json({ error: "UUID parameter is required" });
+    console.log("req.body :", req.body);
+
+    // Normalize preferences
+    const newPreferences = preferences.map((pref) => ({
+      category: pref.category,
+      investmentRange: pref.investmentRange,
+      investmentAmount: pref.investmentAmount,
+      preferredCity: pref.preferredCity,
+      preferredDistrict: pref.preferredDistrict,
+      preferredState: pref.preferredState,
+      propertySize: pref.propertySize,
+      propertyType: pref.propertyType
+    }));
+
+    console.log("newPreferences:", newPreferences);
+
+    // Auth check
+    if (uuid !== req.investorUser?.uuid) {
+      return res.status(400).json({ error: "Unauthorized request" });
     }
 
     if (req.investorUser?.uuid !== uuid) {
-      return res.json(
-        new ApiResponse(
-          403,
-          null,
-          "Unauthorized access to this resource"
-        )
-      );
+      return res.status(403).json({
+        error: "Unauthorized access to this resource"
+      });
     }
 
-    // Prepare update data
     const updateData = {
       firstName,
       email,
@@ -204,54 +210,47 @@ export const updateInvestor = async (req, res) => {
       state,
       city,
       occupation,
-      category,
-      investmentRange,
-      investmentAmount,
-      propertyType,
-      propertySize,
-      preferredState,
-      preferredCity
+      preferences: newPreferences
     };
 
-   // Handle specifyOccupation based on occupation
-if (occupation === 'Other') {
-  if (!specifyOccupation || specifyOccupation.trim() === '') {
-    return res.status(400).json(
-      new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
-    );
-  }
-  updateData.specifyOccupation = specifyOccupation;
-} else {
-  // Clear specifyOccupation if occupation is not 'Other'
-  updateData.specifyOccupation = undefined;
-}
+    // Handle specifyOccupation if "Other"
+    if (occupation === "Other") {
+      if (!specifyOccupation || specifyOccupation.trim() === "") {
+        return res.status(400).json({
+          error: "Please specify your occupation when selecting 'Other'"
+        });
+      }
+      updateData.specifyOccupation = specifyOccupation;
+    } else {
+      updateData.specifyOccupation = undefined;
+    }
 
     const updatedInvestor = await InvsRegister.findOneAndUpdate(
       { uuid: req.investorUser?.uuid },
-      updateData,
-      { new: true } // Return the updated document
+      { $set: updateData },
+      { new: true }
     ).select("-__v -_id -createdAt -updatedAt");
 
     if (!updatedInvestor) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "Investor not found")
-      );
+      return res.status(404).json({
+        error: "Investor not found"
+      });
     }
 
-   return res.status(200).json(
-      new ApiResponse(
-        200,
-        updatedInvestor,
-        "Investor updated successfully"
-      )
-    );
+    return res.status(200).json({
+      data: updatedInvestor,
+      message: "Investor updated successfully"
+    });
+
   } catch (err) {
     console.error("Update investor error:", err);
     return res.status(400).json({
       error: "Failed to update investor",
-      details: err.message,
+      details: err.message
     });
-  }};
+  }
+};
+
   
 export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;
