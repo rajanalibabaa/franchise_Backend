@@ -5,6 +5,8 @@ import uuid from "../../utils/uuid.js";
 import { FavoriteBrands, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import mongoose from "mongoose";
 import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
+import { json } from "express";
+import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader.js";
 
 export const createInvestor = async (req, res) => {
 
@@ -162,7 +164,7 @@ export const getInvestorByUUID = async (req, res) => {
       )
     }
 
-    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt");
+    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt -oldData");
 
 
     if (!investor) {
@@ -184,66 +186,224 @@ export const getInvestorByUUID = async (req, res) => {
 };
 
   
-export const updateInvestor = async (req, res) => {
+// export const updateInvestor = async (req, res) => {
+//   try {
+//     const { uuid } = req.params;
+//     const {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       specifyOccupation,
+      
+//     } = req.body;
+//     const preferences = JSON.parse(req.body.preferences || []) || req.body.preferences
+
+//     console.log(req?.body)
+
+//     if (req?.investorUser?.uuid !== uuid) {
+//       return res.status(403).json({
+//         error: "Unauthorized access to this resource"
+//       });
+//     }
+
+//     const avatar = req?.file?.path || null
+//     console.log("avatar :",avatar)
+
+//     let profileImage = null
+//     if (avatar) {
+//        profileImage = await uploadFileToR2(avatar,"investor-profile-images")
+//     if (!profileImage) {
+//       return res.json(
+//         new ApiResponse(500, null,"failed to upload profile image i R2")
+//       )
+//     }
+//     // console.log("profileImage :",profileImage)
+
+//     }
+//     const newPreferences = preferences.map((pref) => ({
+//       category: pref.category,
+//       investmentRange: pref.investmentRange,
+//       investmentAmount: pref.investmentAmount,
+//       preferredCity: pref.preferredCity,
+//       preferredDistrict: pref.preferredDistrict,
+//       preferredState: pref.preferredState,
+//       propertySize: pref.propertySize,
+//       propertyType: pref.propertyType
+//     }));
+
+//     console.log("newPreferences:", newPreferences);
+
+
+//     // const oldData =await InvsRegister.findOne({ uuid : req.investorUser?.uuid})
+//     // console.log("old")
+
+//     // if (!oldData) {
+//     //   return res.json(
+//     //     new ApiResponse(404,null,"Investor not found")
+//     //   )
+//     // }
+//     // const oldInvestorData = {
+//     //   firstName: oldData.firstName,
+//     //   email: oldData.email,
+//     //   mobileNumber: oldData.mobileNumber,
+//     //   whatsappNumber: oldData.whatsappNumber,
+//     //   address: oldData.address,
+//     //   pincode: oldData.pincode,
+//     //   country: oldData.country,
+//     //   state: oldData.state,
+//     //   city: oldData.city,
+//     //   occupation: oldData.occupation,
+//     //   specifyOccupation: oldData.specifyOccupation,
+//     //   preferences: oldData.preferences,
+//     //   createdAt : oldData.createdAt
+//     // }
+
+//     const updateData = {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       preferences,
+      
+//         };
+//     if (occupation === "Other") {
+//       if (!specifyOccupation || specifyOccupation.trim() === "") {
+//         return res.status(400).json({
+//           error: "Please specify your occupation when selecting 'Other'"
+//         });
+//       }
+//       updateData.specifyOccupation = specifyOccupation;
+//     } else {
+//       updateData.specifyOccupation = undefined;
+//     }
+
+//     const updatedInvestor = await InvsRegister.findOneAndUpdate(
+//       { uuid: req.investorUser?.uuid },
+//       { 
+//         $set: updateData ,
+//         profileImage
+//         // $shift: { oldData: oldInvestorData }, 
+//       },
+      
+//       { new: true }
+//     ).select("-__v -_id -createdAt -updatedAt -oldData");
+
+//     if (!updatedInvestor) {
+//       return res.status(404).json({
+//         error: "Investor not found"
+//       });
+//     }
+
+//     return res.json(
+//       new ApiResponse(200, updatedInvestor, "Investor updated successfully")
+//     );
+ 
+//   } catch (err) {
+//     console.error("Update investor error:", err);
+//     return res.status(400).json({
+//       error: "Failed to update investor",
+//       details: err.message
+//     });
+//   }
+// };
+
+ export const updateInvestor = async (req, res) => {
   try {
     const { uuid } = req.params;
     const {
-  firstName,
-  email,
-  mobileNumber,
-  whatsappNumber,
-  address,
-  pincode,
-  country,
-  state,
-  city,
-  occupation,
-  specifyOccupation,
-  preferences
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      specifyOccupation,
+      removeProfileImage 
     } = req.body;
+    
+   
+    const preferences = typeof req.body.preferences === 'string' 
+      ? JSON.parse(req.body.preferences) 
+      : req.body.preferences || [];
 
-    console.log("req.body :", req.body);
-
-    // Normalize preferences
-    const newPreferences = preferences.map((pref) => ({
-      category: pref.category,
-      investmentRange: pref.investmentRange,
-      investmentAmount: pref.investmentAmount,
-      preferredCity: pref.preferredCity,
-      preferredDistrict: pref.preferredDistrict,
-      preferredState: pref.preferredState,
-      propertySize: pref.propertySize,
-      propertyType: pref.propertyType
-    }));
-
-    console.log("newPreferences:", newPreferences);
-
-    // Auth check
-    if (uuid !== req.investorUser?.uuid) {
-      return res.status(400).json({ error: "Unauthorized request" });
-    }
-
-    if (req.investorUser?.uuid !== uuid) {
+    if (req?.investorUser?.uuid !== uuid) {
       return res.status(403).json({
         error: "Unauthorized access to this resource"
       });
     }
 
+    console.log("removeProfileImage :",removeProfileImage)
+
+    let profileImage;
+ 
+    // if (removeProfileImage === "true") {
+    //   const data = await InvsRegister.find({ uuid: req.investorUser?.uuid })
+    //   console.log("data :",data)
+    //  const D = await deleteFileFromR2(data[0].profileImage);
+    //  console.log("remove :",D)
+    //  profileImage = ""; 
+    // } 
+    if (req?.file?.path) {
+      const data = await InvsRegister.find({ uuid: req.investorUser?.uuid })
+      if (data[0]?.profileImage && removeProfileImage === "true") {
+        await deleteFileFromR2(data[0]?.profileImage);
+      }
+      
+      profileImage = await uploadFileToR2(req.file.path, "investor-profile-images");
+
+      if (!profileImage) {
+        return res.status(500).json(
+          new ApiResponse(500, null, "Failed to upload profile image to R2")
+        );
+      }
+    }
+
+    const newPreferences = preferences.map((pref) => ({
+      category: Array.isArray(pref.category) ? pref.category : [],
+      investmentRange: pref.investmentRange || "",
+      investmentAmount: pref.investmentAmount || "",
+      preferredCity: pref.preferredCity || "",
+      preferredDistrict: pref.preferredDistrict || "",
+      preferredState: pref.preferredState || "",
+      propertySize: pref.propertySize || "",
+      propertyType: pref.propertyType || ""
+    }));
+
     const updateData = {
-  firstName,
-  email,
-  mobileNumber,
-  whatsappNumber,
-  address,
-  pincode,
-  country,
-  state,
-  city,
-  occupation,
-  preferences
+      firstName,
+      email,
+      mobileNumber,
+      whatsappNumber,
+      address,
+      pincode,
+      country,
+      state,
+      city,
+      occupation,
+      preferences: newPreferences,
     };
 
-    // Handle specifyOccupation if "Other"
+    if (profileImage !== undefined) {
+      updateData.profileImage = profileImage;
+    }
+
     if (occupation === "Other") {
       if (!specifyOccupation || specifyOccupation.trim() === "") {
         return res.status(400).json({
@@ -259,7 +419,7 @@ export const updateInvestor = async (req, res) => {
       { uuid: req.investorUser?.uuid },
       { $set: updateData },
       { new: true }
-    ).select("-__v -_id -createdAt -updatedAt");
+    ).select("-__v -_id -createdAt -updatedAt -oldData");
 
     if (!updatedInvestor) {
       return res.status(404).json({
@@ -267,10 +427,9 @@ export const updateInvestor = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
-      data: updatedInvestor,
-      message: "Investor updated successfully"
-    });
+    return res.json(
+      new ApiResponse(200, updatedInvestor, "Investor updated successfully")
+    );
 
   } catch (err) {
     console.error("Update investor error:", err);
@@ -281,10 +440,43 @@ export const updateInvestor = async (req, res) => {
   }
 };
 
+export const deleteInvestorProfileImage = async (req,res) => {
+  try {
+
+    const {uuid} = req.params
+    console.log("uuid :",uuid)
+    console.log("uuid :",req.investorUser?.uuid)
   
+
+    if (uuid !== req.investorUser?.uuid) {
+      return res.json(
+        new ApiResponse(
+          403,
+          null,
+          "Unauthorized access to this resource"
+        )
+      )
+    }
+
+       const data = await InvsRegister.find({ uuid: req.investorUser?.uuid })
+      console.log("data :",data[0].profileImage)
+     const D = await deleteFileFromR2(data[0].profileImage);
+
+     await InvsRegister.findOneAndUpdate(
+      { uuid: req.investorUser?.uuid },
+      { $set: { profileImage: "" } },
+      { new: true }
+     )
+    
+  } catch (error) {
+    return  res.json(
+      new ApiResponse(500,null,"Failed to delete profile image",error.message)
+    )
+  }
+}
+
 export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;
-      // console.log(uuid)
 
       if (!uuid) {
         return res.status(400).json({ error: "UUID parameter is required" });
@@ -300,9 +492,7 @@ export const deleteInvestor = async (req, res) => {
         )
       }
       try {
-        // console.log("======================")
         const deletedInvestor = await InvsRegister.findOneAndDelete({uuid :req.investorUser?.uuid });
-        // console.log("==========: ",deletedInvestor)
         if (!deletedInvestor) {
             return res.status(404).json({ error: "Investor not found" });
         }
