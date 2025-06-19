@@ -24,6 +24,7 @@ try {
       specifyOccupation,
       preferences
     } = req.body;
+    console.log(req.body)
 
     const pref = preferences?.[0] || {}; // Get the first preference object safely
   const {
@@ -77,14 +78,15 @@ try {
       state,
       city,
       occupation,
-      category, // ✅ now correctly defined
+      // category, // ✅ now correctly defined
       specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-      investmentRange,
-      investmentAmount,
-      propertyType,
-      propertySize: propertyType === 'Own Property' ? propertySize : '',
-      preferredState,
-      preferredCity,
+      // investmentRange,
+      // investmentAmount,
+      // propertyType,
+      // propertySize: propertyType === 'Own Property' ? propertySize : '',
+      // preferredState,
+      // preferredCity,
+      preferences,
       inveterID,
       uuid: uuid()
     });
