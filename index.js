@@ -15,7 +15,7 @@ import allRouters from './app.js';
 const app = express();
 
 
-dotenv.config();
+dotenv.config();  
 app.use(cors( {
     origin: ['https://foodandbeverage.mrfranchise.in','http://localhost:5173'],
     credentials: true,

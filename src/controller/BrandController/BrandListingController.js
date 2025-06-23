@@ -213,9 +213,7 @@ console.log("customId", customId);
 
     await brand.save();
 
-    res
-      .status(201)
-      .json({ success: true, message: "Brand listing created", data: brand });
+    res.status(201).json({ success: true, message: "Brand listing created", data: brand });
   } catch (error) {
     console.error("❌ Brand Creation Error:", error.message);
     res.status(500).json({ success: false, message: error.message });

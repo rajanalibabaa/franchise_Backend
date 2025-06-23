@@ -11,6 +11,7 @@ const PreferenceSchema = new mongoose.Schema({
   },
   investmentAmount: {
     type: String,
+    required: true,
   },
   preferredState: {
     type: String,
@@ -109,6 +110,7 @@ const invsRegisterSchema = new mongoose.Schema(
 
     uuid: {
       type: String,
+
       unique: true,
     },
   },
@@ -116,6 +118,9 @@ const invsRegisterSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+  
+
 
 invsRegisterSchema.methods.generateAccessToken = function () {
   return jwt.sign(

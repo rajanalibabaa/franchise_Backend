@@ -26,16 +26,16 @@ try {
     } = req.body;
     console.log(req.body)
 
-    const pref = preferences?.[0] || {}; // Get the first preference object safely
-  const {
-      category = [],
-      investmentRange = '',
-      investmentAmount = '',
-      propertyType = '',
-      propertySize = '',
-      preferredState = '',
-      preferredCity = ''
-    } = pref;
+    // const pref = preferences?.[0] || {}; // Get the first preference object safely
+  // const {
+  //     category = [],
+  //     investmentRange = '',
+  //     investmentAmount = '',
+  //     propertyType = '',
+  //     propertySize = '',
+  //     preferredState = '',
+  //     preferredCity = ''
+  //   } = pref;
 
     // console.log("Incoming data:", req.body);
 
@@ -94,8 +94,30 @@ try {
     await investor.save();
 
 
-    newIncomerInvestorController(email,firstName,category,country,state,city,investmentRange)
 
+const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
+
+  //   console.log(
+  // "Investor created successfully:",
+  //   email,
+  //   firstName,
+  //   mainPref.category,
+  //   country,
+  //   state,
+  //   mainPref.preferredCity,
+  //   mainPref.investmentAmount
+  //   );
+    //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
+       newIncomerInvestorController(
+      email,
+      firstName,
+      mainPref.category,
+      country,
+      state,
+      mainPref.preferredCity,
+      mainPref.investmentAmount
+    );
+ 
     
     return res.status(201).json(
       new ApiResponse(201, investor, "Investor created successfully")
