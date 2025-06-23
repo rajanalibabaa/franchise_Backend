@@ -110,3 +110,14 @@ app.listen(process.env.PORT, () => {
 app.listen(process.env.PORT,'0.0.0.0',() =>{
     console.log(`Server is running on port ${process.env.PORT}...`);
 })
+
+app.post('/api/v1/verify-captcha', async (req, res) => {
+  const { token } = req.body;
+  const secretKey = process.env.REACT_APP_RECAPTCHA_SECRET_KEY;
+
+  const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+  const response = await fetch(url, { method: 'POST' });
+  const data = await response.json();
+
+  res.json(data); // returns success or error
+});

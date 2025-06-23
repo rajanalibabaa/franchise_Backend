@@ -34,7 +34,8 @@ const PreferenceSchema = new mongoose.Schema(
           required: function () {
             return this.propertyType === "Own Property";
           }
-        }
+        },
+        _id: false
       }
 )
 
@@ -84,7 +85,8 @@ const invsRegisterSchema = new mongoose.Schema(
     occupation: {
       type: String,
       required:  false,
-      enum: [ "Student", "Salaried Professional", "Bussiness Owner/ Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"]
+      enum: [ "Student", "Salaried Professional", "Bussiness Owner/ Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"],
+      _id: false
     },
     specifyOccupation: {
       type: String,        
