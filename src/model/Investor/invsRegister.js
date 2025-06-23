@@ -119,6 +119,7 @@ const invsRegisterSchema = new mongoose.Schema(
         specifyOccupation: String,
         preferences: [PreferenceSchema],
         createdAt: String,
+        profileImage:String,
         _id:false
       }
     ]
