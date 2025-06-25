@@ -147,7 +147,7 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
       });
 
       if (!favoriteData || favoriteData.favoriteBrands.length === 0) {
-        return res.status(404).json(new ApiResponse(404, [], "No favorite brands found"));
+        return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
       }
 
       // Sort by newest liked first
@@ -181,7 +181,7 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
       }
 
       console.log(" revers: ",revers)  
-      return res.status(200).json(
+      return res.json(
         new ApiResponse(200,revers , "Favorite brands retrieved successfully")
       );
     }
@@ -193,7 +193,7 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
       });
 
       if (!favoriteData || favoriteData.favoriteBrandBybrand.length === 0) {
-        return res.status(404).json(new ApiResponse(404, [], "No favorite brands found"));
+        return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
       }
 
       // Sort by newest liked first
@@ -231,10 +231,10 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
       );
     }
 
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized access"));
+    return res.json(new ApiResponse(403, {}, "Unauthorized access"));
   } catch (error) {
     console.error("getAllFavoriteBrandsByID error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
 

@@ -644,7 +644,7 @@ export const deleteInvestorProfileImage = async (req, res) => {
     }
 
     // Find investor data
-    const investor = await InvsRegister.findOne({ uuid: req.investorUser.uuid });
+    const investor = await InvsRegister.findOne({ uuid });
     if (!investor) {
       return res.status(404).json(
         new ApiResponse(
@@ -666,13 +666,24 @@ export const deleteInvestorProfileImage = async (req, res) => {
       );
     }
 
-    // Delete from R2 storage
-    await deleteFileFromR2(investor.profileImage);
+    // Store old profile image URL before deletion
+    const oldProfileImage = investor.profileImage;
 
-    // Update database
+    // Delete from R2 storage
+    await deleteFileFromR2(oldProfileImage);
+
+    // Update database - both remove profileImage and add to oldData in a single operation
     const updatedInvestor = await InvsRegister.findOneAndUpdate(
-      { uuid: req.investorUser.uuid },
-      { $set: { profileImage: "" } },
+      { uuid },
+      { 
+        $set: { profileImage: "" },
+        $push: { 
+          oldData: {
+            profileImage: oldProfileImage,
+            updatedAt: new Date()
+          }
+        }
+      },
       { new: true }
     );
 
