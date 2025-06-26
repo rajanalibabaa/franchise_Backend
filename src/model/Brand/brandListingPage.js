@@ -32,12 +32,12 @@ const BrandListingSchema = new mongoose.Schema(
       unique: true,
     },
     brandID: {
-    type: String,
+    type: String, 
     unique: true
   },
     personalDetails: {
       fullName: { type: String },
-      email: { type: String },
+      email: { type: String},
       mobileNumber: { type: String },
       whatsappNumber: { type: String },
       brandName: { type: String },

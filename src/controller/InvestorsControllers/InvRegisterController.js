@@ -24,6 +24,7 @@ try {
       specifyOccupation,
       preferences
     } = req.body;
+    console.log(req.body)
 
     // const pref = preferences?.[0] || {}; // Get the first preference object safely
   // const {
@@ -96,16 +97,16 @@ try {
 
 const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
 
-    console.log(
-  "Investor created successfully:",
-    email,
-    firstName,
-    mainPref.category,
-    country,
-    state,
-    mainPref.preferredCity,
-    mainPref.investmentAmount
-    );
+  //   console.log(
+  // "Investor created successfully:",
+  //   email,
+  //   firstName,
+  //   mainPref.category,
+  //   country,
+  //   state,
+  //   mainPref.preferredCity,
+  //   mainPref.investmentAmount
+  //   );
     //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
        newIncomerInvestorController(
       email,
