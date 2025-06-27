@@ -5,6 +5,8 @@ import uuid from "../../utils/uuid.js";
 import { FavoriteBrands, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import mongoose from "mongoose";
 import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
+import { json } from "express";
+import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader.js";
 
 export const createInvestor = async (req, res) => {
 
@@ -163,7 +165,7 @@ export const getInvestorByUUID = async (req, res) => {
       )
     }
 
-    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt");
+    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt -oldData");
 
 
     if (!investor) {
@@ -185,30 +187,455 @@ export const getInvestorByUUID = async (req, res) => {
 };
 
   
+// export const updateInvestor = async (req, res) => {
+  
+//    const { uuid } = req.params;
+//     const {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       specifyOccupation,
+      
+//     } = req.body;
+
+//     console.log(req.body)
+// };
+
+// Backend: investorController.js
+
+
 export const updateInvestor = async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const {
+            firstName,
+            email,
+            mobileNumber,
+            whatsappNumber,
+            address,
+            pincode,
+            country,
+            state,
+            city,
+            occupation,
+            specifyOccupation,
+            removeProfileImage,
+            preferences: rawPreferences
+        } = req.body;
+
+        if (req?.investorUser?.uuid !== uuid) {
+            return res.status(403).json(
+                new ApiResponse(403, null, "Unauthorized access to this resource")
+            );
+        }
+
+        const oldData = await InvsRegister.findOne({ uuid: req.investorUser?.uuid });
+        if (!oldData) {
+            return res.status(404).json(
+                new ApiResponse(404, null, "Investor not found")
+            );
+        }
+
+        let processedPreferences = [];
+        let preferencesChanged = false;
+        
+        if (rawPreferences !== undefined) {
+            let parsedPreferences;
+            try {
+                parsedPreferences = typeof rawPreferences === 'string' ? 
+                    JSON.parse(rawPreferences) : 
+                    rawPreferences;
+            } catch (e) {
+                return res.status(400).json(
+                    new ApiResponse(400, null, "Invalid preferences format")
+                );
+            }
+
+            if (!Array.isArray(parsedPreferences)) {
+                return res.status(400).json(
+                    new ApiResponse(400, null, "Preferences must be an array")
+                );
+            }
+
+       
+            processedPreferences = parsedPreferences.map((pref, index) => {
+             
+                if (!pref.investmentRange || !pref.investmentAmount || !pref.propertyType) {
+                    throw new Error(`Preference ${index + 1} is missing required fields`);
+                }
+
+                if (pref.propertyType === 'Own Property' && !pref.propertySize) {
+                    throw new Error(`Property size is required for Own Property in preference ${index + 1}`);
+                }
+
+                if (!pref.preferredState || !pref.preferredDistrict || !pref.preferredCity) {
+                    throw new Error(`Location fields are required in preference ${index + 1}`);
+                }
+
+                if (!Array.isArray(pref.category) || pref.category.length === 0) {
+                    throw new Error(`At least one category is required in preference ${index + 1}`);
+                }
+
+                const processedCategories = pref.category.map(cat => {
+                    if (!cat.main) {
+                        throw new Error(`Main category is required in preference ${index + 1}`);
+                    }
+                    return {
+                        main: String(cat.main || ''),
+                        sub: String(cat.sub || ''),
+                        child: String(cat.child || '')
+                    };
+                });
+
+                return {
+                    investmentRange: String(pref.investmentRange),
+                    investmentAmount: String(pref.investmentAmount),
+                    propertyType: String(pref.propertyType),
+                    propertySize: pref.propertyType === 'Own Property' ? 
+                        String(pref.propertySize || '') : '',
+                    preferredState: String(pref.preferredState),
+                    preferredDistrict: String(pref.preferredDistrict),
+                    preferredCity: String(pref.preferredCity),
+                    category: processedCategories,
+                    _id: pref._id || new mongoose.Types.ObjectId() 
+                };
+            });
+
+            preferencesChanged = JSON.stringify(processedPreferences) !== 
+                JSON.stringify(oldData.preferences);
+        }
+
+        let profileImage;
+        let imageChanged = false;
+        
+        if (removeProfileImage === "true") {
+            if (oldData.profileImage) {
+                await deleteFileFromR2(oldData.profileImage);
+                imageChanged = true;
+            }
+            profileImage = ""; 
+        } 
+        
+        if (req?.file?.path) {
+            if (oldData?.profileImage) {
+                await deleteFileFromR2(oldData.profileImage);
+            }
+            
+            profileImage = await uploadFileToR2(req.file.path, "investor-profile-images");
+            if (!profileImage) {
+                return res.status(500).json(
+                    new ApiResponse(500, null, "Failed to upload profile image")
+                );
+            }
+            imageChanged = true;
+        }
+
+        const updateData = {};
+        const oldInvestorData = {};
+
+        const checkAndSetField = (field, value) => {
+            if (value !== undefined && value !== oldData[field]) {
+                updateData[field] = value;
+                oldInvestorData[field] = oldData[field];
+                return true;
+            }
+            return false;
+        };
+
+        checkAndSetField('firstName', firstName);
+        checkAndSetField('email', email);
+        checkAndSetField('mobileNumber', mobileNumber);
+        checkAndSetField('whatsappNumber', whatsappNumber);
+        checkAndSetField('address', address);
+        checkAndSetField('pincode', pincode);
+        checkAndSetField('country', country);
+        checkAndSetField('state', state);
+        checkAndSetField('city', city);
+        checkAndSetField('occupation', occupation);
+
+        
+        if (occupation === "Other") {
+            if (!specifyOccupation || specifyOccupation.trim() === "") {
+                return res.status(400).json(
+                    new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
+                );
+            }
+            checkAndSetField('specifyOccupation', specifyOccupation);
+        } else if (specifyOccupation !== undefined) {
+            updateData.specifyOccupation = undefined;
+            if (oldData.specifyOccupation) {
+                oldInvestorData.specifyOccupation = oldData.specifyOccupation;
+            }
+        }
+
+      
+        if (preferencesChanged) {
+            updateData.preferences = processedPreferences;
+            oldInvestorData.preferences = oldData.preferences;
+        }
+
+        if (imageChanged) {
+            updateData.profileImage = profileImage;
+            oldInvestorData.profileImage = oldData.profileImage;
+        }
+
+        const hasChanges = Object.keys(updateData).length > 0;
+
+        if (!hasChanges) {
+            return res.status(200).json(
+                new ApiResponse(200, null, "No changes detected")
+            );
+        }
+
+        const updateOperation = {
+            $set: updateData
+        };
+
+        if (Object.keys(oldInvestorData).length > 0) {
+            updateOperation.$push = { 
+                oldData: {
+                    ...oldInvestorData,
+                    updatedAt: new Date() 
+                } 
+            };
+        }
+
+        const updatedInvestor = await InvsRegister.findOneAndUpdate(
+            { uuid: req.investorUser?.uuid },
+            updateOperation,
+            { new: true, runValidators: true }
+        ).select("-__v -_id -createdAt -updatedAt -oldData -password");
+
+        if (!updatedInvestor) {
+            return res.status(404).json(
+                new ApiResponse(404, null, "Investor not found")
+            );
+        }
+
+        return res.json(
+            new ApiResponse(200, updatedInvestor, "Investor updated successfully")
+        );
+
+    } catch (err) {
+        console.error("Update investor error:", err);
+        
+        
+        if (err.message.includes('Preference') || 
+            err.message.includes('category') || 
+            err.message.includes('required')) {
+            return res.status(400).json(
+                new ApiResponse(400, null, err.message)
+            );
+        }
+
+        return res.status(500).json(
+            new ApiResponse(500, null, "Failed to update investor", err.message)
+        );
+    }
+};
+
+// export const updateInvestor = async (req, res) => {
+//   try {
+//     const { uuid } = req.params;
+//     const {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       specifyOccupation,
+//       removeProfileImage 
+//     } = req.body;
+    
+//     const preferences = typeof req.body.preferences === 'string' 
+//       ? JSON.parse(req.body.preferences) 
+//       : req.body.preferences || [];
+
+//     // Authorization check
+//     if (req?.investorUser?.uuid !== uuid) {
+//       return res.status(403).json(
+//         new ApiResponse(403, null, "Unauthorized access to this resource")
+//       );
+//     }
+
+//     // Get existing investor data
+//     const oldData = await InvsRegister.findOne({ uuid: req.investorUser?.uuid });
+//     if (!oldData) {
+//       return res.status(404).json(
+//         new ApiResponse(404, null, "Investor not found")
+//       );
+//     }
+
+//     // Handle profile image updates
+//     let profileImage;
+//     if (removeProfileImage === "true") {
+//       if (oldData.profileImage) {
+//         await deleteFileFromR2(oldData.profileImage);
+//       }
+//       profileImage = ""; 
+//     } 
+    
+//     if (req?.file?.path) {
+//       // Delete old image if it exists and we're uploading a new one
+//       if (oldData?.profileImage && removeProfileImage !== "true") {
+//         await deleteFileFromR2(oldData.profileImage);
+//       }
+      
+//       profileImage = await uploadFileToR2(req.file.path, "investor-profile-images");
+//       if (!profileImage) {
+//         return res.status(500).json(
+//           new ApiResponse(500, null, "Failed to upload profile image to R2")
+//         );
+//       }
+//     }
+
+//     // Prepare new preferences
+//     const newPreferences = preferences.map((pref) => ({
+//       category: Array.isArray(pref.category) ? pref.category : [],
+//       investmentRange: pref.investmentRange || "",
+//       investmentAmount: pref.investmentAmount || "",
+//       preferredCity: pref.preferredCity || "",
+//       preferredDistrict: pref.preferredDistrict || "",
+//       preferredState: pref.preferredState || "",
+//       propertySize: pref.propertySize || "",
+//       propertyType: pref.propertyType || ""
+//     }));
+
+//     // Prepare update data
+//     const updateData = {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       preferences: newPreferences,
+//     };
+
+//     // Handle profile image in update
+//     if (profileImage !== undefined) {
+//       updateData.profileImage = profileImage;
+//     }
+
+//     // Handle occupation specification
+//     if (occupation === "Other") {
+//       if (!specifyOccupation || specifyOccupation.trim() === "") {
+//         return res.status(400).json(
+//           new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
+//         );
+//       }
+//       updateData.specifyOccupation = specifyOccupation;
+//     } else {
+//       updateData.specifyOccupation = undefined;
+//     }
+
+//     // Create comparison object (excluding profileImage and timestamps)
+//     const oldInvestorData = {
+//       firstName: oldData.firstName,
+//       email: oldData.email,
+//       mobileNumber: oldData.mobileNumber,
+//       whatsappNumber: oldData.whatsappNumber,
+//       address: oldData.address,
+//       pincode: oldData.pincode,
+//       country: oldData.country,
+//       state: oldData.state,
+//       city: oldData.city,
+//       occupation: oldData.occupation,
+//       specifyOccupation: oldData.specifyOccupation,
+//       preferences: oldData.preferences
+//     };
+
+//     // Create comparable update data (excluding profileImage)
+//     const comparableUpdateData = {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       specifyOccupation: occupation === "Other" ? specifyOccupation : undefined,
+//       preferences: newPreferences
+//     };
+
+//     // Check if all data is the same (excluding profile image)
+//     const isDataSame = JSON.stringify(oldInvestorData) === JSON.stringify(comparableUpdateData);
+
+//     // If data is same and no image change, return already up to date
+//     if (isDataSame && 
+//         (profileImage === undefined || 
+//          (profileImage === "" && !oldData.profileImage) || 
+//          (profileImage === oldData.profileImage))) {
+//       return res.status(200).json(
+//         new ApiResponse(200, null, "Already up to date")
+//       );
+//     }
+
+//     // Update investor data
+//     const updatedInvestor = await InvsRegister.findOneAndUpdate(
+//       { uuid: req.investorUser?.uuid },
+//       { 
+//         $set: updateData,
+//         $push: { oldData: oldInvestorData } 
+//       },
+//       { new: true }
+//     ).select("-__v -_id -createdAt -updatedAt -oldData");
+
+//     if (!updatedInvestor) {
+//       return res.status(404).json(
+//         new ApiResponse(404, null, "Investor not found")
+//       );
+//     }
+
+//     return res.json(
+//       new ApiResponse(200, updatedInvestor, "Investor updated successfully")
+//     );
+
+//   } catch (err) {
+//     console.error("Update investor error:", err);
+//     return res.status(500).json(
+//       new ApiResponse(500, null, "Failed to update investor", err.message)
+//     );
+//   }
+// };
+
+export const deleteInvestorProfileImage = async (req, res) => {
   try {
     const { uuid } = req.params;
-    const {
-  firstName,
-  email,
-  mobileNumber,
-  whatsappNumber,
-  address,
-  pincode,
-  country,
-  state,
-  city,
-  occupation,
-  specifyOccupation,
-  preferences
-    } = req.body;
 
-   if (!uuid) {
-      return res.status(400).json({ error: "UUID parameter is required" });
+    // Validate UUID
+    if (!uuid) {
+      return res.status(400).json(
+        new ApiResponse(
+          400,
+          null,
+          "UUID parameter is required"
+        )
+      );
     }
 
-    if (req.investorUser?.uuid !== uuid) {
-      return res.json(
+    // Authorization check
+    if (uuid !== req.investorUser?.uuid) {
+      return res.status(403).json(
         new ApiResponse(
           403,
           null,
@@ -217,64 +644,73 @@ export const updateInvestor = async (req, res) => {
       );
     }
 
-    // Prepare update data
-    const updateData = {
-  firstName,
-  email,
-  mobileNumber,
-  whatsappNumber,
-  address,
-  pincode,
-  country,
-  state,
-  city,
-  occupation,
-  preferences
-    };
-
-   // Handle specifyOccupation based on occupation
-if (occupation === 'Other') {
-  if (!specifyOccupation || specifyOccupation.trim() === '') {
-    return res.status(400).json(
-      new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
-    );
-  }
-  updateData.specifyOccupation = specifyOccupation;
-} else {
-  // Clear specifyOccupation if occupation is not 'Other'
-  updateData.specifyOccupation = undefined;
-}
-
-    const updatedInvestor = await InvsRegister.findOneAndUpdate(
-      { uuid: req.investorUser?.uuid },
-      updateData,
-      { new: true } // Return the updated document
-    ).select("-__v -_id -createdAt -updatedAt");
-
-    if (!updatedInvestor) {
+    // Find investor data
+    const investor = await InvsRegister.findOne({ uuid });
+    if (!investor) {
       return res.status(404).json(
-        new ApiResponse(404, null, "Investor not found")
+        new ApiResponse(
+          404,
+          null,
+          "Investor not found"
+        )
       );
     }
 
-   return res.status(200).json(
+    // Check if profile image exists
+    if (!investor.profileImage) {
+      return res.status(400).json(
+        new ApiResponse(
+          400,
+          null,
+          "No profile image exists to delete"
+        )
+      );
+    }
+
+    // Store old profile image URL before deletion
+    const oldProfileImage = investor.profileImage;
+
+    // Delete from R2 storage
+    await deleteFileFromR2(oldProfileImage);
+
+    // Update database - both remove profileImage and add to oldData in a single operation
+    const updatedInvestor = await InvsRegister.findOneAndUpdate(
+      { uuid },
+      { 
+        $set: { profileImage: "" },
+        $push: { 
+          oldData: {
+            profileImage: oldProfileImage,
+            updatedAt: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    return res.status(200).json(
       new ApiResponse(
         200,
-        updatedInvestor,
-        "Investor updated successfully"
+        { profileImage: updatedInvestor.profileImage },
+        "Profile image deleted successfully"
       )
     );
-  } catch (err) {
-    console.error("Update investor error:", err);
-    return res.status(400).json({
-      error: "Failed to update investor",
-      details: err.message,
-    });
-  }};
-  
+
+  } catch (error) {
+    console.error("Error deleting profile image:", error);
+    return res.status(500).json(
+      new ApiResponse(
+        500,
+        null,
+        "Failed to delete profile image",
+        error.message
+      )
+    );
+  }
+};
+
 export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;
-      // console.log(uuid)
 
       if (!uuid) {
         return res.status(400).json({ error: "UUID parameter is required" });
@@ -290,9 +726,7 @@ export const deleteInvestor = async (req, res) => {
         )
       }
       try {
-        // console.log("======================")
         const deletedInvestor = await InvsRegister.findOneAndDelete({uuid :req.investorUser?.uuid });
-        // console.log("==========: ",deletedInvestor)
         if (!deletedInvestor) {
             return res.status(404).json({ error: "Investor not found" });
         }

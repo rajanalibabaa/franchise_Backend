@@ -1,41 +1,44 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
-const PreferenceSchema = new mongoose.Schema({
-  category: [
-    { main: { type: String }, sub: { type: String }, child: { type: String } },
-  ],
-  investmentRange: {
-    type: String,
-    required: true,
-  },
-  investmentAmount: {
-    type: String,
-    required: true,
-  },
-  preferredState: {
-    type: String,
-    required: true,
-  },
-  preferredDistrict: {
-    type: String,
-    required: true,
-  },
-  preferredCity: {
-    type: String,
-    required: true,
-  },
-  propertyType: {
-    type: String,
-    trim: true,
-  },
-  propertySize: {
-    type: String,
-    required: function () {
-      return this.propertyType === "Own Property";
-    },
-  },
-});
+
+
+const PreferenceSchema = new mongoose.Schema(
+ {
+        category:[{ main: { type: String }, sub: { type: String },child: { type: String } }],
+        investmentRange: {
+          type: String,
+          required: true
+        },
+        investmentAmount: {
+          type: String
+        },
+        preferredState: {
+          type: String,
+          required: true
+        },
+        preferredDistrict: {
+          type: String,
+          required: true
+        },
+        preferredCity: {
+          type: String,
+          required: true
+        },
+        propertyType: {
+          type: String,
+          trim: true
+        },
+        propertySize: {
+          type: String,
+          required: function () {
+            return this.propertyType === "Own Property";
+          }
+        },
+        _id: false
+      }
+)
+
 
 const invsRegisterSchema = new mongoose.Schema(
   {
@@ -87,17 +90,9 @@ const invsRegisterSchema = new mongoose.Schema(
     },
     occupation: {
       type: String,
-      required: false,
-      enum: [
-        "Student",
-        "Salaried Professional",
-        "Bussiness Owner/ Self-Employed",
-        "Retired",
-        "Freelancer/ Consultant",
-        "Homemaker",
-        "Investor",
-        "Other",
-      ],
+      required:  false,
+      enum: [ "Student", "Salaried Professional", "Bussiness Owner/ Self-Employed","Retired","Freelancer/ Consultant","Homemaker","Investor","Other"],
+      _id: false
     },
     specifyOccupation: {
       type: String,
@@ -110,9 +105,30 @@ const invsRegisterSchema = new mongoose.Schema(
 
     uuid: {
       type: String,
-
-      unique: true,
+      unique: true
     },
+    profileImage: {
+      type: String,
+    },
+    oldData : [
+      {
+        firstName: String,
+        email: String,
+        mobileNumber: String,
+        whatsappNumber: String,
+        address: String,
+        pincode: String,
+        country: String,
+        state: String,
+        city: String,
+        occupation: String,
+        specifyOccupation: String,
+        preferences: [PreferenceSchema],
+        createdAt: String,
+        profileImage:String,
+        _id:false
+      }
+    ]
   },
   {
     timestamps: true,

@@ -1,7 +1,7 @@
 
 import fs from 'fs/promises';
 import { existsSync } from 'fs'; // <-- add this for sync file check
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import s3 from './s3.js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -127,5 +127,21 @@ export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
   } catch (error) {
     console.error("❌ Error generating signed URL:", error.message);
     throw error;
+  }
+};
+
+export const deleteFileFromR2 = async (fileKey) => {
+  const command = new DeleteObjectCommand({
+    Bucket: process.env.R2_BUCKET_NAME,
+    Key: fileKey,
+  });
+
+  try {
+    await s3.send(command);
+    console.log(`✅ File "${fileKey}" deleted successfully from R2.`);
+    return { success: true };
+  } catch (error) {
+    console.error(`❌ Error deleting file from R2:`, error.message);
+    throw new Error('Failed to delete file from R2');
   }
 };
