@@ -8,10 +8,152 @@ import { newIncomerInvestorController } from "../Admin/investorRegisterLeadContr
 import { json } from "express";
 import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader.js";
 
-export const createInvestor = async (req, res) => {
+// export const createInvestor = async (req, res) => {
 
+//   console.log("Incoming request to create investor:", req.body);
+// try {
+//     const {
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       specifyOccupation,
+//       preferences
+//     } = req.body;
+
+//     // const pref = preferences?.[0] || {}; // Get the first preference object safely
+//   // const {
+//   //     category = [],
+//   //     investmentRange = '',
+//   //     investmentAmount = '',
+//   //     propertyType = '',
+//   //     propertySize = '',
+//   //     preferredState = '',
+//   //     preferredCity = ''
+//   //   } = pref;
+
+//     // console.log("Incoming data:", req.body);
+
+    
+    
+//     // const exists = await InvsRegister.findOne({
+//     //   $or: [
+//     //     { email },
+//     //     { mobileNumber }
+//     //   ]
+//     // });
+
+//     // if (exists) {
+//     //   return res.status(409).json(
+//     //     new ApiResponse(
+//     //       409,
+//     //       null,
+//     //       "Investor already exists"
+//     //     )
+//     //   );
+//     // }
+
+//   // const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
+
+//   // console.log("current last data:",currentLastData?.inveterID)
+
+//   // const newID = currentLastData?.inveterID?.split('-')[2] || '000'; 
+//   // const nextID = String(parseInt(newID, 10) + 1).padStart(3, '0');  
+//   // const inveterID = `MrF-INV-${nextID}`;
+//   // console.log("========", inveterID)
+
+
+
+//    const prefData = preferences.map( data => {
+//     let  category = data.category.map(
+//       data => {
+//         let main = data.main
+//         let sub = data.sub
+//         let child = data.child
+//       }
+//     )
+
+//     let investmentAmount = data.investmentAmount
+//     let locationType = data.locationType
+//     let preferredCity = data.city
+//     let preferredState = data.state
+//     let propertyType = data.propertyType
+//     let propertySize = data.propertySize
+
+
+
+//   })
+  
+
+//      const investor = new InvsRegister({
+//       firstName,
+//       email,
+//       mobileNumber,
+//       whatsappNumber,
+//       address,
+//       pincode,
+//       country,
+//       state,
+//       city,
+//       occupation,
+//       specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+      
+//       preferences:prefData,
+//       uuid: uuid()
+//     });
+
+//     await investor.save();
+
+
+
+// // const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
+
+//   //   console.log(
+//   // "Investor created successfully:",
+//   //   email,
+//   //   firstName,
+//   //   mainPref.category,
+//   //   country,
+//   //   state,
+//   //   mainPref.preferredCity,
+//   //   mainPref.investmentAmount
+//   //   );
+//     //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
+//     //    newIncomerInvestorController(
+//     //   email,
+//     //   firstName,
+//     //   mainPref.category,
+//     //   country,
+//     //   state,
+//     //   mainPref.preferredCity,
+//     //   mainPref.investmentAmount
+//     // );
+ 
+    
+//     return res.status(201).json(
+//       new ApiResponse(201, investor, "Investor created successfully")
+//     );
+//   } catch (err) {
+//     console.error("Create Investor Error:", err);
+//     return res.status(400).json({
+//       error: "Failed to create investor",
+//       details: err.message
+//     });
+//   }
+// };
+
+
+
+export const createInvestor = async (req, res) => {
   console.log("Incoming request to create investor:", req.body);
-try {
+
+  try {
     const {
       firstName,
       email,
@@ -26,41 +168,37 @@ try {
       specifyOccupation,
       preferences
     } = req.body;
-    console.log(req.body)
 
-    // const pref = preferences?.[0] || {}; // Get the first preference object safely
-  // const {
-  //     category = [],
-  //     investmentRange = '',
-  //     investmentAmount = '',
-  //     propertyType = '',
-  //     propertySize = '',
-  //     preferredState = '',
-  //     preferredCity = ''
-  //   } = pref;
+    // ✅ Map and sanitize preferences
+    const prefData = preferences?.map(pref => {
+      return {
+        category: pref.category?.map(cat => ({
+          main: cat.main,
+          sub: cat.sub,
+          child: cat.child
+        })) || [],
+        investmentRange: pref.investmentRange || '',
+        investmentAmount: pref.investmentAmount || '',
+        locationType: pref.locationType || '',
+        propertyType: pref.propertyType || '',
+        propertySize: pref.propertyType === "Own Property" ? (pref.propertySize || '') : undefined,
+        preferredState: pref.state || '',
+        preferredDistrict: pref.district ||'', // Optional: you can extract this from user input
+        preferredCity: pref.city || ''
+      };
+    }) || [];
 
-    // console.log("Incoming data:", req.body);
+    const existingInvestor = await InvsRegister.findOne({
+      $or: [{ email }]
+    });
 
-    
-    
-    // const exists = await InvsRegister.findOne({
-    //   $or: [
-    //     { email },
-    //     { mobileNumber }
-    //   ]
-    // });
+    if (existingInvestor) {
+      return res.status(409).json(
+        new ApiResponse(409, null, "Investor already exists")
+      );
+    }
 
-    // if (exists) {
-    //   return res.status(409).json(
-    //     new ApiResponse(
-    //       409,
-    //       null,
-    //       "Investor already exists"
-    //     )
-    //   );
-    // }
-
-  const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
+      const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
 
   console.log("current last data:",currentLastData?.inveterID)
 
@@ -69,7 +207,8 @@ try {
   const inveterID = `MrF-INV-${nextID}`;
   console.log("========", inveterID)
 
-     const investor = new InvsRegister({
+    // ✅ Create investor instance
+    const investor = new InvsRegister({
       firstName,
       email,
       mobileNumber,
@@ -80,50 +219,42 @@ try {
       state,
       city,
       occupation,
-      // category, // ✅ now correctly defined
       specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-      // investmentRange,
-      // investmentAmount,
-      // propertyType,
-      // propertySize: propertyType === 'Own Property' ? propertySize : '',
-      // preferredState,
-      // preferredCity,
-      preferences,
-      inveterID,
-      uuid: uuid()
+      preferences: prefData,
+      uuid: uuid(),
+      inveterID
     });
 
     await investor.save();
 
-
-
-const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
-
-  //   console.log(
-  // "Investor created successfully:",
-  //   email,
-  //   firstName,
-  //   mainPref.category,
-  //   country,
-  //   state,
-  //   mainPref.preferredCity,
-  //   mainPref.investmentAmount
-  //   );
-    //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
-       newIncomerInvestorController(
-      email,
-      firstName,
-      mainPref.category,
-      country,
-      state,
-      mainPref.preferredCity,
-      mainPref.investmentAmount
-    );
- 
-    
-    return res.status(201).json(
+     res.status(201).json(
       new ApiResponse(201, investor, "Investor created successfully")
     );
+
+
+   const firstPref = preferences?.[0] || {};
+    const category = firstPref.category?.map(data => ({
+      main: data.main,
+      sub: data.sub,
+      child: data.child
+    })) || [];
+
+    const preferredCity = firstPref.city || '';
+    const investmentAmount = firstPref.investmentAmount || '';
+
+    // ✅ Call notification or webhook
+    newIncomerInvestorController(
+      email,
+      firstName,
+      category,
+      country,
+      state,
+      preferredCity,
+      investmentAmount
+    );
+
+    return
+
   } catch (err) {
     console.error("Create Investor Error:", err);
     return res.status(400).json({

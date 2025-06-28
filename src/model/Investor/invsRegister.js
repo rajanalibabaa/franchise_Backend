@@ -13,6 +13,10 @@ const PreferenceSchema = new mongoose.Schema(
         investmentAmount: {
           type: String
         },
+        locationType: {
+          type: String,
+          required: true
+        },
         preferredState: {
           type: String,
           required: true
@@ -110,6 +114,10 @@ const invsRegisterSchema = new mongoose.Schema(
     profileImage: {
       type: String,
     },
+    inveterID: {
+      type: String,
+    },
+    
     oldData : [
       {
         firstName: String,
