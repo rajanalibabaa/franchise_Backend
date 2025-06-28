@@ -8,147 +8,6 @@ import { newIncomerInvestorController } from "../Admin/investorRegisterLeadContr
 import { json } from "express";
 import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader.js";
 
-// export const createInvestor = async (req, res) => {
-
-//   console.log("Incoming request to create investor:", req.body);
-// try {
-//     const {
-//       firstName,
-//       email,
-//       mobileNumber,
-//       whatsappNumber,
-//       address,
-//       pincode,
-//       country,
-//       state,
-//       city,
-//       occupation,
-//       specifyOccupation,
-//       preferences
-//     } = req.body;
-
-//     // const pref = preferences?.[0] || {}; // Get the first preference object safely
-//   // const {
-//   //     category = [],
-//   //     investmentRange = '',
-//   //     investmentAmount = '',
-//   //     propertyType = '',
-//   //     propertySize = '',
-//   //     preferredState = '',
-//   //     preferredCity = ''
-//   //   } = pref;
-
-//     // console.log("Incoming data:", req.body);
-
-    
-    
-//     // const exists = await InvsRegister.findOne({
-//     //   $or: [
-//     //     { email },
-//     //     { mobileNumber }
-//     //   ]
-//     // });
-
-//     // if (exists) {
-//     //   return res.status(409).json(
-//     //     new ApiResponse(
-//     //       409,
-//     //       null,
-//     //       "Investor already exists"
-//     //     )
-//     //   );
-//     // }
-
-//   // const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
-
-//   // console.log("current last data:",currentLastData?.inveterID)
-
-//   // const newID = currentLastData?.inveterID?.split('-')[2] || '000'; 
-//   // const nextID = String(parseInt(newID, 10) + 1).padStart(3, '0');  
-//   // const inveterID = `MrF-INV-${nextID}`;
-//   // console.log("========", inveterID)
-
-
-
-//    const prefData = preferences.map( data => {
-//     let  category = data.category.map(
-//       data => {
-//         let main = data.main
-//         let sub = data.sub
-//         let child = data.child
-//       }
-//     )
-
-//     let investmentAmount = data.investmentAmount
-//     let locationType = data.locationType
-//     let preferredCity = data.city
-//     let preferredState = data.state
-//     let propertyType = data.propertyType
-//     let propertySize = data.propertySize
-
-
-
-//   })
-  
-
-//      const investor = new InvsRegister({
-//       firstName,
-//       email,
-//       mobileNumber,
-//       whatsappNumber,
-//       address,
-//       pincode,
-//       country,
-//       state,
-//       city,
-//       occupation,
-//       specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
-      
-//       preferences:prefData,
-//       uuid: uuid()
-//     });
-
-//     await investor.save();
-
-
-
-// // const mainPref = preferences && preferences.length > 0 ? preferences[0] : {};
-
-//   //   console.log(
-//   // "Investor created successfully:",
-//   //   email,
-//   //   firstName,
-//   //   mainPref.category,
-//   //   country,
-//   //   state,
-//   //   mainPref.preferredCity,
-//   //   mainPref.investmentAmount
-//   //   );
-//     //  newIncomerInvestorController(email, firstName, category, country, state, preferredCity, investmentAmount);
-//     //    newIncomerInvestorController(
-//     //   email,
-//     //   firstName,
-//     //   mainPref.category,
-//     //   country,
-//     //   state,
-//     //   mainPref.preferredCity,
-//     //   mainPref.investmentAmount
-//     // );
- 
-    
-//     return res.status(201).json(
-//       new ApiResponse(201, investor, "Investor created successfully")
-//     );
-//   } catch (err) {
-//     console.error("Create Investor Error:", err);
-//     return res.status(400).json({
-//       error: "Failed to create investor",
-//       details: err.message
-//     });
-//   }
-// };
-
-
 
 export const createInvestor = async (req, res) => {
   console.log("Incoming request to create investor:", req.body);
@@ -169,45 +28,57 @@ export const createInvestor = async (req, res) => {
       preferences
     } = req.body;
 
-    // ✅ Map and sanitize preferences
-    const prefData = preferences?.map(pref => {
+    // 🛡 Validate & format preferences
+    const prefData = preferences?.map((pref, index) => {
+      if (!pref.locationType || !["domestic", "international"].includes(pref.locationType)) {
+        throw new Error(`Invalid or missing 'locationType' in preference ${index + 1}`);
+      }
+
+      if (!pref.category || !Array.isArray(pref.category) || pref.category.length === 0) {
+        throw new Error(`At least one category is required in preference ${index + 1}`);
+      }
+
+      const category = pref.category.map(cat => ({
+        main: cat.main || "",
+        sub: cat.sub || "",
+        child: cat.child || ""
+      }));
+
+      const propertyPreferred = (pref.propertyPreferred || []).map(prop => ({
+        propertyType: prop.propertyType || "",
+        propertySize: prop.propertySize || "",
+        propertyCountry: prop.propertyCountry || "",
+        propertyState: prop.propertyState || "",
+        propertyCity: prop.propertyCity || ""
+      }));
+
       return {
-        category: pref.category?.map(cat => ({
-          main: cat.main,
-          sub: cat.sub,
-          child: cat.child
-        })) || [],
-        investmentRange: pref.investmentRange || '',
-        investmentAmount: pref.investmentAmount || '',
-        locationType: pref.locationType || '',
-        propertyType: pref.propertyType || '',
-        propertySize: pref.propertyType === "Own Property" ? (pref.propertySize || '') : undefined,
-        preferredState: pref.state || '',
-        preferredDistrict: pref.district ||'', // Optional: you can extract this from user input
-        preferredCity: pref.city || ''
+        category,
+        investmentRange: pref.investmentRange || "",
+        investmentAmount: pref.investmentAmount || "",
+        locationType: pref.locationType,
+        preferredCountry: pref.preferredCountry || pref.preferredCuntry || "",
+        preferredState: pref.preferredState || "",
+        preferredDistrict: pref.preferredDistrict || pref.district || "",
+        preferredCity: pref.preferredCity || "",
+        propertyPreferred
       };
     }) || [];
 
-    const existingInvestor = await InvsRegister.findOne({
-      $or: [{ email }]
-    });
+    // 🔍 Check for existing investor
+    const existingInvestor = await InvsRegister.findOne({ email });
 
     if (existingInvestor) {
-      return res.status(409).json(
-        new ApiResponse(409, null, "Investor already exists")
-      );
+      return res.status(409).json(new ApiResponse(409, null, "Investor already exists"));
     }
 
-      const currentLastData = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
+    // 🆔 Generate unique investor ID
+    const lastEntry = await InvsRegister.findOne({}).sort({ updatedAt: -1 });
+    const lastId = lastEntry?.inveterID?.split("-")[2] || "000";
+    const nextId = String(parseInt(lastId, 10) + 1).padStart(3, "0");
+    const inveterID = `MrF-INV-${nextId}`;
 
-  console.log("current last data:",currentLastData?.inveterID)
-
-  const newID = currentLastData?.inveterID?.split('-')[2] || '000'; 
-  const nextID = String(parseInt(newID, 10) + 1).padStart(3, '0');  
-  const inveterID = `MrF-INV-${nextID}`;
-  console.log("========", inveterID)
-
-    // ✅ Create investor instance
+    // 🏗 Create investor record
     const investor = new InvsRegister({
       firstName,
       email,
@@ -219,7 +90,7 @@ export const createInvestor = async (req, res) => {
       state,
       city,
       occupation,
-      specifyOccupation: occupation === 'Other' ? specifyOccupation : undefined,
+      specifyOccupation: occupation === "Other" ? specifyOccupation : undefined,
       preferences: prefData,
       uuid: uuid(),
       inveterID
@@ -227,33 +98,29 @@ export const createInvestor = async (req, res) => {
 
     await investor.save();
 
-     res.status(201).json(
-      new ApiResponse(201, investor, "Investor created successfully")
-    );
+    // 📤 Send response
+    res.status(201).json(new ApiResponse(201, investor, "Investor created successfully"));
 
+    // 🔔 Optional: trigger additional action (like email, notification)
+    if (Array.isArray(preferences) && preferences.length > 0) {
+      preferences.forEach(pref => {
+        const category = pref.category?.map(data => ({
+          main: data.main,
+          sub: data.sub,
+          child: data.child
+        })) || [];
 
-   const firstPref = preferences?.[0] || {};
-    const category = firstPref.category?.map(data => ({
-      main: data.main,
-      sub: data.sub,
-      child: data.child
-    })) || [];
-
-    const preferredCity = firstPref.city || '';
-    const investmentAmount = firstPref.investmentAmount || '';
-
-    // ✅ Call notification or webhook
-    newIncomerInvestorController(
-      email,
-      firstName,
-      category,
-      country,
-      state,
-      preferredCity,
-      investmentAmount
-    );
-
-    return
+        newIncomerInvestorController(
+          email,
+          firstName,
+          category,
+          pref.preferredCountry || pref.preferredCuntry || "",
+          pref.preferredState || "",
+          pref.preferredCity || "",
+          pref.investmentAmount || ""
+        );
+      });
+    }
 
   } catch (err) {
     console.error("Create Investor Error:", err);
@@ -342,235 +209,258 @@ export const getInvestorByUUID = async (req, res) => {
 // Backend: investorController.js
 
 
-export const updateInvestor = async (req, res) => {
-    try {
-        const { uuid } = req.params;
-        const {
-            firstName,
-            email,
-            mobileNumber,
-            whatsappNumber,
-            address,
-            pincode,
-            country,
-            state,
-            city,
-            occupation,
-            specifyOccupation,
-            removeProfileImage,
-            preferences: rawPreferences
-        } = req.body;
+// export const updateInvestor = async (req, res) => {
+//     try {
+//         const { uuid } = req.params;
+//         const {
+//             firstName,
+//             email,
+//             mobileNumber,
+//             whatsappNumber,
+//             address,
+//             pincode,
+//             country,
+//             state,
+//             city,
+//             occupation,
+//             specifyOccupation,
+//             removeProfileImage,
+//             preferences: rawPreferences
+//         } = req.body;
 
-        if (req?.investorUser?.uuid !== uuid) {
-            return res.status(403).json(
-                new ApiResponse(403, null, "Unauthorized access to this resource")
-            );
-        }
+//         console.log(req.body);
 
-        const oldData = await InvsRegister.findOne({ uuid: req.investorUser?.uuid });
-        if (!oldData) {
-            return res.status(404).json(
-                new ApiResponse(404, null, "Investor not found")
-            );
-        }
+//         if (req?.investorUser?.uuid !== uuid) {
+//             return res.status(403).json(
+//                 new ApiResponse(403, null, "Unauthorized access to this resource")
+//             );
+//         }
 
-        let processedPreferences = [];
-        let preferencesChanged = false;
-        
-        if (rawPreferences !== undefined) {
-            let parsedPreferences;
-            try {
-                parsedPreferences = typeof rawPreferences === 'string' ? 
-                    JSON.parse(rawPreferences) : 
-                    rawPreferences;
-            } catch (e) {
-                return res.status(400).json(
-                    new ApiResponse(400, null, "Invalid preferences format")
-                );
-            }
+//         const oldData = await InvsRegister.findOne({ uuid: req.investorUser?.uuid });
+//         if (!oldData) {
+//             return res.status(404).json(
+//                 new ApiResponse(404, null, "Investor not found")
+//             );
+//         }
 
-            if (!Array.isArray(parsedPreferences)) {
-                return res.status(400).json(
-                    new ApiResponse(400, null, "Preferences must be an array")
-                );
-            }
+//         let processedPreferences = [];
+//         let preferencesChanged = false;
 
-       
-            processedPreferences = parsedPreferences.map((pref, index) => {
-             
-                if (!pref.investmentRange || !pref.investmentAmount || !pref.propertyType) {
-                    throw new Error(`Preference ${index + 1} is missing required fields`);
-                }
+//         if (rawPreferences !== undefined) {
+//             let parsedPreferences;
+//             try {
+//                 parsedPreferences = typeof rawPreferences === 'string' ?
+//                     JSON.parse(rawPreferences) :
+//                     rawPreferences;
+//             } catch (e) {
+//                 return res.status(400).json(
+//                     new ApiResponse(400, null, "Invalid preferences format")
+//                 );
+//             }
 
-                if (pref.propertyType === 'Own Property' && !pref.propertySize) {
-                    throw new Error(`Property size is required for Own Property in preference ${index + 1}`);
-                }
+//             if (!Array.isArray(parsedPreferences)) {
+//                 return res.status(400).json(
+//                     new ApiResponse(400, null, "Preferences must be an array")
+//                 );
+//             }
 
-                if (!pref.preferredState || !pref.preferredDistrict || !pref.preferredCity) {
-                    throw new Error(`Location fields are required in preference ${index + 1}`);
-                }
+//             processedPreferences = parsedPreferences.map((pref, index) => {
+//                 if (!pref.investmentRange || !pref.investmentAmount || !pref.propertyType) {
+//                     throw new Error(`Preference ${index + 1} is missing required fields`);
+//                 }
 
-                if (!Array.isArray(pref.category) || pref.category.length === 0) {
-                    throw new Error(`At least one category is required in preference ${index + 1}`);
-                }
+//                 if (pref.propertyType === 'Own Property' && !pref.propertySize) {
+//                     throw new Error(`Property size is required for Own Property in preference ${index + 1}`);
+//                 }
 
-                const processedCategories = pref.category.map(cat => {
-                    if (!cat.main) {
-                        throw new Error(`Main category is required in preference ${index + 1}`);
-                    }
-                    return {
-                        main: String(cat.main || ''),
-                        sub: String(cat.sub || ''),
-                        child: String(cat.child || '')
-                    };
-                });
+//                 if (!pref.preferredState || !pref.preferredDistrict || !pref.preferredCity) {
+//                     throw new Error(`Location fields are required in preference ${index + 1}`);
+//                 }
 
-                return {
-                    investmentRange: String(pref.investmentRange),
-                    investmentAmount: String(pref.investmentAmount),
-                    propertyType: String(pref.propertyType),
-                    propertySize: pref.propertyType === 'Own Property' ? 
-                        String(pref.propertySize || '') : '',
-                    preferredState: String(pref.preferredState),
-                    preferredDistrict: String(pref.preferredDistrict),
-                    preferredCity: String(pref.preferredCity),
-                    category: processedCategories,
-                    _id: pref._id || new mongoose.Types.ObjectId() 
-                };
-            });
+//                 if (!Array.isArray(pref.category) || pref.category.length === 0) {
+//                     throw new Error(`At least one category is required in preference ${index + 1}`);
+//                 }
 
-            preferencesChanged = JSON.stringify(processedPreferences) !== 
-                JSON.stringify(oldData.preferences);
-        }
+//                 if (!pref.locationType || !['domestic', 'international'].includes(pref.locationType)) {
+//                     throw new Error(`Invalid or missing locationType in preference ${index + 1}`);
+//                 }
 
-        let profileImage;
-        let imageChanged = false;
-        
-        if (removeProfileImage === "true") {
-            if (oldData.profileImage) {
-                await deleteFileFromR2(oldData.profileImage);
-                imageChanged = true;
-            }
-            profileImage = ""; 
-        } 
-        
-        if (req?.file?.path) {
-            if (oldData?.profileImage) {
-                await deleteFileFromR2(oldData.profileImage);
-            }
-            
-            profileImage = await uploadFileToR2(req.file.path, "investor-profile-images");
-            if (!profileImage) {
-                return res.status(500).json(
-                    new ApiResponse(500, null, "Failed to upload profile image")
-                );
-            }
-            imageChanged = true;
-        }
+//                 const processedCategories = pref.category.map(cat => {
+//                     if (!cat.main) {
+//                         throw new Error(`Main category is required in preference ${index + 1}`);
+//                     }
+//                     return {
+//                         main: String(cat.main || ''),
+//                         sub: String(cat.sub || ''),
+//                         child: String(cat.child || '')
+//                     };
+//                 });
 
-        const updateData = {};
-        const oldInvestorData = {};
+//                 return {
+//                     investmentRange: String(pref.investmentRange),
+//                     investmentAmount: String(pref.investmentAmount),
+//                     propertyType: String(pref.propertyType),
+//                     propertySize: pref.propertyType === 'Own Property' ?
+//                         String(pref.propertySize || '') : '',
+//                     preferredState: String(pref.preferredState),
+//                     preferredDistrict: String(pref.preferredDistrict),
+//                     preferredCity: String(pref.preferredCity),
+//                     locationType: String(pref.locationType),
+//                     category: processedCategories,
+//                     _id: pref._id || new mongoose.Types.ObjectId()
+//                 };
+//             });
 
-        const checkAndSetField = (field, value) => {
-            if (value !== undefined && value !== oldData[field]) {
-                updateData[field] = value;
-                oldInvestorData[field] = oldData[field];
-                return true;
-            }
-            return false;
-        };
+//             preferencesChanged = JSON.stringify(processedPreferences) !==
+//                 JSON.stringify(oldData.preferences);
+//         }
 
-        checkAndSetField('firstName', firstName);
-        checkAndSetField('email', email);
-        checkAndSetField('mobileNumber', mobileNumber);
-        checkAndSetField('whatsappNumber', whatsappNumber);
-        checkAndSetField('address', address);
-        checkAndSetField('pincode', pincode);
-        checkAndSetField('country', country);
-        checkAndSetField('state', state);
-        checkAndSetField('city', city);
-        checkAndSetField('occupation', occupation);
+//         let profileImage;
+//         let imageChanged = false;
 
-        
-        if (occupation === "Other") {
-            if (!specifyOccupation || specifyOccupation.trim() === "") {
-                return res.status(400).json(
-                    new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
-                );
-            }
-            checkAndSetField('specifyOccupation', specifyOccupation);
-        } else if (specifyOccupation !== undefined) {
-            updateData.specifyOccupation = undefined;
-            if (oldData.specifyOccupation) {
-                oldInvestorData.specifyOccupation = oldData.specifyOccupation;
-            }
-        }
+//         if (removeProfileImage === "true") {
+//             if (oldData.profileImage) {
+//                 await deleteFileFromR2(oldData.profileImage);
+//                 imageChanged = true;
+//             }
+//             profileImage = "";
+//         }
 
-      
-        if (preferencesChanged) {
-            updateData.preferences = processedPreferences;
-            oldInvestorData.preferences = oldData.preferences;
-        }
+//         if (req?.file?.path) {
+//             if (oldData?.profileImage) {
+//                 await deleteFileFromR2(oldData.profileImage);
+//             }
 
-        if (imageChanged) {
-            updateData.profileImage = profileImage;
-            oldInvestorData.profileImage = oldData.profileImage;
-        }
+//             profileImage = await uploadFileToR2(req.file.path, "investor-profile-images");
+//             if (!profileImage) {
+//                 return res.status(500).json(
+//                     new ApiResponse(500, null, "Failed to upload profile image")
+//                 );
+//             }
+//             imageChanged = true;
+//         }
 
-        const hasChanges = Object.keys(updateData).length > 0;
+//         const updateData = {};
+//         const oldInvestorData = {};
 
-        if (!hasChanges) {
-            return res.status(200).json(
-                new ApiResponse(200, null, "No changes detected")
-            );
-        }
+//         const checkAndSetField = (field, value) => {
+//             if (value !== undefined && value !== oldData[field]) {
+//                 updateData[field] = value;
+//                 oldInvestorData[field] = oldData[field];
+//                 return true;
+//             }
+//             return false;
+//         };
 
-        const updateOperation = {
-            $set: updateData
-        };
+//         checkAndSetField('firstName', firstName);
+//         checkAndSetField('email', email);
+//         checkAndSetField('mobileNumber', mobileNumber);
+//         checkAndSetField('whatsappNumber', whatsappNumber);
+//         checkAndSetField('address', address);
+//         checkAndSetField('pincode', pincode);
+//         checkAndSetField('country', country);
+//         checkAndSetField('state', state);
+//         checkAndSetField('city', city);
+//         checkAndSetField('occupation', occupation);
 
-        if (Object.keys(oldInvestorData).length > 0) {
-            updateOperation.$push = { 
-                oldData: {
-                    ...oldInvestorData,
-                    updatedAt: new Date() 
-                } 
-            };
-        }
+//         if (occupation === "Other") {
+//             if (!specifyOccupation || specifyOccupation.trim() === "") {
+//                 return res.status(400).json(
+//                     new ApiResponse(400, null, "Please specify your occupation when selecting 'Other'")
+//                 );
+//             }
+//             checkAndSetField('specifyOccupation', specifyOccupation);
+//         } else if (specifyOccupation !== undefined) {
+//             updateData.specifyOccupation = undefined;
+//             if (oldData.specifyOccupation) {
+//                 oldInvestorData.specifyOccupation = oldData.specifyOccupation;
+//             }
+//         }
 
-        const updatedInvestor = await InvsRegister.findOneAndUpdate(
-            { uuid: req.investorUser?.uuid },
-            updateOperation,
-            { new: true, runValidators: true }
-        ).select("-__v -_id -createdAt -updatedAt -oldData -password");
+//         if (preferencesChanged) {
+//     updateData.preferences = processedPreferences;
 
-        if (!updatedInvestor) {
-            return res.status(404).json(
-                new ApiResponse(404, null, "Investor not found")
-            );
-        }
+//     // Sanitize old preferences to avoid schema validation errors
+//     const sanitizedOldPreferences = (oldData.preferences || []).map((pref) => ({
+//         investmentRange: pref.investmentRange || '',
+//         investmentAmount: pref.investmentAmount || '',
+//         propertyType: pref.propertyType || '',
+//         propertySize: pref.propertySize || '',
+//         preferredState: pref.preferredState || '',
+//         preferredDistrict: pref.preferredDistrict || '',
+//         preferredCity: pref.preferredCity || '',
+//         locationType: pref.locationType || 'domestic', // fallback default
+//         category: Array.isArray(pref.category) ? pref.category.map(cat => ({
+//             main: cat.main || '',
+//             sub: cat.sub || '',
+//             child: cat.child || ''
+//         })) : [],
+//         _id: pref._id || new mongoose.Types.ObjectId()
+//     }));
 
-        return res.json(
-            new ApiResponse(200, updatedInvestor, "Investor updated successfully")
-        );
+//     oldInvestorData.preferences = sanitizedOldPreferences;
+// }
 
-    } catch (err) {
-        console.error("Update investor error:", err);
-        
-        
-        if (err.message.includes('Preference') || 
-            err.message.includes('category') || 
-            err.message.includes('required')) {
-            return res.status(400).json(
-                new ApiResponse(400, null, err.message)
-            );
-        }
 
-        return res.status(500).json(
-            new ApiResponse(500, null, "Failed to update investor", err.message)
-        );
-    }
-};
+//         if (imageChanged) {23`1q4567890-=-986`
+//             updateData.profileImage = profileImage;
+//             oldInvestorData.profileImage = oldData.profileImage;
+//         }
+
+//         const hasChanges = Object.keys(updateData).length > 0;
+
+//         if (!hasChanges) {
+//             return res.status(200).json(
+//                 new ApiResponse(200, null, "No changes detected")
+//             );
+//         }
+
+//         const updateOperation = {
+//             $set: updateData
+//         };
+
+//         if (Object.keys(oldInvestorData).length > 0) {
+//             updateOperation.$push = {
+//                 oldData: {
+//                     ...oldInvestorData,
+//                     updatedAt: new Date()
+//                 }
+//             };
+//         }
+
+//         const updatedInvestor = await InvsRegister.findOneAndUpdate(
+//             { uuid: req.investorUser?.uuid },
+//             updateOperation,
+//             { new: true, runValidators: true }
+//         ).select("-__v -_id -createdAt -updatedAt -oldData -password");
+
+//         if (!updatedInvestor) {
+//             return res.status(404).json(
+//                 new ApiResponse(404, null, "Investor not found")
+//             );
+//         }
+
+//         return res.json(
+//             new ApiResponse(200, updatedInvestor, "Investor updated successfully")
+//         );
+
+//     } catch (err) {
+//         console.error("Update investor error:", err);
+
+//         if (err.message.includes('Preference') ||
+//             err.message.includes('category') ||
+//             err.message.includes('required')) {
+//             return res.status(400).json(
+//                 new ApiResponse(400, null, err.message)
+//             );
+//         }
+
+//         return res.status(500).json(
+//             new ApiResponse(500, null, "Failed to update investor", err.message)
+//         );
+//     }
+// };
+
 
 // export const updateInvestor = async (req, res) => {
 //   try {
@@ -749,6 +639,10 @@ export const updateInvestor = async (req, res) => {
 //   }
 // };
 
+
+export const updateInvestor = async (req, res) => {
+  console.log(req.body)
+}
 export const deleteInvestorProfileImage = async (req, res) => {
   try {
     const { uuid } = req.params;
