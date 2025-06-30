@@ -52,7 +52,7 @@ export const createInvestor = async (req, res) => {
         propertyCity: prop.propertyCity || ""
       }));
 
-      return {
+      return { 
         category,
         investmentRange: pref.investmentRange || "",
         investmentAmount: pref.investmentAmount || "",
