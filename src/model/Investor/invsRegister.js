@@ -64,13 +64,13 @@ const invsRegisterSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true
+      lowercase: true,
     },
     mobileNumber: {
       type: String,
@@ -104,7 +104,7 @@ const invsRegisterSchema = new mongoose.Schema(
       required: function () {
         return this.occupation === "Other";
       },
-      trim: true
+      trim: true,
     },
     preferences: [PreferenceSchema],
     uuid: {
@@ -141,7 +141,7 @@ const invsRegisterSchema = new mongoose.Schema(
     ]
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

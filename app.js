@@ -30,7 +30,6 @@ import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.
 import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
 import {OtherIndustriesRouter} from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
 
-
 const router = express.Router();
 
 router.use('/v1/auth/', thirdPartyAuthRouter)
@@ -94,6 +93,5 @@ router.use("/v1/instantapply",InstantApplyRouter)
 router.use('/v1/subcribe',subscribeRouter)
 // OtherIndustries
 router.use("/v1/otherindustries", OtherIndustriesRouter)
-
 
 export default router;

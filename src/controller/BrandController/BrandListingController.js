@@ -81,11 +81,11 @@ const createBrandListing = async (req, res) => {
       }
     });
 
-    res.status(201).json({
-      success: true,
-      message: "Brand listing created successfully",
-      data: newBrand
-    });
+
+    await brand.save();
+
+    res.status(201).json({ success: true, message: "Brand listing created", data: brand });
+
   } catch (error) {
     console.error("❌ Brand Creation Error:", error);
     res.status(500).json({
