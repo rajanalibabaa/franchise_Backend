@@ -82,9 +82,8 @@ const createBrandListing = async (req, res) => {
     });
 
 
-    await brand.save();
 
-    res.status(201).json({ success: true, message: "Brand listing created", data: brand });
+    res.status(201).json({ success: true, message: "Brand listing created", data: newBrand });
 
   } catch (error) {
     console.error("❌ Brand Creation Error:", error);
