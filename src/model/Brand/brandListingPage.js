@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
-import uuid from "../../utils/uuid.js"; 
+import uuid from "../../utils/uuid.js";
 
-const FranchiseModelSchema = new mongoose.Schema(
+// -- Subschema for FICO (Franchise Investment Cost Options)
+const FicoSchema = new mongoose.Schema(
   {
     investmentRange: String,
     areaRequired: String,
@@ -9,19 +10,21 @@ const FranchiseModelSchema = new mongoose.Schema(
     franchiseType: String,
     franchiseFee: String,
     royaltyFee: String,
+    stockInvestment: String,
+    royaltyFeeUnit: String,
     interiorCost: String,
-    exteriorCost: String,
     otherCost: String,
     roi: String,
+    payBackPeriod: String,
     breakEven: String,
-    requiredInvestmentCapital: String,
+    requireWorkingCapital: String,
     marginOnSales: String,
-    fixedReturn: String,
-    propertyType: String
+    agreementPeriod: Number
   },
   { _id: false }
 );
 
+// -- Main Brand Listing Schema
 const BrandListingSchema = new mongoose.Schema(
   {
     uuid: {
@@ -70,12 +73,12 @@ const BrandListingSchema = new mongoose.Schema(
       companyOwnedOutlets: String,
       consultationOrAssistance: String,
       establishedYear: String,
-      fico: [String],
       franchiseDevelopment: String,
       franchiseOutlets: String,
       franchiseSinceYear: String,
       totalOutlets: String,
-      trainingSupport: String,
+      fico: [FicoSchema], // ✅ Correctly defined array of FICO objects
+      trainingSupport: [String], // ✅ Fixed: now accepts arrays of strings
       uniqueSellingPoints: [String]
     },
 
@@ -152,14 +155,22 @@ const BrandListingSchema = new mongoose.Schema(
       franchisePromotionVideo: [String],
       gstCertificate: [String],
       interiorOutlet: [String],
-      pancard: [String]
+      pancard: [String],
+      businessPlan: [String],
+      awards: [String],
+      // awards: [
+      //   {
+      //     awardDiscrption: { type: String },
+      //     awardImage: { type: String }
+      //   }
+      // ]
     }
   },
   {
-    timestamps: true // ✅ Automatically adds createdAt and updatedAt
+    timestamps: true
   }
 );
 
-// Model export
+// Export the model
 const BrandListing = mongoose.model("BrandListing", BrandListingSchema);
 export default BrandListing;
