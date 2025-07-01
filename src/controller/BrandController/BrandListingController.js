@@ -8,17 +8,7 @@ import {
 } from "../../utils/Uploads/s3Uploader.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import generateCustomId from "../../helpers/brandIdGenerater.js";
-// Fields expected as file uploads (keyed by req.files)
-const singleFileFields = [
-  "brandLogo",
-  "gstCertificate",
-  "pancard",
-  // "companyImage",
-  "exteriorOutlet",
-  "interiorOutlet",
-  "franchisePromotionVideo",
-  // "brandPromotionVideo",
-];
+
 
 
 
