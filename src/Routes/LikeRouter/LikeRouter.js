@@ -7,16 +7,16 @@ import { deleteFavoriteBrand, getAllFavoriteBrandsByID, getAllLikedAndUnlikedBra
 const likeRouter = Router();
 
 
-likeRouter.post('/post-favbrands',verifyJWT,toggleFavoriteBrand)
+likeRouter.post('/v1/like/post-favbrands',verifyJWT,toggleFavoriteBrand)
 
 
-likeRouter.get('/get-favbrands/:uuid',verifyJWT,getAllFavoriteBrandsByID)
+likeRouter.get('/v1/like/get-favbrands/:uuid',verifyJWT,getAllFavoriteBrandsByID)
 
-likeRouter.delete('/delete-favbrand/:uuid',verifyJWT,deleteFavoriteBrand)
+likeRouter.delete('/v1/like/delete-favbrand/:uuid',verifyJWT,deleteFavoriteBrand)
 
-likeRouter.get('/favbrands/getAllLikedAndUnlikedBrand/:uuid',verifyJWT,getAllLikedAndUnlikedBrand)
+likeRouter.get('/v1/like/favbrands/getAllLikedAndUnlikedBrand/:uuid',verifyJWT,getAllLikedAndUnlikedBrand)
 
-likeRouter.get('/getBrandLikedByAll/:uuid',verifyJWT,getBrandLikedByAll)
+likeRouter.get('/v1/like/getBrandLikedByAll/:uuid',verifyJWT,getBrandLikedByAll)
 
 
 export { likeRouter };

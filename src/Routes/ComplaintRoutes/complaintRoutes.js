@@ -5,7 +5,7 @@ import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 
 const router = Router();
 
-router.post("/createComplaint/:id", verifyJWT, createComplaint);
+router.post("/v1/complaint/createComplaint/:id", verifyJWT, createComplaint);
 
 
 export default router;

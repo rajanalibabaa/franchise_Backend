@@ -5,7 +5,7 @@ import { existingEmailOTP, generateNewEmailOTP, verifyExistingEmailOTP, verifyne
 
 export const sendOTPVerifyOTPRoutes = express.Router();
 
-sendOTPVerifyOTPRoutes.post('/generateNewEmailOTP',generateNewEmailOTP)
-sendOTPVerifyOTPRoutes.post('/verifynewEmailOTP',verifynewEmailOTP)
-sendOTPVerifyOTPRoutes.post('/existingEmailOTP',existingEmailOTP)
-sendOTPVerifyOTPRoutes.post('/verifyExistingEmailOTP',verifyExistingEmailOTP)
+sendOTPVerifyOTPRoutes.post('/v1/otp/generateNewEmailOTP',generateNewEmailOTP)
+sendOTPVerifyOTPRoutes.post('/v1/otp/verifynewEmailOTP',verifynewEmailOTP)
+sendOTPVerifyOTPRoutes.post('/v1/otp/existingEmailOTP',existingEmailOTP)
+sendOTPVerifyOTPRoutes.post('/v1/otp/verifyExistingEmailOTP',verifyExistingEmailOTP)

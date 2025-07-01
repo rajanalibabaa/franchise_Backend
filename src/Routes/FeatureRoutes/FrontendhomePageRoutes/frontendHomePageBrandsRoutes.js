@@ -4,6 +4,6 @@ import { getAllnewRegisterBrands, getbrandsbyCityName, getbrandsbyInvestmentRang
 
 export const frontendHomePageBrandsRouter = Router();
 
-frontendHomePageBrandsRouter.get("/getAllnewRegisterBrands", getAllnewRegisterBrands)
-frontendHomePageBrandsRouter.get("/getbrandsbyCityName", getbrandsbyCityName)
-frontendHomePageBrandsRouter.get("/getbrandsbyInvestmentRange", getbrandsbyInvestmentRange)
+frontendHomePageBrandsRouter.get("/v1/homepage/getAllnewRegisterBrands", getAllnewRegisterBrands)
+frontendHomePageBrandsRouter.get("/v1/homepage/getbrandsbyCityName", getbrandsbyCityName)
+frontendHomePageBrandsRouter.get("/v1/homepage/getbrandsbyInvestmentRange", getbrandsbyInvestmentRange)

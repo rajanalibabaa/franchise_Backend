@@ -5,13 +5,13 @@ import upload from "../../../utils/Uploads/multerConfig.js";
 
 export const fbPostsRouter = express.Router();
 
-fbPostsRouter.post("/createFbPost",upload.fields([
+fbPostsRouter.post("/v1/socialmedia/fb/createFbPost",upload.fields([
     { name : 'image',maxCount: 1 },
     { name : 'video',maxCount: 1 },
 ]), createMrfranchiseFbPagePosts)
 
-fbPostsRouter.get("/getAllMrfranchiseFbPagePosts",getAllMrfranchiseFbPagePosts)
-fbPostsRouter.delete("/deleteMrfranchiseFbPagePostsByID",deleteMrfranchiseFbPagePostsByID)
+fbPostsRouter.get("/v1/socialmedia/fb/getAllMrfranchiseFbPagePosts",getAllMrfranchiseFbPagePosts)
+fbPostsRouter.delete("/v1/socialmedia/fb/deleteMrfranchiseFbPagePostsByID",deleteMrfranchiseFbPagePostsByID)
 
  
  

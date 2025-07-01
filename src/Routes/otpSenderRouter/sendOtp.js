@@ -3,9 +3,9 @@ import { requestEmailOtp, requestMobileOtp, requestWhatsAppOtp, verifyOTP } from
 
 const sendOtpRouter = express.Router();
 
-sendOtpRouter.post ("/send-otp-email", requestEmailOtp);
-sendOtpRouter.post ("/send-otp-mobile", requestMobileOtp);
-sendOtpRouter.post ("/send-otp-whatsapp", requestWhatsAppOtp);
-sendOtpRouter.post ("/verify-otp", verifyOTP);
+sendOtpRouter.post ("/v1/otpverify/send-otp-email", requestEmailOtp);
+sendOtpRouter.post ("/v1/otpverify/send-otp-mobile", requestMobileOtp);
+sendOtpRouter.post ("/v1/otpverify/send-otp-whatsapp", requestWhatsAppOtp);
+sendOtpRouter.post ("/v1/otpverify/verify-otp", verifyOTP);
 
 export default sendOtpRouter;

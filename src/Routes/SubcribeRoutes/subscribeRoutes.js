@@ -3,4 +3,4 @@ import { getSubscribe } from "../../controller/Subscribe/SubscribeController.js"
 
 export const subscribeRouter =  Router()
 
-subscribeRouter.post("/getsubscribe", getSubscribe)
+subscribeRouter.post("/v1/subcribe/getsubscribe", getSubscribe)

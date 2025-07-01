@@ -9,25 +9,25 @@ const router = express.Router();
  
  
 router.post(
-    "/createBrandListing",
-upload.fields([
-  { name: "brandLogo", maxCount: 10 },
-  { name: "gstCertificate", maxCount: 10 },
-  { name: "pancard", maxCount: 10 },
-  { name: "exteriorOutlet", maxCount: 10 },
-  { name: "interiorOutlet", maxCount: 10 },
-  { name: "franchisePromotionVideo", maxCount: 10 },
-  { name: "awardDoc", maxCount: 10 },
-  { name: "businessPlan", maxCount: 10 }
-])
 
+    "/v1/brandlisting/createBrandListing",
+ upload.fields([
+  { name: "brandLogo", maxCount: 1 },
+  { name: "gstCertificate", maxCount: 1 },
+  { name: "pancard", maxCount: 1 },
+  { name: "exteriorOutlet", maxCount: 5 },
+  { name: "interiorOutlet", maxCount: 5 },
+  { name: "franchisePromotionVideo", maxCount: 1 },
+  { name: "awardDoc", maxCount: 5 },
+  { name: "businessPlan", maxCount: 1 }
+  ])
 ,
       createBrandListing
     )
-router.get("/getAllBrandListing", getAllBrands);
-router.get("/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
-router.patch("/updateBrandListingByUUID/:id", updateBrandListingByUUID)
-router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
+router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
+router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
+router.patch("/v1/brandlisting/updateBrandListingByUUID/:id", updateBrandListingByUUID)
+router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 
 //brand Apply form for franchise ROutes
 
