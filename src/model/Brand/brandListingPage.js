@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
-import uuid from "../../utils/uuid.js"; 
+import uuid from "../../utils/uuid.js";
 
-const FranchiseModelSchema = new mongoose.Schema(
+// -- Subschema for FICO (Franchise Investment Cost Options)
+const FicoSchema = new mongoose.Schema(
   {
     investmentRange: String,
     areaRequired: String,
@@ -9,19 +10,21 @@ const FranchiseModelSchema = new mongoose.Schema(
     franchiseType: String,
     franchiseFee: String,
     royaltyFee: String,
+    stockInvestment: String,
+    royaltyFeeUnit: String,
     interiorCost: String,
-    exteriorCost: String,
     otherCost: String,
     roi: String,
+    payBackPeriod: String,
     breakEven: String,
-    requiredInvestmentCapital: String,
+    requireWorkingCapital: String,
     marginOnSales: String,
-    fixedReturn: String,
-    propertyType: String
+    agreementPeriod: Number
   },
   { _id: false }
 );
 
+// -- Main Brand Listing Schema
 const BrandListingSchema = new mongoose.Schema(
   {
     uuid: {
@@ -35,27 +38,33 @@ const BrandListingSchema = new mongoose.Schema(
     },
 
     brandDetails: {
-      brandName: String,
-      ceoEmail: String,
-      ceoMobile: String,
-      ceoName: String,
-      city: String,
-      companyName: String,
-      country: { type: String, default: "IN" },
-      email: String,
-      facebook: String,
       fullName: String,
-      gstNumber: String,
-      headOfficeAddress: String,
+      email: String,
+      mobileNumber: String,
+      whatsappNumber: String,
+      companyName: String,
+      brandName: String,
+      tagLine: String,
+      ceoName: String,
+      ceoMobile: String,
+      ceoEmail: String,
+      officeEmail: String,
+      officeMobile: String,
+     headOfficeAddress: String,
+     country: { type: String, default: "INDIA" },
+     state: String,
+     district: String,
+      city: String,
+      pincode: String,
+      
+      website: String,
+      facebook: String,
       instagram: String,
       linkedin: String,
-      managerName: String,
-      mobileNumber: String,
+      gstNumber: String,
       pancardNumber: String,
-      pincode: String,
-      state: String,
-      website: String,
-      whatsappNumber: String
+        
+      
     },
 
     franchiseDetails: {
@@ -70,12 +79,12 @@ const BrandListingSchema = new mongoose.Schema(
       companyOwnedOutlets: String,
       consultationOrAssistance: String,
       establishedYear: String,
-      fico: [String],
       franchiseDevelopment: String,
       franchiseOutlets: String,
       franchiseSinceYear: String,
       totalOutlets: String,
-      trainingSupport: String,
+      fico: [FicoSchema], // ✅ Correctly defined array of FICO objects
+      trainingSupport: [String], // ✅ Fixed: now accepts arrays of strings
       uniqueSellingPoints: [String]
     },
 
@@ -152,14 +161,22 @@ const BrandListingSchema = new mongoose.Schema(
       franchisePromotionVideo: [String],
       gstCertificate: [String],
       interiorOutlet: [String],
-      pancard: [String]
+      pancard: [String],
+      businessPlan: [String],
+      // awards: [String],
+      awards: [
+        {
+          awardDescription: { type: String },
+          awardImage: { type: String }
+        }
+      ]
     }
   },
   {
-    timestamps: true // ✅ Automatically adds createdAt and updatedAt
+    timestamps: true
   }
 );
 
-// Model export
+// Export the model
 const BrandListing = mongoose.model("BrandListing", BrandListingSchema);
 export default BrandListing;

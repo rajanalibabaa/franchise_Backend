@@ -21,42 +21,62 @@ const singleFileFields = [
 ];
 
 
+
 const createBrandListing = async (req, res) => {
   try {
     const fileFields = [
+      "awardDoc",
       "brandLogo",
-      "gstCertificate",
       "pancard",
+      "businessPlan",
       "exteriorOutlet",
-      "interiorOutlet",
       "franchisePromotionVideo",
-      "brandPromotionVideo"
+      "brandPromotionVideo",
+      "gstCertificate",
+      "interiorOutlet"
     ];
-
+ console.log("req.files? :",req.files?.awardDoc[0])
+    // Parse incoming JSON strings safely
     const brandDetails = JSON.parse(req.body.brandDetails || "{}");
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
     const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
 
-   
-    let group; 
-    if (
-      franchiseDetails.brandCategories &&
-      franchiseDetails.brandCategories.groupId
-    ) {
-      group = franchiseDetails.brandCategories.groupId;
+    // ✅ Parse awardText safely as array
+    let awardDis = [];
+
+
+
+    if (Array.isArray(brandDetails.awardText)) {
+      awardDis = brandDetails.awardText;
+    } else if (typeof brandDetails.awardText === "string") {
+      try {
+        awardDis = JSON.parse(brandDetails.awardText);
+      } catch (e) {
+        console.warn("Invalid awardText JSON:", e);
+        awardDis = [];
+      }
     }
 
-    
+    // Generate brand ID using groupId if provided
+    const group = franchiseDetails?.brandCategories?.groupId || null;
     const customId = await generateCustomId(group);
 
-    
+
+   
+
+    // Upload files to R2
     const uploadedFiles = {};
     for (const field of fileFields) {
       const files = req.files?.[field];
-      if (files && files.length > 0) {
+      console.log("xxxxxxxxx :",field)
+      if (!field) {
+         console.log("ooooooooooo :",field)
+         return
+      }
+      if (files?.length > 0) {
+        const isVideo = field.toLowerCase().includes("video");
         const urls = await Promise.all(
           files.map((file) => {
-            const isVideo = field.includes("Video");
             const contentType = isVideo ? "video/mp4" : file.mimetype;
             return uploadFileToR2(file.path, contentType);
           })
@@ -65,6 +85,14 @@ const createBrandListing = async (req, res) => {
       }
     }
 
+    // ✅ Build structured awards array
+    const awardDocs = uploadedFiles.awardDoc || [];
+    const awards = awardDocs.map((fileUrl, index) => ({
+      awardDescription: awardDis[index] || "",
+      awardImage: fileUrl
+    }));
+
+    // Create the brand listing document
     const newBrand = await BrandListing.create({
       brandID: customId,
       brandDetails,
@@ -77,23 +105,40 @@ const createBrandListing = async (req, res) => {
         exteriorOutlet: uploadedFiles.exteriorOutlet || [],
         interiorOutlet: uploadedFiles.interiorOutlet || [],
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-        brandPromotionVideo: uploadedFiles.brandPromotionVideo || []
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        businessPlan: uploadedFiles.businessPlan || [],
+        awards: awards
       }
     });
 
+    if (!newBrand) {
+      return res.status(400).json({
+        success: false,
+        message: "Failed to create brand listing in the database"
+      });
+    }
 
-
-    res.status(201).json({ success: true, message: "Brand listing created", data: newBrand });
+    return res.json(
+      new ApiResponse(
+        200,
+      newBrand,
+       "Brand listing created successfully",
+      
+      )
+    );
 
   } catch (error) {
     console.error("❌ Brand Creation Error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to create brand listing",
       error: error.message
     });
   }
 };
+
+
+
 
 const getAllBrands = async (req, res) => {
   try {
