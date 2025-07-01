@@ -72,47 +72,50 @@ export const uploadFileToS3 = async (filePath, mimetype = 'application/octet-str
 
 
 export const uploadFileToR2 = async (filePath, mimetype) => {
-
-  console.log("=============== ;",filePath)
-  const originalFileName = path.basename(filePath);
-  const ext = path.extname(originalFileName);
-  const baseName = path.basename(originalFileName, ext);
-
-  const contentType = mimetype || mime.lookup(filePath) || 'application/octet-stream';
-
-  const folder =
-    contentType.startsWith('image/') ? 'images' :
-    contentType.startsWith('video/') ? 'videos' :
-    contentType.startsWith('application/') ? 'documents' :
-    'misc';
-
-  const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
-
-  if (!existsSync(filePath)) {
-    throw new Error(`File not found at ${filePath}`);
-  }
-
-  const fileContent = await readFile(filePath);
-
-  const command = new PutObjectCommand({
-    Bucket: process.env.R2_BUCKET_NAME,
-    Key: fileKey,
-    Body: fileContent,
-    ContentType: contentType,
-  });
-
-  await s3.send(command);
-  console.log(`✅ Uploaded to R2: ${fileKey}`);
-
   try {
-    await unlink(filePath); // using fs.promises.unlink properly
-    console.log(`🗑️ Deleted local temp file: ${filePath}`);
-  } catch (unlinkErr) {
-    console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
-  }
+    if (!existsSync(filePath)) {
+      throw new Error(`File not found at ${filePath}`);
+    }
 
-  const r2Url = `${process.env.R2_PUBLIC_URL}/${fileKey}`;
-  return r2Url;
+    const originalFileName = path.basename(filePath);
+    const ext = path.extname(originalFileName);
+    const baseName = path.basename(originalFileName, ext);
+
+    const contentType = mimetype || mime.lookup(filePath) || "application/octet-stream";
+
+    const folder =
+      contentType.startsWith("image/") ? "images" :
+      contentType.startsWith("video/") ? "videos" :
+      contentType.startsWith("application/") ? "documents" :
+      "misc";
+
+    const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
+
+    const fileContent = await readFile(filePath);
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: fileKey,
+      Body: fileContent,
+      ContentType: contentType,
+    });
+
+    await s3.send(command);
+    console.log(`✅ Uploaded to R2: ${fileKey}`);
+
+    // Clean up local file
+    try {
+      await unlink(filePath);
+      console.log(`🗑️ Deleted local temp file: ${filePath}`);
+    } catch (unlinkErr) {
+      console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
+    }
+
+    return `${process.env.R2_PUBLIC_URL}/${fileKey}`;
+  } catch (error) {
+    console.error("❌ uploadFileToR2 Error:", error.message);
+    throw error;
+  }
 };
 
 

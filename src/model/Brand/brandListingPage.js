@@ -38,27 +38,33 @@ const BrandListingSchema = new mongoose.Schema(
     },
 
     brandDetails: {
-      brandName: String,
-      ceoEmail: String,
-      ceoMobile: String,
-      ceoName: String,
-      city: String,
-      companyName: String,
-      country: { type: String, default: "IN" },
-      email: String,
-      facebook: String,
       fullName: String,
-      gstNumber: String,
-      headOfficeAddress: String,
+      email: String,
+      mobileNumber: String,
+      whatsappNumber: String,
+      companyName: String,
+      brandName: String,
+      tagLine: String,
+      ceoName: String,
+      ceoMobile: String,
+      ceoEmail: String,
+      officeEmail: String,
+      officeMobile: String,
+     headOfficeAddress: String,
+     country: { type: String, default: "INDIA" },
+     state: String,
+     district: String,
+      city: String,
+      pincode: String,
+      
+      website: String,
+      facebook: String,
       instagram: String,
       linkedin: String,
-      managerName: String,
-      mobileNumber: String,
+      gstNumber: String,
       pancardNumber: String,
-      pincode: String,
-      state: String,
-      website: String,
-      whatsappNumber: String
+        
+      
     },
 
     franchiseDetails: {
@@ -157,13 +163,13 @@ const BrandListingSchema = new mongoose.Schema(
       interiorOutlet: [String],
       pancard: [String],
       businessPlan: [String],
-      awards: [String],
-      // awards: [
-      //   {
-      //     awardDiscrption: { type: String },
-      //     awardImage: { type: String }
-      //   }
-      // ]
+      // awards: [String],
+      awards: [
+        {
+          awardDescription: { type: String },
+          awardImage: { type: String }
+        }
+      ]
     }
   },
   {
