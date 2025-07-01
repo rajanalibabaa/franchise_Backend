@@ -21,7 +21,7 @@ const createBrandListing = async (req, res) => {
       "businessPlan",
       "exteriorOutlet",
       "franchisePromotionVideo",
-      // "brandPromotionVideo",
+      "brandPromotionVideo",
       "gstCertificate",
       "interiorOutlet"
     ];
@@ -56,11 +56,11 @@ const createBrandListing = async (req, res) => {
 
     // Upload files to R2
     const uploadedFiles = {};
-    for (const field of  Object.keys(fileFields)) {
+    for (const field of fileFields) {
       const files = req.files?.[field];
-      console.log("xxxxxxxxx :",field)
+      console.log("files :",field)
       if (!field) {
-         console.log("ooooooooooo :",field)
+         console.log("field :",field)
          return
       }
       if (files?.length > 0) {
@@ -95,7 +95,7 @@ const createBrandListing = async (req, res) => {
         exteriorOutlet: uploadedFiles.exteriorOutlet || [],
         interiorOutlet: uploadedFiles.interiorOutlet || [],
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-        // brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
         businessPlan: uploadedFiles.businessPlan || [],
         awards: awards
       }
