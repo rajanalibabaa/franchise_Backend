@@ -4,6 +4,6 @@ import { getAllClientCount } from "../../controller/Admin/AdminDashboardClientCo
 
 const AdminDashBoardClientRouter = Router()
 
-AdminDashBoardClientRouter.get('/getAdminDashBoardClient', getAllClientCount)
+AdminDashBoardClientRouter.get('/v1/admin/dashboard/getAdminDashBoardClient', getAllClientCount)
 
 export { AdminDashBoardClientRouter }

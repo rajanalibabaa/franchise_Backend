@@ -9,8 +9,9 @@ const router = express.Router();
  
  
 router.post(
-    "/createBrandListing",
-upload.fields([
+
+    "/v1/brandlisting/createBrandListing",
+ upload.fields([
   { name: "brandLogo", maxCount: 10 },
   { name: "gstCertificate", maxCount: 10 },
   { name: "pancard", maxCount: 10 },
@@ -19,15 +20,14 @@ upload.fields([
   { name: "franchisePromotionVideo", maxCount: 10 },
   { name: "awardDoc", maxCount: 10 },
   { name: "businessPlan", maxCount: 10 }
-])
-
+  ])
 ,
       createBrandListing
     )
-router.get("/getAllBrandListing", getAllBrands);
-router.get("/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
-router.patch("/updateBrandListingByUUID/:id", updateBrandListingByUUID)
-router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
+router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
+router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
+router.patch("/v1/brandlisting/updateBrandListingByUUID/:id", updateBrandListingByUUID)
+router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 
 //brand Apply form for franchise ROutes
 

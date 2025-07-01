@@ -4,8 +4,8 @@ import  verifyJWT from '../../Middleware/adminAuthMiddleware.js';
 
 
 const router = express.Router();
-router.post("/verifyotp", verifyOtp,verifyJWT);
-router.post("/sendotp",requestOtp)
+router.post("/v1/adminAuth/verifyotp", verifyOtp,verifyJWT);
+router.post("/v1/adminAuth/sendotp",requestOtp)
 
 export default router;
  

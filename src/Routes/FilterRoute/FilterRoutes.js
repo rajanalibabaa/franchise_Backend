@@ -5,4 +5,4 @@ import { filterByCatogoryLocationInvRange } from "../../controller/Filter/filter
 
 export const filterRouter = Router();
 
-filterRouter.post("/filterByCatogoryLocationInvRange",filterByCatogoryLocationInvRange)
+filterRouter.post("/v1/filter/filterByCatogoryLocationInvRange",filterByCatogoryLocationInvRange)
