@@ -15,15 +15,15 @@ const router = Router();
 
 // RESTful Routes
 router.post(
-  '/postRequirements',
+  '/post/postRequirements',
   preprocessInvestmentRange,
   validatePostRequirement,
   createPostRequirement
 );
 
-router.get('/postRequirements', getAllPostRequirement);
-router.get('/postRequirements/:id', getPostRequirementById);
-router.get('/postRequirements/uuid/:uuid', getPostRequirementByUUID); // (or use query params)
+router.get('/post/postRequirements', getAllPostRequirement);
+router.get('/post/postRequirements/:id', getPostRequirementById);
+router.get('/post/postRequirements/uuid/:uuid', getPostRequirementByUUID); // (or use query params)
 
 router.put(
   '/postRequirements/:id',
@@ -32,6 +32,6 @@ router.put(
   updatePostRequirement
 );
 
-router.delete('/postRequirements/:id', deletePostRequirement);
+router.delete('/post/postRequirements/:id', deletePostRequirement);
 
 export default router;

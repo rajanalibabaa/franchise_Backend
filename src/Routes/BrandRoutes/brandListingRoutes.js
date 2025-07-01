@@ -9,7 +9,7 @@ const router = express.Router();
  
  
 router.post(
-    "/createBrandListing",
+    "/v1/brandlisting/createBrandListing",
   upload.fields([
     { name: 'pancard', maxCount: 1 },
     { name: 'gstCertificate', maxCount: 1 },
@@ -21,10 +21,10 @@ router.post(
 ,
       createBrandListing
     )
-router.get("/getAllBrandListing", getAllBrands);
-router.get("/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
-router.patch("/updateBrandListingByUUID/:id", updateBrandListingByUUID)
-router.delete("/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
+router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
+router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
+router.patch("/v1/brandlisting/updateBrandListingByUUID/:id", updateBrandListingByUUID)
+router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 
 //brand Apply form for franchise ROutes
 

@@ -32,66 +32,293 @@ import {OtherIndustriesRouter} from "./src/Routes/OtherIndustriesRoutes/OtherInd
 
 const router = express.Router();
 
-router.use('/v1/auth/', thirdPartyAuthRouter)
-router.use('/v1/login/', Login) 
+router.use( thirdPartyAuthRouter)
+router.use( Login) 
 
-router.use('/post',postRequireRoutes);
+router.use(postRequireRoutes);
 
-router.use('/v1/feedback', feedbackRoutes);
-router.use('/v1/complaint', complaintRoutes);
+router.use( feedbackRoutes);
+router.use( complaintRoutes);
 // router.use('/instaApply', instaApplyRoutes);
-router.use('/v1/brand',brandRoutes )
+// router.use(brandRoutes )
 // router.use('/newIncomerInvestor',incomeInvestor );
-router.use('/v1/adminAuth', adminAuthRoutes);
-router.use('/v1/investor',InvestorRouter)
-router.use('/v1/brandlisting',brandListingRoutes)
+router.use( adminAuthRoutes);
+router.use(InvestorRouter)
+router.use(brandListingRoutes)
 
 // admin
-router.use("/admin",adminRoutess );
-router.use('/v1/admin/dashboard', AdminDashBoardClientRouter)
+router.use(adminRoutess );
+router.use( AdminDashBoardClientRouter)
 
 // video advertise
-router.use('/v1/admin/videoAdvertise', videoAdvertiseRoute)
+router.use( videoAdvertiseRoute)
 
 // router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
-router.use('/v1/logout', logoutRouter)
+router.use(logoutRouter)
 
-router.use('/v1/socialmedia/fb',fbPostsRouter)
+router.use(fbPostsRouter)
 
 //login routers
-router.use('/v1/login', Login)
+// router.use('/v1/login', Login)
 
-router.use('/v1/otpverify',sendOtpRouter)
+router.use(sendOtpRouter)
 
 
 
 
 // frondend home page routes
 
-router.use('/v1/homepage', frontendHomePageBrandsRouter)
+router.use( frontendHomePageBrandsRouter)
 
 
 // send otp verify otp royutes
-router.use('/v1/otp',sendOTPVerifyOTPRoutes)
+router.use(sendOTPVerifyOTPRoutes)
 
-router.use('/v1/like',likeRouter)
+router.use(likeRouter)
 
 //view brands
-router.use('/v1/view',ViewedBrandsRouter)
+router.use(ViewedBrandsRouter)
 
 
 //Filter
-router.use('/v1/filter',filterRouter)
+router.use(filterRouter)
 
 
 // InstantApplyRouter
-router.use("/v1/instantapply",InstantApplyRouter)
+router.use(InstantApplyRouter)
 
 // subscribe routes
-router.use('/v1/subcribe',subscribeRouter)
+router.use(subscribeRouter)
 // OtherIndustries
-router.use("/v1/otherindustries", OtherIndustriesRouter)
+router.use( OtherIndustriesRouter)
+
+
+function getRoutes(router, basePath = '') {
+  const routes = [];
+  router.stack.forEach((layer) => {
+    // Direct route (GET, POST, etc.)
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase());
+      routes.push({
+        method: methods.join(', '),
+        path: basePath + layer.route.path
+      });
+    }
+    // Nested router
+    else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+      let path = '';
+      if (layer.regexp && layer.regexp.source) {
+        const match = layer.regexp.source
+          .replace(/\\\//g, '/')
+          .match(/^\^\/\??(.*?)\\\/\?\(\?=\\\/\|\$\)/);
+        if (match && match[1]) {
+          path = '/' + match[1];
+        }
+      }
+      routes.push(...getRoutes(layer.handle, basePath + path));
+    }
+  });
+  return routes;
+}
+
+// Add this endpoint to list all routes
+router.get('/endpoints', (req, res) => {
+  const routes = getRoutes(router, '/api');
+  console.log(`Total endpoints: ${routes.length}`);
+  
+  // Generate HTML page with professional design
+  const html = `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MrFranchise APi Endpoints Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+      :root {
+        --primary-color: #3498db;
+        --secondary-color: #2c3e50;
+        --accent-color: #e74c3c;
+        --light-bg: #f8f9fa;
+        --dark-bg: #343a40;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--light-bg);
+        color: var(--secondary-color);
+      }
+      
+      .header {
+        background: #ff9800;
+        color: white;
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      
+      .endpoint-card {
+        border-left: 4px solid var(--primary-color);
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        background-color: white;
+      }
+      
+      .endpoint-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      }
+      
+      .method-get {
+        border-left-color: #28a745;
+      }
+      
+      .method-post {
+        border-left-color: #007bff;
+      }
+      
+      .method-put {
+        border-left-color: #ffc107;
+      }
+      
+      .method-delete {
+        border-left-color: #dc3545;
+      }
+      
+      .method-patch {
+        border-left-color: #6f42c1;
+      }
+      
+      .badge-method {
+        font-size: 0.8rem;
+        padding: 0.35em 0.65em;
+        font-weight: 600;
+      }
+      
+      .stats-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+      }
+      
+      .search-box {
+        margin-bottom: 2rem;
+        margin-Left: 30rem;
+        width: 40%;
+      }
+      
+    
+      
+      .footer {
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 1.5rem 0;
+        margin-top: 3rem;
+      }
+      
+      .endpoint-path {
+        font-family: 'Courier New', Courier, monospace;
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header text-center">
+      <div class="container">
+        <h1>    MrFranchise API Endpoints Documentation</h1>
+        <p class="lead">Complete list of available API routes with their methods</p>
+      </div>
+    </div>
+    
+  
+      <div class="search-box">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="fas fa-search"></i></span>
+          <input type="text" id="searchInput" class="form-control" placeholder="Search endpoints...">
+          <button class="btn btn-outline-secondary" type="button" id="clearSearch">Clear</button>
+        </div>
+      </div>
+      
+      <div class="accordion" id="endpointsAccordion">
+        ${routes.map((route, index) => `
+        <div class="card endpoint-card method-${route.method.toLowerCase()}">
+          <div class="card-header" id="heading${index}">
+            <h2 class="mb-0">
+              <button class="btn btn-link text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
+                <span>
+                  <span class="badge bg-${getMethodBadgeColor(route.method)} badge-method me-2">${route.method}</span>
+                  <span class="endpoint-path">${route.path}</span>
+                </span>
+               
+              </button>
+            </h2>
+          </div>
+          
+        </div>
+        `).join('')}
+      </div>
+      
+      <div class="text-center mt-4">
+        <small class="text-muted">Last updated: ${new Date().toLocaleString()}</small>
+                <p>© ${new Date().getFullYear()} API Documentation. All rights reserved.</p>
+
+      </div>
+    </div>
+ 
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Search functionality
+      document.getElementById('searchInput').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.endpoint-card');
+        
+        cards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          if (text.includes(searchTerm)) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+      
+      // Clear search
+      document.getElementById('clearSearch').addEventListener('click', function() {
+        document.getElementById('searchInput').value = '';
+        const cards = document.querySelectorAll('.endpoint-card');
+        cards.forEach(card => card.style.display = '');
+      });
+    </script>
+  </body>
+  </html>
+  `;
+  
+  res.send(html);
+});
+
+// Helper function to get badge color based on HTTP method
+function getMethodBadgeColor(method) {
+  switch(method.toLowerCase()) {
+    case 'get': return 'success';
+    case 'post': return 'primary';
+    case 'put': return 'warning';
+    case 'delete': return 'danger';
+    case 'patch': return 'info';
+    default: return 'secondary';
+  }
+}
+
+
 
 export default router;

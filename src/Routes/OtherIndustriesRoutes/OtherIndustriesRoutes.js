@@ -3,4 +3,4 @@ import { recievingOtherIndustriesData } from "../../controller/OtherIndustries/O
 
 export const OtherIndustriesRouter = Router()
 
-OtherIndustriesRouter.post("/recievingOtherIndustriesData",recievingOtherIndustriesData)
+OtherIndustriesRouter.post("/v1/otherindustries/recievingOtherIndustriesData",recievingOtherIndustriesData)

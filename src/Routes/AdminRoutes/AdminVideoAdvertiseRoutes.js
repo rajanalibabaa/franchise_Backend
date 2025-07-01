@@ -6,7 +6,7 @@ import upload from "../../utils/Uploads/multerConfig.js";
 
 export const videoAdvertiseRoute = Router()
 
-videoAdvertiseRoute.post('/createAdminVideoAdvertise',upload.fields([
+videoAdvertiseRoute.post('/v1/admin/videoAdvertise/createAdminVideoAdvertise',upload.fields([
     {
         name: 'videos', maxCount: 10
     },
@@ -14,14 +14,14 @@ videoAdvertiseRoute.post('/createAdminVideoAdvertise',upload.fields([
         name: 'thumbnail', maxCount: 1    
     }
 ]) ,createAdminVideoAdvertise)
-videoAdvertiseRoute.get('/getAdminVideoAdvertise',getAdminVideoAdvertise)
-videoAdvertiseRoute.get('/getAdminVideoAdvertiseTopOne',getAdminVideoAdvertiseTopOne)
-videoAdvertiseRoute.get('/getAdminVideoAdvertiseTopTwo',getAdminVideoAdvertiseTopTwo)
-videoAdvertiseRoute.get('/getAdminVideoAdvertiseTopThree',getAdminVideoAdvertiseTopThree)
+videoAdvertiseRoute.get('/v1/admin/videoAdvertise/getAdminVideoAdvertise',getAdminVideoAdvertise)
+videoAdvertiseRoute.get('/v1/admin/videoAdvertise/getAdminVideoAdvertiseTopOne',getAdminVideoAdvertiseTopOne)
+videoAdvertiseRoute.get('/v1/admin/videoAdvertise/getAdminVideoAdvertiseTopTwo',getAdminVideoAdvertiseTopTwo)
+videoAdvertiseRoute.get('/v1/admin/videoAdvertise/getAdminVideoAdvertiseTopThree',getAdminVideoAdvertiseTopThree)
 
-videoAdvertiseRoute.post('/postAdminVideoAdvertiseTopOne',postAdminVideoAdvertiseTopOne)
-videoAdvertiseRoute.post('/postAdminVideoAdvertiseTopTwo',postAdminVideoAdvertiseTopTwo)
-videoAdvertiseRoute.post('/postAdminVideoAdvertiseTopThree',postAdminVideoAdvertiseTopThree)
+videoAdvertiseRoute.post('/v1/admin/videoAdvertise/postAdminVideoAdvertiseTopOne',postAdminVideoAdvertiseTopOne)
+videoAdvertiseRoute.post('/v1/admin/videoAdvertise/postAdminVideoAdvertiseTopTwo',postAdminVideoAdvertiseTopTwo)
+videoAdvertiseRoute.post('/v1/admin/videoAdvertise/postAdminVideoAdvertiseTopThree',postAdminVideoAdvertiseTopThree)
 
 
  

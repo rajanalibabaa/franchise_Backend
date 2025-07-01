@@ -4,8 +4,8 @@ import {  generateOTPforLogin,  verifyLogin, } from "../../controller/Login/Logi
 
 const Login = Router()
 
-Login.post('/',verifyLogin)
-Login.post('/generateOTPforLogin',generateOTPforLogin)
+Login.post('/v1/login/',verifyLogin)
+Login.post('/v1/login/generateOTPforLogin',generateOTPforLogin)
 
 
 export { Login } 

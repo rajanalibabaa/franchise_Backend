@@ -4,19 +4,19 @@ import { facebookAuthProfile, googleAuthProfile } from "../../controller/thirdpa
 
 const route = Router()
 
-route.get('/google', passport.authenticate('google', {
+route.get('/v1/auth/google', passport.authenticate('google', {
     
     scope: ['profile', 'email']
   }));
   
-route.get('/google/callback', 
+route.get('/v1/auth/google/callback', 
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
       // Successful authentication, redirect to the home page or user dashboard
       res.redirect('/api/v1/auth/google/profile');
     });
 
-route.get('/google/profile', googleAuthProfile)
+route.get('/v1/auth/google/profile', googleAuthProfile)
 
 
 route.get('/facebook', passport.authenticate('facebook', {
@@ -24,7 +24,7 @@ route.get('/facebook', passport.authenticate('facebook', {
 }));
 
   
-route.get('/facebook/callback',
+route.get('/v1/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/' }),
   (req, res) => {
     res.redirect('/api/v1/auth/facebook/profile');
@@ -32,7 +32,7 @@ route.get('/facebook/callback',
   }
 );
 
-route.get('/facebook/profile', facebookAuthProfile)
+route.get('/v1/auth/facebook/profile', facebookAuthProfile)
 
 
 export default route

@@ -9,6 +9,6 @@ const logoutRouter = Router()
 
 // let verify = verifyBrand || verifyInvestor
 
-logoutRouter.post("/:uuid",verifyJWT,logOut)
+logoutRouter.post("/v1/logout/:uuid",verifyJWT,logOut)
  
 export { logoutRouter }
