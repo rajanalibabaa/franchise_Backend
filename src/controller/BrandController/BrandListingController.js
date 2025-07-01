@@ -66,9 +66,9 @@ const createBrandListing = async (req, res) => {
 
     // Upload files to R2
     const uploadedFiles = {};
-    for (const field of  Object.keys(fileFields)) {
+    for (const field of  Object.keys(req.files || {})) {
       const files = req.files?.[field];
-      console.log("xxxxxxxxx :",field)
+      console.log("FieldName :",field)
       if (!field) {
          console.log("ooooooooooo :",field)
          return
