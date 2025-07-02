@@ -25,7 +25,7 @@ const createBrandListing = async (req, res) => {
       "gstCertificate",
       "interiorOutlet"
     ];
- console.log("req.files? :",req.files?.awardDoc[0])
+console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
     // Parse incoming JSON strings safely
     const brandDetails = JSON.parse(req.body.brandDetails || "{}");
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
