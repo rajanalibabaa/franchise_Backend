@@ -8,17 +8,7 @@ import {
 } from "../../utils/Uploads/s3Uploader.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import generateCustomId from "../../helpers/brandIdGenerater.js";
-// Fields expected as file uploads (keyed by req.files)
-const singleFileFields = [
-  "brandLogo",
-  "gstCertificate",
-  "pancard",
-  // "companyImage",
-  "exteriorOutlet",
-  "interiorOutlet",
-  "franchisePromotionVideo",
-  // "brandPromotionVideo",
-];
+
 
 
 
@@ -31,11 +21,11 @@ const createBrandListing = async (req, res) => {
       "businessPlan",
       "exteriorOutlet",
       "franchisePromotionVideo",
-      // "brandPromotionVideo",
+      "brandPromotionVideo",
       "gstCertificate",
       "interiorOutlet"
     ];
- console.log("req.files? :",req.files?.awardDoc[0])
+console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
     // Parse incoming JSON strings safely
     const brandDetails = JSON.parse(req.body.brandDetails || "{}");
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
@@ -66,11 +56,11 @@ const createBrandListing = async (req, res) => {
 
     // Upload files to R2
     const uploadedFiles = {};
-    for (const field of  Object.keys(req.files || {})) {
+    for (const field of fileFields) {
       const files = req.files?.[field];
-      console.log("FieldName :",field)
+      console.log("files :",field)
       if (!field) {
-         console.log("ooooooooooo :",field)
+         console.log("field :",field)
          return
       }
       if (files?.length > 0) {
@@ -105,7 +95,7 @@ const createBrandListing = async (req, res) => {
         exteriorOutlet: uploadedFiles.exteriorOutlet || [],
         interiorOutlet: uploadedFiles.interiorOutlet || [],
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-        // brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
         businessPlan: uploadedFiles.businessPlan || [],
         awards: awards
       }
