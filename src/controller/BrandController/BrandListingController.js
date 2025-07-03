@@ -60,7 +60,7 @@ console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
       const files = req.files?.[field];
       console.log("files :",field)
       if (!field) {
-         console.log("field :",field)
+         console.log("field not found :",field)
          return
       }
       if (files?.length > 0) {
