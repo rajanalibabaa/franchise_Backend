@@ -25,7 +25,7 @@ router.post(
       createBrandListing
     )
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
-router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
+router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
 router.patch("/v1/brandlisting/updateBrandListingByUUID/:id", updateBrandListingByUUID)
 router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 

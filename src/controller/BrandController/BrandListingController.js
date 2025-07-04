@@ -186,16 +186,16 @@ const getAllBrands = async (req, res) => {
 
 const getBrandListingByUUID = async (req, res) => {
   try {
-    const { id } = req.params;
-    const brandData = req.brandUser;
+    const { id: uuid } = req.params;
+    // const brandData = req.brandUser;
 
-    if (id !== brandData?.uuid) {
-      return res
-        .status(403)
-        .json(new ApiResponse(403, null, "Unauthorized request"));
-    }
+    // if (uuid !== brandData?.uuid) {
+    //   return res
+    //     .status(403)
+    //     .json(new ApiResponse(403, null, "Unauthorized request"));
+    // }
 
-    let brand = await BrandListing.findOne({ uuid: id }).select(
+    let brand = await BrandListing.findOne({ uuid }).select(
       "-_id -createdAt -updatedAt -__v"
     );
 
