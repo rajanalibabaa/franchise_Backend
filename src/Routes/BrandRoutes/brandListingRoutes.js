@@ -12,15 +12,17 @@ router.post(
 
     "/v1/brandlisting/createBrandListing",
  upload.fields([
-  { name: "brandLogo", maxCount: 1 },
-  { name: "gstCertificate", maxCount: 1 },
-  { name: "pancard", maxCount: 1 },
-  { name: "exteriorOutlet", maxCount: 5 },
-  { name: "interiorOutlet", maxCount: 5 },
-  { name: "franchisePromotionVideo", maxCount: 1 },
-  { name: "awardDoc", maxCount: 5 },
-  { name: "businessPlan", maxCount: 1 }
+    { name: 'awardDoc', maxCount: 10 },
+    { name: 'brandLogo', maxCount: 1 },
+    { name: 'pancard', maxCount: 1},
+    { name: 'businessPlan', maxCount: 1 },
+    { name: 'exteriorOutlet', maxCount: 5 },
+    { name: 'franchisePromotionVideo', maxCount: 1 },
+    { name: 'brandPromotionVideo', maxCount: 1 },
+    { name: 'gstCertificate', maxCount: 1 },
+    { name: 'interiorOutlet', maxCount: 5 }
   ])
+ 
 ,
       createBrandListing
     )

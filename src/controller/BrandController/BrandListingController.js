@@ -27,9 +27,12 @@ const createBrandListing = async (req, res) => {
     ];
 console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
     // Parse incoming JSON strings safely
-    const brandDetails = JSON.parse(req.body.brandDetails || "{}");
-    const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
-    const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
+    const brandDetails = req.body.brandDetails
+    const franchiseDetails = req.body.franchiseDetails 
+    const expansionLocationData = req.body.expansionLocationData 
+    // const brandDetails = JSON.parse(req.body.brandDetails || "{}");
+    // const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
+    // const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
 
     // ✅ Parse awardText safely as array
     let awardDis = [];
@@ -60,7 +63,7 @@ console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
       const files = req.files?.[field];
       console.log("files :",field)
       if (!field) {
-         console.log("field :",field)
+         console.log("field not found :",field)
          return
       }
       if (files?.length > 0) {

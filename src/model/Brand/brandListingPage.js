@@ -106,11 +106,11 @@ const BrandListingSchema = new mongoose.Schema(
           ]
         },
         international: {
-          locations: [
+          country: [
             {
               _id: false,
-              state: String,
-              districts: [
+              states: String,
+              district: [
                 {
                   _id: false,
                   district: String,
@@ -137,12 +137,12 @@ const BrandListingSchema = new mongoose.Schema(
             }
           ]
         },
-        international: {
-          locations: [
+         international: {
+          country: [
             {
               _id: false,
-              state: String,
-              districts: [
+              states: String,
+              district: [
                 {
                   _id: false,
                   district: String,
