@@ -9,14 +9,14 @@ import passport from 'passport';
 import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/ThirdpartUtils/thirdpartyauthutils.js';
 import path from 'path';
 import s3Uploads from './src/Routes/s3Uploads/upload.js';
-import { getAllEndpoints } from './src/utils/endpoints/allEndPoints.js';
 import allRouters from './app.js';
 
 const app = express();
 
-dotenv.config();
+
+dotenv.config();  
 app.use(cors( {
-    origin: ['https://foodbeverage.mrfranchise.in','http://localhost:5173'],
+    origin: ['https://foodandbeverage.mrfranchise.in','http://localhost:5173','http://localhost:5174'],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 
@@ -59,43 +59,8 @@ app.use('/api',allRouters);
 
 app.use("/api/v1/upload", s3Uploads)
 
-app.get('/endpoints', (req, res) => {
-    const endpoints = getAllEndpoints(app);
-    console.log("Extracted Endpoints:", endpoints); // Debugging output
-    // let html = `
-    //     <!DOCTYPE html>
-    //     <html lang="en">
-    //     <head>
-    //         <meta charset="UTF-8">
-    //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    //         <title>API Endpoints</title>
-    //         <style>
-    //             body { font-family: Arial, sans-serif; margin: 20px; }
-    //             h1 { color: #333; }
-    //             ul { list-style-type: none; padding: 0; }
-    //             li { margin: 5px 0; }
-    //             strong { color: #007BFF; }
-    //         </style>
-    //     </head>
-    //     <body>
-    //         <h1>API Endpoints</h1>
-    //         <ul>
-    // `;
 
-    // endpoints.forEach((endpoint) => {
-    //     endpoint.methods.forEach((method) => {
-    //         html += `<li><strong>[${method}]</strong> ${endpoint.path}</li>`;
-    //     });
-    // });
 
-    // html += `
-    //         </ul>
-    //     </body>
-    //     </html>
-    // `;
-
-    res.json(endpoints);
-});
 
 // Global Error Handler
 app.use(errorHandler);
@@ -108,3 +73,14 @@ app.listen(process.env.PORT, () => {
 app.listen(process.env.PORT,'0.0.0.0',() =>{
     console.log(`Server is running on port ${process.env.PORT}...`);
 })
+
+app.post('/api/v1/verify-captcha', async (req, res) => {
+  const { token } = req.body;
+  const secretKey = process.env.REACT_APP_RECAPTCHA_SECRET_KEY;
+
+  const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+  const response = await fetch(url, { method: 'POST' });
+  const data = await response.json();
+
+  res.json(data); // returns success or error
+});

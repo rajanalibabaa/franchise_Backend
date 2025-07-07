@@ -1,85 +1,183 @@
-
 import mongoose from "mongoose";
-import uuid from "../../utils/uuid.js"; // Custom function to generate unique IDs
+import uuid from "../../utils/uuid.js";
 
-const FranchiseModelSchema = new mongoose.Schema(
+// -- Subschema for FICO (Franchise Investment Cost Options)
+const FicoSchema = new mongoose.Schema(
   {
-    investmentRange: { type: String },
-    areaRequired: { type: String },
-    franchiseModel: { type: String }, // Consider enum here
-    franchiseType: { type: String },
-    franchiseFee: { type: String },
-    royaltyFee: { type: String },
-    interiorCost: { type: String },
-    exteriorCost: { type: String },
-    otherCost: { type: String },
-    roi: { type: String },
-    breakEven: { type: String },
-    requiredInvestmentCapital: { type: String },
-    
-    marginOnSales : { type: String },
-    fixedReturn : { type: String },
-    propertyType: { type: String },
+    investmentRange: String,
+    areaRequired: String,
+    franchiseModel: String,
+    franchiseType: String,
+    franchiseFee: String,
+    royaltyFee: String,
+    stockInvestment: String,
+    royaltyFeeUnit: String,
+    interiorCost: String,
+    otherCost: String,
+    roi: String,
+    payBackPeriod: String,
+    breakEven: String,
+    requireWorkingCapital: String,
+    marginOnSales: String,
+    agreementPeriod: Number
   },
   { _id: false }
 );
+
+// -- Main Brand Listing Schema
 const BrandListingSchema = new mongoose.Schema(
   {
     uuid: {
       type: String,
-      default: uuid, // auto-generated unique ID
-      unique: true,
+      default: uuid,
+      unique: true
     },
-    personalDetails: {
-      fullName: { type: String },
-      email: { type: String },
-      mobileNumber: { type: String },
-      whatsappNumber: { type: String },
-      brandName: { type: String },
-      companyName: { type: String },
-      country: { type: String },
-      pincode: { type: String },
-      headOfficeAddress: { type: String },
-      state: { type: String },
-      city: { type: String },
-      establishedYear: { type: String },
-      franchiseSinceYear: { type: String },
-      brandCategories: [{ main: { type: String }, sub: { type: String },child: { type: String } }],
-      brandDescription: { type: String },
-      expansionLocation:[{country: { type: String }, state: { type: String },district: { type: String }, city: { type: String }}],
-      pancardNumber: { type: String },
-      gstNumber: { type: String },
+    brandID: {
+      type: String,
+      unique: true
+    },
 
-      website: { type: String },
-      facebook: { type: String },
-      instagram: { type: String },
-      linkedin: { type: String },
+    brandDetails: {
+      fullName: String,
+      email: String,
+      mobileNumber: String,
+      whatsappNumber: String,
+      companyName: String,
+      brandName: String,
+      tagLine: String,
+      ceoName: String,
+      ceoMobile: String,
+      ceoEmail: String,
+      officeEmail: String,
+      officeMobile: String,
+     headOfficeAddress: String,
+     country: { type: String, default: "INDIA" },
+     state: String,
+     district: String,
+      city: String,
+      pincode: String,
+      
+      website: String,
+      facebook: String,
+      instagram: String,
+      linkedin: String,
+      gstNumber: String,
+      pancardNumber: String,
+        
+      
     },
+
     franchiseDetails: {
-      modelsOfFranchise: [FranchiseModelSchema], // Array of franchise models (FOCO/FOFO)
-      companyOwnedOutlets: { type: String },
-      franchiseOutlets: { type: String },
-      totalOutlets: { type: String },
-      requirementSupport: { type: String }, // could be array or sub-object
-      trainingProvidedBy: { type: String },
-      agreementPeriod: { type: String },
+      aidFinancing: String,
+      brandCategories: {
+        main: String,
+        sub: String,
+        groupId: String,
+        child: String
+      },
+      brandDescription: String,
+      companyOwnedOutlets: String,
+      consultationOrAssistance: String,
+      establishedYear: String,
+      franchiseDevelopment: String,
+      franchiseOutlets: String,
+      franchiseSinceYear: String,
+      totalOutlets: String,
+      fico: [FicoSchema], // ✅ Correctly defined array of FICO objects
+      trainingSupport: [String], // ✅ Fixed: now accepts arrays of strings
+      uniqueSellingPoints: [String]
     },
-   brandDetails: {
-      pancard: [{ type: String }], // store file paths or URLs
-      gstCertificate: [{ type: String }],
-      gstNumber: { type: String },
-      brandLogo: [{ type: String }],
-      exteriorOutlet: [{ type: String }],
-      interiorOutlet: [{ type: String }],
-      franchisePromotionVideo: [{ type: String }],
-      brandPromotionVideo: [{ type: String }],
+
+    expansionLocationData: {
+      currentOutletLocations: {
+        domestic: {
+          locations: [
+            {
+              _id: false,
+              state: String,
+              districts: [
+                {
+                  _id: false,
+                  district: String,
+                  cities: [String]
+                }
+              ]
+            }
+          ]
+        },
+        international: {
+          country: [
+            {
+              _id: false,
+              states: String,
+              district: [
+                {
+                  _id: false,
+                  district: String,
+                  cities: [String]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      expansionLocations: {
+        domestic: {
+          locations: [
+            {
+              _id: false,
+              state: String,
+              districts: [
+                {
+                  _id: false,
+                  district: String,
+                  cities: [String]
+                }
+              ]
+            }
+          ]
+        },
+         international: {
+          country: [
+            {
+              _id: false,
+              states: String,
+              district: [
+                {
+                  _id: false,
+                  district: String,
+                  cities: [String]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      isInternationalExpansion: String
     },
+
+    uploads: {
+      brandLogo: [String],
+      exteriorOutlet: [String],
+      franchisePromotionVideo: [String],
+      gstCertificate: [String],
+      interiorOutlet: [String],
+      pancard: [String],
+      businessPlan: [String],
+      // awards: [String],
+      awards: [
+        {
+          awardDescription: { type: String },
+          awardImage: { type: String }
+        }
+      ]
+    }
   },
   {
-    timestamps: true, // adds createdAt and updatedAt
+    timestamps: true
   }
 );
 
-const BrandListing =mongoose.model('BrandListing', BrandListingSchema);
-
+// Export the model
+const BrandListing = mongoose.model("BrandListing", BrandListingSchema);
 export default BrandListing;

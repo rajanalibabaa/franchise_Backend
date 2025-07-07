@@ -4,6 +4,7 @@ import { verifyJWT } from '../../Middleware/Authentication/authMiddleware.js';
 
 const router = Router();
 
-router.post('/createFeedback/:id',verifyJWT,createFeedback);
+// router.post('/createFeedback/:id',verifyJWT,createFeedback);
+router.post('/v1/feedback/createFeedback/:id',createFeedback);
 
 export default router;

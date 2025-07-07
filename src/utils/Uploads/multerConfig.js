@@ -9,6 +9,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
+// Multer storage configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
@@ -19,14 +20,31 @@ const storage = multer.diskStorage({
   },
 });
 
+// ✅ Allowed MIME types: images, videos, PDFs, Word docs
+const allowedMimeTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'video/mp4',
+  'video/quicktime',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document' // DOCX
+];
+
+// Updated file filter
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+  if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only images and videos are allowed!'), false);
+    cb(
+      new Error('Only images, videos, and documents (PDF, DOC, DOCX) are allowed!'),
+      false
+    );
   }
 };
 
+// Export configured multer instance
 const upload = multer({ storage, fileFilter });
-
-export default upload;
+export default upload;  
