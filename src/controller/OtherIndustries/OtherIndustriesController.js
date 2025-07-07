@@ -26,10 +26,10 @@ export const recievingOtherIndustriesData = async (req,res) => {
 const exists = await OtherIndustriesModel.findOne({email})
 
   if (exists) {
-    return res.status(409).json(
+    return res.json(
         new ApiResponse
         (
-            409,
+            404,
             null,
             "Already Exists"
     ))
