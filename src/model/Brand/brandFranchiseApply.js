@@ -12,15 +12,21 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  location: {
+  email: {
     type: String
   },
-  // franchiseModel: {
-  //   type: String
-  // },
-  // franchiseType: {
-  //   type: String
-  // },
+  mobileNumber: {
+    type: String
+  },
+  state: {
+    type: String
+  },
+  district: {
+    type: String
+  },
+  city: {
+    type: String
+  },
   investmentRange: {
     type: String
   },
@@ -32,47 +38,32 @@ const instaApplyBrandFormSchema = new mongoose.Schema({
   },
   brandId: {
     type: String,
-    // required: true
+    required: true
   },
   brandName: {
-    type: String
+    type: String,
   },
   brandEmail: {
-    type: String
+    type: String,
   },
-  brandLogo:[{
-    type: String
-  }],
+  brandLogo: {
+    type: String,
+  },
+
   apply : {
 
     applyBy: {
-    type: String,
-    enum: ['Investor', 'Brand'],
-    required: true
-  },
-  investor_ID: {
-    type: String,
-    required: function () {
-      return this.applyBy === 'Investor';
+      type: String,
+      enum: ['Investor', 'Brand','other'],
+      // required: true,
+      default:"other"
+    },
+    applyId :{
+      type: String,
+      default:"other"
     }
-  },
-  investorEmail: {
-    type: String,
-    required: function () {
-      return this.applyBy === 'Investor';
-    }
-  },
-  brand_ID: {
-    type: String,
-    required: function () {
-      return this.applyBy === 'Brand';
-    }
-  },
-  mobileNumber: {
-    type: String,
-    required: true
+
   }
-  },
   
 }, {
   timestamps: true

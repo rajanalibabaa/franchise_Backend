@@ -360,7 +360,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
 
     // Compose result with isLiked flag
     const result = allBrands.map(brand => {
-      const { _id, updatedAt, createdAt, __v,brandDetails, ...rest } = brand.toObject();
+      const { _id, updatedAt, createdAt, __v, ...rest } = brand.toObject();
       return {
         ...rest,
         isLiked: likedBrandIds.includes(_id.toString())
