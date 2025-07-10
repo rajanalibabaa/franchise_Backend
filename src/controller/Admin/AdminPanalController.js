@@ -19,9 +19,9 @@ const getAllInvestors = async (req, res) => {
 
 const getInvestorById = async (req, res) => {
 
-  console.log("Fetching investor by ID...");
+  // console.log("Fetching investor by ID...");
     const { id } = req.params;
-    console.log("ID:", id);
+    // console.log("ID:", id);
     try {
       const investor = await InvsRegister.findById(id);
       if (!investor) {

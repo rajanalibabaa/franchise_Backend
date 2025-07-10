@@ -12,6 +12,7 @@ import s3Uploads from './src/Routes/s3Uploads/upload.js';
 import allRouters from './app.js';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import MongoStore from 'connect-mongo';
  
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
@@ -38,6 +39,16 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store:MongoStore.create({
+        mongoUrl: process.env.DB_URL,
+        collectionName: 'sessions',
+        ttl: 14 * 24 * 60 * 60, // 14 days
+    }),
+    cookie: {
+        maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
+    },
 }));
 app.use(limiter);
 app.use(passport.initialize());

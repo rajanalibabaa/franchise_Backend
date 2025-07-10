@@ -44,7 +44,7 @@ router.use( complaintRoutes);
 // router.use('/newIncomerInvestor',incomeInvestor );
 router.use( adminAuthRoutes);
 router.use(InvestorRouter)
-router.use(brandListingRoutes,)
+router.use(brandListingRoutes)
 
 // admin
 router.use(adminRoutess );

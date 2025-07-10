@@ -49,7 +49,7 @@ export const requestOtp = async (req, res) => {
     // Generate OTP and token
     const otp = generateOTP();
     const token = generateToken(email, otp);
-    console.log(`Generated OTP: ${otp}, Token: ${token}`);
+    // console.log(`Generated OTP: ${otp}, Token: ${token}`);
 
     // Send OTP via email and save to DB
     await sendEmailOTP(email, otp);
