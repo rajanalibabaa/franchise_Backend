@@ -152,7 +152,8 @@ const BrandListingSchema = new mongoose.Schema(
             }
           ]
         }
-      }
+      },
+      isInternationalExpansion: String
     },
 
     uploads: {
