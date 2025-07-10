@@ -10,7 +10,7 @@ import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader
 
 
 export const createInvestor = async (req, res) => {
-  console.log("Incoming request to create investor:", req.body);
+  // console.log("Incoming request to create investor:", req.body);
 
   try {
     const {
@@ -114,13 +114,18 @@ export const createInvestor = async (req, res) => {
           email,
           firstName,
           category,
+          pref.locationType || "",
           pref.preferredCountry || pref.preferredCuntry || "",
           pref.preferredState || "",
+          pref.preferredDistrict || "",
           pref.preferredCity || "",
-          pref.investmentAmount || ""
+          pref.investmentAmount || "",
+          
         );
       });
     }
+
+    return
 
   } catch (err) {
     console.error("Create Investor Error:", err);

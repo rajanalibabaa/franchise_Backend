@@ -25,8 +25,11 @@ const createBrandListing = async (req, res) => {
       "gstCertificate",
       "interiorOutlet"
     ];
- console.log("req.files? :",req.files?.awardDoc[0])
+console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
     // Parse incoming JSON strings safely
+    // const brandDetails = req.body.brandDetails
+    // const franchiseDetails = req.body.franchiseDetails 
+    // const expansionLocationData = req.body.expansionLocationData 
     const brandDetails = JSON.parse(req.body.brandDetails || "{}");
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
     const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
@@ -60,7 +63,7 @@ const createBrandListing = async (req, res) => {
       const files = req.files?.[field];
       console.log("files :",field)
       if (!field) {
-         console.log("field :",field)
+         console.log("field not found :",field)
          return
       }
       if (files?.length > 0) {
@@ -186,16 +189,16 @@ const getAllBrands = async (req, res) => {
 
 const getBrandListingByUUID = async (req, res) => {
   try {
-    const { id } = req.params;
-    const brandData = req.brandUser;
+    const { id: uuid } = req.params;
+    // const brandData = req.brandUser;
 
-    if (id !== brandData?.uuid) {
-      return res
-        .status(403)
-        .json(new ApiResponse(403, null, "Unauthorized request"));
-    }
+    // if (uuid !== brandData?.uuid) {
+    //   return res
+    //     .status(403)
+    //     .json(new ApiResponse(403, null, "Unauthorized request"));
+    // }
 
-    let brand = await BrandListing.findOne({ uuid: id }).select(
+    let brand = await BrandListing.findOne({ uuid }).select(
       "-_id -createdAt -updatedAt -__v"
     );
 

@@ -7,9 +7,14 @@ import { generateToken } from "../../utils/generateToken.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 
-let generateNewOTP = null 
-let emailORMobileNumber = null
+// Store OTP data with timestamp
+let otpData = {
+  code: null,
+  timestamp: null,
+  emailORMobileNumber: null
+};
 
+const OTP_EXPIRATION_MINUTES = 5; 
 
 const generateOTPforLogin = async (req, res) => {
   try {
@@ -34,7 +39,7 @@ const generateOTPforLogin = async (req, res) => {
         .json(new ApiResponse(400, null, "Phone number must be 10 digits"));
     }
 
-    emailORMobileNumber = email || mobileNumber;
+    const emailORMobileNumber = email || mobileNumber;
 
     const investorData = await InvsRegister.findOne({
       $or: [{ email }, { mobileNumber }],
@@ -42,39 +47,39 @@ const generateOTPforLogin = async (req, res) => {
 
     console.log("Investor data:", investorData);
 
-    // const brandUserData = await BrandListing.findOne({
-    //   $or: [
-    //     { "personalDetails.email": email },
-    //     { "personalDetails.mobileNumber": mobileNumber }
-    //   ]
-    // });
-
     const brandUserData = await BrandListing.findOne({
       $or: [
-        ...(email ? [{ "personalDetails.email": email }] : []),
-        ...(mobileNumber ? [{ "personalDetails.mobileNumber": mobileNumber }] : []),
+        ...(email ? [{ "brandDetails.email": email }] : []),
+        ...(mobileNumber ? [{ "brandDetails.mobileNumber": mobileNumber }] : []),
       ],
     });
 
     console.log("Brand user data:", brandUserData);
 
-   const thirdPartyUsers = await ThirdPartyAuth.findOne({email:email, mobileNumber:mobileNumber});
+    const thirdPartyUsers = await ThirdPartyAuth.findOne({email:email, mobileNumber:mobileNumber});
 
     console.log("thirdPartyUsers data:", thirdPartyUsers);
 
     if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res
         .status(404)
-        .json(new ApiResponse(404, null,alert("You are not a registered user")));
+        .json(new ApiResponse(404, null, "You are not a registered user"));
     }
 
-    generateNewOTP = Number(generateOTP().toString().trim());
-    console.log("Generated OTP:", generateNewOTP);
+    const newOTP = Number(generateOTP().toString().trim());
+    console.log("Generated OTP:", newOTP);
+
+    // Store OTP with current timestamp
+    otpData = {
+      code: newOTP,
+      timestamp: Date.now(),
+      emailORMobileNumber: emailORMobileNumber
+    };
 
     if (email) {
-      await sendEmailOTP(email, generateNewOTP);
+      await sendEmailOTP(email, newOTP);
     } else {
-      await sendMobileSMS(mobileNumber, generateNewOTP);
+      await sendMobileSMS(mobileNumber, newOTP);
     }
 
     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
@@ -86,16 +91,9 @@ const generateOTPforLogin = async (req, res) => {
   }
 };
 
-
-
 const verifyLogin = async (req, res) => {
   try {
     const { verifyOtp } = req.body;
-
-
-    console.log("emailORMobileNumber:" ,emailORMobileNumber)
-    
-
 
     if (!verifyOtp) {
       return res.status(400).json(
@@ -104,15 +102,32 @@ const verifyLogin = async (req, res) => {
     }
 
     console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
-    console.log("generateNewOTP:" ,typeof generateNewOTP, generateNewOTP)
+    console.log("otpData.code:", typeof otpData.code, otpData.code);
 
-   if (generateNewOTP !== Number(verifyOtp)) {
+    // Check if OTP exists
+    if (!otpData.code) {
+      return res.status(400).json(
+        new ApiResponse(400, null, "No OTP generated or OTP expired")
+      );
+    }
+
+    // Check if OTP is expired (5 minutes)
+    const currentTime = Date.now();
+    const otpAgeMinutes = (currentTime - otpData.timestamp) / (1000 * 60);
+    
+    if (otpAgeMinutes > OTP_EXPIRATION_MINUTES) {
+      return res.status(400).json(
+        new ApiResponse(400, null, "OTP has expired. Please generate a new one.")
+      );
+    }
+
+    if (otpData.code !== Number(verifyOtp)) {
       return res.status(400).json(
         new ApiResponse(400, null, "Invalid OTP")
       );
     }
 
-  if (!emailORMobileNumber) {
+    if (!otpData.emailORMobileNumber) {
       return res.status(400).json(
         new ApiResponse(400, null, "Missing user identifier")
       );
@@ -120,29 +135,24 @@ const verifyLogin = async (req, res) => {
 
     const investorData = await InvsRegister.findOne({
       $or: [
-        { email: emailORMobileNumber },
-        { mobileNumber: emailORMobileNumber }
+        { email: otpData.emailORMobileNumber },
+        { mobileNumber: otpData.emailORMobileNumber }
       ]
     }).select("-createdAt -_id");
 
     const brandUserData = await BrandListing.findOne({
       $or: [
-        { "personalDetails.email": emailORMobileNumber },
-        { "personalDetails.mobileNumber": emailORMobileNumber }
+        { "brandDetails.email": otpData.emailORMobileNumber },
+        { "brandDetails.mobileNumber": otpData.emailORMobileNumber }
       ]
     }).select("-createdAt -_id");
 
     const thirdPartyUsers = await ThirdPartyAuth.findOne({
       $or: [
-        {email:emailORMobileNumber},{mobileNumber:emailORMobileNumber}
+        {email: otpData.emailORMobileNumber},
+        {mobileNumber: otpData.emailORMobileNumber}
       ]
-    }).select("-createdAt -_id");;
-
-    // console.log("thirdPartyUsers data:", thirdPartyUsers)
-    
-    // console.log("investorData:", investorData);
-    // console.log("brandUserData:", brandUserData);
-    // console.log("thirdPartyUsers:", thirdPartyUsers);
+    }).select("-createdAt -_id");
 
     if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res.status(404).json(
@@ -150,7 +160,7 @@ const verifyLogin = async (req, res) => {
       );
     }
 
-    const userData = investorData || brandUserData
+    const userData = investorData || brandUserData || thirdPartyUsers;
 
     const payload = {
       investorUUID: investorData?.uuid || null,
@@ -168,6 +178,13 @@ const verifyLogin = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: 'Strict',
+    };
+
+    // Clear OTP after successful verification
+    otpData = {
+      code: null,
+      timestamp: null,
+      emailORMobileNumber: null
     };
 
     return res.status(200)
@@ -188,10 +205,7 @@ const verifyLogin = async (req, res) => {
   }
 };
 
-
-
-
 export {
   generateOTPforLogin,
-    verifyLogin,
-}
+  verifyLogin,
+};
