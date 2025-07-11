@@ -21,6 +21,7 @@ export const sendEmailOTP = async (email, otp) => {
     }
      
   });
+
 console.log('SMTP Email:', process.env.EMAIL_USER_SUPPORT);
 console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ Missing');
 
@@ -35,7 +36,6 @@ console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ M
 //     }
      
 //   });
-
 
   const mailOptions = {
     from: process.env.EMAIL_USER_SUPPORT,
