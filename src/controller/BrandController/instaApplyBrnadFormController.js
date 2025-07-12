@@ -26,7 +26,7 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyId
     } = req.body;
 
-    console.log(req.body)
+    console.log("req.body :",req.body)
 
     const exists = await BrandListing.findOne({
       uuid : brandId
@@ -41,7 +41,7 @@ export const instaApplyBrandFormController = async (req, res) => {
      // Check if brand exists
     const brand = await BrandListing.findOne({ uuid: brandId });
     if (!brand) {
-      return res.status(404).json(new ApiResponse(404, null, "Brand not found"));
+      return res.json(new ApiResponse(404, null, "Brand not found"));
     }
 
     // Determine who is applying (Investor / Brand / other)
@@ -174,8 +174,8 @@ export const getInstaApplyById = async (req, res) => {
     console.log("myInstaApplies :",myInstaApplies)
 
     if (!myInstaApplies || myInstaApplies.length === 0) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "User hasn't applied to any brand yet")
+      return res.json(
+        new ApiResponse(404, {}, "User hasn't applied to any brand yet")
       );
     }
 
@@ -190,13 +190,14 @@ export const getInstaApplyById = async (req, res) => {
       }
     }
 
-    return res.status(200).json(
-      new ApiResponse(200, applyList, "Apply list fetched successfully")
+    const reverse = applyList.reverse()
+    return res.json(
+      new ApiResponse(200, reverse, "Apply list fetched successfully")
     );
 
   } catch (error) {
     console.error("Error in getInstaApplyById:", error);
-    return res.status(500).json(
+    return res.json(
       new ApiResponse(500, null, "Error fetching Insta Apply")
     );
   }

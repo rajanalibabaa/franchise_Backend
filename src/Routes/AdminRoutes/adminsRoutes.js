@@ -4,8 +4,8 @@ import { getAllInvestors, getInvestorById } from "../../controller/Admin/AdminPa
 
 const route = Router()
 
-route.get('/admin/getAllInvestors',getAllInvestors)
-route.post('/admin/getInvestorById/:id',getInvestorById)
+route.get('/v1/admin/getAllInvestors',getAllInvestors)
+route.post('/v1/admin/getInvestorById/:id',getInvestorById)
 
 
 export default route

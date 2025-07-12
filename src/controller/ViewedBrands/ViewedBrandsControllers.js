@@ -6,41 +6,36 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 export const postViewBrands = async (req, res) => {
   try {
     const paramsID = req.params.id;
-    const { viewedID } = req.body;
+    const viewedID = req.body.viewedID;
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    if (!viewedID) {
-      return res.status(400).json(new ApiResponse(400, {}, "Missing 'viewedID' in request body"));
-    }
+    console.log("viewedID :",req.body)
 
-    // Authorization check
     if (paramsID !== investor?.uuid && paramsID !== brand?.uuid) {
       return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
     }
 
     const targetBrand = await BrandListing.findOne({ uuid: viewedID });
     if (!targetBrand) {
-      return res.status(404).json(new ApiResponse(404, {}, "Target brand not found"));
+      return res.json(new ApiResponse(404, {}, "Target brand not found"));
     }
 
-    const now = new Date();
-
     // === Investor Viewing a Brand ===
-    if (investor?.uuid === paramsID) {
-      const existingView = await ViewedBrandsByInvestor.findOne({
+    if (investor?.uuid && paramsID === investor.uuid) {
+      const investorView = await ViewedBrandsByInvestor.findOne({
         InvestorUserId: investor._id,
         "viewedByInvestors.BrandID": targetBrand._id
       });
 
-      if (existingView) {
+      if (investorView) {
         await ViewedBrandsByInvestor.updateOne(
           {
             InvestorUserId: investor._id,
             "viewedByInvestors.BrandID": targetBrand._id
           },
           {
-            $set: { "viewedByInvestors.$.addedAt": now }
+            $set: { "viewedByInvestors.$.addedAt": new Date() }
           }
         );
       } else {
@@ -50,7 +45,7 @@ export const postViewBrands = async (req, res) => {
             $push: {
               viewedByInvestors: {
                 BrandID: targetBrand._id,
-                addedAt: now
+                addedAt: new Date()
               }
             }
           },
@@ -64,31 +59,31 @@ export const postViewBrands = async (req, res) => {
           $push: {
             viewedByInvestors: {
               InvestorID: investor._id,
-              addedAt: now
+              addedAt: new Date()
             }
           }
         },
         { new: true, upsert: true }
       );
 
-      return res.json(new ApiResponse(200, {}, "Investor view recorded"));
+      return res.json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
     }
 
     // === Brand Viewing Another Brand ===
-    if (brand?.uuid === paramsID) {
-      const existingView = await ViewedBrandsByBrands.findOne({
+    if (brand?.uuid && paramsID === brand.uuid) {
+      const brandView = await ViewedBrandsByBrands.findOne({
         brandUserID: brand._id,
         "viewedByBrands.BrandID": targetBrand._id
       });
 
-      if (existingView) {
+      if (brandView) {
         await ViewedBrandsByBrands.updateOne(
           {
             brandUserID: brand._id,
             "viewedByBrands.BrandID": targetBrand._id
           },
           {
-            $set: { "viewedByBrands.$.addedAt": now }
+            $set: { "viewedByBrands.$.addedAt": new Date() }
           }
         );
       } else {
@@ -98,7 +93,7 @@ export const postViewBrands = async (req, res) => {
             $push: {
               viewedByBrands: {
                 BrandID: targetBrand._id,
-                addedAt: now
+                addedAt: new Date()
               }
             }
           },
@@ -112,24 +107,22 @@ export const postViewBrands = async (req, res) => {
           $push: {
             viewedByBrands: {
               BrandID: brand._id,
-              addedAt: now
+              addedAt: new Date()
             }
           }
         },
         { new: true, upsert: true }
       );
 
-      return res.json(new ApiResponse(200, {}, "Brand view recorded"));
+      return res.status(200).json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
     }
 
-    return res.json(new ApiResponse(400, {}, "Invalid user context"));
-
+    return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
   } catch (err) {
     console.error("Error in postViewBrands:", err);
-    return res.json(new ApiResponse(500, {}, "Internal server error"));
+    return res.status(500).json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
 
 export const getAllViewBrandByID = async (req, res) => {
   try {

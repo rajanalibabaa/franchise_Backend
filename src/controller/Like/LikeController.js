@@ -15,6 +15,8 @@ export const toggleFavoriteBrand = async (req, res) => {
     const investor = req?.investorUser;
     const brand = req?.brandUser;
 
+    // console.log("req :",req.body)
+
     // === If Brand is liking another Brand ===
     if (brand && brand._id) {
       if (!branduuid) {
@@ -60,6 +62,8 @@ export const toggleFavoriteBrand = async (req, res) => {
         },
         { new: true, upsert: true }
       );
+
+
 
       return res.status(200).json(
         new ApiResponse(200, updatedLikeByBrand, "Favorite brand added successfully by brand")
@@ -114,6 +118,8 @@ export const toggleFavoriteBrand = async (req, res) => {
       },
       { new: true, upsert: true }
     );
+
+    // console.log("updatedInvestorFavorite :",updatedInvestorFavorite)
 
     return res.status(200).json(
       new ApiResponse(200, updatedInvestorFavorite, "Favorite brand added successfully by investor")
