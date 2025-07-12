@@ -646,7 +646,7 @@ export const getInvestorByUUID = async (req, res) => {
 
 
 export const updateInvestor = async (req, res) => {
-  console.log(req.body)
+  // console.log(req.body)
 }
 export const deleteInvestorProfileImage = async (req, res) => {
   try {

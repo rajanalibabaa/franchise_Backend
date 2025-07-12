@@ -8,7 +8,7 @@ const DEFAULT_EXPIRATION = 3600 // 1 hour in seconds
 //singlr file
 export const generatePresignedUrl = async (key,expriesIn = DEFAULT_EXPIRATION   ) => {
    if(!key || typeof key !== "string" || key.trim() === ""){
-    console.log("invlid s3 key passed");
+    // console.log("invlid s3 key passed");
     return null
    } 
    try {
@@ -18,7 +18,7 @@ export const generatePresignedUrl = async (key,expriesIn = DEFAULT_EXPIRATION   
     });
     return await getSignedUrl(s3, command, {  expriesIn });
    } catch (error) {
-    console.log(`Error generating presigned URL${key}`, error.message);
+    // console.log(`Error generating presigned URL${key}`, error.message);
     return null
     
    }
@@ -28,7 +28,7 @@ export const generatePresignedUrl = async (key,expriesIn = DEFAULT_EXPIRATION   
 
 export const generatePresignedUrls = async (keys, expriesIn = DEFAULT_EXPIRATION) => {
     if(!Array.isArray(keys)){
-        console.log("keys must be an array");
+        // console.log("keys must be an array");
         return []
     } 
     const validKeys = keys.filter(key =>key && typeof key === "string" && key.trim() !== "");
@@ -41,7 +41,7 @@ return Promise.all(validKeys.map(async(key)=>({
 
 export const generatePresignedUrlBrands = async(brand,expiresIn=DEFAULT_EXPIRATION) =>{
     if(!brand || typeof brand !== "object"){
-        console.log("brand must be an object");
+        // console.log("brand must be an object");
       return null  
     } 
 
@@ -64,7 +64,7 @@ try {
         return brandWithUrls
     }
 } catch (error) {
-    console.log("error generating presigned url for brand",error.message);
+    // console.log("error generating presigned url for brand",error.message);
     return brand
     
     

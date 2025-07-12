@@ -53,12 +53,12 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
     });
 
     await s3.send(command);
-    console.log(`✅ Uploaded to S3: ${fileKey}`);
+    // console.log(`✅ Uploaded to S3: ${fileKey}`);
 
     // Try deleting the local file
     try {
       await fs.unlink(filePath);
-      console.log(`🗑️ Deleted local temp file: ${filePath}`);
+      // console.log(`🗑️ Deleted local temp file: ${filePath}`);
     } catch (unlinkErr) {
       console.warn(`⚠️ Could not delete temp file: ${unlinkErr.message}`);
     }
@@ -104,12 +104,12 @@ export const uploadFileToR2 = async (filePath, mimetype) => {
     });
 
     await s3.send(command);
-    console.log(`✅ Uploaded to R2: ${fileKey}`);
+    // console.log(`✅ Uploaded to R2: ${fileKey}`);
 
     // Clean up local file
     try {
       await unlink(filePath);
-      console.log(`🗑️ Deleted local temp file: ${filePath}`);
+      // console.log(`🗑️ Deleted local temp file: ${filePath}`);
     } catch (unlinkErr) {
       console.warn(`⚠️ Failed to delete temp file: ${unlinkErr.message}`);
     }
@@ -144,7 +144,7 @@ export const deleteFileFromR2 = async (fileKey) => {
 
   try {
     await s3.send(command);
-    console.log(`✅ File "${fileKey}" deleted successfully from R2.`);
+    // console.log(`✅ File "${fileKey}" deleted successfully from R2.`);
     return { success: true };
   } catch (error) {
     console.error(`❌ Error deleting file from R2:`, error.message);

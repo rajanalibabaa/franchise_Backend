@@ -10,7 +10,7 @@ console.log("otpStore : ",otpStore)
 
 const generateNewEmailOTP = async (req, res) => {
     const { email, mobileNuber } = req.body; 
-    console.log("===== :", req.body);
+    // console.log("===== :", req.body);
 
     
     const brandExist = await BrandListing.find({ "personalDetails.email": email });
@@ -24,11 +24,11 @@ const generateNewEmailOTP = async (req, res) => {
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
-    console.log("expiresAt: ",expiresAt)
+    // console.log("expiresAt: ",expiresAt)
 
     // Store OTP in memory
     const timmer = otpStore.set(email, { otp, expiresAt });
-     console.log("timmer: ",timmer)
+    //  console.log("timmer: ",timmer)
 
     // Send the OTP via email
     const sendOtp = await sendEmailOTP(email, otp);
@@ -41,7 +41,7 @@ const generateNewEmailOTP = async (req, res) => {
 
 const verifynewEmailOTP = async (req, res) => {
     const { email, verifyOTP } = req.body;
-    console.log("verifyOTP :", verifyOTP);
+    // console.log("verifyOTP :", verifyOTP);
 
     const otpEntry = otpStore.get(email);
 
