@@ -1,7 +1,7 @@
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
-import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
+import {sendEmailOTP} from "../../utils/Centralized Email/centralizedEmail.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
