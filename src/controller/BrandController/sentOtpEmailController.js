@@ -4,7 +4,7 @@ import { sendEmailOTP } from "../../utils/sendEmailOTP.js";
 
 export const requestEmailOtp = async (req, res) => {
     const { email } = req.body;
-    console.log(email);
+    // console.log(email);
     
 
     if (!email) {

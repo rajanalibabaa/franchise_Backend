@@ -19,7 +19,7 @@ const OTP_EXPIRATION_MINUTES = 5;
 const generateOTPforLogin = async (req, res) => {
   try {
     const { email, mobileNumber } = req.body;
-    console.log("Request body:", req.body);
+    // console.log("Request body:", req.body);
 
     if (!email && !mobileNumber) {
       return res
@@ -45,7 +45,7 @@ const generateOTPforLogin = async (req, res) => {
       $or: [{ email }, { mobileNumber }],
     });
 
-    console.log("Investor data:", investorData);
+    // console.log("Investor data:", investorData);
 
     const brandUserData = await BrandListing.findOne({
       $or: [
@@ -54,11 +54,11 @@ const generateOTPforLogin = async (req, res) => {
       ],
     });
 
-    console.log("Brand user data:", brandUserData);
+    // console.log("Brand user data:", brandUserData);
 
     const thirdPartyUsers = await ThirdPartyAuth.findOne({email:email, mobileNumber:mobileNumber});
 
-    console.log("thirdPartyUsers data:", thirdPartyUsers);
+    // console.log("thirdPartyUsers data:", thirdPartyUsers);
 
     if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res
@@ -67,7 +67,7 @@ const generateOTPforLogin = async (req, res) => {
     }
 
     const newOTP = Number(generateOTP().toString().trim());
-    console.log("Generated OTP:", newOTP);
+    // console.log("Generated OTP:", newOTP);
 
     // Store OTP with current timestamp
     otpData = {
@@ -101,8 +101,8 @@ const verifyLogin = async (req, res) => {
       );
     }
 
-    console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
-    console.log("otpData.code:", typeof otpData.code, otpData.code);
+    // console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
+    // console.log("otpData.code:", typeof otpData.code, otpData.code);
 
     // Check if OTP exists
     if (!otpData.code) {

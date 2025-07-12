@@ -6,7 +6,7 @@ const OTP = generateOTP(); // Generate a random OTP
 
 export const sendEmailOTP = async (email, otp) => {
 
-  console.log("email :", email,otp)
+  // console.log("email :", email,otp)
 
   const transporter = nodemailer.createTransport({
     host: "smtp.hostinger.com",
@@ -22,8 +22,9 @@ export const sendEmailOTP = async (email, otp) => {
      
   });
 
-console.log('SMTP Email:', process.env.EMAIL_USER_SUPPORT);
-console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ Missing');
+// console.log('SMTP Email:', process.env.EMAIL_USER_SUPPORT);
+// console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ Missing');
+
 
 // const transporter = nodemailer.createTransport({
 //     service: "gmail",
@@ -56,7 +57,7 @@ console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ M
 // };
 try {
   const info = await transporter.sendMail(mailOptions);
-  console.log('Email sent:', info.response);
+  // console.log('Email sent:', info.response);
   return otp;  // Return OTP for further use if needed
 } catch (error) {
   console.error('Error sending email:', error);

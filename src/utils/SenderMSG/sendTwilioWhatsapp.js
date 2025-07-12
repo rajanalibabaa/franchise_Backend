@@ -18,7 +18,7 @@ const sendWhatsAppOtp = async (to, otp) => {
       }),
       //   messagingServiceSid: process.env.TWILIO_SERVICE_SID, // Optional if using contentSid
     });
-    console.log("Message sent:", message.sid);
+    // console.log("Message sent:", message.sid);
     return message.sid;
   } catch (error) {
     console.error("Error sending WhatsApp message:", error);

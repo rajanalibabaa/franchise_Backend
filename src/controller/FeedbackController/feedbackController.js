@@ -5,9 +5,10 @@ import { ApiResponse } from '../../utils/ApiResponse/ApiResponse.js';
 export const createFeedback = async (req, res) => {
     try {
         const {id} = req.params
-        const investor = req.investorUser
-        const brandUser = req.brandUser
+        const investor = req?.investorUser
+        const brandUser = req?.brandUser
         const { topic, feedback, rating } = req.body
+
 
         if (id !== brandUser?.uuid && id !== investor?.uuid ) {
             return res.json(

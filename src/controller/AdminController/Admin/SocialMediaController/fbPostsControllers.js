@@ -6,7 +6,7 @@ import fs from "fs";
 const createMrfranchiseFbPagePosts = async (req, res) => {
   try {
     const { message, postID, token } = req.body;
-    console.log("=============== ;",req.body)
+    // console.log("=============== ;",req.body)
 
     if (!message) {
       return res.status(400).json({ error: "Message is required." });
@@ -151,7 +151,7 @@ const deleteMrfranchiseFbPagePostsByID = async (req, res) => {
       );
         
     }
-    console.log( response)
+    // console.log( response)
 
       return res.status(200).json(
         new ApiResponse(200,  response.data, "Post deleted successfully.")

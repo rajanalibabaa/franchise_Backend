@@ -27,7 +27,7 @@ const verifyToken = (token) => {
 export const requestEmailOtp = async (req, res) => {
     const { email } = req.body;
     const otp = generateOTP();
-    console.log("OTP:", otp); // Log the OTP for debugging purposes
+    // console.log("OTP:", otp); // Log the OTP for debugging purposes
     const token = generateToken(email, otp);
 
     try {
@@ -48,9 +48,9 @@ export const requestMobileOtp = async (req, res) => {
  // Log the mobile number for debugging purposes
     const otp = generateOTP();
     const token = generateToken(mobile, otp);
-    console.log("OTP:", otp); // Log the OTP for debugging purposes
+    // console.log("OTP:", otp); // Log the OTP for debugging purposes
 
-    console.log("Token:", token); // Log the token for debugging purposes
+    // console.log("Token:", token); // Log the token for debugging purposes
 
     try {
         await sendMobileSMS(mobile, otp);
@@ -70,8 +70,8 @@ export const requestWhatsAppOtp = async (req, res) => {
 
     const otp = generateOTP();
     const token = generateToken(mobile, otp);
-    console.log("OTP:", otp); // Log the OTP for debugging purposes
-    console.log("Token:", token); // Log the token for debugging purposes
+    // console.log("OTP:", otp); // Log the OTP for debugging purposes
+    // console.log("Token:", token); // Log the token for debugging purposes
 
 
     try {
@@ -105,7 +105,7 @@ export const verifyOTP = async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1]; // Extract the token
-    console.log("Token:", token); // Log the token for debugging purposes
+    // console.log("Token:", token); // Log the token for debugging purposes
     
 
     try {
