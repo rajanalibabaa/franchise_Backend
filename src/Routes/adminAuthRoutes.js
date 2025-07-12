@@ -10,8 +10,8 @@ const router = express.Router();
 //     res.json({ message : `Welcome to the dashboard, ${req.user.name}`})
 // })
 
-router.post("/verifyotp", verifyOtp,verifyJWT);
-router.post("/sendotp",requestOtp)
+router.post("/v1/verifyotp", verifyOtp,verifyJWT);
+router.post("/v1/sendotp",requestOtp)
 
 export default router;
  
