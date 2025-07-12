@@ -180,7 +180,7 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         }
       }
 
-      console.log(" revers: ",revers)  
+      // console.log(" revers: ",revers)  
       return res.json(
         new ApiResponse(200,revers , "Favorite brands retrieved successfully")
       );
@@ -248,7 +248,7 @@ export const deleteFavoriteBrand = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    console.log("body :",brandID)
+    // console.log("body :",brandID)
 
     if (!uuid || !brandID) {
       return res.status(400).json(new ApiResponse(400, {}, "UUID and brandID are required"));

@@ -383,9 +383,9 @@ export const deleteViewBrandByID = async (req,res) => {
       const { brandID } = req.body
       const brand = req.brandUser;
 
-      console.log(id)
-      console.log(!!investor)
-      console.log(!!brand?._id)
+      // console.log(id)
+      // console.log(!!investor)
+      // console.log(!!brand?._id)
 
        if (id !== investor?.uuid  && id !== brand?.uuid) {
           return res.json(new ApiResponse(403,{},"Unauthorized request"))
@@ -394,7 +394,7 @@ export const deleteViewBrandByID = async (req,res) => {
       const target = await BrandListing.findOne({uuid:brandID})
 
       if (!!investor && !!investor?._id) {
-        console.log("============")
+        // console.log("============")
 
 
         const updatedView = await ViewedBrandsByInvestor.findOneAndUpdate(
@@ -426,7 +426,7 @@ export const deleteViewBrandByID = async (req,res) => {
 
 
       if (!!brand && !!brand?._id) {
-        console.log("============")
+        // console.log("============")
 
         const updatedView = ViewedBrandsByBrands.findOneAndUpdate(
           { brandUserID : brand?._id},

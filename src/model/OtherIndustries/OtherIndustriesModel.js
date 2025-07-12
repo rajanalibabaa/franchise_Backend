@@ -9,12 +9,13 @@ import mongoose from "mongoose";
         type : String,
         required : true,
         // lowercase : true,
-        // unique : true
+        unique : true
     },
     mobileNumber : {
         type : String,
         required : true,
-        // Match : [/^\+91\d{10}$/, 'Please Enter a Valid Number']
+       match: [/^\d{10}$/, "Enter a valid 10-digit mobile number"],
+       unique : true
     },
     registerAs : {
         type : String,

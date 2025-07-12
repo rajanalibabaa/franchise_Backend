@@ -3,22 +3,22 @@ import BrandListing from "../../model/Brand/brandListingPage.js";
 import { sendBrandEmailPerfect } from "../Centralized Email/centralizedEmail.js";
 export const newIncomerInvestorController = async ( investorEmail, investorName, category,country,state,city,investmentRange) => {
   try {
-    console.log("Controller input received:", category);
+    // console.log("Controller input received:", category);
     // Prepare query conditions
     const investorLocation = { country, state, city };
     const investorCategory = category.map((cat) => cat.child);
     // const investorCategorymain = category.map(cat => cat.main);
     // const investorCategorysub = category.map(cat => cat.sub);
 
-    console.log("Controller input:", {
-      investorEmail,
-      investorName,
-      category,
-      country,
-      state,
-      city,
-      investmentRange,
-    });
+    // console.log("Controller input:", {
+    //   investorEmail,
+    //   investorName,
+    //   category,
+    //   country,
+    //   state,
+    //   city,
+    //   investmentRange,
+    // });
     // Validate required fields
     const requiredFields = [
       investorEmail,
@@ -48,18 +48,18 @@ export const newIncomerInvestorController = async ( investorEmail, investorName,
       investmentRange: investmentRange,
     });
     await newLead.save();
-    console.log(`New investor lead saved: ${investorEmail}`);
+    // console.log(`New investor lead saved: ${investorEmail}`);
 
     const emailedBrands = new Set();
     const results = [];
     const perfectMatchesData = [];
     const partialMatchesData = [];
 
-    // Using child category from the input
-    console.log("Investor location and category:", {
-      investorLocation,
-      investorCategory,
-    });
+    // // Using child category from the input
+    // console.log("Investor location and category:", {
+    //   investorLocation,
+    //   investorCategory,
+    // });
     // 2. Find PERFECT matches (category, location, and investment range)
     const perfectMatches = await BrandListing.find({
       "personalDetails.brandCategories.child": investorCategory,
@@ -73,9 +73,9 @@ export const newIncomerInvestorController = async ( investorEmail, investorName,
       "franchiseDetails.modelsOfFranchise.investmentRange": investmentRange,
       "personalDetails.email": { $ne: null },
     });
-    console.log(
-      `Found ${perfectMatches.length} perfect matches for investor: ${investorEmail}`
-    );
+    // console.log(
+    //   `Found ${perfectMatches.length} perfect matches for investor: ${investorEmail}`
+    // );
 
     for (const brand of perfectMatches) {
       const brandEmail = brand.personalDetails.email;
@@ -112,7 +112,7 @@ export const newIncomerInvestorController = async ( investorEmail, investorName,
             brandId: brand._id,
           });
 
-          console.log(`Perfect match email sent to: ${brandEmail}`);
+          // console.log(`Perfect match email sent to: ${brandEmail}`);
         } catch (error) {
           console.error(
             `Failed to email perfect match: ${brandEmail}, error`,
@@ -173,7 +173,7 @@ export const newIncomerInvestorController = async ( investorEmail, investorName,
             brandId: brand._id,
           });
 
-          console.log(`Partial match email sent to: ${brandEmail}`);
+          // console.log(`Partial match email sent to: ${brandEmail}`);
         } catch (error) {
           console.error(
             `Failed to email partial match: ${brandEmail}, error`,
