@@ -13,11 +13,14 @@ const __dirname = dirname(__filename);
 
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS,
-    }
+     host: 'smtp.hostinger.com',
+     port:465,
+     secure: true,
+     auth: {
+        user: process.env.EMAIL_USER_SUPPORT, 
+        pass: process.env.EMAIL_PASS_SUPPORT,
+    },
+     family: 4
 });
 
 
@@ -51,7 +54,7 @@ export const sendEmail =  async(to, subject, templateName, data) => {
     const html = getTemplate(templateName,data); 
    
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_USER_SUPPORT,
         to,
         subject,
         html

@@ -117,8 +117,8 @@ export const sendEmailOTP = async (email,otp ) => {
    try {
     const subject = "Verify Your Email Address"; 
     const emailTemplateName = "otp_template"; 
-    await sendEmail(email,subject,emailTemplateName, otp );
-    console.log('Email sent:', info.response);
+    await sendEmail(email,subject,emailTemplateName, {otp} );
+    console.log('Email sent:');
   } catch (error) {
   console.error('Error sending email:', error);
 }
