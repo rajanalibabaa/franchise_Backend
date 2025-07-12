@@ -21,8 +21,10 @@ export const sendEmailOTP = async (email, otp) => {
     }
      
   });
+
 // console.log('SMTP Email:', process.env.EMAIL_USER_SUPPORT);
 // console.log('SMTP Pass:', process.env.EMAIL_PASS_SUPPORT ? '✅ Loaded' : '❌ Missing');
+
 
 // const transporter = nodemailer.createTransport({
 //     service: "gmail",
@@ -35,7 +37,6 @@ export const sendEmailOTP = async (email, otp) => {
 //     }
      
 //   });
-
 
   const mailOptions = {
     from: process.env.EMAIL_USER_SUPPORT,

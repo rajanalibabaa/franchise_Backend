@@ -9,9 +9,6 @@ import {
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import generateCustomId from "../../helpers/brandIdGenerater.js";
 
-
-
-
 const createBrandListing = async (req, res) => {
   try {
     const fileFields = [

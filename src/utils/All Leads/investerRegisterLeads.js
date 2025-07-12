@@ -1,5 +1,6 @@
 import InvestorLead from "../../model/NewIncomeInvestor/leadsModel.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
+import { sendBrandEmailPerfect } from "../Centralized Email/centralizedEmail.js";
 export const newIncomerInvestorController = async ( investorEmail, investorName, category,country,state,city,investmentRange) => {
   try {
     // console.log("Controller input received:", category);

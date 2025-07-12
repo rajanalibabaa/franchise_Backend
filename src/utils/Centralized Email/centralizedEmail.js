@@ -112,23 +112,14 @@ export const sendPostRequirementEmail = async (
     console.error("Failed to send test email:", error);
   }
 };
-//
-//  export const sendBrandEmailpartial= async (recipientEmail,name,category,location,investment) => {
-// try {
-// const emailSubject = "Welcome to Our Service";
-// const emailTemplateName = "brandRegister_partial"; // Ensure this matches the template file name in the 'templates' folder
-//  const emailData = {
-//  name: name,
-//  category: category,
-//  location: location,
-//  investment: investment
-//  };
-//
-//
 
-// await sendEmail(recipientEmail, emailSubject, emailTemplateName, emailData);
-// } catch (error) {
-// console.error("Failed to send test email:", error);
-// }
-// };
-//
+export const sendEmailOTP = async (email,otp ) => {
+   try {
+    const subject = "Verify Your Email Address"; 
+    const emailTemplateName = "otp_template"; 
+    await sendEmail(email,subject,emailTemplateName, otp );
+    console.log('Email sent:', info.response);
+  } catch (error) {
+  console.error('Error sending email:', error);
+}
+}
