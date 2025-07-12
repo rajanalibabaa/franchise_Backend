@@ -6,7 +6,7 @@ const OTP = generateOTP(); // Generate a random OTP
 
 export const sendEmailOTP = async (email, otp) => {
 
-  // console.log("email :", email,otp)
+  console.log("email :", email,otp)
 
   const transporter = nodemailer.createTransport({
     host: "smtp.hostinger.com",
