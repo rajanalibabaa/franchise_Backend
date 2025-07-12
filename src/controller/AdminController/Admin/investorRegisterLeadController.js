@@ -7,7 +7,6 @@ export const newIncomerInvestorController = async (req, res) => {
     try {
         const { userEmail, investername, category, country, state, city, totalInvestment } = req.body;
 
-        const {main,sub,child}
       
         const newLead = new investerRegisterleadsSchema({
             investorEmail: userEmail,

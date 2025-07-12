@@ -171,7 +171,7 @@ export const getInstaApplyById = async (req, res) => {
 
     const myInstaApplies = await instantApply.find({ "apply.applyId": user.uuid });
 
-    console.log("myInstaApplies :",myInstaApplies)
+    // console.log("myInstaApplies :",myInstaApplies)
 
     if (!myInstaApplies || myInstaApplies.length === 0) {
       return res.json(

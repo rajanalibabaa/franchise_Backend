@@ -9,7 +9,7 @@ import BrandListing from "../../model/Brand/brandListingPage.js";
 const createAdminVideoAdvertise = async (req, res) => {
     try {
         const { title, description } = req.body;
-        console.log("Request body:", req.body);
+        // console.log("Request body:", req.body);
 
         // Validate input
         if (!title || !description) {
@@ -25,7 +25,7 @@ const createAdminVideoAdvertise = async (req, res) => {
             );
         }
 
-        console.log("Request files:", req.files);
+        // console.log("Request files:", req.files);
 
         const videoFile = req.files.videos[0];
         const thumbnailFile = req.files.thumbnail[0];
@@ -43,8 +43,8 @@ const createAdminVideoAdvertise = async (req, res) => {
         const awsVideoUploadUrl = await uploadFileToS3(videosLocalPath, videoFile.mimetype);
         const awsThumbnailUploadUrl = await uploadFileToS3(thumbnailLocalPath, thumbnailFile.mimetype);
 
-        console.log("AWS Video Upload URL:", awsVideoUploadUrl);
-        console.log("AWS Thumbnail Upload URL:", awsThumbnailUploadUrl);
+        // console.log("AWS Video Upload URL:", awsVideoUploadUrl);
+        // console.log("AWS Thumbnail Upload URL:", awsThumbnailUploadUrl);
 
         // Create DB entry
         const videoAdvertise = await AdminVideoAdvertiseSchema.create({
@@ -61,7 +61,7 @@ const createAdminVideoAdvertise = async (req, res) => {
             );
         }
 
-        console.log("Video Advertisement Created:", videoAdvertise);
+        // console.log("Video Advertisement Created:", videoAdvertise);
         return res.status(200).json(
             new ApiResponse(200, videoAdvertise, "Video advertisement created successfully")
         );
@@ -143,7 +143,7 @@ const postAdminVideoAdvertiseTopTwo  = async (req, res) => {
 
         TopTwoVideoAdvertises = [...adminAds, ...brandAds];
 
-        console.log("Video Advertise Results:", TopTwoVideoAdvertises);
+        // console.log("Video Advertise Results:", TopTwoVideoAdvertises);
         return res.status(200).json(
             new ApiResponse(200,TopTwoVideoAdvertises,"Top two video advertisement fetch successfully")
         );

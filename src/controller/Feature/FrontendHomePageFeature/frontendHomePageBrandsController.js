@@ -60,7 +60,7 @@ const getbrandsbyCityName = async (req,res) => {
 
 const getbrandsbyInvestmentRange = async (req, res) => {
   const investmentRangeInput = req.body?.investmentRange;
-  console.log("Requested investment range:", investmentRangeInput);
+  // console.log("Requested investment range:", investmentRangeInput);
 
 
   const projection = "-_id -__v -createdAt -updatedAt -uuid "
@@ -90,7 +90,7 @@ const getbrandsbyInvestmentRange = async (req, res) => {
       );
     }
 
-    console.log("Filtered brands:", filteredBrands.length);
+    // console.log("Filtered brands:", filteredBrands.length);
 
     return res.json(
       new ApiResponse(200, filteredBrands, "Brands filtered by investment range fetched successfully")

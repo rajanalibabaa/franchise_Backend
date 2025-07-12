@@ -4,7 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js"
 
 export const filterByCatogoryLocationInvRange = async (req,res) => {
     const { catogory , location, invRange } = req.body
-    console.log(req.body)
+    // console.log(req.body)//
 
     const filterData = await BrandListing.find(
         {
@@ -22,7 +22,7 @@ export const filterByCatogoryLocationInvRange = async (req,res) => {
         }
     )
 
-                console.log(filterData)
+                // console.log(filterData)
 
     return res.json(new ApiResponse(200, filterData,"Filter data fetch successfully"))
 }

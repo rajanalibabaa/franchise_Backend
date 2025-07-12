@@ -25,7 +25,7 @@ const createBrandListing = async (req, res) => {
       "gstCertificate",
       "interiorOutlet"
     ];
-console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
+// console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
     // Parse incoming JSON strings safely
     // const brandDetails = req.body.brandDetails
     // const franchiseDetails = req.body.franchiseDetails 
@@ -61,9 +61,9 @@ console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
     const uploadedFiles = {};
     for (const field of fileFields) {
       const files = req.files?.[field];
-      console.log("files :",field)
+      // console.log("files :",field)
       if (!field) {
-         console.log("field not found :",field)
+        //  console.log("field not found :",field)
          return
       }
       if (files?.length > 0) {
@@ -240,7 +240,7 @@ const getBrandListingByUUID = async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
   } catch (error) {
-    console.error("getBrandListingByUUID error:", error);
+    // console.error("getBrandListingByUUID error:", error);
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Failed to fetch brand"));

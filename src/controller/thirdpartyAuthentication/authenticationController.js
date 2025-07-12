@@ -75,7 +75,7 @@ const googleAuthProfile = async (req,res) => {
 const facebookAuthProfile = async(req,res) => {
     if (req.isAuthenticated()){
         const user = req.user;
-        console.log("user : ", user)
+        // console.log("user : ", user)
         const firstName = user.name?.givenName || user.displayName
         const lastName = user.name?.familyName || user.familyName
         const email = user.emails?.[0].value
@@ -83,7 +83,7 @@ const facebookAuthProfile = async(req,res) => {
         const phone = user.phoneNumbers?.[0]?.value
         // const accessToken = user.accessToken
 
-        console.log("user : ", firstName , lastName , email , profilePhoto, phone)
+        // console.log("user : ", firstName , lastName , email , profilePhoto, phone)
 
         const exists = await ThirdPartyAuth.findOne({
             $and: [

@@ -50,9 +50,21 @@ const PreferenceSchema = new mongoose.Schema({
           return this.propertyType === "Own Property";
         }
       },
-      propertyCountry: { type: String },
-      propertyState: { type: String },
-      propertyCity: { type: String },
+      propertyCountry: { type: String ,
+        required: function () {
+          return this.propertyType === "Own Property" ;
+        }
+      },
+      propertyState: { type: String,
+        required: function () {
+          return this.propertyType === "Own Property";
+        }
+       },
+      propertyCity: { type: String ,
+        required: function () {
+          return this.propertyType === "Own Property";
+        }
+      },
       _id: false
     }
   ]
