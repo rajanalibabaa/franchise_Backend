@@ -1,189 +1,277 @@
 import InvestorLead from "../../model/NewIncomeInvestor/leadsModel.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { sendBrandEmailPerfect } from "../Centralized Email/centralizedEmail.js";
-export const newIncomerInvestorController = async ( investorEmail, investorName, category,country,state,city,investmentRange) => {
+
+// Define the investment ranges in order for comparison
+const investmentRanges = [
+  { value: "Below-50,000", index: 0 },
+  { value: "Rs.50,000-2L", index: 1 },
+  { value: "Rs.2L-5L", index: 2 },
+  { value: "Rs.5L-10L", index: 3 },
+  { value: "Rs.10L-20L", index: 4 },
+  { value: "Rs.20L-30L", index: 5 },
+  { value: "Rs.30L-50L", index: 6 },
+  { value: "Rs.50L-1Cr", index: 7 },
+  { value: "Rs.1Cr-2Cr", index: 8 },
+  { value: "Rs.2Cr-5Cr", index: 9 },
+  { value: "Rs.5Cr-above", index: 10 }
+];
+
+// Helper function to get all investment ranges that are less than or equal to the given range
+const getApplicableInvestmentRanges = (investmentRange) => {
+  // First, validate the input range
+  const validRanges = investmentRanges.map(r => r.value);
+  if (!validRanges.includes(investmentRange)) {
+    throw new Error(`Invalid investment range provided. Valid ranges are: ${validRanges.join(', ')}`);
+  }
+  
+  const rangeIndex = investmentRanges.findIndex(range => range.value === investmentRange);
+  return investmentRanges.slice(0, rangeIndex + 1).map(range => range.value);
+};
+
+// Helper function to safely get brand categories
+const getBrandCategories = (brand) => {
   try {
-    // console.log("Controller input received:", category);
-    // Prepare query conditions
-    const investorLocation = { country, state, city };
-    const investorCategory = category.map((cat) => cat.child);
-    // const investorCategorymain = category.map(cat => cat.main);
-    // const investorCategorysub = category.map(cat => cat.sub);
+    if (!brand || !brand.franchiseDetails || !brand.franchiseDetails.brandCategories) {
+      return [];
+    }
+    
+    // Ensure brandCategories is an array
+    const categories = Array.isArray(brand.franchiseDetails.brandCategories) 
+      ? brand.franchiseDetails.brandCategories 
+      : [];
+    
+    return categories.map(c => c.child).filter(c => c); // Filter out any undefined/null values
+  } catch (error) {
+    console.error("Error getting brand categories:", error);
+    return [];
+  }
+};
 
-    // console.log("Controller input:", {
-    //   investorEmail,
-    //   investorName,
-    //   category,
-    //   country,
-    //   state,
-    //   city,
-    //   investmentRange,
-    // });
+export const newIncomerInvestorController = async (
+  email,
+  firstName,
+  category,
+  locationType,
+  preferredCountry,
+  preferredState,
+  preferredDistrict,
+  preferredCity,
+  investmentRange
+) => {
+
+  
+  try {
     // Validate required fields
-    const requiredFields = [
-      investorEmail,
-      investorName,
-      category,
-      country,
-      state,
-      city,
-      investmentRange,
-    ];
-
-    const hasEmptyFields = requiredFields.some((field) => !field);
-    if (hasEmptyFields) {
-      return res.status(400).json({ error: "All fields are required." });
+    if (!email || !firstName || !category || !locationType || !investmentRange) {
+      throw new Error("Required fields are missing");
     }
 
-    // 1. Save new investor lead
-    const newLead = new InvestorLead({
-      investorEmail: investorEmail,
-      investorName: investorName,
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error("Please provide a valid email address");
+    }
+
+    // Validate investment range
+    const validRanges = investmentRanges.map(r => r.value);
+    if (!validRanges.includes(investmentRange)) {
+      throw new Error(`Invalid investment range provided. Valid ranges are: ${validRanges.join(', ')}`);
+    }
+
+    // Validate category structure
+    if (!Array.isArray(category)) {
+      throw new Error("Category should be an array");
+    }
+
+    // Get applicable investment ranges for partial matches
+    const applicableRanges = getApplicableInvestmentRanges(investmentRange);
+
+    // Prepare investor data
+    const investorData = {
+      investorEmail: email,
+      investorName: firstName,
       category,
       location: {
-        country,
-        state,
-        city,
+        country: preferredCountry,
+        state: preferredState,
+        district: preferredDistrict,
+        city: preferredCity,
       },
-      investmentRange: investmentRange,
-    });
+      locationType,
+      investmentRange,
+    };
+
+    // Save new investor lead
+    const newLead = new InvestorLead(investorData);
     await newLead.save();
-    // console.log(`New investor lead saved: ${investorEmail}`);
 
     const emailedBrands = new Set();
     const results = [];
     const perfectMatchesData = [];
     const partialMatchesData = [];
 
-    // // Using child category from the input
-    // console.log("Investor location and category:", {
-    //   investorLocation,
-    //   investorCategory,
-    // });
-    // 2. Find PERFECT matches (category, location, and investment range)
-    const perfectMatches = await BrandListing.find({
-      "personalDetails.brandCategories.child": investorCategory,
-      "personalDetails.expansionLocation": {
-        $elemMatch: {
-          country: investorLocation.country,
-          state: investorLocation.state,
-          $or: [{ city: investorLocation.city }, { city: "Not available" }],
-        },
-      },
-      "franchiseDetails.modelsOfFranchise.investmentRange": investmentRange,
-      "personalDetails.email": { $ne: null },
-    });
-    // console.log(
-    //   `Found ${perfectMatches.length} perfect matches for investor: ${investorEmail}`
-    // );
+    // Prepare category values for querying
+    const categoryValues = category.map(c => c.child).filter(c => c);
 
+    // 1. Find PERFECT matches (category, location, and investment range <= investor's range)
+    const perfectMatchQuery = {
+      "brandDetails.email": { $ne: null },
+      "franchiseDetails.fico.investmentRange": { $in: applicableRanges }
+    };
+
+    // Add category filter only if we have valid categories
+    if (categoryValues.length > 0) {
+      perfectMatchQuery["franchiseDetails.brandCategories.child"] = { $in: categoryValues };
+    }
+
+    // Add location filters based on location type
+    if (locationType === "domestic") {
+      perfectMatchQuery["expansionLocationData.expansionLocations.domestic.locations"] = {
+        $elemMatch: {
+          state: preferredState,
+          districts: {
+            $elemMatch: {
+              district: preferredDistrict,
+              cities: preferredCity,
+            },
+          },
+        },
+      };
+    } else {
+      perfectMatchQuery["expansionLocationData.expansionLocations.international.country"] = preferredCountry;
+      if (preferredState) perfectMatchQuery["expansionLocationData.expansionLocations.international.states"] = preferredState;
+      if (preferredDistrict) perfectMatchQuery["expansionLocationData.expansionLocations.international.district"] = preferredDistrict;
+      if (preferredCity) perfectMatchQuery["expansionLocationData.expansionLocations.international.cities"] = preferredCity;
+    }
+
+    const perfectMatches = await BrandListing.find(perfectMatchQuery);
+
+    // Process perfect matches
     for (const brand of perfectMatches) {
-      const brandEmail = brand.personalDetails.email;
-      const brandCompanyName = brand.personalDetails.companyName;
-      const emailSubject =
-        'An investor has been found who matches your "InvestmentRange", "Category", and "Location" preferences exactly. Time to connect';
+      const brandEmail = brand.brandDetails?.email;
+      const brandCompanyName = brand.brandDetails?.brandName || "Unknown Company";
+      
 
-      if (!emailedBrands.has(brandEmail)) {
-        try {
-           sendBrandEmailPerfect(
-            brandEmail,
-            brandCompanyName,
-            investorName,
-            investorCategory,
-            `${investorLocation.city}, ${investorLocation.state}, ${investorLocation.country}`,
-            investmentRange,
-            emailSubject
-          );
-          emailedBrands.add(brandEmail);
+      console.log("Perfect match:", brandCompanyName,brandEmail);
+      if (!brandEmail || emailedBrands.has(brandEmail)) {
+        continue;
+      }
 
-          perfectMatchesData.push({
-            email: brandEmail,
-            companyName: brandCompanyName,
-            brandId: brand._id,
-          });
+      try {
+        const emailSubject = 'An investor has been found who matches your "InvestmentRange", "Category", and "Location" preferences exactly. Time to connect';
+        
+        await sendBrandEmailPerfect(
+          brandEmail,
+          brandCompanyName,
+          firstName,
+          categoryValues.join(", "),
+          `${preferredCity}, ${preferredDistrict}, ${preferredState}, ${preferredCountry}`,
+          investmentRange,
+          emailSubject
+        );
 
-          results.push({
-            companyName: brandCompanyName,
-            email: brandEmail,
-            location: `${investorLocation.city}, ${investorLocation.state}, ${investorLocation.country}`,
-            category: investorCategory,
-            investment: investmentRange,
-            matchType: "perfect",
-            brandId: brand._id,
-          });
+        emailedBrands.add(brandEmail);
+        perfectMatchesData.push({
+          email: brandEmail,
+          companyName: brandCompanyName,
+          brandId: brand._id,
+        });
 
-          // console.log(`Perfect match email sent to: ${brandEmail}`);
-        } catch (error) {
-          console.error(
-            `Failed to email perfect match: ${brandEmail}, error`,
-            error
-          );
-        }
+        results.push({
+          companyName: brandCompanyName,
+          email: brandEmail,
+          location: `${preferredCity}, ${preferredState}, ${preferredCountry}`,
+          category: categoryValues.join(", "),
+          investment: investmentRange,
+          matchType: "perfect",
+          brandId: brand._id,
+        });
+      } catch (error) {
+        console.error(`Failed to email perfect match: ${brandEmail}`, error);
       }
     }
 
-    // 3. Find PARTIAL matches (location and investment range only)
-    const partialMatches = await BrandListing.find({
-      "personalDetails.expansionLocation": {
+    // 2. Find PARTIAL matches (location and investment range <= investor's range, but not category)
+    const partialMatchQuery = {
+      "brandDetails.email": { $ne: null, $nin: Array.from(emailedBrands) },
+      "franchiseDetails.fico.investmentRange": { $in: applicableRanges }
+    };
+
+    // Add category exclusion only if we have valid categories
+    if (categoryValues.length > 0) {
+      partialMatchQuery["franchiseDetails.brandCategories.child"] = { $nin: categoryValues };
+    }
+
+    // Add location filters based on location type (same as perfect matches)
+    if (locationType === "domestic") {
+      partialMatchQuery["expansionLocationData.expansionLocations.domestic.locations"] = {
         $elemMatch: {
-          country: investorLocation.country,
-          state: investorLocation.state,
-          $or: [{ city: investorLocation.city }, { city: "Not available" }],
+          state: preferredState,
+          districts: {
+            $elemMatch: {
+              district: preferredDistrict,
+              cities: preferredCity,
+            },
+          },
         },
-      },
-      "franchiseDetails.modelsOfFranchise.investmentRange": investmentRange,
-      "personalDetails.email": { $ne: null },
-      "personalDetails.email": { $nin: Array.from(emailedBrands) },
-    });
+      };
+    } else {
+      partialMatchQuery["expansionLocationData.expansionLocations.international.country"] = preferredCountry;
+      if (preferredState) partialMatchQuery["expansionLocationData.expansionLocations.international.states"] = preferredState;
+      if (preferredDistrict) partialMatchQuery["expansionLocationData.expansionLocations.international.district"] = preferredDistrict;
+      if (preferredCity) partialMatchQuery["expansionLocationData.expansionLocations.international.cities"] = preferredCity;
+    }
 
+    const partialMatches = await BrandListing.find(partialMatchQuery);
+  
+
+    // Process partial matches
     for (const brand of partialMatches) {
-      const brandEmail = brand.personalDetails.email;
-      const brandCompanyName = brand.personalDetails.companyName;
-      const brandCategory =
-        brand.personalDetails.brandCategories[0]?.child || "Not specified";
-      const emailSubject =
-        'We\'ve found an investor who matches your "InvestmentRange" and "Location" perfectly. The Category is slightly different, but this lead holds strong potential for your brand.';
+      const brandEmail = brand.brandDetails?.email;
+      const brandCompanyName = brand.brandDetails?.brandName || "Unknown Company";
+      const brandCategories = getBrandCategories(brand);
+      const brandCategoryStr = brandCategories.join(", ") || "Not specified";
+      
+      if (!brandEmail || emailedBrands.has(brandEmail)) {
+        continue;
+      }
 
-      if (!emailedBrands.has(brandEmail)) {
-        try {
-          await sendBrandEmailPerfect(
-            brandEmail,
-            brandCompanyName,
-            investorName,
-            investorCategory,
-            `${investorLocation.city}, ${investorLocation.state}, ${investorLocation.country}`,
-            investmentRange,
-            emailSubject
-          );
-          emailedBrands.add(brandEmail);
+      try {
+        const emailSubject = 'We\'ve found an investor who matches your "InvestmentRange" and "Location" perfectly. The Category is slightly different, but this lead holds strong potential for your brand.';
+        
+        await sendBrandEmailPerfect(
+          brandEmail,
+          brandCompanyName,
+          firstName,
+          categoryValues.join(", "),
+          `${preferredCity}, ${preferredDistrict}, ${preferredState}, ${preferredCountry}`,
+          investmentRange,
+          emailSubject
+        );
 
-          partialMatchesData.push({
-            email: brandEmail,
-            companyName: brandCompanyName,
-            brandId: brand._id,
-          });
+        emailedBrands.add(brandEmail);
+        partialMatchesData.push({
+          email: brandEmail,
+          companyName: brandCompanyName,
+          brandId: brand._id,
+        });
 
-          results.push({
-            companyName: brandCompanyName,
-            email: brandEmail,
-            location: `${investorLocation.city}, ${investorLocation.state}, ${investorLocation.country}`,
-            category: brandCategory,
-            investment: investmentRange,
-            matchType: "partial",
-            brandId: brand._id,
-          });
-
-          // console.log(`Partial match email sent to: ${brandEmail}`);
-        } catch (error) {
-          console.error(
-            `Failed to email partial match: ${brandEmail}, error`,
-            error
-          );
-        }
+        results.push({
+          companyName: brandCompanyName,
+          email: brandEmail,
+          location: `${preferredCity}, ${preferredState}, ${preferredCountry}`,
+          category: brandCategoryStr,
+          investment: investmentRange,
+          matchType: "partial",
+          brandId: brand._id,
+        });
+      } catch (error) {
+        console.error(`Failed to email partial match: ${brandEmail}`, error);
       }
     }
 
-    // 4. Update lead with match data
+    // Update lead with match data
     await InvestorLead.findByIdAndUpdate(newLead._id, {
       $set: {
         brandPerfectMatches: perfectMatchesData,
@@ -196,9 +284,9 @@ export const newIncomerInvestorController = async ( investorEmail, investorName,
       },
     });
 
-    // 5. Final response
+    // Return results
     if (results.length > 0) {
-      return console.log({
+      return {
         status: 200,
         message: `Matches found (${perfectMatchesData.length} perfect, ${partialMatchesData.length} partial)`,
         data: results,
@@ -207,19 +295,19 @@ export const newIncomerInvestorController = async ( investorEmail, investorName,
           perfectMatches: perfectMatchesData.length,
           partialMatches: partialMatchesData.length,
         },
-      });
+      };
     } else {
-      return  console.log({
+      return {
         status: 404,
         message: "No matches found for the investor.",
-      }); 
+      };
     }
   } catch (error) {
     console.error("Error in newIncomerInvestorController:", error);
-    return console.log({
+    return {
       status: 500,
       message: "An error occurred while processing the request.",
       error: error.message,
-    });
+    };
   }
-}
+};
