@@ -119,39 +119,57 @@ export const instaApplyBrandFormController = async (req, res) => {
 
 // Get all
 export const getAllInstaApplyToBrand = async (req, res) => {
-  const {id} = req.params
-  const BrandData = req.brandUser
+  const { id } = req.params;
+  const BrandData = req.brandUser;
 
-  if (id !== BrandData.uuid) {
-    return res.json(
-      new ApiResponse(401,{},"Unauthorized requset")
-    )
+
+  if (!id || id !== BrandData?.uuid) {
+    return res.status(401).json(
+      new ApiResponse(401, {}, "Unauthorized request")
+    );
   }
+
   try {
-    const instaApply = (await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v")).reverse();
-    
+    // Fetch instant applications with proper error handling
+    const instaApply = await instantApply.find({ brandId: BrandData.uuid })
+      .select("-_id -createdAt -updatedAt -__v")
+      .sort({ createdAt: -1 }) 
+      .lean(); 
+    console.log("instaApply:", instaApply);
 
-    const applyList = [];
+    // Process applications in parallel for better performance
+    const applyList = await Promise.all(
+      instaApply.map(async (application) => {
+        try {
+         
+          let data = await InvsRegister.findOne({ uuid: application.apply?.applyId })
+            .select("-_id -oldData")
+            .lean();
 
-    for (let i = 0; i < instaApply.length; i++) {
-      const application = instaApply[i];
-      let data = await InvsRegister.findOne({ uuid: application.apply?.applyId }).select("-_id -oldData");
-      if (!data) {
-        data = await BrandListing.findOne({ uuid: application.apply?.applyId });
-      }
+     
+          if (!data) {
+            data = await BrandListing.findOne({ uuid: application.apply?.applyId })
+              .lean();
+          }
 
-      if (data) {
-        applyList.push(data);
-      }
-    }
+         
+          return data ? { ...application, userData: data } : application;
+        } catch (error) {
+          console.error(`Error processing application ${application._id}:`, error);
+          return application;
+        }
+      })
+    );
+
     return res.json(
-      new ApiResponse(200,applyList,"All instant apply application fetch successfully")
-    )
+      new ApiResponse(200, applyList, "All instant apply applications fetched successfully")
+    );
 
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching Insta Apply", error: error.message });
+    console.error("Error in getAllInstaApplyToBrand:", error);
+    return res.status(500).json(
+      new ApiResponse(500, null, `Error fetching Insta Apply: ${error.message}`)
+    );
   }
 };
 
