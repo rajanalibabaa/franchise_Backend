@@ -101,7 +101,7 @@ export const postViewBrands = async (req, res) => {
         );
       }
 
-      await ViewedToBrands.findOneAndUpdate(
+      const a = await ViewedToBrands.findOneAndUpdate(
         { brandUserID: targetBrand._id },
         {
           $push: {
@@ -114,7 +114,9 @@ export const postViewBrands = async (req, res) => {
         { new: true, upsert: true }
       );
 
-      return res.status(200).json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
+      console.log("a :",a)
+
+      return res.status(200).json(new ApiResponse(200, a, "Viewed brand successfully recorded"));
     }
 
     return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
@@ -249,46 +251,59 @@ export const getAllViewBrands = async (req, res) => {
     const { id } = req.params;
     const brand = req.brandUser;
 
+    // Authorization check
     if (id !== brand?.uuid) {
-      return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
+      return res.status(403).json(
+        new ApiResponse(403, {}, "Unauthorized request")
+      );
     }
 
-    const viewedData = await ViewedToBrands.findOne({ brandUserID: brand._id })
-      .populate({
-        path: "viewedByInvestors.InvestorID",
-        select: "-_id -createdAt -updatedAt -__v -password -refreshToken"
-      })
-      .populate({
-        path: "viewedByBrands.BrandID",
-        select: "-_id -createdAt -updatedAt -__v -personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress -personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber -brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber"
-      });
+    // Fetch viewed data with necessary fields only
+    const viewedData = await ViewedToBrands.findOne(
+      { brandUserID: brand._id },
+      { viewedByInvestors: 1, viewedByBrands: 1 }
+    )
+    .populate({
+      path: 'viewedByInvestors.InvestorID',
+      select: '-password -refreshToken -createdAt -updatedAt -__v'
+    })
+    .populate({
+      path: 'viewedByBrands.BrandID',
+      select: '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress -createdAt -updatedAt -__v'
+    })
+    .lean(); // Convert to plain JS object for better performance
 
     if (!viewedData) {
-      return res.status(200).json(new ApiResponse(200, { investors: [], brands: [] }, "No viewing data found"));
+      return res.status(200).json(
+        new ApiResponse(200, { investors: [], brands: [] }, "No viewing data found")
+      );
     }
 
-    const investors = viewedData.viewedByInvestors
-      ?.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
-      .map(item => item.InvestorID) || [];
+    // Process investors data
+    const investors = (viewedData.viewedByInvestors || [])
+      .filter(item => item?.InvestorID) // Filter out null references
+      .sort((a, b) => b.addedAt - a.addedAt) // Direct date comparison
+      .map(({ InvestorID }) => InvestorID);
 
+    // Process brands data with deduplication
     const seenBrandIds = new Set();
-    const brands = viewedData.viewedByBrands
-      ?.filter(view => {
-        const brandId = view.BrandID?._id?.toString();
-        if (brandId && !seenBrandIds.has(brandId)) {
-          seenBrandIds.add(brandId);
-          return true;
-        }
-        return false;
+    const brands = (viewedData.viewedByBrands || [])
+      .filter(view => {
+        if (!view?.BrandID) return false;
+        const brandId = view.BrandID._id.toString();
+        return !seenBrandIds.has(brandId) && seenBrandIds.add(brandId);
       })
-      .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
-      .map(item => item.BrandID) || [];
+      .sort((a, b) => b.addedAt - a.addedAt)
+      .map(({ BrandID }) => BrandID);
 
     return res.status(200).json(
       new ApiResponse(200, { investors, brands }, "View data retrieved successfully")
     );
+
   } catch (error) {
     console.error("getAllViewBrands error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Server error"));
+    return res.status(500).json(
+      new ApiResponse(500, {}, "Internal server error")
+    );
   }
 };
