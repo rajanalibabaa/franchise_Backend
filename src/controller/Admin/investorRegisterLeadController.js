@@ -23,17 +23,6 @@ export const newIncomerInvestorController = async (
       throw new Error("Location type must be either 'domestic' or 'international'");
     }
 
-    // console.log("Search Parameters:", {
-    //   email,
-    //   firstName,
-    //   category,
-    //   locationType,
-    //   preferredCountry,
-    //   preferredState,
-    //   preferredDistrict,
-    //   preferredCity,
-    //   investmentRange
-    // });
 
     // Base category condition
     const categoryCondition = {
@@ -142,7 +131,6 @@ export const newIncomerInvestorController = async (
           
         )
       })
-   
 
     return {
       success: true,

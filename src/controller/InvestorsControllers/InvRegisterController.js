@@ -2,8 +2,8 @@ import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
 import mongoose from "mongoose";
-import { newIncomerInvestorController } from "../Admin/investorRegisterLeadController.js";
-
+import { newIncomerInvestorController } from "../../utils/All Leads/investerRegisterLeads.js";
+import { json } from "express";
 import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader.js";
 
 
@@ -46,6 +46,7 @@ export const createInvestor = async (req, res) => {
         propertyType: prop.propertyType || "",
         propertySize: prop.propertySize || "",
         propertyCountry: prop.propertyCountry || "",
+
         propertyState: prop.propertyState || "",
         propertyCity: prop.propertyCity || ""
       }));
@@ -117,7 +118,7 @@ export const createInvestor = async (req, res) => {
           pref.preferredState || "",
           pref.preferredDistrict || "",
           pref.preferredCity || "",
-          pref.investmentAmount || "",
+          pref.investmentRange || "",
           
         );
       });
