@@ -228,8 +228,6 @@ export const updateInstaApply = async (req, res) => {
     const {
       fullName,
       location,
-      // franchiseModel,
-      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -245,8 +243,6 @@ export const updateInstaApply = async (req, res) => {
       {
         fullName,
         location,
-        // franchiseModel,
-        // franchiseType,
         investmentRange,
         planToInvest,
         readyToInvest,
