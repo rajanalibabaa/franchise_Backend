@@ -11,7 +11,6 @@ import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader
 
 export const createInvestor = async (req, res) => {
   // console.log("Incoming request to create investor:", req.body);
-
   try {
     const {
       firstName,
@@ -153,9 +152,6 @@ export const getInvestorByUUID = async (req, res) => {
 
     // console.log("getInvestorByUUID",req.investorUser.uuid)
     const { uuid } = req.params;
-
-
-  
 
     // console.log(uuid)
 

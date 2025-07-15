@@ -19,7 +19,6 @@ const investmentRanges = [
 
 // Helper function to get all investment ranges that are less than or equal to the given range
 const getApplicableInvestmentRanges = (investmentRange) => {
-  // First, validate the input range
   const validRanges = investmentRanges.map(r => r.value);
   if (!validRanges.includes(investmentRange)) {
     throw new Error(`Invalid investment range provided. Valid ranges are: ${validRanges.join(', ')}`);
@@ -32,20 +31,43 @@ const getApplicableInvestmentRanges = (investmentRange) => {
 // Helper function to safely get brand categories
 const getBrandCategories = (brand) => {
   try {
-    if (!brand || !brand.franchiseDetails || !brand.franchiseDetails.brandCategories) {
-      return [];
-    }
-    
-    // Ensure brandCategories is an array
-    const categories = Array.isArray(brand.franchiseDetails.brandCategories) 
-      ? brand.franchiseDetails.brandCategories 
+    if (!brand?.franchiseDetails?.brandCategories) return [];
+    return Array.isArray(brand.franchiseDetails.brandCategories) 
+      ? brand.franchiseDetails.brandCategories.map(c => c.child).filter(Boolean)
       : [];
-    
-    return categories.map(c => c.child).filter(c => c); // Filter out any undefined/null values
   } catch (error) {
     console.error("Error getting brand categories:", error);
     return [];
   }
+};
+
+// Helper function to build location query
+const buildLocationQuery = (locationType, preferredCountry, preferredState, preferredDistrict, preferredCity) => {
+  if (locationType === "domestic") {
+    return {
+      "expansionLocationData.expansionLocations.domestic.locations": {
+        $elemMatch: {
+          state: preferredState,
+          districts: {
+            $elemMatch: {
+              district: preferredDistrict,
+              cities: preferredCity
+            }
+          }
+        }
+      }
+    };
+  }
+  
+  const internationalQuery = {
+    "expansionLocationData.expansionLocations.international.country": preferredCountry
+  };
+  
+  if (preferredState) internationalQuery["expansionLocationData.expansionLocations.international.states"] = preferredState;
+  if (preferredDistrict) internationalQuery["expansionLocationData.expansionLocations.international.district"] = preferredDistrict;
+  if (preferredCity) internationalQuery["expansionLocationData.expansionLocations.international.cities"] = preferredCity;
+  
+  return internationalQuery;
 };
 
 export const newIncomerInvestorController = async (
@@ -59,8 +81,6 @@ export const newIncomerInvestorController = async (
   preferredCity,
   investmentRange
 ) => {
-
-  
   try {
     // Validate required fields
     if (!email || !firstName || !category || !locationType || !investmentRange) {
@@ -100,6 +120,7 @@ export const newIncomerInvestorController = async (
       },
       locationType,
       investmentRange,
+      status: 'processing'
     };
 
     // Save new investor lead
@@ -108,14 +129,26 @@ export const newIncomerInvestorController = async (
 
     const emailedBrands = new Set();
     const results = [];
+
+    
     const perfectMatchesData = [];
     const partialMatchesData = [];
 
     // Prepare category values for querying
-    const categoryValues = category.map(c => c.child).filter(c => c);
+    const categoryValues = category.map(c => c.child).filter(Boolean);
+
+    // Build base location query
+    const locationQuery = buildLocationQuery(
+      locationType,
+      preferredCountry,
+      preferredState,
+      preferredDistrict,
+      preferredCity
+    );
 
     // 1. Find PERFECT matches (category, location, and investment range <= investor's range)
     const perfectMatchQuery = {
+      ...locationQuery,
       "brandDetails.email": { $ne: null },
       "franchiseDetails.fico.investmentRange": { $in: applicableRanges }
     };
@@ -125,42 +158,18 @@ export const newIncomerInvestorController = async (
       perfectMatchQuery["franchiseDetails.brandCategories.child"] = { $in: categoryValues };
     }
 
-    // Add location filters based on location type
-    if (locationType === "domestic") {
-      perfectMatchQuery["expansionLocationData.expansionLocations.domestic.locations"] = {
-        $elemMatch: {
-          state: preferredState,
-          districts: {
-            $elemMatch: {
-              district: preferredDistrict,
-              cities: preferredCity,
-            },
-          },
-        },
-      };
-    } else {
-      perfectMatchQuery["expansionLocationData.expansionLocations.international.country"] = preferredCountry;
-      if (preferredState) perfectMatchQuery["expansionLocationData.expansionLocations.international.states"] = preferredState;
-      if (preferredDistrict) perfectMatchQuery["expansionLocationData.expansionLocations.international.district"] = preferredDistrict;
-      if (preferredCity) perfectMatchQuery["expansionLocationData.expansionLocations.international.cities"] = preferredCity;
-    }
-
-    const perfectMatches = await BrandListing.find(perfectMatchQuery);
+    const perfectMatches = await BrandListing.find(perfectMatchQuery).lean();
 
     // Process perfect matches
     for (const brand of perfectMatches) {
-      const brandEmail = brand.brandDetails?.email;
+      const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
       const brandCompanyName = brand.brandDetails?.brandName || "Unknown Company";
-      
-
-      console.log("Perfect match:", brandCompanyName,brandEmail);
-      if (!brandEmail || emailedBrands.has(brandEmail)) {
-        continue;
-      }
+  console.log(`Emailing match: ${brandCompanyName}`);
+      if (!brandEmail || emailedBrands.has(brandEmail)) continue;
 
       try {
         const emailSubject = 'An investor has been found who matches your "InvestmentRange", "Category", and "Location" preferences exactly. Time to connect';
-        
+        console.log(`Emailing perfect match: ${brandCompanyName}`);
         await sendBrandEmailPerfect(
           brandEmail,
           brandCompanyName,
@@ -172,10 +181,13 @@ export const newIncomerInvestorController = async (
         );
 
         emailedBrands.add(brandEmail);
+        
         perfectMatchesData.push({
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
+          emailSent: true,
+          emailSentAt: new Date()
         });
 
         results.push({
@@ -185,17 +197,26 @@ export const newIncomerInvestorController = async (
           category: categoryValues.join(", "),
           investment: investmentRange,
           matchType: "perfect",
-          brandId: brand._id,
+          brandId: brand._id
         });
       } catch (error) {
         console.error(`Failed to email perfect match: ${brandEmail}`, error);
+        perfectMatchesData.push({
+          email: brandEmail,
+          companyName: brandCompanyName,
+          brandId: brand._id,
+          emailSent: false,
+          emailError: error.message
+        });
       }
     }
 
     // 2. Find PARTIAL matches (location and investment range <= investor's range, but not category)
     const partialMatchQuery = {
-      "brandDetails.email": { $ne: null, $nin: Array.from(emailedBrands) },
-      "franchiseDetails.fico.investmentRange": { $in: applicableRanges }
+      ...locationQuery,
+      "brandDetails.email": { $ne: null },
+      "franchiseDetails.fico.investmentRange": { $in: applicableRanges },
+      "brandDetails.email": { $nin: Array.from(emailedBrands) }
     };
 
     // Add category exclusion only if we have valid categories
@@ -203,43 +224,19 @@ export const newIncomerInvestorController = async (
       partialMatchQuery["franchiseDetails.brandCategories.child"] = { $nin: categoryValues };
     }
 
-    // Add location filters based on location type (same as perfect matches)
-    if (locationType === "domestic") {
-      partialMatchQuery["expansionLocationData.expansionLocations.domestic.locations"] = {
-        $elemMatch: {
-          state: preferredState,
-          districts: {
-            $elemMatch: {
-              district: preferredDistrict,
-              cities: preferredCity,
-            },
-          },
-        },
-      };
-    } else {
-      partialMatchQuery["expansionLocationData.expansionLocations.international.country"] = preferredCountry;
-      if (preferredState) partialMatchQuery["expansionLocationData.expansionLocations.international.states"] = preferredState;
-      if (preferredDistrict) partialMatchQuery["expansionLocationData.expansionLocations.international.district"] = preferredDistrict;
-      if (preferredCity) partialMatchQuery["expansionLocationData.expansionLocations.international.cities"] = preferredCity;
-    }
-
-    const partialMatches = await BrandListing.find(partialMatchQuery);
-  
+    const partialMatches = await BrandListing.find(partialMatchQuery).lean();
 
     // Process partial matches
     for (const brand of partialMatches) {
-      const brandEmail = brand.brandDetails?.email;
+      const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
       const brandCompanyName = brand.brandDetails?.brandName || "Unknown Company";
       const brandCategories = getBrandCategories(brand);
       const brandCategoryStr = brandCategories.join(", ") || "Not specified";
+      if (!brandEmail || emailedBrands.has(brandEmail)) continue;
       
-      if (!brandEmail || emailedBrands.has(brandEmail)) {
-        continue;
-      }
-
       try {
         const emailSubject = 'We\'ve found an investor who matches your "InvestmentRange" and "Location" perfectly. The Category is slightly different, but this lead holds strong potential for your brand.';
-        
+        console.log("Partial match:", brandCompanyName, brandEmail);
         await sendBrandEmailPerfect(
           brandEmail,
           brandCompanyName,
@@ -251,10 +248,13 @@ export const newIncomerInvestorController = async (
         );
 
         emailedBrands.add(brandEmail);
+        
         partialMatchesData.push({
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
+          emailSent: true,
+          emailSentAt: new Date()
         });
 
         results.push({
@@ -264,25 +264,38 @@ export const newIncomerInvestorController = async (
           category: brandCategoryStr,
           investment: investmentRange,
           matchType: "partial",
-          brandId: brand._id,
+          brandId: brand._id
         });
       } catch (error) {
         console.error(`Failed to email partial match: ${brandEmail}`, error);
+        partialMatchesData.push({
+          email: brandEmail,
+          companyName: brandCompanyName,
+          brandId: brand._id,
+          emailSent: false,
+          emailError: error.message
+        });
       }
     }
 
     // Update lead with match data
-    await InvestorLead.findByIdAndUpdate(newLead._id, {
-      $set: {
-        brandPerfectMatches: perfectMatchesData,
-        brandPartialMatches: partialMatchesData,
-        matchedBrandsCount: {
-          perfect: perfectMatchesData.length,
-          partial: partialMatchesData.length,
-          total: perfectMatchesData.length + partialMatchesData.length,
-        },
+    const updateData = {
+      brandPerfectMatches: perfectMatchesData,
+      brandPartialMatches: partialMatchesData,
+      matchedBrandsCount: {
+        perfect: perfectMatchesData.length,
+        partial: partialMatchesData.length,
+        total: perfectMatchesData.length + partialMatchesData.length,
       },
-    });
+      status: 'matched',
+      emailStatus: {
+        perfectMatchesSent: perfectMatchesData.length > 0,
+        partialMatchesSent: partialMatchesData.length > 0,
+        lastEmailSentAt: new Date()
+      }
+    };
+
+    await InvestorLead.findByIdAndUpdate(newLead._id, { $set: updateData });
 
     // Return results
     if (results.length > 0) {
@@ -304,6 +317,21 @@ export const newIncomerInvestorController = async (
     }
   } catch (error) {
     console.error("Error in newIncomerInvestorController:", error);
+    
+    // Update lead status to indicate failure if it was created
+    if (newLead) {
+      await InvestorLead.findByIdAndUpdate(newLead._id, { 
+        $set: { 
+          status: 'closed',
+          emailStatus: {
+            perfectMatchesSent: false,
+            partialMatchesSent: false,
+            error: error.message
+          }
+        } 
+      });
+    }
+
     return {
       status: 500,
       message: "An error occurred while processing the request.",

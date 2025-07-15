@@ -1,16 +1,13 @@
-import {instantApply} from "../../model/Brand/brandFranchiseApply.js";
+import { instantApply } from "../../model/Brand/brandFranchiseApply.js";
 import uuid from "../../utils/uuid.js";
 import { sendInstantApplyEmail } from "../../utils/Centralized Email/centralizedEmail.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-
-
+import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantApplyPerfectAndPartial.js";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
-   
-
     const {
       fullName,
       email,
@@ -26,46 +23,42 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyId
     } = req.body;
 
-    console.log("req.body :",req.body)
+    console.log("req.body :", req.body);
 
     const exists = await BrandListing.findOne({
-      uuid : brandId
-    })
+      uuid: brandId
+    });
 
     if (!exists) {
       return res.json(
-        new ApiResponse(404,null,"Brand not found")
-      )
-    }
-
-     // Check if brand exists
-    const brand = await BrandListing.findOne({ uuid: brandId });
-    if (!brand) {
-      return res.json(new ApiResponse(404, null, "Brand not found"));
+        new ApiResponse(404, null, "Brand not found")
+      );
     }
 
     // Determine who is applying (Investor / Brand / other)
     let applyBy = "other";
-    let applyById = "other"
+    let applyById = "other";
     const isBrand = await BrandListing.findOne({ uuid: applyId });
     if (isBrand) {
       applyBy = "Brand";
-      applyById = isBrand?.uuid
+      applyById = isBrand?.uuid;
     } else {
       const isInvestor = await InvsRegister.findOne({ uuid: applyId });
       if (isInvestor) {
         applyBy = "Investor";
-        applyById = isInvestor?.uuid
+        applyById = isInvestor?.uuid;
       }
     }
 
+    
+  const { main, sub, child } = exists.franchiseDetails.brandCategories;
 
- 
     const newSubmission = new instantApply({
       uuid: uuid(),
       fullName,
       email,
       mobileNumber,
+      Categories: exists.franchiseDetails.brandCategories,
       state,
       district,
       city,
@@ -74,11 +67,11 @@ export const instaApplyBrandFormController = async (req, res) => {
       readyToInvest,
       brandId,
       brandName,
-      brandEmail : exists.brandDetails.email,
-      brandLogo : exists.uploads.brandLogo[0],
-      apply : {
+      brandEmail: exists.brandDetails.email,
+      brandLogo: exists.uploads.brandLogo[0],
+      apply: {
         applyBy,
-        applyId :  applyById,
+        applyId: applyById,
       }
     });
 
@@ -86,29 +79,40 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     if (!newSubmission) {
       return res.json(
-        new ApiResponse(500,null,"Somethink went wrong while newSubmission saving in database")
-      )
+        new ApiResponse(500, null, "Something went wrong while newSubmission saving in database")
+      );
     }
 
     res.json(
-      new ApiResponse(200,newSubmission, "Application submitted successfully")
+      new ApiResponse(200, newSubmission, "Application submitted successfully")
     );
 
-    await sendInstantApplyEmail(
+    
+
+
+
+    // Process perfect and partial matches
+  
+    await instantApplyPerfectAndPartial(
       fullName,
-      district,
+      email,
+      mobileNumber,
+      brandName,
+      brandId,
+      exists.brandDetails.email,
+      main,
+      sub,
+      child,
       state,
+      district,
       city,
       investmentRange,
       planToInvest,
       readyToInvest,
-      brandName,
-      exists.brandDetails.email,
-      email,
-      mobileNumber
+      applyBy,
+      applyById,
+      exists.uploads.brandLogo[0]
     );
-
-    return 
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);

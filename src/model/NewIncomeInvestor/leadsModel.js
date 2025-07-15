@@ -60,14 +60,18 @@ const investorLeadSchema = new mongoose.Schema({
     companyName: { type: String, trim: true },
     brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'BrandListing' },
     contacted: { type: Boolean, default: false },
-    contactDate: { type: Date }
+    contactDate: { type: Date },
+    emailSent: { type: Boolean, default: false },
+    emailSentAt: { type: Date }
   }],
   brandPartialMatches: [{
     email: { type: String, trim: true, lowercase: true },
     companyName: { type: String, trim: true },
     brandId: { type: mongoose.Schema.Types.ObjectId, ref: 'BrandListing' },
     contacted: { type: Boolean, default: false },
-    contactDate: { type: Date }
+    contactDate: { type: Date },
+    emailSent: { type: Boolean, default: false },
+    emailSentAt: { type: Date }
   }],
   matchedBrandsCount: {
     perfect: { type: Number, default: 0 },
@@ -78,6 +82,11 @@ const investorLeadSchema = new mongoose.Schema({
     type: String,
     enum: ['new', 'processing', 'matched', 'contacted', 'closed'],
     default: 'new'
+  },
+  emailStatus: {
+    perfectMatchesSent: { type: Boolean, default: false },
+    partialMatchesSent: { type: Boolean, default: false },
+    lastEmailSentAt: { type: Date }
   }
 }, { 
   timestamps: true,
