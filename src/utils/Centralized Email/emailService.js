@@ -13,14 +13,15 @@ const __dirname = dirname(__filename);
 
 
 const transporter = nodemailer.createTransport({
-     host: 'smtp.hostinger.com',
-     port:465,
+     service: 'gmail',
      secure: true,
+     port: 465,
      auth: {
         user: process.env.EMAIL_USER_SUPPORT, 
         pass: process.env.EMAIL_PASS_SUPPORT,
     },
-     family: 4
+ 
+   
 });
 
 
