@@ -408,8 +408,8 @@ export const getBrandLikedByAll = async (req, res) => {
       const investorId = likeEntry?.investorID;
 
       if (investorId) {
-        const investor = await InvsRegister.findById(investorId).select("-_id -createdAt -updatedAt -__v") ||
-                         await BrandListing.findById(investorId).select("-_id -createdAt -updatedAt -__v");
+        const investor = await InvsRegister.findById(investorId).select("-_id  -__v") ||
+                         await BrandListing.findById(investorId).select("-_id -__v");
 
         if (investor) {
           data.push(investor);
