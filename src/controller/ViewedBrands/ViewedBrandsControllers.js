@@ -265,11 +265,11 @@ export const getAllViewBrands = async (req, res) => {
     )
     .populate({
       path: 'viewedByInvestors.InvestorID',
-      select: '-password -refreshToken -createdAt -updatedAt -__v'
+      select: '-password -refreshToken -__v'
     })
     .populate({
       path: 'viewedByBrands.BrandID',
-      select: '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress -createdAt -updatedAt -__v'
+      select: '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress  -__v'
     })
     .lean(); // Convert to plain JS object for better performance
 

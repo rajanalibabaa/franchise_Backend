@@ -5,6 +5,7 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantApplyPerfectAndPartial.js";
+import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
@@ -135,8 +136,8 @@ export const getAllInstaApplyToBrand = async (req, res) => {
 
   try {
     // Fetch instant applications with proper error handling
-    const instaApply = await instantApply.find({ brandId: BrandData.uuid })
-      .select("-_id -createdAt -updatedAt -__v")
+    const instaApply = await InstantApplyLead.find({ "initialBrand.brandId": BrandData.uuid })
+      .select("-_id -__v")
       .sort({ createdAt: -1 }) 
       .lean(); 
     console.log("instaApply:", instaApply);
