@@ -194,6 +194,12 @@ export const instantApplyPerfectAndPartial = async (
     if (subCategory) categoryValues.push(subCategory);
     if (mainCategory) categoryValues.push(mainCategory);
 
+    console.log("Category values:", categoryValues);
+    console.log("Location query:",   state,
+  district,
+  city,);
+    
+
     // 2. Find PERFECT matches (category, location, and investment range)
     if (childCategory) {
       const perfectMatchQuery = {
@@ -222,14 +228,14 @@ export const instantApplyPerfectAndPartial = async (
         const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
         const brandCompanyName =
           brand.brandDetails?.brandName || "Unknown Company";
-        const brandId = brand._id;
+        const brandId = brand.uuid;
+        console.log(brandId,"brandId")
 
         const id = emailedBrandId.has(brandId);
+        console.log(id,"id")
 
         if (!id) {
-          continue;
-        }
-        const matchData = {
+            const matchData = {
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
@@ -237,8 +243,8 @@ export const instantApplyPerfectAndPartial = async (
           emailSent: false,
           contacted: false,
         };
-
-        try {
+        console.log(matchData);
+         try {
           const emailSubject =
             "Perfect Match: Investor matches your Category, Location, and Investment Range";
 
@@ -277,6 +283,10 @@ export const instantApplyPerfectAndPartial = async (
         }
 
         allMatches.push(matchData);
+
+        }
+
+       
       }
       console.log(`Sent ${matchStats.perfect.emailed} perfect match emails`);
     }
@@ -305,8 +315,8 @@ export const instantApplyPerfectAndPartial = async (
         const id = emailedBrandId.has(brandId);
 
         if (!id) {
-          continue;
-        }
+          
+       
 
         const matchData = {
           email: brandEmail,
@@ -360,6 +370,7 @@ export const instantApplyPerfectAndPartial = async (
 
         allMatches.push(matchData);
       }
+       }
       console.log(
         `Sent ${matchStats.categoryInvestment.emailed} category + investment match emails`
       );
@@ -398,8 +409,6 @@ export const instantApplyPerfectAndPartial = async (
         const id = emailedBrandId.has(brandId);
 
         if (!id) {
-          continue;
-        }
 
         const matchData = {
           email: brandEmail,
@@ -453,6 +462,7 @@ export const instantApplyPerfectAndPartial = async (
 
         allMatches.push(matchData);
       }
+    }
       console.log(
         `Sent ${matchStats.categoryLocation.emailed} category + location match emails`
       );
@@ -493,10 +503,10 @@ export const instantApplyPerfectAndPartial = async (
           [brandCategories.main, brandCategories.sub, brandCategories.child]
             .filter(Boolean)
             .join(", ") || "Not specified";
+            const brandId = brand.uuid;
+            const id = emailedBrandId.has(brandId);
 
-        if (!brandEmail) {
-          continue;
-        }
+        if (!id) {
 
         const matchData = {
           email: brandEmail,
@@ -525,6 +535,8 @@ export const instantApplyPerfectAndPartial = async (
             readyToInvest
           );
 
+          emailedBrandId.add(brandId);
+
           matchData.emailSent = true;
           matchData.emailSentAt = new Date();
           matchStats.investmentLocation.emailed++;
@@ -538,6 +550,8 @@ export const instantApplyPerfectAndPartial = async (
             matchType: "investmentAndLocation",
             brandId: brand._id,
           });
+
+
         } catch (error) {
           console.error(
             `Failed to email investment+location match: ${brandEmail}`,
@@ -548,6 +562,7 @@ export const instantApplyPerfectAndPartial = async (
 
         allMatches.push(matchData);
       }
+    }
       console.log(
         `Sent ${matchStats.investmentLocation.emailed} investment + location match emails`
       );

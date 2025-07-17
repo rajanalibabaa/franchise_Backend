@@ -232,13 +232,13 @@ export const updateInvestor = async (req, res) => {
                     JSON.parse(rawPreferences) : 
                     rawPreferences;
             } catch (e) {
-                return res.status(400).json(
+                return res.json(
                     new ApiResponse(400, null, "Invalid preferences format")
                 );
             }
 
             if (!Array.isArray(parsedPreferences)) {
-                return res.status(400).json(
+                return res.json(
                     new ApiResponse(400, null, "Preferences must be an array")
                 );
             }
