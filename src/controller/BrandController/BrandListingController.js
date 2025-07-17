@@ -234,12 +234,10 @@ const getBrandListingByUUID = async (req, res) => {
     }
 
     return res
-      .status(200)
       .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
   } catch (error) {
     // console.error("getBrandListingByUUID error:", error);
     return res
-      .status(500)
       .json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
@@ -295,10 +293,9 @@ const deleteBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await BrandListing.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: "Brand not found" });
+    if (!deleted) return res.json({ error: "Brand not found" });
 
     return res
-      .status(200)
       .json(new ApiResponse(200, {}, "✅ Brand deleted successfully"));
   } catch (error) {
     return res
