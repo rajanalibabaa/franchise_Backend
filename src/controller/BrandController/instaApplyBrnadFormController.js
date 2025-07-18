@@ -6,6 +6,7 @@ import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantApplyPerfectAndPartial.js";
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
+import mongoose from "mongoose";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
@@ -157,6 +158,7 @@ export const getAllInstaApplyToBrand = async (req, res) => {
               .lean();
           }
 
+          
          
           return data ? { ...application, userData: data } : application;
         } catch (error) {
@@ -165,6 +167,8 @@ export const getAllInstaApplyToBrand = async (req, res) => {
         }
       })
     );
+
+
 
     return res.json(
       new ApiResponse(200, applyList, "All instant apply applications fetched successfully")
@@ -293,3 +297,24 @@ export const deleteInstaApply = async (req, res) => {
   }
 };
 
+export const getAllLeads = async (req,res) => {
+
+  const { id } = req.params;
+  const BrandData = req.brandUser;
+
+
+  if (!id || id !== BrandData?.uuid) {
+    return res.status(401).json(
+      new ApiResponse(401, {}, "Unauthorized request")
+    );
+  }
+
+    const leads = await InstantApplyLead.find({ "brandMatches.brandId": new mongoose.Types.ObjectId(BrandData._id) })
+      .select("-_id -__v")
+      .sort({ createdAt: -1 }) 
+      .lean(); 
+    console.log("instaApply:", leads.length);
+    return res.json(
+      new ApiResponse(200,leads, "All instant apply applications fetched successfully")
+    );
+}

@@ -1,5 +1,5 @@
 import express from "express";
-import {  getAllInstaApplyToBrand, getInstaApplyById, instaApplyBrandFormController, } from "../../controller/BrandController/instaApplyBrnadFormController.js";
+import {  getAllInstaApplyToBrand, getAllLeads, getInstaApplyById, instaApplyBrandFormController, } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 
 export const InstantApplyRouter = express.Router();
@@ -9,6 +9,8 @@ InstantApplyRouter.get("/v1/instantapply/getInstaApplyById/:id",verifyJWT, getIn
 
 
 InstantApplyRouter.get("/v1/instantapply/getAllInstaApply/:id",verifyJWT, getAllInstaApplyToBrand)
+
+InstantApplyRouter.get("/v1/instantapply/getAllLeads/:id",verifyJWT, getAllLeads)
  
 
 
