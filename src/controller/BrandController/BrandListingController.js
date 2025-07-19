@@ -242,8 +242,6 @@ const getBrandListingByUUID = async (req, res) => {
 };
 
 
-// 
-
 // Fields that accept single file uploads
 const singleFileFields = [
   "brandLogo",
@@ -256,368 +254,366 @@ const singleFileFields = [
   "awards",
 ];
 
+// const updateBrandListingBssyUUID = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     console.log("Updating brand by UUID:", id);
 
-
-const updateBrandListingBssyUUID = async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log("Updating brand by UUID:", id);
-
-    // Initialize update object
-    const updateData = {};
+//     // Initialize update object
+//     const updateData = {};
     
-    // Helper function to set nested fields in MongoDB update syntax
-    const setNestedFields = (basePath, fields) => {
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined && value !== null) {
-          updateData[`${basePath}.${key}`] = value;
-        }
-      }
-    };
+//     // Helper function to set nested fields in MongoDB update syntax
+//     const setNestedFields = (basePath, fields) => {
+//       for (const [key, value] of Object.entries(fields)) {
+//         if (value !== undefined && value !== null) {
+//           updateData[`${basePath}.${key}`] = value;
+//         }
+//       }
+//     };
 
-    // Helper function to set array elements with nested updates
-    const setArrayElement = (basePath, index, fields) => {
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined && value !== null) {
-          updateData[`${basePath}.${index}.${key}`] = value;
-        }
-      }
-    };
+//     // Helper function to set array elements with nested updates
+//     const setArrayElement = (basePath, index, fields) => {
+//       for (const [key, value] of Object.entries(fields)) {
+//         if (value !== undefined && value !== null) {
+//           updateData[`${basePath}.${index}.${key}`] = value;
+//         }
+//       }
+//     };
 
-    // Handle brandDetails updates - only update fields that are provided
-    if (req.body.brandDetails) {
-      const brandDetailsFields = [
-        'fullName', 'email', 'mobileNumber', 'whatsappNumber',
-        'companyName', 'brandName', 'tagLine', 'ceoName',
-        'ceoEmail', 'ceoMobile', 'officeEmail', 'officeMobile',
-        'headOfficeAddress', 'country', 'state', 'district',
-        'city', 'pincode', 'website', 'facebook',
-        'instagram', 'linkedin', 'gstNumber', 'pancardNumber'
-      ];
+//     // Handle brandDetails updates - only update fields that are provided
+//     if (req.body.brandDetails) {
+//       const brandDetailsFields = [
+//         'fullName', 'email', 'mobileNumber', 'whatsappNumber',
+//         'companyName', 'brandName', 'tagLine', 'ceoName',
+//         'ceoEmail', 'ceoMobile', 'officeEmail', 'officeMobile',
+//         'headOfficeAddress', 'country', 'state', 'district',
+//         'city', 'pincode', 'website', 'facebook',
+//         'instagram', 'linkedin', 'gstNumber', 'pancardNumber'
+//       ];
       
-      const brandDetailsUpdate = {};
-      for (const field of brandDetailsFields) {
-        if (req.body.brandDetails[field] !== undefined) {
-          brandDetailsUpdate[field] = req.body.brandDetails[field];
-        }
-      }
+//       const brandDetailsUpdate = {};
+//       for (const field of brandDetailsFields) {
+//         if (req.body.brandDetails[field] !== undefined) {
+//           brandDetailsUpdate[field] = req.body.brandDetails[field];
+//         }
+//       }
       
-      if (Object.keys(brandDetailsUpdate).length > 0) {
-        setNestedFields('brandDetails', brandDetailsUpdate);
-      }
-    }
+//       if (Object.keys(brandDetailsUpdate).length > 0) {
+//         setNestedFields('brandDetails', brandDetailsUpdate);
+//       }
+//     }
 
-    // Handle franchiseDetails updates
-    if (req.body.franchiseDetails) {
-      // Top-level franchiseDetails fields
-      const franchiseTopLevelFields = [
-        'aidFinancing', 'brandDescription', 'companyOwnedOutlets', 
-        'consultationOrAssistance', 'establishedYear', 'franchiseDevelopment',
-        'franchiseOutlets', 'franchiseSinceYear', 'totalOutlets', 
-        'trainingSupport', 'uniqueSellingPoints'
-      ];
+//     // Handle franchiseDetails updates
+//     if (req.body.franchiseDetails) {
+//       // Top-level franchiseDetails fields
+//       const franchiseTopLevelFields = [
+//         'aidFinancing', 'brandDescription', 'companyOwnedOutlets', 
+//         'consultationOrAssistance', 'establishedYear', 'franchiseDevelopment',
+//         'franchiseOutlets', 'franchiseSinceYear', 'totalOutlets', 
+//         'trainingSupport', 'uniqueSellingPoints'
+//       ];
       
-      const franchiseDetailsUpdate = {};
-      for (const field of franchiseTopLevelFields) {
-        if (req.body.franchiseDetails[field] !== undefined) {
-          franchiseDetailsUpdate[field] = req.body.franchiseDetails[field];
-        }
-      }
+//       const franchiseDetailsUpdate = {};
+//       for (const field of franchiseTopLevelFields) {
+//         if (req.body.franchiseDetails[field] !== undefined) {
+//           franchiseDetailsUpdate[field] = req.body.franchiseDetails[field];
+//         }
+//       }
       
-      // Handle brandCategories updates
-      if (req.body.franchiseDetails.brandCategories) {
-        const brandCategoriesFields = ['main', 'sub', 'groupId', 'child'];
-        const brandCategoriesUpdate = {};
+//       // Handle brandCategories updates
+//       if (req.body.franchiseDetails.brandCategories) {
+//         const brandCategoriesFields = ['main', 'sub', 'groupId', 'child'];
+//         const brandCategoriesUpdate = {};
         
-        for (const field of brandCategoriesFields) {
-          if (req.body.franchiseDetails.brandCategories[field] !== undefined) {
-            brandCategoriesUpdate[field] = req.body.franchiseDetails.brandCategories[field];
-          }
-        }
+//         for (const field of brandCategoriesFields) {
+//           if (req.body.franchiseDetails.brandCategories[field] !== undefined) {
+//             brandCategoriesUpdate[field] = req.body.franchiseDetails.brandCategories[field];
+//           }
+//         }
         
-        if (Object.keys(brandCategoriesUpdate).length > 0) {
-          franchiseDetailsUpdate.brandCategories = brandCategoriesUpdate;
-        }
-      }
+//         if (Object.keys(brandCategoriesUpdate).length > 0) {
+//           franchiseDetailsUpdate.brandCategories = brandCategoriesUpdate;
+//         }
+//       }
       
-      // Add top-level updates if any
-      if (Object.keys(franchiseDetailsUpdate).length > 0) {
-        setNestedFields('franchiseDetails', franchiseDetailsUpdate);
-      }
+//       // Add top-level updates if any
+//       if (Object.keys(franchiseDetailsUpdate).length > 0) {
+//         setNestedFields('franchiseDetails', franchiseDetailsUpdate);
+//       }
 
-      // Handle fico array updates - partial updates for specific items and fields
-      if (req.body.franchiseDetails.fico) {
-        if (Array.isArray(req.body.franchiseDetails.fico)) {
-          // Handle updates to specific fico items
-          for (let i = 0; i < req.body.franchiseDetails.fico.length; i++) {
-            const ficoItem = req.body.franchiseDetails.fico[i];
-            if (ficoItem && typeof ficoItem === 'object') {
-              const ficoFields = [
-                'investmentRange', 'areaRequired', 'franchiseModel', 
-                'franchiseType', 'franchiseFee', 'royaltyFee', 
-                'stockInvestment', 'royaltyFeeUnit', 'interiorCost', 
-                'otherCost', 'roi', 'payBackPeriod', 'breakEven', 
-                'requireWorkingCapital', 'marginOnSales', 'agreementPeriod'
-              ];
-              const ficoUpdate = {};
-              for (const field of ficoFields) {
-                if (ficoItem[field] !== undefined) {
-                  ficoUpdate[field] = ficoItem[field];
-                }
-              }
+//       // Handle fico array updates - partial updates for specific items and fields
+//       if (req.body.franchiseDetails.fico) {
+//         if (Array.isArray(req.body.franchiseDetails.fico)) {
+//           // Handle updates to specific fico items
+//           for (let i = 0; i < req.body.franchiseDetails.fico.length; i++) {
+//             const ficoItem = req.body.franchiseDetails.fico[i];
+//             if (ficoItem && typeof ficoItem === 'object') {
+//               const ficoFields = [
+//                 'investmentRange', 'areaRequired', 'franchiseModel', 
+//                 'franchiseType', 'franchiseFee', 'royaltyFee', 
+//                 'stockInvestment', 'royaltyFeeUnit', 'interiorCost', 
+//                 'otherCost', 'roi', 'payBackPeriod', 'breakEven', 
+//                 'requireWorkingCapital', 'marginOnSales', 'agreementPeriod'
+//               ];
+//               const ficoUpdate = {};
+//               for (const field of ficoFields) {
+//                 if (ficoItem[field] !== undefined) {
+//                   ficoUpdate[field] = ficoItem[field];
+//                 }
+//               }
               
-              if (Object.keys(ficoUpdate).length > 0) {
-                setArrayElement('franchiseDetails.fico', i, ficoUpdate);
-              }
-            }
-          }
-        }
-      }
-    }
+//               if (Object.keys(ficoUpdate).length > 0) {
+//                 setArrayElement('franchiseDetails.fico', i, ficoUpdate);
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
 
-    // Handle expansionLocationData updates
-if (req.body.expansionLocationData) {
-  // Top-level field
-  if (req.body.expansionLocationData.isInternationalExpansion !== undefined) {
-    updateData['expansionLocationData.isInternationalExpansion'] = 
-      req.body.expansionLocationData.isInternationalExpansion;
-  }
+//     // Handle expansionLocationData updates
+// if (req.body.expansionLocationData) {
+//   // Top-level field
+//   if (req.body.expansionLocationData.isInternationalExpansion !== undefined) {
+//     updateData['expansionLocationData.isInternationalExpansion'] = 
+//       req.body.expansionLocationData.isInternationalExpansion;
+//   }
 
-  // Helper function to process location updates
-  const processLocationUpdates = (basePath, locationsData) => {
-    if (!locationsData) return;
+//   // Helper function to process location updates
+//   const processLocationUpdates = (basePath, locationsData) => {
+//     if (!locationsData) return;
 
-    // Handle domestic locations updates
-    if (locationsData.domestic) {
-      // Update entire domestic object if provided as a replacement
-      if (locationsData.domestic.replace === true) {
-        updateData[`${basePath}.domestic`] = {
-          locations: locationsData.domestic.locations || []
-        };
-      } 
-      // Handle partial updates to domestic locations
-      else if (locationsData.domestic.locations) {
-        // Handle array replacement
-        if (Array.isArray(locationsData.domestic.locations)) {
-          updateData[`${basePath}.domestic.locations`] = locationsData.domestic.locations;
-        } 
-        // Handle individual location updates by index
-        else if (typeof locationsData.domestic.locations === 'object') {
-          for (const [index, locationUpdate] of Object.entries(locationsData.domestic.locations)) {
-            const numericIndex = parseInt(index);
-            if (!isNaN(numericIndex)) {
-              // Update entire location object if replace flag is set
-              if (locationUpdate.replace === true) {
-                updateData[`${basePath}.domestic.locations.${numericIndex}`] = {
-                  state: locationUpdate.state || '',
-                  districts: locationUpdate.districts || []
-                };
-              }
-              // Handle partial updates to location
-              else {
-                // Update state if provided
-                if (locationUpdate.state !== undefined) {
-                  updateData[`${basePath}.domestic.locations.${numericIndex}.state`] = locationUpdate.state;
-                }
+//     // Handle domestic locations updates
+//     if (locationsData.domestic) {
+//       // Update entire domestic object if provided as a replacement
+//       if (locationsData.domestic.replace === true) {
+//         updateData[`${basePath}.domestic`] = {
+//           locations: locationsData.domestic.locations || []
+//         };
+//       } 
+//       // Handle partial updates to domestic locations
+//       else if (locationsData.domestic.locations) {
+//         // Handle array replacement
+//         if (Array.isArray(locationsData.domestic.locations)) {
+//           updateData[`${basePath}.domestic.locations`] = locationsData.domestic.locations;
+//         } 
+//         // Handle individual location updates by index
+//         else if (typeof locationsData.domestic.locations === 'object') {
+//           for (const [index, locationUpdate] of Object.entries(locationsData.domestic.locations)) {
+//             const numericIndex = parseInt(index);
+//             if (!isNaN(numericIndex)) {
+//               // Update entire location object if replace flag is set
+//               if (locationUpdate.replace === true) {
+//                 updateData[`${basePath}.domestic.locations.${numericIndex}`] = {
+//                   state: locationUpdate.state || '',
+//                   districts: locationUpdate.districts || []
+//                 };
+//               }
+//               // Handle partial updates to location
+//               else {
+//                 // Update state if provided
+//                 if (locationUpdate.state !== undefined) {
+//                   updateData[`${basePath}.domestic.locations.${numericIndex}.state`] = locationUpdate.state;
+//                 }
 
-                // Handle districts updates
-                if (locationUpdate.districts) {
-                  // Replace entire districts array
-                  if (Array.isArray(locationUpdate.districts)) {
-                    updateData[`${basePath}.domestic.locations.${numericIndex}.districts`] = locationUpdate.districts;
-                  }
-                  // Handle individual district updates
-                  else if (typeof locationUpdate.districts === 'object') {
-                    for (const [districtIndex, districtUpdate] of Object.entries(locationUpdate.districts)) {
-                      const numericDistrictIndex = parseInt(districtIndex);
-                      if (!isNaN(numericDistrictIndex)) {
-                        // Replace entire district object
-                        if (districtUpdate.replace === true) {
-                          updateData[`${basePath}.domestic.locations.${numericIndex}.districts.${numericDistrictIndex}`] = {
-                            district: districtUpdate.district || '',
-                            cities: districtUpdate.cities || []
-                          };
-                        }
-                        // Handle partial district updates
-                        else {
-                          if (districtUpdate.district !== undefined) {
-                            updateData[`${basePath}.domestic.locations.${numericIndex}.districts.${numericDistrictIndex}.district`] = 
-                              districtUpdate.district;
-                          }
-                          if (districtUpdate.cities !== undefined) {
-                            updateData[`${basePath}.domestic.locations.${numericIndex}.districts.${numericDistrictIndex}.cities`] = 
-                              districtUpdate.cities;
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+//                 // Handle districts updates
+//                 if (locationUpdate.districts) {
+//                   // Replace entire districts array
+//                   if (Array.isArray(locationUpdate.districts)) {
+//                     updateData[`${basePath}.domestic.locations.${numericIndex}.districts`] = locationUpdate.districts;
+//                   }
+//                   // Handle individual district updates
+//                   else if (typeof locationUpdate.districts === 'object') {
+//                     for (const [districtIndex, districtUpdate] of Object.entries(locationUpdate.districts)) {
+//                       const numericDistrictIndex = parseInt(districtIndex);
+//                       if (!isNaN(numericDistrictIndex)) {
+//                         // Replace entire district object
+//                         if (districtUpdate.replace === true) {
+//                           updateData[`${basePath}.domestic.locations.${numericIndex}.districts.${numericDistrictIndex}`] = {
+//                             district: districtUpdate.district || '',
+//                             cities: districtUpdate.cities || []
+//                           };
+//                         }
+//                         // Handle partial district updates
+//                         else {
+//                           if (districtUpdate.district !== undefined) {
+//                             updateData[`${basePath}.domestic.locations.${numericIndex}.districts.${numericDistrictIndex}.district`] = 
+//                               districtUpdate.district;
+//                           }
+//                           if (districtUpdate.cities !== undefined) {
+//                             updateData[`${basePath}.domestic.locations.${numericIndex}.districts.${numericDistrictIndex}.cities`] = 
+//                               districtUpdate.cities;
+//                           }
+//                         }
+//                       }
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
 
-    // Handle international locations updates
-    if (locationsData.international) {
-      // Update entire international object if replace flag is set
-      if (locationsData.international.replace === true) {
-        updateData[`${basePath}.international`] = {
-          country: locationsData.international.country || []
-        };
-      }
-      // Handle partial updates to international locations
-      else if (locationsData.international.country) {
-        // Handle array replacement
-        if (Array.isArray(locationsData.international.country)) {
-          updateData[`${basePath}.international.country`] = locationsData.international.country;
-        }
-        // Handle individual country updates by index
-        else if (typeof locationsData.international.country === 'object') {
-          for (const [index, countryUpdate] of Object.entries(locationsData.international.country)) {
-            const numericIndex = parseInt(index);
-            if (!isNaN(numericIndex)) {
-              // Replace entire country object
-              if (countryUpdate.replace === true) {
-                updateData[`${basePath}.international.country.${numericIndex}`] = {
-                  country: countryUpdate.country || '',
-                  states: countryUpdate.states || [],
-                  district: countryUpdate.district || []
-                };
-              }
-              // Handle partial country updates
-              else {
-                if (countryUpdate.country !== undefined) {
-                  updateData[`${basePath}.international.country.${numericIndex}.country`] = countryUpdate.country;
-                }
-                if (countryUpdate.states !== undefined) {
-                  updateData[`${basePath}.international.country.${numericIndex}.states`] = countryUpdate.states;
-                }
+//     // Handle international locations updates
+//     if (locationsData.international) {
+//       // Update entire international object if replace flag is set
+//       if (locationsData.international.replace === true) {
+//         updateData[`${basePath}.international`] = {
+//           country: locationsData.international.country || []
+//         };
+//       }
+//       // Handle partial updates to international locations
+//       else if (locationsData.international.country) {
+//         // Handle array replacement
+//         if (Array.isArray(locationsData.international.country)) {
+//           updateData[`${basePath}.international.country`] = locationsData.international.country;
+//         }
+//         // Handle individual country updates by index
+//         else if (typeof locationsData.international.country === 'object') {
+//           for (const [index, countryUpdate] of Object.entries(locationsData.international.country)) {
+//             const numericIndex = parseInt(index);
+//             if (!isNaN(numericIndex)) {
+//               // Replace entire country object
+//               if (countryUpdate.replace === true) {
+//                 updateData[`${basePath}.international.country.${numericIndex}`] = {
+//                   country: countryUpdate.country || '',
+//                   states: countryUpdate.states || [],
+//                   district: countryUpdate.district || []
+//                 };
+//               }
+//               // Handle partial country updates
+//               else {
+//                 if (countryUpdate.country !== undefined) {
+//                   updateData[`${basePath}.international.country.${numericIndex}.country`] = countryUpdate.country;
+//                 }
+//                 if (countryUpdate.states !== undefined) {
+//                   updateData[`${basePath}.international.country.${numericIndex}.states`] = countryUpdate.states;
+//                 }
 
-                // Handle district updates for international locations
-                if (countryUpdate.district) {
-                  // Replace entire district array
-                  if (Array.isArray(countryUpdate.district)) {
-                    updateData[`${basePath}.international.country.${numericIndex}.district`] = countryUpdate.district;
-                  }
-                  // Handle individual district updates
-                  else if (typeof countryUpdate.district === 'object') {
-                    for (const [districtIndex, districtUpdate] of Object.entries(countryUpdate.district)) {
-                      const numericDistrictIndex = parseInt(districtIndex);
-                      if (!isNaN(numericDistrictIndex)) {
-                        // Replace entire district object
-                        if (districtUpdate.replace === true) {
-                          updateData[`${basePath}.international.country.${numericIndex}.district.${numericDistrictIndex}`] = {
-                            district: districtUpdate.district || '',
-                            cities: districtUpdate.cities || []
-                          };
-                        }
-                        // Handle partial district updates
-                        else {
-                          if (districtUpdate.district !== undefined) {
-                            updateData[`${basePath}.international.country.${numericIndex}.district.${numericDistrictIndex}.district`] = 
-                              districtUpdate.district;
-                          }
-                          if (districtUpdate.cities !== undefined) {
-                            updateData[`${basePath}.international.country.${numericIndex}.district.${numericDistrictIndex}.cities`] = 
-                              districtUpdate.cities;
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  };
+//                 // Handle district updates for international locations
+//                 if (countryUpdate.district) {
+//                   // Replace entire district array
+//                   if (Array.isArray(countryUpdate.district)) {
+//                     updateData[`${basePath}.international.country.${numericIndex}.district`] = countryUpdate.district;
+//                   }
+//                   // Handle individual district updates
+//                   else if (typeof countryUpdate.district === 'object') {
+//                     for (const [districtIndex, districtUpdate] of Object.entries(countryUpdate.district)) {
+//                       const numericDistrictIndex = parseInt(districtIndex);
+//                       if (!isNaN(numericDistrictIndex)) {
+//                         // Replace entire district object
+//                         if (districtUpdate.replace === true) {
+//                           updateData[`${basePath}.international.country.${numericIndex}.district.${numericDistrictIndex}`] = {
+//                             district: districtUpdate.district || '',
+//                             cities: districtUpdate.cities || []
+//                           };
+//                         }
+//                         // Handle partial district updates
+//                         else {
+//                           if (districtUpdate.district !== undefined) {
+//                             updateData[`${basePath}.international.country.${numericIndex}.district.${numericDistrictIndex}.district`] = 
+//                               districtUpdate.district;
+//                           }
+//                           if (districtUpdate.cities !== undefined) {
+//                             updateData[`${basePath}.international.country.${numericIndex}.district.${numericDistrictIndex}.cities`] = 
+//                               districtUpdate.cities;
+//                           }
+//                         }
+//                       }
+//                     }
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   };
 
-  // Process currentOutletLocations updates
-  if (req.body.expansionLocationData.currentOutletLocations) {
-    processLocationUpdates(
-      'expansionLocationData.currentOutletLocations',
-      req.body.expansionLocationData.currentOutletLocations
-    );
-  }
+//   // Process currentOutletLocations updates
+//   if (req.body.expansionLocationData.currentOutletLocations) {
+//     processLocationUpdates(
+//       'expansionLocationData.currentOutletLocations',
+//       req.body.expansionLocationData.currentOutletLocations
+//     );
+//   }
 
-  // Process expansionLocations updates
-  if (req.body.expansionLocationData.expansionLocations) {
-    processLocationUpdates(
-      'expansionLocationData.expansionLocations',
-      req.body.expansionLocationData.expansionLocations
-    );
-  }
-}
-    // Handle file uploads
-    const uploadedFiles = {};
-    const singleFileFields = [
-      'brandLogo',
-      'exteriorOutlet',
-      'franchisePromotionVideo',
-      'gstCertificate',
-      'interiorOutlet',
-      'pancard',
-      'businessPlan',
-      'awards'
-    ];
+//   // Process expansionLocations updates
+//   if (req.body.expansionLocationData.expansionLocations) {
+//     processLocationUpdates(
+//       'expansionLocationData.expansionLocations',
+//       req.body.expansionLocationData.expansionLocations
+//     );
+//   }
+// }
+//     // Handle file uploads
+//     const uploadedFiles = {};
+//     const singleFileFields = [
+//       'brandLogo',
+//       'exteriorOutlet',
+//       'franchisePromotionVideo',
+//       'gstCertificate',
+//       'interiorOutlet',
+//       'pancard',
+//       'businessPlan',
+//       'awards'
+//     ];
 
-    if (req.files) {
-      for (const field of singleFileFields) {
-        const files = req.files[field];
-        if (files && files.length > 0) {
-          const urls = await Promise.all(
-            files.map((file) => uploadFileToS3(file.path, file.mimetype))
-          );
-          uploadedFiles[field] = urls.length === 1 ? urls[0] : urls;
-        }
-      }
-    }
+//     if (req.files) {
+//       for (const field of singleFileFields) {
+//         const files = req.files[field];
+//         if (files && files.length > 0) {
+//           const urls = await Promise.all(
+//             files.map((file) => uploadFileToS3(file.path, file.mimetype))
+//           );
+//           uploadedFiles[field] = urls.length === 1 ? urls[0] : urls;
+//         }
+//       }
+//     }
 
-    // Handle uploads from request body (for URL updates)
-    if (req.body.uploads) {
-      for (const [field, value] of Object.entries(req.body.uploads)) {
-        if (value !== undefined && value !== null) {
-          updateData[`uploads.${field}`] = value;
-        }
-      }
-    }
+//     // Handle uploads from request body (for URL updates)
+//     if (req.body.uploads) {
+//       for (const [field, value] of Object.entries(req.body.uploads)) {
+//         if (value !== undefined && value !== null) {
+//           updateData[`uploads.${field}`] = value;
+//         }
+//       }
+//     }
 
-    // Merge uploaded files with the update data
-    for (const [field, value] of Object.entries(uploadedFiles)) {
-      updateData[`uploads.${field}`] = value;
-    }
+//     // Merge uploaded files with the update data
+//     for (const [field, value] of Object.entries(uploadedFiles)) {
+//       updateData[`uploads.${field}`] = value;
+//     }
 
-    // If no data to update, return early
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: "No valid fields provided for update" });
-    }
+//     // If no data to update, return early
+//     if (Object.keys(updateData).length === 0) {
+//       return res.status(400).json({ error: "No valid fields provided for update" });
+//     }
 
-    const updatedBrand = await BrandListing.findOneAndUpdate(
-      { uuid: id },
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
+//     const updatedBrand = await BrandListing.findOneAndUpdate(
+//       { uuid: id },
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     );
 
-    if (!updatedBrand) {
-      return res.status(404).json({ error: "Brand not found" });
-    }
+//     if (!updatedBrand) {
+//       return res.status(404).json({ error: "Brand not found" });
+//     }
 
-    return res.status(200).json(
-      new ApiResponse(200, updatedBrand, "✅ Brand updated successfully")
-    );
-  } catch (error) {
-    console.error("Error updating brand:", error);
-    return res.status(500).json({ 
-      error: "Failed to update brand", 
-      details: error.message 
-    });
-  }
-};
+//     return res.status(200).json(
+//       new ApiResponse(200, updatedBrand, "✅ Brand updated successfully")
+//     );
+//   } catch (error) {
+//     console.error("Error updating brand:", error);
+//     return res.status(500).json({ 
+//       error: "Failed to update brand", 
+//       details: error.message 
+//     });
+//   }
+// };
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -674,7 +670,6 @@ const updateBrandListingByUUID = async (req, res) => {
     
 
     if (req.body.franchiseDetails) {
-      // Top-level franchiseDetails fields
       const franchiseTopLevelFields = [
         'aidFinancing', 'brandDescription', 'companyOwnedOutlets', 
         'consultationOrAssistance', 'establishedYear', 'franchiseDevelopment',
@@ -709,9 +704,7 @@ const updateBrandListingByUUID = async (req, res) => {
       if (Object.keys(franchiseDetailsUpdate).length > 0) {
         setNestedFields('franchiseDetails', franchiseDetailsUpdate);
       }
-    
 
-    
 
     // 1. Handle franchiseDetails.fico updates
     if (req.body.franchiseDetails?.fico) {
@@ -742,7 +735,6 @@ const updateBrandListingByUUID = async (req, res) => {
       }
     }
   }
-
     // 2. Handle expansionLocationData updates
     if (req.body.expansionLocationData) {
       // Handle isInternationalExpansion update
@@ -899,14 +891,6 @@ const updateBrandListingByUUID = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
 const deleteBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -922,6 +906,7 @@ const deleteBrandListingByUUID = async (req, res) => {
       .json({ error: "Failed to delete brand", details: error.message });
   }
 };
+
 
 export {
   createBrandListing,

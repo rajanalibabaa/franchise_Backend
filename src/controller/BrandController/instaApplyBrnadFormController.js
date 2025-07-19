@@ -4,7 +4,7 @@ import { sendInstantApplyEmail } from "../../utils/Centralized Email/centralized
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantApplyPerfectAndPartial.js";
+import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
@@ -49,7 +49,6 @@ export const instaApplyBrandFormController = async (req, res) => {
         applyById = isInvestor?.uuid;
       }
     }
-
     
   const { main, sub, child } = exists.franchiseDetails.brandCategories;
 
@@ -89,11 +88,7 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     
 
-
-
-    // Process perfect and partial matches
-  
-    await instantApplyPerfectAndPartial(
+    await instantApplyLocationMatch(
       fullName,
       email,
       mobileNumber,
@@ -113,6 +108,30 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyById,
       exists.uploads.brandLogo[0]
     );
+
+
+    // Process perfect and partial matches
+  
+    // await instantApplyPerfectAndPartial(
+    //   fullName,
+    //   email,
+    //   mobileNumber,
+    //   brandName,
+    //   brandId,
+    //   exists.brandDetails.email,
+    //   main,
+    //   sub,
+    //   child,
+    //   state,
+    //   district,
+    //   city,
+    //   investmentRange,
+    //   planToInvest,
+    //   readyToInvest,
+    //   applyBy,
+    //   applyById,
+    //   exists.uploads.brandLogo[0]
+    // );
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
