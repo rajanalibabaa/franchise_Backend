@@ -55,7 +55,8 @@ export const instantApplyPerfectAndPartial = async (
   readyToInvest,
   applyBy,
   applyById,
-  brandLogo
+  brandLogo,
+  batch = 0
 ) => {
   let newLead;
   try {

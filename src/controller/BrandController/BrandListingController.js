@@ -240,8 +240,6 @@ const getBrandListingByUUID = async (req, res) => {
 };
 
 
-// 
-
 // Fields that accept single file uploads
 const singleFileFields = [
   "brandLogo",
@@ -254,6 +252,10 @@ const singleFileFields = [
   "awards",
 ];
 
+// const updateBrandListingBssyUUID = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     console.log("Updating brand by UUID:", id);
 
 
 // const updateBrandListingBssyUUID = async (req, res) => {
@@ -672,7 +674,6 @@ const updateBrandListingByUUID = async (req, res) => {
     
 
     if (req.body.franchiseDetails) {
-      // Top-level franchiseDetails fields
       const franchiseTopLevelFields = [
         'aidFinancing', 'brandDescription', 'companyOwnedOutlets', 
         'consultationOrAssistance', 'establishedYear', 'franchiseDevelopment',
@@ -707,9 +708,7 @@ const updateBrandListingByUUID = async (req, res) => {
       if (Object.keys(franchiseDetailsUpdate).length > 0) {
         setNestedFields('franchiseDetails', franchiseDetailsUpdate);
       }
-    
 
-    
 
     // 1. Handle franchiseDetails.fico updates
     if (req.body.franchiseDetails?.fico) {
@@ -740,7 +739,6 @@ const updateBrandListingByUUID = async (req, res) => {
       }
     }
   }
-
     // 2. Handle expansionLocationData updates
     if (req.body.expansionLocationData) {
       // Handle isInternationalExpansion update
@@ -897,14 +895,6 @@ const updateBrandListingByUUID = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
 const deleteBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -919,6 +909,7 @@ const deleteBrandListingByUUID = async (req, res) => {
       .json({ error: "Failed to delete brand", details: error.message });
   }
 };
+
 
 export {
   createBrandListing,
