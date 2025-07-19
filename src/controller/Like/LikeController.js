@@ -256,15 +256,16 @@ export const deleteFavoriteBrand = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    // console.log("body :",brandID)
+    console.log(req.body)
+
 
     if (!uuid || !brandID) {
-      return res.status(400).json(new ApiResponse(400, {}, "UUID and brandID are required"));
+      return res.json(new ApiResponse(400, {}, "UUID and brandID are required"));
     }
 
     const targetBrand = await BrandListing.findOne({ uuid: brandID });
     if (!targetBrand) {
-      return res.status(404).json(new ApiResponse(404, {}, "Target brand not found"));
+      return res.json(new ApiResponse(404, {}, "Target brand not found"));
     }
 
     // === Investor removing a favorite brand ===
@@ -288,6 +289,7 @@ export const deleteFavoriteBrand = async (req, res) => {
 
     // === Brand removing a favorite brand ===
     if (brand && uuid === brand.uuid) {
+
       const removedFavorite = await FavoriteBrandsLikedBybrand.findOneAndUpdate(
         { brandUserId: brand._id },
         { $pull: { favoriteBrandBybrand: { likedBrandID: targetBrand._id } } },
@@ -301,15 +303,15 @@ export const deleteFavoriteBrand = async (req, res) => {
         { new: true }
       );
 
-      return res.status(200).json(
+      return res.json(
         new ApiResponse(200, removedFavorite, "Brand removed from brand's favorites")
       );
     }
 
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized access"));
+    return res.json(new ApiResponse(403, {}, "Unauthorized access"));
   } catch (error) {
     console.error("deleteFavoriteBrand error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
 
