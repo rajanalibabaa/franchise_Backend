@@ -23,7 +23,7 @@ const app = express();
 
 app.use(helmet()); // Adds security headers to the response
 app.use(cors( {
-    origin: ['https://foodandbeverage.mrfranchise.in','http://localhost:5173','http://localhost:5174'],
+    origin: ['https://fb.mrfranchise.in','http://localhost:5173','http://localhost:5174'],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
 
