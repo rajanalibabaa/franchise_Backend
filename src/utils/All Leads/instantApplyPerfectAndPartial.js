@@ -5,6 +5,7 @@ import {
 } from "../../utils/Centralized Email/centralizedEmail.js";
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 
+
 // Define the investment ranges in order for comparison
 const investmentRanges = [
   { value: "Below-50,000", index: 0 },

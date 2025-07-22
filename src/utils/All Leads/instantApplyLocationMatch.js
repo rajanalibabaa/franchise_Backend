@@ -1,9 +1,9 @@
 import BrandListing from "../../model/Brand/brandListingPage.js";
-import { sendInstantApplyEmail } from "../Centralized Email/centralizedEmail.js";
+import { sendInstantApplyLeadLocation, sendPremiumPackageOfferEmail } from "../Centralized Email/centralizedEmail.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
-import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js"; // <--- NEW IMPORT
-
-const BATCH_SIZE = 7
+import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js";
+import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema .js";
+import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema .js";
 
 export const instantApplyLocationMatch = async (
   fullName,
@@ -25,90 +25,178 @@ export const instantApplyLocationMatch = async (
   applyId,
   brandLogo
 ) => {
+
+const config = await SystemConfig.findOne();
+  const BATCH_SIZE = config?.batchSize || 7;
+  const MAX_EMAILS_PER_MONTH = config?.maxEmailsPerMonth || 5;
+
   try {
     const OverAllBrandExists = await BrandListing.find({});
-    if (OverAllBrandExists.length === 0) {
-      throw new Error("No brands found in the database");
-    }
+    const totalBrands = OverAllBrandExists.length;
+    if (totalBrands === 0) throw new Error("No brands found in the database");
 
-    // Get all brands matching the investor's location
-    const matchedBrands = await BrandListing.find({
-      "expansionLocationData.expansionLocations.domestic.locations": {
-        $elemMatch: { state },
-      },
-    });
-
-    if (matchedBrands.length === 0) {
-      return {
-        success: false,
-        message: "No matched brands found for the location",
-      };
-    }
-
-    // Get or initialize batch info for this brand
     let brandBatchDoc = await BrandBatch.findOne({ brandId });
-
     if (!brandBatchDoc) {
       brandBatchDoc = await BrandBatch.create({ brandId, batch: 0 });
     }
 
-    let currentBatch = brandBatchDoc.batch ;
-    console.log("Current batch:", currentBatch);
+    let currentBatch = brandBatchDoc.batch;
+    let brandsToSend = [];
+    let brandsAtLimit = [];
+    let foundMatch = false;
 
-    // Calculate slicing range
-    const start = currentBatch * BATCH_SIZE;
-    console.log("Start index:", start);
-    const end = start + BATCH_SIZE;
-    console.log("End index:", end);
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-    let brandsToSend = matchedBrands.slice(start, end);
+    for (let i = 0; i <= Math.ceil(totalBrands / BATCH_SIZE); i++) {
+      const start = currentBatch * BATCH_SIZE;
+      const end = start + BATCH_SIZE;
 
-    // If no brands left in this batch, reset to batch 0
-    if (brandsToSend.length === 0) {
-      currentBatch = 0;
-      brandsToSend = matchedBrands.slice(0, BATCH_SIZE);
+      const currentSlice = OverAllBrandExists.slice(start, end);
+      const filtered = [];
+      const limitReached = [];
+
+      for (const brand of currentSlice) {
+        const locations = brand.expansionLocationData?.expansionLocations?.domestic?.locations || [];
+        const match = locations.some(loc => loc.state === state);
+        if (!match) continue;
+
+        let countDoc = await BrandEmailCount.findOne({
+          brandId: brand._id,
+          brandName: brand.brandDetails?.brandName || "",
+          month: currentMonth,
+          year: currentYear
+        });
+
+        if (!countDoc) {
+          countDoc = await BrandEmailCount.create({
+            brandId: brand._id,
+            brandName: brand.brandDetails?.brandName || "",
+            month: currentMonth,
+            year: currentYear,
+            emailCount: 0,
+            emailRecords: [] // Initialize if not present
+          });
+        }
+
+        if (countDoc.emailCount < MAX_EMAILS_PER_MONTH) {
+          filtered.push({ brand, countDoc });
+        } else {
+          limitReached.push(brand);
+        }
+      }
+
+      if (filtered.length > 0) {
+        brandsToSend = filtered;
+        foundMatch = true;
+        break;
+      } else if (limitReached.length > 0) {
+        brandsAtLimit = limitReached;
+        foundMatch = true;
+        break;
+      }
+
+      currentBatch = (currentBatch + 1) % Math.ceil(totalBrands / BATCH_SIZE);
+    }
+
+    if (!foundMatch) {
+      return { success: false, message: "No matched brands found" };
     }
 
     const brandsSent = [];
-    for (const brand of brandsToSend) {
-       console.log(
-        fullName,
-        email,
-        mobileNumber,
-        brand.brandDetails?.brandName || "",
-        brand.brandDetails?.email || "",
-        `${mainCategory},${subCategory},${childCategory}`,
-        `${state},${district},${city}`,
-        investmentRange,
-        planToInvest,
-        readyToInvest
-      );
+    if (brandsToSend.length > 0) {
+      for (const item of brandsToSend) {
+        const { brand, countDoc } = item;
 
-      brandsSent.push({
-        brandId: brand._id,
-        brandName: brand.brandDetails?.brandName || "",
-        brandEmail: brand.brandDetails?.email || "",
-        emailSent: true,
-        emailSentAt: new Date(),
-      });
+        await sendInstantApplyLeadLocation("Sending instant apply email for brand:",
+          fullName,
+          email,
+          mobileNumber,
+          brand.brandDetails?.brandName || "",
+          brand.brandDetails?.email || "",
+          `${mainCategory},${subCategory},${childCategory}`,
+          `${state},${district},${city}`,
+          investmentRange,
+          planToInvest,
+          readyToInvest
+        );
+
+        countDoc.emailCount += 1;
+        countDoc.emailRecords.push({ investorEmail: email }); // <-- Track each send
+        await countDoc.save();
+
+        brandsSent.push({
+          brandId: brand._id,
+          brandName: brand.brandDetails?.brandName || "",
+          brandEmail: brand.brandDetails?.email || "",
+          emailSent: true,
+          emailSentAt: new Date(),
+        });
+      }
     }
 
-    // Update or reset brand batch
-    const nextBatch =
-      brandsToSend.length < BATCH_SIZE ? 0 : currentBatch + 1;
+    const brandsLimitReached = [];
+    if (brandsAtLimit.length > 0) {
+     for (const brand of brandsAtLimit) {
+  // Get or update the countDoc again
+  let countDoc = await BrandEmailCount.findOne({
+    brandId: brand._id,
+    month: currentMonth,
+    year: currentYear
+  });
 
+  if (!countDoc) {
+    countDoc = await BrandEmailCount.create({
+      brandId: brand._id,
+      brandName: brand.brandDetails?.brandName || "",
+      month: currentMonth,
+      year: currentYear,
+      emailCount: 0,
+      emailRecords: [],
+      premiumOfferCount: 0,
+      premiumOfferRecords: [],
+    });
+  }
+
+  await sendPremiumPackageOfferEmail(
+    "Sending premium package offer email for limit reached brand:",
+    fullName,
+    email,
+    mobileNumber,
+    brand.brandDetails?.brandName || "",
+    `${mainCategory},${subCategory},${childCategory}`,
+    `${state},${district},${city}`,
+    investmentRange
+  );
+
+  countDoc.premiumOfferCount += 1;
+  countDoc.premiumOfferRecords.push({ investorEmail: email });
+  await countDoc.save();
+
+  brandsLimitReached.push({
+    brandId: brand._id,
+    brandName: brand.brandDetails?.brandName || "",
+    brandEmail: brand.brandDetails?.email || "",
+    emailSent: false,
+    limitReached: true,
+    premiumOfferSent: true,
+    premiumOfferSentAt: new Date(),
+  });
+}
+
+    }
+
+    const nextBatch = (currentBatch + 1) % Math.ceil(totalBrands / BATCH_SIZE);
     brandBatchDoc.batch = nextBatch;
     brandBatchDoc.updatedAt = new Date();
     await brandBatchDoc.save();
 
-    // Store investor record
     await InstantApplyInvestor.create({
       investorEmail: email,
       investorName: fullName,
       investorPhone: mobileNumber,
-      category: [
-        { main: mainCategory, sub: subCategory, child: childCategory },
-      ],
+      category: [{ main: mainCategory, sub: subCategory, child: childCategory }],
       location: { state, city, district },
       investmentRange,
       planToInvest,
@@ -117,18 +205,67 @@ export const instantApplyLocationMatch = async (
         applyBy: applyBy || "other",
         applyId: applyId || "other",
       },
-      brandsSent,
+      brandsSent: [...brandsSent, ...brandsLimitReached],
     });
 
     return {
       success: true,
       message: "Instant apply processed successfully",
-      brands: brandsToSend,
+      brandsSent: brandsSent.map(b => ({
+        brandId: b.brandId,
+        brandName: b.brandName,
+        status: 'email_sent'
+      })),
+      brandsLimitReached: brandsLimitReached.map(b => ({
+        brandId: b.brandId,
+        brandName: b.brandName,
+        status: 'limit_reached',
+        premiumOfferSent: true
+      })),
       batch: currentBatch,
-      totalBrands: matchedBrands.length,
+      totalBrands,
     };
+
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
     throw error;
   }
 };
+
+
+export const getSystemConfig = async (req, res) => {
+  try {
+    const config = await SystemConfig.findOne();
+    res.status(200).json(config);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+
+export const updateSystemConfig = async (req, res) => {
+  try {
+    const { batchSize, maxEmailsPerMonth, updatedBy } = req.body;
+
+    const config = await SystemConfig.findOne();
+    if (config) {
+      if (batchSize !== undefined) config.batchSize = batchSize;
+      if (maxEmailsPerMonth !== undefined) config.maxEmailsPerMonth = maxEmailsPerMonth;
+      if (updatedBy) config.updatedBy = updatedBy;
+      config.updatedAt = new Date();
+      await config.save();
+    } else {
+      await SystemConfig.create({
+        batchSize,
+        maxEmailsPerMonth,
+        updatedBy,
+      });
+    }
+
+    res.status(200).json({ success: true, message: "System config updated" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
