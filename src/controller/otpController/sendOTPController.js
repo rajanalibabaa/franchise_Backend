@@ -26,9 +26,13 @@ const verifyToken = (token) => {
 // Send Email OTP
 export const requestEmailOtp = async (req, res) => {
     const { email } = req.body;
+
+    console.log(email);
     const otp = generateOTP();
     // console.log("OTP:", otp); // Log the OTP for debugging purposes
     const token = generateToken(email, otp);
+    console.log("Token:", token);
+    
 
     try {
         await sendEmailOTP(email, otp);
@@ -84,7 +88,9 @@ export const requestWhatsAppOtp = async (req, res) => {
 
 // Controller to verify OTP
 export const verifyOTP = async (req, res) => {
+   
     const { identifier, otp, type } = req.body;
+     console.log(identifier, otp, type)
 
     // Validate required fields
     if (!identifier || !otp || !type) {

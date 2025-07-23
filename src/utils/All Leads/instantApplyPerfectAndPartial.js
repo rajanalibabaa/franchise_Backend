@@ -1,164 +1,10 @@
-import InvestorLead from "../../model/NewIncomeInvestor/leadsModel.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
-import { sendBrandEmailPerfect } from "../../utils/Centralized Email/centralizedEmail.js";
-
-
-export const newIncomerInvestorController = async (
-  email,
-  firstName,
-  category,
-  locationType,
-  preferredCountry,
-  preferredState,
-  preferredDistrict,
-  preferredCity,
-  investmentRange
-) => {
-  try {
-    // Validate inputs
-    if (!category || !Array.isArray(category) || category.length === 0) {
-      throw new Error("At least one category is required");
-    }
-    if (!locationType || !['domestic', 'international'].includes(locationType)) {
-      throw new Error("Location type must be either 'domestic' or 'international'");
-    }
-
-
-    // Base category condition
-    const categoryCondition = {
-      "franchiseDetails.brandCategories.main": category[0].main,
-      "franchiseDetails.brandCategories.sub": category[0].sub,
-      "franchiseDetails.brandCategories.child": category[0].child
-    };
-
-    // Investment range condition (if provided)
-    const investmentCondition = investmentRange ? {
-      "franchiseDetails.fico.investmentRange": investmentRange
-    } : {};
-
-    // Location condition
-    const locationCondition = locationType === 'international' ? 
-      {
-        $or: [
-          { 
-            "expansionLocationData.currentOutletLocations.international.country": {
-              $elemMatch: {
-                states: preferredState,
-                "district.district": preferredDistrict,
-                "district.cities": preferredCity
-              }
-            }
-          },
-          {
-            "expansionLocationData.expansionLocations.international.country": {
-              $elemMatch: {
-                states: preferredState,
-                "district.district": preferredDistrict,
-                "district.cities": preferredCity
-              }
-            }
-          }
-        ]
-      } : {
-        $or: [
-          { 
-            "expansionLocationData.currentOutletLocations.domestic.locations": {
-              $elemMatch: {
-                state: preferredState,
-                "districts.district": preferredDistrict,
-                "districts.cities": preferredCity
-              }
-            }
-          },
-          {
-            "expansionLocationData.expansionLocations.domestic.locations": {
-              $elemMatch: {
-                state: preferredState,
-                "districts.district": preferredDistrict,
-                "districts.cities": preferredCity
-              }
-            }
-          }
-        ]
-      };
-
-    // Projection fields
-    const projection = {
-      "franchiseDetails": 1,
-      "expansionLocationData": 1,
-      "brandDetails": 1
-    };
-
-    // 1. Perfect matches (all conditions)
-    const perfectMatches = await BrandListing.find({
-      $and: [
-        categoryCondition,
-        investmentCondition,
-        locationCondition
-      ]
-    }, projection).lean();
-
-    // 2. Investment + Location matches
-    const investmentLocationMatches = await BrandListing.find({
-      $and: [
-        investmentCondition,
-        locationCondition
-      ]
-    }, projection).lean();
-
-    // 3. Category + Investment matches
-    const categoryInvestmentMatches = await BrandListing.find({
-      $and: [
-        categoryCondition,
-        investmentCondition
-      ]
-    }, projection).lean();
-
-    console.log(`Found:
-      - ${perfectMatches.length} perfect matches
-      - ${investmentLocationMatches.length} investment+location matches
-      - ${categoryInvestmentMatches.length} category+investment matches`);
-
-      await perfectMatches.map(data => {
-        // console.log("brandDetails :",data.brandDetails.email)
-        sendBrandEmailPerfect(
-          data.brandDetails.email,
-          data.brandDetails.companyName,
-          firstName,
-          categoryCondition,
-          preferredDistrict,
-          investmentRange,
-          
-        )
-      })
-
-    return {
-      success: true,
-      matches: {
-        perfectMatches,
-        investmentLocationMatches,
-        categoryInvestmentMatches
-      }
-    };
-  } catch (error) {
-    console.error("Error in investor search:", error);
-    return {
-      success: false,
-      error: error.message,
-      message: "Failed to search for brands"
-    };
-  }
-};
-
-
-
-
-
-
-
-import BrandListing from "../../model/Brand/brandListingPage.js";
-import { sendInstantApplyPerAndPar } from "../../utils/Centralized Email/centralizedEmail.js";
+import {
+  sendInstantApplyPerAndPar,
+  sendInstantApplyEmail,
+} from "../../utils/Centralized Email/centralizedEmail.js";
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
+
 
 // Define the investment ranges in order for comparison
 const investmentRanges = [
@@ -196,6 +42,9 @@ export const instantApplyPerfectAndPartial = async (
   fullName,
   email,
   mobileNumber,
+  brandName,
+  brandId,
+  brandEmail,
   mainCategory,
   subCategory,
   childCategory,
@@ -204,7 +53,11 @@ export const instantApplyPerfectAndPartial = async (
   city,
   investmentRange,
   planToInvest,
-  readyToInvest
+  readyToInvest,
+  applyBy,
+  applyById,
+  brandLogo,
+  batch = 0
 ) => {
   let newLead;
   try {
@@ -242,9 +95,6 @@ export const instantApplyPerfectAndPartial = async (
       );
     }
 
-    // Get applicable investment ranges for partial matches
-    const applicableRanges = getApplicableInvestmentRanges(investmentRange);
-
     // Prepare categories array
     const categories = [];
     if (mainCategory || subCategory || childCategory) {
@@ -271,20 +121,73 @@ export const instantApplyPerfectAndPartial = async (
       readyToInvest: readyToInvest || null,
       source: "instantApply",
       status: "processing",
+      apply: {
+        applyBy: applyBy || "other",
+        applyId: applyById || "other",
+      },
+      initialBrand: {
+        brandId,
+        brandName,
+        brandEmail,
+        brandLogo,
+        emailSent: false,
+      },
     };
 
-    // Save new investor lead
+    // Save new investor lead first
     newLead = new InstantApplyLead(investorData);
     await newLead.save();
 
-    const emailedBrands = new Set();
+    const emailedBrandId = new Set();
+    console.log(emailedBrandId);
+
+    // 1. First send the instant apply email to the brand with matchType "instantbrandapply"
+    if (brandEmail) {
+      try {
+        await sendInstantApplyEmail(
+          fullName,
+          email,
+          mobileNumber,
+          brandName,
+          brandEmail,
+          `${mainCategory},${subCategory},${childCategory}`,
+          `${state},${district},${city}`,
+          investmentRange,
+          planToInvest,
+          readyToInvest
+        );
+
+        // Update the initial brand email status
+        await InstantApplyLead.findByIdAndUpdate(newLead._id, {
+          $set: {
+            "initialBrand.emailSent": true,
+            "initialBrand.emailSentAt": new Date(),
+            "emailStatus.initialEmailSent": true,
+            "emailStatus.lastEmailSentAt": new Date(),
+          },
+          $inc: { "matchedBrandsCount.total": 1 },
+        });
+      } catch (error) {
+        console.error("Failed to send initial instant apply email:", error);
+        await InstantApplyLead.findByIdAndUpdate(newLead._id, {
+          $set: {
+            "initialBrand.emailError": error.message,
+            "emailStatus.initialEmailError": error.message,
+          },
+        });
+      }
+    }
+
+    // Get applicable investment ranges for partial matches
+    const applicableRanges = getApplicableInvestmentRanges(investmentRange);
+
     const results = [];
     const allMatches = [];
     let matchStats = {
       perfect: { found: 0, emailed: 0 },
       categoryInvestment: { found: 0, emailed: 0 },
       categoryLocation: { found: 0, emailed: 0 },
-      investmentLocation: { found: 0, emailed: 0 }
+      investmentLocation: { found: 0, emailed: 0 },
     };
 
     // Prepare category values for querying
@@ -293,10 +196,16 @@ export const instantApplyPerfectAndPartial = async (
     if (subCategory) categoryValues.push(subCategory);
     if (mainCategory) categoryValues.push(mainCategory);
 
-    // 1. Find PERFECT matches (category, location, and investment range)
+    console.log("Category values:", categoryValues);
+    console.log("Location query:",   state,
+  district,
+  city,);
+    
+
+    // 2. Find PERFECT matches (category, location, and investment range)
     if (childCategory) {
       const perfectMatchQuery = {
-        "brandDetails.email": { $ne: null },
+        "brandDetails.email": { $ne: null, $ne: brandEmail }, // Exclude the brand that was already contacted
         "franchiseDetails.fico.investmentRange": { $in: applicableRanges },
         "franchiseDetails.brandCategories.child": childCategory,
         "expansionLocationData.expansionLocations.domestic.locations": {
@@ -321,22 +230,23 @@ export const instantApplyPerfectAndPartial = async (
         const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
         const brandCompanyName =
           brand.brandDetails?.brandName || "Unknown Company";
+        const brandId = brand.uuid;
+        console.log(brandId,"brandId")
 
-        if (!brandEmail || emailedBrands.has(brandEmail)) {
-          continue;
-        }
+        const id = emailedBrandId.has(brandId);
+        console.log(id,"id")
 
-        const matchData = {
+        if (!id) {
+            const matchData = {
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
           matchType: "perfect",
-          matchCriteria: ["category", "location", "investment"],
           emailSent: false,
           contacted: false,
         };
-
-        try {
+        console.log(matchData);
+         try {
           const emailSubject =
             "Perfect Match: Investor matches your Category, Location, and Investment Range";
 
@@ -354,7 +264,8 @@ export const instantApplyPerfectAndPartial = async (
             readyToInvest
           );
 
-          emailedBrands.add(brandEmail);
+          emailedBrandId.add(brandId);
+
           matchData.emailSent = true;
           matchData.emailSentAt = new Date();
           matchStats.perfect.emailed++;
@@ -374,39 +285,46 @@ export const instantApplyPerfectAndPartial = async (
         }
 
         allMatches.push(matchData);
+
+        }
+
+       
       }
       console.log(`Sent ${matchStats.perfect.emailed} perfect match emails`);
     }
 
-    // 2. Find CATEGORY + INVESTMENT matches (if no perfect match was found)
-    if (childCategory && matchStats.perfect.emailed === 0) {
+    // 3. Find CATEGORY + INVESTMENT matches (if no perfect match was found)
+    if (childCategory) {
       const categoryInvestmentQuery = {
-        "brandDetails.email": { $ne: null },
+        "brandDetails.email": { $ne: null, $ne: brandEmail },
         "franchiseDetails.fico.investmentRange": { $in: applicableRanges },
         "franchiseDetails.brandCategories.child": childCategory,
-        "brandDetails.email": { $nin: Array.from(emailedBrands) },
       };
+
       const categoryInvestmentMatches = await BrandListing.find(
         categoryInvestmentQuery
       ).lean();
       matchStats.categoryInvestment.found = categoryInvestmentMatches.length;
-      console.log(`Found ${categoryInvestmentMatches.length} category + investment matches`);
+      console.log(
+        `Found ${categoryInvestmentMatches.length} category + investment matches`
+      );
 
       for (const brand of categoryInvestmentMatches) {
         const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
-        const brandCompanyName =
-          brand.brandDetails?.brandName || "Unknown Company";
-           
-        if (!brandEmail || emailedBrands.has(brandEmail)) {
-          continue;
-        }
+        const brandCompanyName =brand.brandDetails?.brandName || "Unknown Company";
+        const brandId = brand._id;
+
+        const id = emailedBrandId.has(brandId);
+
+        if (!id) {
+          
+       
 
         const matchData = {
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
-          matchType: "partial",
-          matchCriteria: ["category", "investment"],
+          matchType: "categoryAndInvest",
           emailSent: false,
           contacted: false,
         };
@@ -428,8 +346,9 @@ export const instantApplyPerfectAndPartial = async (
             planToInvest,
             readyToInvest
           );
+          
+          emailedBrandId.add(brandId);
 
-          emailedBrands.add(brandEmail);
           matchData.emailSent = true;
           matchData.emailSentAt = new Date();
           matchStats.categoryInvestment.emailed++;
@@ -440,7 +359,7 @@ export const instantApplyPerfectAndPartial = async (
             location: `${city}, ${district}, ${state}`,
             category: childCategory,
             investment: investmentRange,
-            matchType: "partial",
+            matchType: "categoryAndInvest",
             brandId: brand._id,
           });
         } catch (error) {
@@ -453,13 +372,16 @@ export const instantApplyPerfectAndPartial = async (
 
         allMatches.push(matchData);
       }
-      console.log(`Sent ${matchStats.categoryInvestment.emailed} category + investment match emails`);
+       }
+      console.log(
+        `Sent ${matchStats.categoryInvestment.emailed} category + investment match emails`
+      );
     }
 
-    // 3. Find CATEGORY + LOCATION matches (if no previous matches were found)
-    if (childCategory && emailedBrands.size === 0) {
+    // 4. Find CATEGORY + LOCATION matches (if no previous matches were found)
+    if (childCategory) {
       const categoryLocationQuery = {
-        "brandDetails.email": { $ne: null },
+        "brandDetails.email": { $ne: null, $ne: brandEmail },
         "franchiseDetails.brandCategories.child": childCategory,
         "expansionLocationData.expansionLocations.domestic.locations": {
           $elemMatch: {
@@ -472,30 +394,29 @@ export const instantApplyPerfectAndPartial = async (
             },
           },
         },
-        "brandDetails.email": { $nin: Array.from(emailedBrands) },
       };
 
       const categoryLocationMatches = await BrandListing.find(
         categoryLocationQuery
       ).lean();
       matchStats.categoryLocation.found = categoryLocationMatches.length;
-      console.log(`Found ${categoryLocationMatches.length} category + location matches`);
+      console.log(
+        `Found ${categoryLocationMatches.length} category + location matches`
+      );
 
       for (const brand of categoryLocationMatches) {
         const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
-        const brandCompanyName =
-          brand.brandDetails?.brandName || "Unknown Company";
-        
-        if (!brandEmail || emailedBrands.has(brandEmail)) {
-          continue;
-        }
+        const brandCompanyName =brand.brandDetails?.brandName || "Unknown Company";
+        const brandId = brand._id;
+        const id = emailedBrandId.has(brandId);
+
+        if (!id) {
 
         const matchData = {
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
-          matchType: "partial",
-          matchCriteria: ["category", "location"],
+          matchType: "categoryAndLocation",
           emailSent: false,
           contacted: false,
         };
@@ -518,7 +439,8 @@ export const instantApplyPerfectAndPartial = async (
             readyToInvest
           );
 
-          emailedBrands.add(brandEmail);
+          emailedBrandId.add(brandId);
+
           matchData.emailSent = true;
           matchData.emailSentAt = new Date();
           matchStats.categoryLocation.emailed++;
@@ -529,7 +451,7 @@ export const instantApplyPerfectAndPartial = async (
             location: `${city}, ${district}, ${state}`,
             category: childCategory,
             investment: investmentRange,
-            matchType: "partial",
+            matchType: "categoryAndLocation",
             brandId: brand._id,
           });
         } catch (error) {
@@ -542,13 +464,16 @@ export const instantApplyPerfectAndPartial = async (
 
         allMatches.push(matchData);
       }
-      console.log(`Sent ${matchStats.categoryLocation.emailed} category + location match emails`);
+    }
+      console.log(
+        `Sent ${matchStats.categoryLocation.emailed} category + location match emails`
+      );
     }
 
-    // 4. Find INVESTMENT + LOCATION matches (if no previous matches were found)
-    if (emailedBrands.size === 0) {
+    // 5. Find INVESTMENT + LOCATION matches (if no previous matches were found)
+    if (investmentRange) {
       const investmentLocationQuery = {
-        "brandDetails.email": { $ne: null },
+        "brandDetails.email": { $ne: null, $ne: brandEmail },
         "franchiseDetails.fico.investmentRange": { $in: applicableRanges },
         "expansionLocationData.expansionLocations.domestic.locations": {
           $elemMatch: {
@@ -561,14 +486,15 @@ export const instantApplyPerfectAndPartial = async (
             },
           },
         },
-        "brandDetails.email": { $nin: Array.from(emailedBrands) },
       };
 
       const investmentLocationMatches = await BrandListing.find(
         investmentLocationQuery
       ).lean();
       matchStats.investmentLocation.found = investmentLocationMatches.length;
-      console.log(`Found ${investmentLocationMatches.length} investment + location matches`);
+      console.log(
+        `Found ${investmentLocationMatches.length} investment + location matches`
+      );
 
       for (const brand of investmentLocationMatches) {
         const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
@@ -579,17 +505,16 @@ export const instantApplyPerfectAndPartial = async (
           [brandCategories.main, brandCategories.sub, brandCategories.child]
             .filter(Boolean)
             .join(", ") || "Not specified";
+            const brandId = brand.uuid;
+            const id = emailedBrandId.has(brandId);
 
-        if (!brandEmail || emailedBrands.has(brandEmail)) {
-          continue;
-        }
+        if (!id) {
 
         const matchData = {
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
-          matchType: "partial",
-          matchCriteria: ["investment", "location"],
+          matchType: "investmentAndLocation",
           emailSent: false,
           contacted: false,
         };
@@ -612,7 +537,8 @@ export const instantApplyPerfectAndPartial = async (
             readyToInvest
           );
 
-          emailedBrands.add(brandEmail);
+          emailedBrandId.add(brandId);
+
           matchData.emailSent = true;
           matchData.emailSentAt = new Date();
           matchStats.investmentLocation.emailed++;
@@ -623,9 +549,11 @@ export const instantApplyPerfectAndPartial = async (
             location: `${city}, ${district}, ${state}`,
             category: brandCategoryStr,
             investment: investmentRange,
-            matchType: "partial",
+            matchType: "investmentAndLocation",
             brandId: brand._id,
           });
+
+
         } catch (error) {
           console.error(
             `Failed to email investment+location match: ${brandEmail}`,
@@ -636,55 +564,70 @@ export const instantApplyPerfectAndPartial = async (
 
         allMatches.push(matchData);
       }
-      console.log(`Sent ${matchStats.investmentLocation.emailed} investment + location match emails`);
+    }
+      console.log(
+        `Sent ${matchStats.investmentLocation.emailed} investment + location match emails`
+      );
     }
 
     // Calculate match counts
     const perfectMatchesCount = allMatches.filter(
       (m) => m.matchType === "perfect"
     ).length;
-    const partialMatchesCount = allMatches.filter(
-      (m) => m.matchType === "partial"
+    const categoryAndInvestCount = allMatches.filter(
+      (m) => m.matchType === "categoryAndInvest"
     ).length;
+    const categoryAndLocationCount = allMatches.filter(
+      (m) => m.matchType === "categoryAndLocation"
+    ).length;
+    const investmentAndLocationCount = allMatches.filter(
+      (m) => m.matchType === "investmentAndLocation"
+    ).length;
+    const totalMatchesCount = allMatches.length;
 
-    // Log final statistics
-    console.log('Final Matching Statistics:', {
-      totalBrandsFound: matchStats.perfect.found + matchStats.categoryInvestment.found + 
-                         matchStats.categoryLocation.found + matchStats.investmentLocation.found,
-      totalEmailsSent: matchStats.perfect.emailed + matchStats.categoryInvestment.emailed + 
-                       matchStats.categoryLocation.emailed + matchStats.investmentLocation.emailed,
-      perfectMatches: matchStats.perfect,
-      categoryInvestmentMatches: matchStats.categoryInvestment,
-      categoryLocationMatches: matchStats.categoryLocation,
-      investmentLocationMatches: matchStats.investmentLocation
-    });
+    // Determine if any matches were sent
+    const initialEmailSent = newLead.initialBrand?.emailSent || false;
+    const anyMatchesSent =
+      matchStats.perfect.emailed > 0 ||
+      matchStats.categoryInvestment.emailed > 0 ||
+      matchStats.categoryLocation.emailed > 0 ||
+      matchStats.investmentLocation.emailed > 0;
 
     // Update lead with match data
     const updateData = {
-      brandMatches: allMatches,
-      matchedBrandsCount: {
-        perfect: perfectMatchesCount,
-        partial: partialMatchesCount,
-        total: allMatches.length,
-      },
-      status: allMatches.length > 0 ? "matched" : "closed",
-      emailStatus: {
-        perfectMatchesSent: perfectMatchesCount > 0,
-        partialMatchesSent: partialMatchesCount > 0,
-        lastEmailSentAt: new Date(),
+      $push: { brandMatches: { $each: allMatches } },
+      $set: {
+        matchedBrandsCount: {
+          perfect: perfectMatchesCount,
+          categoryAndInvest: categoryAndInvestCount,
+          categoryAndLocation: categoryAndLocationCount,
+          investmentAndLocation: investmentAndLocationCount,
+          total: totalMatchesCount + (initialEmailSent ? 1 : 0),
+        },
+        status: anyMatchesSent || initialEmailSent ? "matched" : "closed",
+        emailStatus: {
+          initialEmailSent,
+          perfectMatchesSent: matchStats.perfect.emailed > 0,
+          categoryAndInvestSent: matchStats.categoryInvestment.emailed > 0,
+          categoryAndLocationSent: matchStats.categoryLocation.emailed > 0,
+          investmentAndLocationSent: matchStats.investmentLocation.emailed > 0,
+          lastEmailSentAt: new Date(),
+        },
       },
     };
 
-    await InstantApplyLead.findByIdAndUpdate(newLead._id, { $set: updateData });
+    await InstantApplyLead.findByIdAndUpdate(newLead._id, updateData);
 
     return {
       status: 200,
-      message: `Matches found (${perfectMatchesCount} perfect, ${partialMatchesCount} partial)`,
+      message: `Matches processed successfully`,
       stats: {
-        total: allMatches.length,
+        initialBrandEmailSent: initialEmailSent,
         perfectMatches: perfectMatchesCount,
-        partialMatches: partialMatchesCount,
-        detailedStats: matchStats
+        categoryAndInvestMatches: categoryAndInvestCount,
+        categoryAndLocationMatches: categoryAndLocationCount,
+        investmentAndLocationMatches: investmentAndLocationCount,
+        totalMatches: totalMatchesCount + (initialEmailSent ? 1 : 0),
       },
       data: results,
     };
@@ -696,11 +639,7 @@ export const instantApplyPerfectAndPartial = async (
       await InstantApplyLead.findByIdAndUpdate(newLead._id, {
         $set: {
           status: "failed",
-          emailStatus: {
-            perfectMatchesSent: false,
-            partialMatchesSent: false,
-            error: error.message,
-          },
+          "emailStatus.error": error.message,
         },
       });
     }

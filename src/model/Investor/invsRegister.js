@@ -21,22 +21,19 @@ const PreferenceSchema = new mongoose.Schema({
   locationType: {
     type: String,
     enum: ["domestic", "international"],
-    required: true
+    // required: true
   },
   preferredCountry: {
     type: String
   },
   preferredState: {
     type: String,
-    required: true
   },
   preferredDistrict: {
     type: String,
-    required: true
   },
   preferredCity: {
     type: String,
-    required: true
   },
   propertyPreferred: [
     {

@@ -29,6 +29,7 @@ import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
 import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.js";
 import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
 import {OtherIndustriesRouter} from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
+import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js";
 
 const router = express.Router();
 
@@ -94,7 +95,8 @@ router.use(subscribeRouter)
 // OtherIndustries
 router.use( OtherIndustriesRouter)
 
-
+//shortListRouter
+router.use( shortListRouter)
 function getRoutes(router, basePath = '') {
   const routes = [];
   router.stack.forEach((layer) => {

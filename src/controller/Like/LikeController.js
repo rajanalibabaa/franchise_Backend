@@ -4,6 +4,7 @@ import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
 import { FavoriteBrands, FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
+import ShortListed from "../../model/ShortList/shortListedModel.js";
 
 
 
@@ -14,6 +15,8 @@ export const toggleFavoriteBrand = async (req, res) => {
     const { branduuid } = req.body;
     const investor = req?.investorUser;
     const brand = req?.brandUser;
+
+    // console.log("req :",req.body)
 
     // === If Brand is liking another Brand ===
     if (brand && brand._id) {
@@ -60,6 +63,8 @@ export const toggleFavoriteBrand = async (req, res) => {
         },
         { new: true, upsert: true }
       );
+
+
 
       return res.status(200).json(
         new ApiResponse(200, updatedLikeByBrand, "Favorite brand added successfully by brand")
@@ -115,6 +120,8 @@ export const toggleFavoriteBrand = async (req, res) => {
       { new: true, upsert: true }
     );
 
+    // console.log("updatedInvestorFavorite :",updatedInvestorFavorite)
+
     return res.status(200).json(
       new ApiResponse(200, updatedInvestorFavorite, "Favorite brand added successfully by investor")
     );
@@ -133,20 +140,17 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    const isInvestor = !!investor;
-    const isBrand = !!brand;
-
     if (!uuid) {
       return res.status(400).json(new ApiResponse(400, {}, "UUID is required"));
     }
 
     // === Investor Request ===
-    if (isInvestor && uuid === investor.uuid) {
+    if (investor && uuid === investor.uuid) {
       const favoriteData = await FavoriteBrandsLikedByInvestor.findOne({
         InvestorUserId: investor._id,
-      });
+      }).lean();
 
-      if (!favoriteData || favoriteData.favoriteBrands.length === 0) {
+      if (!favoriteData?.favoriteBrands?.length) {
         return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
       }
 
@@ -155,44 +159,46 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
       );
 
-      const brandIDs = sortedFavorites.map(item => item.brandID.toString());
+      const brandIDs = sortedFavorites.map(item => item.brandID?.toString()).filter(Boolean);
+
+      if (!brandIDs.length) {
+        return res.json(new ApiResponse(200, [], "No valid brand IDs found"));
+      }
 
       const allBrands = await BrandListing.find({ _id: { $in: brandIDs } }).select(
-        ' -__v -updatedAt -createdAt ' +
+        '-__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
-      );
+      ).lean();
 
+      // Create a map for faster lookup
+      const brandMap = new Map();
+      allBrands.forEach(brand => {
+        brandMap.set(brand._id.toString(), brand);
+      });
 
-      const revers = [];
-
-      for (let i = 0; i < brandIDs.length; i++) {
-        const id = brandIDs[i];
-
-        for (let j = 0; j < allBrands.length; j++) {
-          const brand = allBrands[j];
-
-          if (brand._id?.toString() === id) {
-            revers.push(brand);
-            break; // Once matched, stop inner loop
-          }
+      // Reconstruct the array in the original order
+      const result = [];
+      for (const id of brandIDs) {
+        const brand = brandMap.get(id);
+        if (brand) {
+          result.push(brand);
         }
       }
 
-      // console.log(" revers: ",revers)  
       return res.json(
-        new ApiResponse(200,revers , "Favorite brands retrieved successfully")
+        new ApiResponse(200, result, "Favorite brands retrieved successfully")
       );
     }
 
     // === Brand Request ===
-    if (isBrand && uuid === brand.uuid) {
+    if (brand && uuid === brand.uuid) {
       const favoriteData = await FavoriteBrandsLikedBybrand.findOne({
         brandUserId: brand._id,
-      });
+      }).lean();
 
-      if (!favoriteData || favoriteData.favoriteBrandBybrand.length === 0) {
+      if (!favoriteData?.favoriteBrandBybrand?.length) {
         return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
       }
 
@@ -201,40 +207,43 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
       );
 
-      const likedBrandIDs = sortedFavorites.map(item => item.likedBrandID.toString());
+      const likedBrandIDs = sortedFavorites.map(item => item.likedBrandID?.toString()).filter(Boolean);
+
+      if (!likedBrandIDs.length) {
+        return res.json(new ApiResponse(200, [], "No valid brand IDs found"));
+      }
 
       const allBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
-        ' -__v -updatedAt -createdAt ' +
+        '-__v -updatedAt -createdAt ' +
         '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
         '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
         '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
-      );
+      ).lean();
 
-           const revers = [];
+      // Create a map for faster lookup
+      const brandMap = new Map();
+      allBrands.forEach(brand => {
+        brandMap.set(brand._id.toString(), brand);
+      });
 
-      for (let i = 0; i < brandIDs.length; i++) {
-        const id = brandIDs[i];
-
-        for (let j = 0; j < allBrands.length; j++) {
-          const brand = allBrands[j];
-
-          if (brand._id?.toString() === id) {
-            revers.push(brand);
-            break;
-          }
+      // Reconstruct the array in the original order
+      const result = [];
+      for (const id of likedBrandIDs) {
+        const brand = brandMap.get(id);
+        if (brand) {
+          result.push(brand);
         }
       }
-      
 
-      return res.status(200).json(
-        new ApiResponse(200, revers, "Favorite brands retrieved successfully")
+      return res.json(
+        new ApiResponse(200, result, "Favorite brands retrieved successfully")
       );
     }
 
-    return res.json(new ApiResponse(403, {}, "Unauthorized access"));
+    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized access"));
   } catch (error) {
     console.error("getAllFavoriteBrandsByID error:", error);
-    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
 
@@ -248,15 +257,16 @@ export const deleteFavoriteBrand = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    // console.log("body :",brandID)
+    console.log(req.body)
+
 
     if (!uuid || !brandID) {
-      return res.status(400).json(new ApiResponse(400, {}, "UUID and brandID are required"));
+      return res.json(new ApiResponse(400, {}, "UUID and brandID are required"));
     }
 
     const targetBrand = await BrandListing.findOne({ uuid: brandID });
     if (!targetBrand) {
-      return res.status(404).json(new ApiResponse(404, {}, "Target brand not found"));
+      return res.json(new ApiResponse(404, {}, "Target brand not found"));
     }
 
     // === Investor removing a favorite brand ===
@@ -280,6 +290,7 @@ export const deleteFavoriteBrand = async (req, res) => {
 
     // === Brand removing a favorite brand ===
     if (brand && uuid === brand.uuid) {
+
       const removedFavorite = await FavoriteBrandsLikedBybrand.findOneAndUpdate(
         { brandUserId: brand._id },
         { $pull: { favoriteBrandBybrand: { likedBrandID: targetBrand._id } } },
@@ -293,15 +304,15 @@ export const deleteFavoriteBrand = async (req, res) => {
         { new: true }
       );
 
-      return res.status(200).json(
+      return res.json(
         new ApiResponse(200, removedFavorite, "Brand removed from brand's favorites")
       );
     }
 
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized access"));
+    return res.json(new ApiResponse(403, {}, "Unauthorized access"));
   } catch (error) {
     console.error("deleteFavoriteBrand error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
 
@@ -313,12 +324,12 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    
-    if (( uuid !== investor?.uuid) && ( uuid !== brand?.uuid)) {
+    if ((uuid !== investor?.uuid) && (uuid !== brand?.uuid)) {
       return res.status(401).json(new ApiResponse(401, {}, "Unauthorized access"));
     }
 
     let likedBrandIds = [];
+    let shortListedBrandIds = [];
 
     // === Investor case ===
     if (investor) {
@@ -327,6 +338,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
         return res.status(404).json(new ApiResponse(404, {}, "Investor not found"));
       }
 
+      // Get liked brands
       const investorLikedBrands = await FavoriteBrandsLikedByInvestor.findOne({
         InvestorUserId: existsInvestor._id
       });
@@ -334,7 +346,16 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
       likedBrandIds = investorLikedBrands
         ? investorLikedBrands.favoriteBrands.map(item => item.brandID.toString())
         : [];
-    }
+
+      // Get shortlisted brands
+      const investorShortlistedBrands = await ShortListed.find({
+        'ShortListedBy.investor.userId': existsInvestor._id
+      });
+
+      shortListedBrandIds = investorShortlistedBrands.map(item => 
+        item.brandOwnerId.toString()
+      );
+    } 
 
     // === Brand case ===
     if (brand) {
@@ -343,6 +364,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
         return res.status(404).json(new ApiResponse(404, {}, "Brand not found"));
       }
 
+      // Get liked brands
       const brandLikedBrands = await FavoriteBrandsLikedBybrand.findOne({
         brandUserId: existsBrand._id
       });
@@ -350,6 +372,15 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
       likedBrandIds = brandLikedBrands
         ? brandLikedBrands.favoriteBrandBybrand.map(item => item.likedBrandID.toString())
         : [];
+
+      // Get shortlisted brands
+      const brandShortlistedBrands = await ShortListed.find({
+        'ShortListedBy.brand.userId': existsBrand._id
+      });
+
+      shortListedBrandIds = brandShortlistedBrands.map(item => 
+        item.brandOwnerId.toString()
+      );
     }
 
     // Get all brands
@@ -358,16 +389,17 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
       return res.status(404).json(new ApiResponse(404, {}, "Brands not registered yet"));
     }
 
-    // Compose result with isLiked flag
+    // Compose result with isLiked and isShortListed flags
     const result = allBrands.map(brand => {
       const { _id, updatedAt, createdAt, __v, ...rest } = brand.toObject();
       return {
         ...rest,
-        isLiked: likedBrandIds.includes(_id.toString())
+        isLiked: likedBrandIds.includes(_id.toString()),
+        isShortListed: shortListedBrandIds.includes(_id.toString())
       };
     });
 
-    return res.status(200).json(new ApiResponse(200, result, "All brands with liked status"));
+    return res.status(200).json(new ApiResponse(200, result, "All brands with liked and shortlisted status"));
   } catch (error) {
     console.error("getAllLikedAndUnlikedBrand error:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
@@ -400,8 +432,8 @@ export const getBrandLikedByAll = async (req, res) => {
       const investorId = likeEntry?.investorID;
 
       if (investorId) {
-        const investor = await InvsRegister.findById(investorId).select("-_id -createdAt -updatedAt -__v") ||
-                         await BrandListing.findById(investorId).select("-_id -createdAt -updatedAt -__v");
+        const investor = await InvsRegister.findById(investorId).select("-_id  -__v") ||
+                         await BrandListing.findById(investorId).select("-_id -__v");
 
         if (investor) {
           data.push(investor);

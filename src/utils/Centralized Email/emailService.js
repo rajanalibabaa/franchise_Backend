@@ -12,13 +12,31 @@ const __dirname = dirname(__filename);
 
 
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS,
-    }
-});
+// const transporter = nodemailer.createTransport({
+//         // host: 'smtp.gmail.com',
+//         host:'smtp.hostinger.com',
+//         // port: 587,
+//         port:465,
+//         secure: true,
+//         auth: {
+//             user: process.env.EMAIL_USER_SUPPORT,
+//             pass: process.env.EMAIL_PASS_SUPPORT,
+//         },
+//         family: 4
+//     });
+
+
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,   // Your Gmail
+          pass: process.env.EMAIL_PASS    // App password or your mail pass
+        },
+        tls: {
+          rejectUnauthorized: false // <--- THIS FIXES THE SELF-SIGNED CERT ERROR
+        }
+         
+      });
 
 
 // Function to read HTML template and replace placeholders with dynamic dat;
@@ -42,6 +60,7 @@ const getTemplate = (templateName, data) => {
 
 export const sendEmail =  async(to, subject, templateName, data) => {
     
+    
 
     // console.log("Sending email to:", to);
     // console.log("Subject:", subject);
@@ -51,7 +70,7 @@ export const sendEmail =  async(to, subject, templateName, data) => {
     const html = getTemplate(templateName,data); 
    
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_USER_SUPPORT,
         to,
         subject,
         html
