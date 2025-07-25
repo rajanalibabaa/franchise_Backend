@@ -132,7 +132,6 @@ const getAllBrands = async (req, res) => {
     const brands = await BrandListing.find().select(
       " -brandDetails?.brandPromotionVideo"
     );
-console.log( "fetch brands ",brands);
 
     // brands.forEach((brand) => {
     //   console.log("brand videos :", {
