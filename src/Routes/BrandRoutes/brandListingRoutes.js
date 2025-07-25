@@ -29,8 +29,6 @@ router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
 router.patch("/v1/brandlisting/updateBrandListingByUUID/:id", updateBrandListingByUUID)
 router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
-router.get("/v1/brandlisting/db", db);
-
 //brand Apply form for franchise ROutes
 
 // router.post('/createInstaApply',instaApplyBrnadFormController)

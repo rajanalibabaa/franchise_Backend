@@ -9,8 +9,129 @@ import {
 // import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import generateCustomId from "../../helpers/brandIdGenerater.js";
 
+// const createBrandListing = async (req, res) => {
+//   try {
+//     const fileFields = [
+//       "awardDoc",
+//       "brandLogo",
+//       "pancard",
+//       "businessPlan",
+//       "exteriorOutlet",
+//       "franchisePromotionVideo",
+//       "brandPromotionVideo",
+//       "gstCertificate",
+//       "interiorOutlet"
+//     ];
+// // console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
+//     // Parse incoming JSON strings safely
+//     const brandDetails = req.body.brandDetails
+//     const franchiseDetails = req.body.franchiseDetails 
+//     const expansionLocationData = req.body.expansionLocationData 
+//     // const brandDetails = JSON.parse(req.body.brandDetails || "{}");
+//     // const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
+//     // const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
+
+//     // ✅ Parse awardText safely as array
+//     let awardDis = [];
+
+
+
+//     if (Array.isArray(brandDetails.awardText)) {
+//       awardDis = brandDetails.awardText;
+//     } else if (typeof brandDetails.awardText === "string") {
+//       try {
+//         awardDis = JSON.parse(brandDetails.awardText);
+//       } catch (e) {
+//         console.warn("Invalid awardText JSON:", e);
+//         awardDis = [];
+//       }
+//     }
+
+//     // Generate brand ID using groupId if provided
+//     const group = franchiseDetails?.brandCategories?.groupId || null;
+//     const customId = await generateCustomId(group);
+
+
+   
+
+//     // Upload files to R2
+//     const uploadedFiles = {};
+//     for (const field of fileFields) {
+//       const files = req.files?.[field];
+//       // console.log("files :",field)
+//       if (!field) {
+//         //  console.log("field not found :",field)
+//          return
+//       }
+//       if (files?.length > 0) {
+//         const isVideo = field.toLowerCase().includes("video");
+//         const urls = await Promise.all(
+//           files.map((file) => {
+//             const contentType = isVideo ? "video/mp4" : file.mimetype;
+//             return uploadFileToR2(file.path, contentType);
+//           })
+//         );
+//         uploadedFiles[field] = urls;
+//       }
+//     }
+
+//     // ✅ Build structured awards array
+//     const awardDocs = uploadedFiles.awardDoc || [];
+//     const awards = awardDocs.map((fileUrl, index) => ({
+//       awardDescription: awardDis[index] || "",
+//       awardImage: fileUrl
+//     }));
+
+//     // Create the brand listing document
+//     const newBrand = await BrandListing.create({
+//       brandID: customId,
+//       brandDetails,
+//       franchiseDetails,
+//       expansionLocationData,
+//       uploads: {
+//         brandLogo: uploadedFiles.brandLogo || [],
+//         gstCertificate: uploadedFiles.gstCertificate || [],
+//         pancard: uploadedFiles.pancard || [],
+//         exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+//         interiorOutlet: uploadedFiles.interiorOutlet || [],
+//         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+//         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+//         businessPlan: uploadedFiles.businessPlan || [],
+//         awards: awards
+//       }
+//     });
+
+//     if (!newBrand) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Failed to create brand listing in the database"
+//       });
+//     }
+
+//     return res.json(
+//       new ApiResponse(
+//         200,
+//       newBrand,
+//        "Brand listing created successfully",
+      
+//       )
+//     );
+
+//   } catch (error) {
+//     console.error("❌ Brand Creation Error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to create brand listing",
+//       error: error.message
+//     });
+//   }
+// };
+
+
 const createBrandListing = async (req, res) => {
   try {
+    console.log("Incoming data:", req.body);
+
     const fileFields = [
       "awardDoc",
       "brandLogo",
@@ -22,39 +143,80 @@ const createBrandListing = async (req, res) => {
       "gstCertificate",
       "interiorOutlet"
     ];
-// console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
-    // Parse incoming JSON strings safely
-    // const brandDetails = req.body.brandDetails
-    // const franchiseDetails = req.body.franchiseDetails 
-    // const expansionLocationData = req.body.expansionLocationData 
-    const brandDetails = JSON.parse(req.body.brandDetails || "{}");
-    const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
-    const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
 
-    // ✅ Parse awardText safely as array
-    let awardDis = [];
-
-
-
-    if (Array.isArray(brandDetails.awardText)) {
-      awardDis = brandDetails.awardText;
-    } else if (typeof brandDetails.awardText === "string") {
+    const safeJsonParse = (input, fallback = {}) => {
       try {
-        awardDis = JSON.parse(brandDetails.awardText);
-      } catch (e) {
-        console.warn("Invalid awardText JSON:", e);
-        awardDis = [];
+        return typeof input === "string" ? JSON.parse(input) : input || fallback;
+      } catch (err) {
+        console.warn("JSON parse error:", err.message);
+        return fallback;
       }
+    };
+
+    const brandDetails = safeJsonParse(req.body?.brandDetails);
+    const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
+    const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
+
+    const normalizeDistrictData = (districtObj, fallbackName) => {
+      if (!districtObj.district && fallbackName) districtObj.district = fallbackName;
+      if (!Array.isArray(districtObj.cities) || districtObj.cities.length === 0) {
+        districtObj.cities = [districtObj.district || fallbackName].filter(Boolean);
+      }
+      return districtObj;
+    };
+
+    const normalizeLocations = (locations, isInternational = false) => {
+      if (!Array.isArray(locations)) return [];
+
+      return locations.map(loc => {
+        const key = isInternational ? "states" : "state";
+        const districtKey = isInternational ? "district" : "districts";
+
+        if (Array.isArray(loc[districtKey])) {
+          loc[districtKey] = loc[districtKey].map(d => normalizeDistrictData(d, loc[key]));
+        }
+        return loc;
+      });
+    };
+
+    // Normalize location data
+    if (expansionLocationData?.expansionLocations?.domestic?.locations) {
+      expansionLocationData.expansionLocations.domestic.locations =
+        normalizeLocations(expansionLocationData.expansionLocations.domestic.locations);
     }
 
-    // Generate brand ID using groupId if provided
-    const group = franchiseDetails?.brandCategories?.groupId || null;
-    const customId = await generateCustomId(group);
+    if (expansionLocationData?.currentOutletLocations?.domestic?.locations) {
+      expansionLocationData.currentOutletLocations.domestic.locations =
+        normalizeLocations(expansionLocationData.currentOutletLocations.domestic.locations);
+    }
 
+    if (expansionLocationData?.expansionLocations?.international?.country) {
+      expansionLocationData.expansionLocations.international.country =
+        normalizeLocations(expansionLocationData.expansionLocations.international.country, true);
+    }
 
-   
+    if (expansionLocationData?.currentOutletLocations?.international?.country) {
+      expansionLocationData.currentOutletLocations.international.country =
+        normalizeLocations(expansionLocationData.currentOutletLocations.international.country, true);
+    }
 
-    // Upload files to R2
+    // Parse award descriptions
+    let awardDescriptions = [];
+    if (Array.isArray(brandDetails.awardText)) {
+      awardDescriptions = brandDetails.awardText;
+    } else if (typeof brandDetails.awardText === "string") {
+      try {
+        awardDescriptions = JSON.parse(brandDetails.awardText);
+      } catch (e) {
+        console.warn("Invalid awardText JSON:", e);
+      }
+    }
+let awardDis = [];
+    // Generate brandID
+    const groupId = franchiseDetails?.brandCategories?.groupId || null;
+    const brandID = await generateCustomId(groupId);
+
+     // Upload files to R2
     const uploadedFiles = {};
     for (const field of fileFields) {
       const files = req.files?.[field];
@@ -81,10 +243,9 @@ const createBrandListing = async (req, res) => {
       awardDescription: awardDis[index] || "",
       awardImage: fileUrl
     }));
-
-    // Create the brand listing document
+    // Create new brand entry
     const newBrand = await BrandListing.create({
-      brandID: customId,
+      brandID,
       brandDetails,
       franchiseDetails,
       expansionLocationData,
@@ -97,28 +258,13 @@ const createBrandListing = async (req, res) => {
         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
         businessPlan: uploadedFiles.businessPlan || [],
-        awards: awards
+        awards
       }
     });
 
-    if (!newBrand) {
-      return res.status(400).json({
-        success: false,
-        message: "Failed to create brand listing in the database"
-      });
-    }
-
-    return res.json(
-      new ApiResponse(
-        200,
-      newBrand,
-       "Brand listing created successfully",
-      
-      )
-    );
-
+    return res.json(new ApiResponse(200, newBrand, "Brand listing created successfully"));
   } catch (error) {
-    console.error("❌ Brand Creation Error:", error);
+    console.error("❌ Error in createBrandListing:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to create brand listing",
@@ -126,6 +272,9 @@ const createBrandListing = async (req, res) => {
     });
   }
 };
+
+
+
 
 const getAllBrands = async (req, res) => {
   try {
@@ -910,7 +1059,6 @@ const deleteBrandListingByUUID = async (req, res) => {
       .json({ error: "Failed to delete brand", details: error.message });
   }
 };
-
 
 export {
   createBrandListing,
