@@ -20,13 +20,25 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER_SUPPORT, 
         pass: process.env.EMAIL_PASS_SUPPORT,
     },
- 
    
 });
 
+// const transporter = nodemailer.createTransport({
+//     host: "smtp.hostinger.com",
+//     port: 465,
+//     secure: true,
+//     auth: {
+//       user: process.env.EMAIL_USER_SUPPORT,   // Your Gmail
+//       pass: process.env.EMAIL_PASS_SUPPORT    // App password or your mail pass
+//     },
+//     tls: {
+//       rejectUnauthorized: false // <--- THIS FIXES THE SELF-SIGNED CERT ERROR
+//     }
+     
+//   });
+
 
 // Function to read HTML template and replace placeholders with dynamic dat;
-
 
 const getTemplate = (templateName, data) => {
     try {
@@ -47,10 +59,10 @@ const getTemplate = (templateName, data) => {
 export const sendEmail =  async(to, subject, templateName, data) => {
     
 
-    // console.log("Sending email to:", to);
-    // console.log("Subject:", subject);
-    // console.log("Template Name:", templateName);
-    // console.log("Data:", data);
+    console.log("Sending email to:", to);
+    console.log("Subject:", subject);
+    console.log("Template Name:", templateName);
+    console.log("Data:", data);
 
     const html = getTemplate(templateName,data); 
    

@@ -180,7 +180,6 @@ export const sendInstantApplyPerAndPar = async (
     planToInvest: planToInvest,
     readyToInvest: readyToInvest,
   };
-
   // console.log(" ============== :",emailData)
 
   // Call the sendEmail function
