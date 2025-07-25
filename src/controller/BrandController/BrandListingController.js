@@ -304,6 +304,34 @@ const deleteBrandListingByUUID = async (req, res) => {
   }
 };
 
+export const db = async (req, res) => {
+  try {
+    const data = await BrandListing.find({
+      "franchiseDetails.fico.investmentRange": "Rs.50 L - 1 Cr"
+    });
+
+    // Loop over each matching document and update
+    for (const item of data) {
+      await BrandListing.findByIdAndUpdate(
+        item._id,
+        {
+          $set: {
+            "franchiseDetails.fico.0.investmentRange": "Rs. 50 L - 1 Cr"
+          }
+        },
+        { new: true }
+      );
+    }
+
+    console.log(data);
+    return res.status(200).json({ updatedCount: data.length, data });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 export {
   createBrandListing,
   getAllBrands,
