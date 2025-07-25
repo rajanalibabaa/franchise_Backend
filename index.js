@@ -13,94 +13,82 @@ import allRouters from './app.js';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import MongoStore from 'connect-mongo';
- 
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later."
-});
+
+dotenv.config();  // ✅ Load env FIRST
+
 const app = express();
 
-app.use(helmet()); // Adds security headers to the response
-app.use(cors( {
-    origin: ['https://fb.mrfranchise.in','http://localhost:5173','http://localhost:5174'],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+// Security & Rate Limiting
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 min
+  max: 100,
+  message: "Too many requests, try again later."
+});
 
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-    credentials: true,
-    optionsSuccessStatus: 200,
+app.use(helmet());
+app.use(cors({
+  origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  optionsSuccessStatus: 200,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Session (make sure DB_URL and SESSION_SECRET exist in .env)
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store:MongoStore.create({
-        mongoUrl: process.env.DB_URL,
-        collectionName: 'sessions',
-        ttl: 14 * 24 * 60 * 60, // 14 days
-    }),
-    cookie: {
-        maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-        httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-    },
+  secret: process.env.SESSION_SECRET || "default_secret",
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.DB_URL,
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60, // 14 days
+  }),
+  cookie: {
+    maxAge: 14 * 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+  },
 }));
-app.use(limiter);
+
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 configureGoogleStrategy();
-  configureFacebookStrategy();
-   
-  connectDatabase();
+configureFacebookStrategy();
 
+// Limit requests globally
+app.use(limiter);
 
-dotenv.config();  
+// Connect to DB (ensure DB is connected before listening)
+const startServer = async () => {
+  try {
+    await connectDatabase(); // ✅ Wait for DB to connect
+    console.log("✅ Database connected");
 
-// Middlewares
+    // Routes
+    app.get('/', (req, res) => {
+      res.json({ message: 'Welcome to the Home Page!' });
+    });
 
-// app.use(bodyParser.json());
-// app.use(bodyParser.urlencoded({ extended: true }));
+    app.use('/api', allRouters);
+    app.use('/api/v1/upload', s3Uploads);
 
+    // Error handler (must be last)
+    app.use(errorHandler);
 
+    app.listen(process.env.PORT, () => {
+      console.log(`🚀 Server is running on port ${process.env.PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err.message);
+    process.exit(1);
+  }
+};
 
-
-
-
-
-  
-
-// Routes
-app.get('/', (req, res) => {    res.json({ message: 'Welcome to the Home Page!' });});
-
-app.use('/api',limiter,allRouters,);
-
-app.use("/api/v1/upload", limiter,s3Uploads);
-
-// app.post('/api/v1/verify-captcha', async (req, res) => {
-//   const { token } = req.body;
-//   const secretKey = process.env.REACT_APP_RECAPTCHA_SECRET_KEY;
-
-//   const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
-//   const response = await fetch(url, { method: 'POST' });
-//   const data = await response.json();
-
-//   res.json(data); // returns success or error
-// });
-
-
-// Global Error Handler
-app.use(errorHandler);
-
-// Server Listener
-app.listen(process.env.PORT, () => {
-    console.log(`🚀 Server is running on port ${process.env.PORT}`);
-});
-
-
-
-
+startServer();
