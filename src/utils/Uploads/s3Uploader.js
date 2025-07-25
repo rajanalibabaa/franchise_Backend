@@ -104,7 +104,7 @@ export const uploadFileToR2 = async (filePath, mimetype) => {
     });
 
     await s3.send(command);
-    // console.log(`✅ Uploaded to R2: ${fileKey}`);
+    console.log(`✅ Uploaded to R2: ${fileKey}`);
 
     // Clean up local file
     try {

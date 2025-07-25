@@ -31,6 +31,8 @@ const createBrandListing = async (req, res) => {
     const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
     const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
 
+    // console.log(req.body)
+
     // ✅ Parse awardText safely as array
     let awardDis = [];
 
