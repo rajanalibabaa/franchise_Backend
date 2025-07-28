@@ -132,6 +132,7 @@ const getAllBrands = async (req, res) => {
     const brands = await BrandListing.find().select(
       " -brandDetails?.brandPromotionVideo"
     );
+console.log( "fetch brands ",brands);
 
     // brands.forEach((brand) => {
     //   console.log("brand videos :", {
@@ -231,28 +232,19 @@ const getBrandListingByUUID = async (req, res) => {
     }
 
     return res
-      .status(200)
       .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
   } catch (error) {
     // console.error("getBrandListingByUUID error:", error);
     return res
-      .status(500)
       .json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
 
+// const updateBrandListingBssyUUID = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     console.log("Updating brand by UUID:", id);
 
-// Fields that accept single file uploads
-const singleFileFields = [
-  "brandLogo",
-  "exteriorOutlet",
-  "franchisePromotionVideo",
-  "gstCertificate",
-  "interiorOutlet",
-  "pancard",
-  "businessPlan",
-  "awards",
-];
 
 // const updateBrandListingBssyUUID = async (req, res) => {
 //   try {
@@ -620,6 +612,29 @@ const updateBrandListingByUUID = async (req, res) => {
     const { id } = req.params;
     const updateData = {};
 
+
+        const fileFields = [
+      "awardDoc",
+      "brandLogo",
+      "pancard",
+      "businessPlan",
+      "exteriorOutlet",
+      "franchisePromotionVideo",
+      "brandPromotionVideo",
+      "gstCertificate",
+      "interiorOutlet"
+    ];
+
+    // Helper function to safely parse JSON fields
+    const parseField = (field) => {
+      try {
+        return field ? JSON.parse(field) : {};
+      } catch (e) {
+        console.warn(`Failed to parse field: ${e.message}`);
+        return {};
+      }
+    };
+
     // Helper function to set nested fields
     const setNestedFields = (basePath, fields) => {
       for (const [key, value] of Object.entries(fields)) {
@@ -823,52 +838,76 @@ const updateBrandListingByUUID = async (req, res) => {
         );
       }
     }
-
-    // Handle file uploads and other updates (existing code)
+    // Handle file uploads
     const uploadedFiles = {};
-    const singleFileFields = [
-      'brandLogo',
-      'exteriorOutlet',
-      'franchisePromotionVideo',
-      'gstCertificate',
-      'interiorOutlet',
-      'pancard',
-      'businessPlan',
-      'awards'
-    ];
 
-    if (req.files) {
-      for (const field of singleFileFields) {
-        const files = req.files[field];
-        if (files && files.length > 0) {
-          const urls = await Promise.all(
-            files.map((file) => uploadFileToS3(file.path, file.mimetype))
-          );
-          uploadedFiles[field] = urls.length === 1 ? urls[0] : urls;
-        }
+
+console.log("Uploaded files:", uploadedFiles);
+console.log("File fields:", fileFields);
+console.log("Request files:", req.files);
+
+    for (const field of fileFields) {
+      const files = req.files?.[field];
+      if (files?.length > 0) {
+        const isVideo = field.toLowerCase().includes("video");
+        const urls = await Promise.all(
+          files.map((file) => {
+            const contentType = isVideo ? "video/mp4" : file.mimetype;
+            return uploadFileToR2(file.path, contentType);
+          })
+        );
+        uploadedFiles[field] = urls;
       }
     }
 
-      // Handle uploads from request body (for URL updates)
-    if (req.body.uploads) {
-      for (const [field, value] of Object.entries(req.body.uploads)) {
-        if (value !== undefined && value !== null) {
-          updateData[`uploads.${field}`] = value;
+    // Handle awards separately (combining awardDoc and awardText)
+    if (uploadedFiles.awardDoc || req.body.awardText) {
+      let awardDis = [];
+      
+      if (req.body.awardText) {
+        try {
+          awardDis = Array.isArray(req.body.awardText) 
+            ? req.body.awardText 
+            : JSON.parse(req.body.awardText || "[]");
+        } catch (e) {
+          console.warn("Invalid awardText format:", e);
+          awardDis = [];
         }
+      }
+
+      const awardDocs = uploadedFiles.awardDoc || [];
+      const awards = awardDocs.map((fileUrl, index) => ({
+        awardDescription: awardDis[index] || "",
+        awardImage: fileUrl
+      }));
+
+      if (awards.length > 0) {
+        updateData["uploads.awards"] = awards;
       }
     }
 
-
-    // Merge uploaded files with update data
-    for (const [field, value] of Object.entries(uploadedFiles)) {
-      updateData[`uploads.${field}`] = value;
+    // Add other uploaded files to update data
+    for (const [field, urls] of Object.entries(uploadedFiles)) {
+      if (field !== "awardDoc") { // awards already handled separately
+        updateData[`uploads.${field}`] = urls;
+      }
     }
 
-    // If no data to update, return early
+    // If no updates were provided
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: "No valid fields provided for update" });
+      return res.status(400).json({
+        success: false,
+        message: "No valid updates provided"
+      });
     }
 
+    // If no files were uploaded, return early
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid file uploads provided"
+      });
+    }
     const updatedBrand = await BrandListing.findOneAndUpdate(
       { uuid: id },
       { $set: updateData },
@@ -891,14 +930,14 @@ const updateBrandListingByUUID = async (req, res) => {
   }
 };
 
+
 const deleteBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await BrandListing.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: "Brand not found" });
+    if (!deleted) return res.json({ error: "Brand not found" });
 
     return res
-      .status(200)
       .json(new ApiResponse(200, {}, "✅ Brand deleted successfully"));
   } catch (error) {
     return res

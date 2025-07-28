@@ -31,6 +31,8 @@ export const requestEmailOtp = async (req, res) => {
     const otp = generateOTP();
     // console.log("OTP:", otp); // Log the OTP for debugging purposes
     const token = generateToken(email, otp);
+    console.log("Token:", token);
+    
 
     try {
         await sendEmailOTP(email, otp);

@@ -1,13 +1,13 @@
 import express from "express";
-import thirdPartyAuthRouter from './src/Routes/ThirdpartyRoutes/thirdpartyAuthenticationRouters.js';
+import thirdPartyAuthRouter from "./src/Routes/ThirdpartyRoutes/thirdpartyAuthenticationRouters.js";
 // import InvestorloginRouter from './src/Routes/InvestorRoutes/InvestorLoginRoutes.js';
 // import invsRegisterRoutes from "./src/Routes/invRegisterRoutes.js";
 
 import feedbackRoutes from "./src/Routes/FeedbackRoutes/feedbackRoutes.js";
-import complaintRoutes from './src/Routes/ComplaintRoutes/complaintRoutes.js';
+import complaintRoutes from "./src/Routes/ComplaintRoutes/complaintRoutes.js";
 import brandRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
-import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js"
-import postRequireRoutes from  './src/Routes/PostRequirementRoutes/postRequirementRoutes.js';
+import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js";
+import postRequireRoutes from "./src/Routes/PostRequirementRoutes/postRequirementRoutes.js";
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
 import { InvestorRouter } from "./src/Routes/InvestorRoutes/invRegisterRoutes.js";
 import { fbPostsRouter } from "./src/Routes/AdminRoutes/SocialMediaRoutes/fbPostsRoutes.js";
@@ -15,11 +15,10 @@ import { videoAdvertiseRoute } from "./src/Routes/AdminRoutes/AdminVideoAdvertis
 
 import { frontendHomePageBrandsRouter } from "./src/Routes/FeatureRoutes/FrontendhomePageRoutes/frontendHomePageBrandsRoutes.js";
 
-
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
-import adminAuthRoutes from './src/Routes/AdminRoutes/adminAuthRoutes.js';
+import adminAuthRoutes from "./src/Routes/AdminRoutes/adminAuthRoutes.js";
 // import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
@@ -28,93 +27,91 @@ import { ViewedBrandsRouter } from "./src/Routes/ViewedBrandsRoutes/ViewedBrands
 import { filterRouter } from "./src/Routes/FilterRoute/FilterRoutes.js";
 import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.js";
 import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
-import {OtherIndustriesRouter} from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
+import { OtherIndustriesRouter } from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
+import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js";
 
 const router = express.Router();
 
-router.use( thirdPartyAuthRouter)
-router.use( Login) 
+router.use(thirdPartyAuthRouter);
+router.use(Login);
 
 router.use(postRequireRoutes);
 
-router.use( feedbackRoutes);
-router.use( complaintRoutes);
+router.use(feedbackRoutes);
+router.use(complaintRoutes);
 // router.use('/instaApply', instaApplyRoutes);
 // router.use(brandRoutes )
 // router.use('/newIncomerInvestor',incomeInvestor );
-router.use( adminAuthRoutes);
-router.use(InvestorRouter)
-router.use(brandListingRoutes)
+router.use(adminAuthRoutes);
+router.use(InvestorRouter);
+router.use(brandListingRoutes);
 
 // admin
-router.use(adminRoutess );
-router.use( AdminDashBoardClientRouter)
+router.use(adminRoutess);
+router.use(AdminDashBoardClientRouter);
 
 // video advertise
-router.use( videoAdvertiseRoute)
+router.use(videoAdvertiseRoute);
 
 // router.use('/v1/brand/register',BrandRegisterRoute)
 
 //logout routers
-router.use(logoutRouter)
+router.use(logoutRouter);
 
-router.use(fbPostsRouter)
+router.use(fbPostsRouter);
 
 //login routers
 // router.use('/v1/login', Login)
 
-router.use(sendOtpRouter)
-
-
-
+router.use(sendOtpRouter);
 
 // frondend home page routes
 
-router.use( frontendHomePageBrandsRouter)
-
+router.use(frontendHomePageBrandsRouter);
 
 // send otp verify otp royutes
-router.use(sendOTPVerifyOTPRoutes)
+router.use(sendOTPVerifyOTPRoutes);
 
-router.use(likeRouter)
+router.use(likeRouter);
 
 //view brands
-router.use(ViewedBrandsRouter)
-
+router.use(ViewedBrandsRouter);
 
 //Filter
-router.use(filterRouter)
-
+router.use(filterRouter);
 
 // InstantApplyRouter
-router.use(InstantApplyRouter)
+router.use(InstantApplyRouter);
 
 // subscribe routes
-router.use(subscribeRouter)
+router.use(subscribeRouter);
 // OtherIndustries
-router.use( OtherIndustriesRouter)
+router.use(OtherIndustriesRouter);
 
-
-function getRoutes(router, basePath = '') {
+//shortListRouter
+router.use(shortListRouter);
+function getRoutes(router, basePath = "") {
   const routes = [];
   router.stack.forEach((layer) => {
     // Direct route (GET, POST, etc.)
     if (layer.route && layer.route.path) {
-      const methods = Object.keys(layer.route.methods).map(m => m.toUpperCase());
+      const methods = Object.keys(layer.route.methods).map((m) =>
+        m.toUpperCase()
+      );
       routes.push({
-        method: methods.join(', '),
-        path: basePath + layer.route.path
+        method: methods.join(", "),
+        path: basePath + layer.route.path,
       });
     }
     // Nested router
-    else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
-      let path = '';
+    else if (layer.name === "router" && layer.handle && layer.handle.stack) {
+      let path = "";
       if (layer.regexp && layer.regexp.source) {
         const match = layer.regexp.source
-          .replace(/\\\//g, '/')
+          .replace(/\\\//g, "/")
           .match(/^\^\/\??(.*?)\\\/\?\(\?=\\\/\|\$\)/);
         if (match && match[1]) {
-          path = '/' + match[1];
+          path = "/" + match[1];
         }
       }
       routes.push(...getRoutes(layer.handle, basePath + path));
@@ -124,12 +121,12 @@ function getRoutes(router, basePath = '') {
 }
 
 // Add this endpoint to list all routes
-router.get('/endpoints', (req, res) => {
-  const routes = getRoutes(router, '/api');
+router.get("/endpoints", (req, res) => {
+  const routes = getRoutes(router, "/api");
   console.log(`Total endpoints: ${routes.length}`);
-  
+
   // Generate HTML page with professional design
-const html = `
+  const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -211,15 +208,23 @@ const html = `
         </div>
     </div>
     <div class="accordion" id="endpointsAccordion">
-        ${routes.map((route, index) => `
+        ${routes
+          .map(
+            (route, index) => `
         <div class="card endpoint-card method-${route.method.toLowerCase()}">
             <div class="card-header" id="heading${index}">
                 <h2 class="mb-0 d-flex align-items-center">
                     <button class="btn btn-link text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
                         <span>
-                            <span class="badge bg-${getMethodBadgeColor(route.method)} badge-method me-2">${route.method}</span>
-                            <span class="endpoint-path" id="endpoint-path-${index}">${route.path}
-                            <button class="copy-btn" title="Copy path" data-path="${route.path}" data-index="${index}">
+                            <span class="badge bg-${getMethodBadgeColor(
+                              route.method
+                            )} badge-method me-2">${route.method}</span>
+                            <span class="endpoint-path" id="endpoint-path-${index}">${
+              route.path
+            }
+                            <button class="copy-btn" title="Copy path" data-path="${
+                              route.path
+                            }" data-index="${index}">
                                 <i class="fas fa-copy"></i>
                             </button>
                             </span>
@@ -229,7 +234,9 @@ const html = `
                 </h2>
             </div>
         </div>
-        `).join('')}
+        `
+          )
+          .join("")}
     </div>
     <div class="text-center mt-4">
         <small class="text-muted">Last updated: ${new Date().toLocaleString()}</small>
@@ -275,22 +282,26 @@ const html = `
 </body>
 </html>
 `;
-  
+
   res.send(html);
 });
 
 // Helper function to get badge color based on HTTP method
 function getMethodBadgeColor(method) {
-  switch(method.toLowerCase()) {
-    case 'get': return 'success';
-    case 'post': return 'primary';
-    case 'put': return 'warning';
-    case 'delete': return 'danger';
-    case 'patch': return 'info';
-    default: return 'secondary';
+  switch (method.toLowerCase()) {
+    case "get":
+      return "success";
+    case "post":
+      return "primary";
+    case "put":
+      return "warning";
+    case "delete":
+      return "danger";
+    case "patch":
+      return "info";
+    default:
+      return "secondary";
   }
 }
-
-
 
 export default router;
