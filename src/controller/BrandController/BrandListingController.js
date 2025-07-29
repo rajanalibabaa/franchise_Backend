@@ -47,7 +47,7 @@ console.log("Incoming data:", req.body);
 
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
-      return res.status(400).json(
+      return res.json(
         new ApiResponse(400, {}, "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing")
       );
     }
@@ -171,12 +171,12 @@ console.log("Incoming data:", req.body);
 
     // Check if all records were created successfully
     if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
-      return res.status(500).json(
+      return res.json(
         new ApiResponse(500, {}, "Failed to create one or more brand records")
       );
     }
 
-    return res.status(201).json(
+    return res.json(
       new ApiResponse(201, {
         brand: newBrand,
         franchise: newBrandFranchiseDetails,
@@ -187,7 +187,7 @@ console.log("Incoming data:", req.body);
 
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
-    return res.status(500).json(
+    return res.json(
       new ApiResponse(500, {}, `Failed to create brand listing: ${error.message}`)
     );
   }
@@ -198,34 +198,45 @@ console.log("Incoming data:", req.body);
 
 
 
+// const getAllBrands = async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skip = (10 - 1) * limit;
+
+//     // Get total count for pagination metadata
+//     const total = await BrandListing.countDocuments({});
+
+//     const brands = await BrandListing.find({})
+//       .select("")
+//       .skip(skip)
+//       .limit(limit)
+//       .lean();
+
+//     const totalPages = Math.ceil(total / limit);
+
+//     return res.status(200).json(
+//       new ApiResponse(200, {
+//         brands,
+//         pagination: {
+//           totalItems: total,
+//           totalPages,
+//           currentPage: page,
+//           perPage: limit,
+//         },
+//       }, "✅ Brands fetched successfully")
+//     );
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ error: "Failed to fetch brands", details: error.message });
+//   }
+// };
+
+
 const getAllBrands = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (10 - 1) * limit;
-
-    // Get total count for pagination metadata
-    const total = await BrandListing.countDocuments({});
-
-    const brands = await BrandListing.find({})
-      .select("")
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const totalPages = Math.ceil(total / limit);
-
-    return res.status(200).json(
-      new ApiResponse(200, {
-        brands,
-        pagination: {
-          totalItems: total,
-          totalPages,
-          currentPage: page,
-          perPage: limit,
-        },
-      }, "✅ Brands fetched successfully")
-    );
+    
   } catch (error) {
     return res
       .status(500)
