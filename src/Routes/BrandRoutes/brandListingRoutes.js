@@ -48,4 +48,3 @@ router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandList
 // router.post('/createInstaApply',instaApplyBrnadFormController)
 
 export default router;
-
