@@ -7,6 +7,7 @@ const connectDatabase = async () => {
     // DB_URL=mongodb+srv://<user>:<pass>@mrfranchise.vanempq.mongodb.net/Mrfranchise?retryWrites=true&w=majority&appName=mrfranchise
 
     const conn = await mongoose.connect(process.env.DB_URL, {
+       maxPoolSize: 50, // allows multiple queries in parallel
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

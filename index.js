@@ -13,10 +13,12 @@ import allRouters from './app.js';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import MongoStore from 'connect-mongo';
-
+import compression from "compression";
 dotenv.config();  // ✅ Load env FIRST
 
 const app = express();
+
+app.use(compression());
 
 // Security & Rate Limiting
 const limiter = rateLimit({
