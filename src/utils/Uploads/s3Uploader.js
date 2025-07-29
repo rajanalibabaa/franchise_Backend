@@ -75,20 +75,16 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
 
 
 export const uploadFileToR2 = async (filePath, mimetype) => {
-  if (!filePath) {
-    throw new Error("File path is required");
-  }
+  if (!filePath) throw new Error("File path is required");
 
   try {
-    // Verify file exists and is accessible
     if (!existsSync(filePath)) {
       throw new Error(`File not found at ${filePath}`);
     }
 
-    // Get file stats to verify it's not empty
     const stats = await fs.stat(filePath);
     if (stats.size === 0) {
-      await fs.unlink(filePath); // Remove empty file immediately
+      await fs.unlink(filePath); // ✅ Properly unlinks empty file
       throw new Error(`Empty file at ${filePath}`);
     }
 
@@ -96,24 +92,16 @@ export const uploadFileToR2 = async (filePath, mimetype) => {
     const ext = path.extname(originalFileName).toLowerCase();
     const baseName = path.basename(originalFileName, ext);
 
-    // Determine content type
-    const contentType = mimetype || mime.lookup(ext) || 'application/octet-stream';
-
-    // Organize files by type
-    const folder = contentType.startsWith('image/') ? 'images' :
-                   contentType.startsWith('video/') ? 'videos' :
-                   contentType.startsWith('audio/') ? 'audio' :
-                   contentType.startsWith('application/') ? 'documents' :
-                   'misc';
+    const contentType = mimetype || mime.lookup(ext) || "application/octet-stream";
+    const folder = contentType.startsWith("image/") ? "images" :
+                   contentType.startsWith("video/") ? "videos" :
+                   contentType.startsWith("audio/") ? "audio" :
+                   contentType.startsWith("application/") ? "documents" :
+                   "misc";
 
     const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
-
-    console.log("fileKey :",fileKey)
-
-    // Read file content
     const fileContent = await fs.readFile(filePath);
 
-    // Upload to R2
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: fileKey,
@@ -123,37 +111,38 @@ export const uploadFileToR2 = async (filePath, mimetype) => {
 
     await s3.send(command);
 
-    // Delete local file after successful upload
+    // ✅ Delete local file after successful upload
     try {
-      // await fs.unlink(filePath);
-      console.log(`✅ Successfully cleaned up temporary file: ${filePath}`);
+      await fs.unlink(filePath); // ✅ Properly unlinks
+      console.log(`✅ Successfully deleted local temp file: ${filePath}`);
     } catch (unlinkErr) {
       console.error(`⚠️ Failed to delete temp file: ${filePath}`, unlinkErr.message);
-      // Don't throw error here - upload succeeded, just log the cleanup failure
     }
 
-    // Return public URL
+    // ✅ Return full public URL
     if (process.env.R2_PUBLIC_URL) {
-      const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, '');
+      const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
       return `${baseUrl}/${fileKey}`;
     }
+
     return fileKey;
-    
+
   } catch (error) {
-    // Attempt to clean up the file even if upload failed
+    // 🧹 Cleanup even if upload fails
     if (existsSync(filePath)) {
       try {
-        // await fs.unlink(filePath);
-        console.log(`🧹 Cleaned up failed upload file: ${filePath}`);
-      } catch (cleanupError) {
-        console.error(`⚠️ Failed to clean up failed upload file: ${filePath}`, cleanupError.message);
+        await fs.unlink(filePath); // ✅ cleanup even on error
+        console.log(`🧹 Deleted local file after failed upload: ${filePath}`);
+      } catch (cleanupErr) {
+        console.error(`⚠️ Failed to cleanup file: ${filePath}`, cleanupErr.message);
       }
     }
-    
+
     console.error("❌ uploadFileToR2 Error:", error.message);
-    throw error; // Re-throw the original error after cleanup attempts
+    throw error;
   }
 };
+
 
 export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
   const command = new GetObjectCommand({
