@@ -34,8 +34,6 @@ const createBrandListing = async (req, res) => {
     // ✅ Parse awardText safely as array
     let awardDis = [];
 
-
-
     if (Array.isArray(brandDetails.awardText)) {
       awardDis = brandDetails.awardText;
     } else if (typeof brandDetails.awardText === "string") {
@@ -125,7 +123,7 @@ const createBrandListing = async (req, res) => {
       error: error.message
     });
   }
-};
+};``
 
 const getAllBrands = async (req, res) => {
   try {
