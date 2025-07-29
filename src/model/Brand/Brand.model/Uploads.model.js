@@ -8,7 +8,8 @@ const UploadsSchema = new mongoose.Schema(
           ref: 'BrandDetails',
           required: true
         },
-    uploads:{brandLogo: [String],
+    uploads:{
+    brandLogo: [String],
     exteriorOutlet: [String],
     franchisePromotionVideo: [String],
     gstCertificate: [String],

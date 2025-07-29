@@ -45,10 +45,23 @@ console.log("Incoming data:", req.body);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
     const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
 
+
+console.log("Incoming data:", brandDetails.brandName);
+
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
       return res.json(
         new ApiResponse(400, {}, "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing")
+      );
+    }
+
+    const exists = await BrandDetails.findOne({
+      "brandDetails.brandName": brandDetails.brandName
+    })
+
+    if (exists) {
+      return res.json(
+        new ApiResponse(400, {}, "Brand already exists")
       );
     }
 
@@ -234,17 +247,115 @@ console.log("Incoming data:", req.body);
 // };
 
 
+
+
 const getAllBrands = async (req, res) => {
   try {
     
+    const page = parseInt(req.query.page) || 1;
+    const pageTwo = parseInt(req.query.pageTwo) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    console.log(pageTwo)  
+
+    const aggregationPipeline = [
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "franchiseDetails"
+        }
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      {
+        $unwind: {
+          path: "$franchiseDetails",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $unwind: {
+          path: "$uploads",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          brandID: 1,
+          uuid: 1,
+          brandname: "$brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+          },
+          fico: {
+            $ifNull: ["$franchiseDetails.franchiseDetails.fico", []]
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
+            }
+          },
+          franchiseVideos: {
+            $ifNull: ["$uploads.uploads.franchisePromotionVideo", []]
+          },
+        }
+      },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    // Get paginated results and total count in parallel
+    const [results, totalCount] = await Promise.all([
+      BrandDetails.aggregate(aggregationPipeline),
+      BrandDetails.countDocuments()
+    ]);
+
+    if (!results || results.length === 0) {
+      return res.json(
+        new ApiResponse(404, null, "No brands found")
+      );
+    }
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return res.json(
+      new ApiResponse(200, {
+        results,
+        pagination: {
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Brand data fetched successfully")
+    );
+
+
+    
   } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Failed to fetch brands", details: error.message });
+    console.error("Error fetching brands:", error);
+    return res.status(500).json(
+      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+    );
   }
 };
-
-
 
 // const getBrandListingByUUID = async (req, res) => {
 //   try {
