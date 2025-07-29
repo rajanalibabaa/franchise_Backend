@@ -8,9 +8,9 @@ import {
 // import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import generateCustomId from "../../helpers/brandIdGenerater.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
-import { FranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
-import { ExpansionLocationData } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
-import { Uploads } from "../../model/Brand/Brand.model/Uploads.model.js";
+import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
+import { BrandExpansionLocationData } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
+import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
 import uuid from "../../utils/uuid.js";
 
 
@@ -145,15 +145,15 @@ console.log("Incoming data:", req.body);
         uuid:id,
         brandDetails
       }),
-      FranchiseDetails.create({
+      BrandFranchiseDetails.create({
         brandOwnerId: id,
         franchiseDetails
       }),
-      ExpansionLocationData.create({
+      BrandExpansionLocationData.create({
         brandOwnerId: id,
         expansionLocationData
       }),
-      Uploads.create({
+      BrandUploads.create({
         brandOwnerId: id,
         uploads: {
           brandLogo: uploadedFiles.brandLogo || [],

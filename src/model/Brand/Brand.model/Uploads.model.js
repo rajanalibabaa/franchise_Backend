@@ -18,8 +18,10 @@ const UploadsSchema = new mongoose.Schema(
     awards: [
       {
         awardDescription: { type: String },
-        awardImage: { type: String }
-      }
+        awardImage: { type: String },
+        _id:false
+      },
+      
     ],}
    
   },
@@ -28,4 +30,4 @@ const UploadsSchema = new mongoose.Schema(
   }
 );
 
-export const Uploads = mongoose.model("Uploads", UploadsSchema);
+export const BrandUploads = mongoose.model("BrandUploads", UploadsSchema);

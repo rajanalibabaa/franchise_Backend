@@ -56,4 +56,4 @@ const FranchiseDetailsSchema = new mongoose.Schema(
   }
 );
 
-export const FranchiseDetails = mongoose.model("FranchiseDetails", FranchiseDetailsSchema);
+export const BrandFranchiseDetails = mongoose.model("BrandFranchiseDetails", FranchiseDetailsSchema);

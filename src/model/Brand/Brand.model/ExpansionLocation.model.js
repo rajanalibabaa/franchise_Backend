@@ -80,4 +80,4 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
   }
 );
 
-export const ExpansionLocationData = mongoose.model("ExpansionLocationData", ExpansionLocationDataSchema);
+export const BrandExpansionLocationData = mongoose.model("BrandExpansionLocationData", ExpansionLocationDataSchema);
