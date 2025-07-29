@@ -325,7 +325,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     const brand = req.brandUser;
 
     if ((uuid !== investor?.uuid) && (uuid !== brand?.uuid)) {
-      return res.status(401).json(new ApiResponse(401, {}, "Unauthorized access"));
+      return res.json(new ApiResponse(401, {}, "Unauthorized access"));
     }
 
     let likedBrandIds = [];
@@ -335,7 +335,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     if (investor) {
       const existsInvestor = await InvsRegister.findOne({ uuid: investor.uuid });
       if (!existsInvestor) {
-        return res.status(404).json(new ApiResponse(404, {}, "Investor not found"));
+        return res.json(new ApiResponse(404, {}, "Investor not found"));
       }
 
       // Get liked brands
@@ -361,7 +361,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     if (brand) {
       const existsBrand = await BrandListing.findOne({ uuid: brand.uuid });
       if (!existsBrand) {
-        return res.status(404).json(new ApiResponse(404, {}, "Brand not found"));
+        return res.json(new ApiResponse(404, {}, "Brand not found"));
       }
 
       // Get liked brands
@@ -386,7 +386,7 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
     // Get all brands
     const allBrands = await BrandListing.find({});
     if (!allBrands || allBrands.length === 0) {
-      return res.status(404).json(new ApiResponse(404, {}, "Brands not registered yet"));
+      return res.json(new ApiResponse(404, {}, "Brands not registered yet"));
     }
 
     // Compose result with isLiked and isShortListed flags
@@ -398,11 +398,12 @@ export const getAllLikedAndUnlikedBrand = async (req, res) => {
         isShortListed: shortListedBrandIds.includes(_id.toString())
       };
     });
+    
 
-    return res.status(200).json(new ApiResponse(200, result, "All brands with liked and shortlisted status"));
+    return res.json(new ApiResponse(200, result, "All brands with liked and shortlisted status"));
   } catch (error) {
     console.error("getAllLikedAndUnlikedBrand error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
 

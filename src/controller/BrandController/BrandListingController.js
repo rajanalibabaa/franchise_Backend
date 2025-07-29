@@ -278,20 +278,32 @@ let awardDis = [];
 
 const getAllBrands = async (req, res) => {
   try {
-    const brands = await BrandListing.find().select(
-      " -brandDetails?.brandPromotionVideo"
-    );
-console.log( "fetch brands ",brands);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (10 - 1) * limit;
 
-    // brands.forEach((brand) => {
-    //   console.log("brand videos :", {
-    //     franchisePromotionVideo: brand.brandDetails?.franchisePromotionVideo,
-    //     brandPromotionVideo: brand.brandDetails?.brandPromotionVideo,
-    //   });
-    // });
-    return res
-      .status(200)
-      .json(new ApiResponse(200, brands, "✅ Brands fetched successfully"));
+    // Get total count for pagination metadata
+    const total = await BrandListing.countDocuments({});
+
+    const brands = await BrandListing.find({})
+      .select("")
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json(
+      new ApiResponse(200, {
+        brands,
+        pagination: {
+          totalItems: total,
+          totalPages,
+          currentPage: page,
+          perPage: limit,
+        },
+      }, "✅ Brands fetched successfully")
+    );
   } catch (error) {
     return res
       .status(500)
@@ -299,37 +311,7 @@ console.log( "fetch brands ",brands);
   }
 };
 
-// const getBrandListingByUUID = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const brandData = req.brandUser;
 
-//     if (id !== brandData?.uuid) {
-//       return res.status(403).json(
-//         new ApiResponse(403, null, "Unauthorized request")
-//       );
-//     }
-
-//     const brand = await BrandListing.findOne({ uuid: brandData.uuid })
-//       .select("-_id -createdAt -updatedAt -__v");
-
-//     if (!brand) {
-//       return res.status(404).json(
-//         new ApiResponse(404, null, "Brand not found")
-//       );
-//     }
-
-//     return res.status(200).json(
-//       new ApiResponse(200, brand, "✅ Brand fetched successfully")
-//     );
-
-//   } catch (error) {
-//     console.error("getBrandListingByUUID error:", error);
-//     return res.status(500).json(
-//       new ApiResponse(500, null, "Failed to fetch brand")
-//     );
-//   }
-// };
 
 const getBrandListingByUUID = async (req, res) => {
   try {
@@ -782,24 +764,8 @@ const updateBrandListingByUUID = async (req, res) => {
         }
       }
     };
-    const setArrayElement = (basePath, index, fields) => {
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined && value !== null) {
-          updateData[`${basePath}.${index}.${key}`] = value;
-        }
-      }
-    };
 
-    // Helper function to update array elements
-    const updateArrayElement = (basePath, index, fields) => {
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined && value !== null) {
-          updateData[`${basePath}.${index}.${key}`] = value;
-        }
-      }
-    };
-
-     // Handle brandDetails updates - only update fields that are provided
+    // Handle brandDetails updates
     if (req.body.brandDetails) {
       const brandDetailsFields = [
         'fullName', 'email', 'mobileNumber', 'whatsappNumber',
@@ -821,9 +787,12 @@ const updateBrandListingByUUID = async (req, res) => {
         setNestedFields('brandDetails', brandDetailsUpdate);
       }
     }
-    
 
+    // Handle franchiseDetails updates
     if (req.body.franchiseDetails) {
+      const franchiseDetailsUpdate = {};
+      
+      // Handle top-level fields
       const franchiseTopLevelFields = [
         'aidFinancing', 'brandDescription', 'companyOwnedOutlets', 
         'consultationOrAssistance', 'establishedYear', 'franchiseDevelopment',
@@ -831,14 +800,13 @@ const updateBrandListingByUUID = async (req, res) => {
         'trainingSupport', 'uniqueSellingPoints'
       ];
       
-      const franchiseDetailsUpdate = {};
       for (const field of franchiseTopLevelFields) {
         if (req.body.franchiseDetails[field] !== undefined) {
           franchiseDetailsUpdate[field] = req.body.franchiseDetails[field];
         }
       }
       
-      // Handle brandCategories updates
+      // Handle brandCategories
       if (req.body.franchiseDetails.brandCategories) {
         const brandCategoriesFields = ['main', 'sub', 'groupId', 'child'];
         const brandCategoriesUpdate = {};
@@ -854,168 +822,156 @@ const updateBrandListingByUUID = async (req, res) => {
         }
       }
       
-      // Add top-level updates if any
+      // Handle fico array
+      if (req.body.franchiseDetails.fico && Array.isArray(req.body.franchiseDetails.fico)) {
+        franchiseDetailsUpdate.fico = req.body.franchiseDetails.fico.map(item => {
+          const ficoFields = [
+            'investmentRange', 'areaRequired', 'franchiseModel', 
+            'franchiseType', 'franchiseFee', 'royaltyFee', 
+            'stockInvestment', 'royaltyFeeUnit', 'interiorCost', 
+            'otherCost', 'roi', 'payBackPeriod', 'breakEven', 
+            'requireWorkingCapital', 'marginOnSales', 'agreementPeriod'
+          ];
+          
+          const ficoItem = {};
+          ficoFields.forEach(field => {
+            if (item[field] !== undefined) {
+              ficoItem[field] = item[field];
+            }
+          });
+          return ficoItem;
+        }).filter(item => Object.keys(item).length > 0);
+      }
+      
       if (Object.keys(franchiseDetailsUpdate).length > 0) {
         setNestedFields('franchiseDetails', franchiseDetailsUpdate);
       }
-
-
-    // 1. Handle franchiseDetails.fico updates
-    if (req.body.franchiseDetails?.fico) {
-      if (Array.isArray(req.body.franchiseDetails.fico)) {
-        // Process each fico item in the array
-        req.body.franchiseDetails.fico.forEach((ficoItem, index) => {
-          if (ficoItem && typeof ficoItem === 'object') {
-            const ficoFields = [
-              'investmentRange', 'areaRequired', 'franchiseModel', 
-              'franchiseType', 'franchiseFee', 'royaltyFee', 
-              'stockInvestment', 'royaltyFeeUnit', 'interiorCost', 
-              'otherCost', 'roi', 'payBackPeriod', 'breakEven', 
-              'requireWorkingCapital', 'marginOnSales', 'agreementPeriod'
-            ];
-            
-            const ficoUpdate = {};
-            ficoFields.forEach(field => {
-              if (ficoItem[field] !== undefined) {
-                ficoUpdate[field] = ficoItem[field];
-              }
-            });
-            
-            if (Object.keys(ficoUpdate).length > 0) {
-              updateArrayElement('franchiseDetails.fico', index, ficoUpdate);
-            }
-          }
-        });
-      }
     }
-  }
-    // 2. Handle expansionLocationData updates
+
+    // Handle expansionLocationData updates
     if (req.body.expansionLocationData) {
-      // Handle isInternationalExpansion update
+      const expansionUpdate = {};
+      
       if (req.body.expansionLocationData.isInternationalExpansion !== undefined) {
-        updateData['expansionLocationData.isInternationalExpansion'] = 
-          req.body.expansionLocationData.isInternationalExpansion;
+        expansionUpdate.isInternationalExpansion = req.body.expansionLocationData.isInternationalExpansion;
       }
-
-      // Process location updates for both currentOutletLocations and expansionLocations
-      const processLocationUpdates = (basePath, locationsData) => {
-        if (!locationsData) return;
-
+      
+      // Process location updates
+      const processLocationUpdates = (locationsData) => {
+        if (!locationsData) return null;
+        
+        const result = {};
+        
         // Handle domestic locations
         if (locationsData.domestic?.locations) {
-          if (Array.isArray(locationsData.domestic.locations)) {
-            locationsData.domestic.locations.forEach((location, locIndex) => {
-              if (location.state !== undefined) {
-                updateData[`${basePath}.domestic.locations.${locIndex}.state`] = location.state;
-              }
-
-              // Handle districts updates
-              if (location.districts) {
-                if (Array.isArray(location.districts)) {
-                  location.districts.forEach((district, distIndex) => {
-                    if (district.district !== undefined) {
-                      updateData[`${basePath}.domestic.locations.${locIndex}.districts.${distIndex}.district`] = 
-                        district.district;
-                    }
-                    if (district.cities !== undefined) {
-                      updateData[`${basePath}.domestic.locations.${locIndex}.districts.${distIndex}.cities`] = 
-                        district.cities;
-                    }
-                  });
-                }
-              }
-            });
-          }
+          result.domestic = { locations: [] };
+          locationsData.domestic.locations.forEach(location => {
+            const loc = {};
+            if (location.state !== undefined) loc.state = location.state;
+            
+            if (location.districts) {
+              loc.districts = location.districts.map(district => {
+                const dist = {};
+                if (district.district !== undefined) dist.district = district.district;
+                if (district.cities !== undefined) dist.cities = district.cities;
+                return Object.keys(dist).length > 0 ? dist : null;
+              }).filter(Boolean);
+            }
+            
+            if (Object.keys(loc).length > 0) {
+              result.domestic.locations.push(loc);
+            }
+          });
         }
-
+        
         // Handle international locations
         if (locationsData.international?.country) {
-          if (Array.isArray(locationsData.international.country)) {
-            locationsData.international.country.forEach((country, countryIndex) => {
-              if (country.country !== undefined) {
-                updateData[`${basePath}.international.country.${countryIndex}.country`] = 
-                  country.country;
-              }
-              if (country.states !== undefined) {
-                updateData[`${basePath}.international.country.${countryIndex}.states`] = 
-                  country.states;
-              }
-
-              // Handle district updates for international
-              if (country.district) {
-                if (Array.isArray(country.district)) {
-                  country.district.forEach((district, distIndex) => {
-                    if (district.district !== undefined) {
-                      updateData[`${basePath}.international.country.${countryIndex}.district.${distIndex}.district`] = 
-                        district.district;
-                    }
-                    if (district.cities !== undefined) {
-                      updateData[`${basePath}.international.country.${countryIndex}.district.${distIndex}.cities`] = 
-                        district.cities;
-                    }
-                  });
-                }
-              }
-            });
-          }
+          result.international = { country: [] };
+          locationsData.international.country.forEach(country => {
+            const cntry = {};
+            if (country.country !== undefined) cntry.country = country.country;
+            if (country.states !== undefined) cntry.states = country.states;
+            
+            if (country.district) {
+              cntry.district = country.district.map(district => {
+                const dist = {};
+                if (district.district !== undefined) dist.district = district.district;
+                if (district.cities !== undefined) dist.cities = district.cities;
+                return Object.keys(dist).length > 0 ? dist : null;
+              }).filter(Boolean);
+            }
+            
+            if (Object.keys(cntry).length > 0) {
+              result.international.country.push(cntry);
+            }
+          });
         }
+        
+        return Object.keys(result).length > 0 ? result : null;
       };
-
-      // Process currentOutletLocations
+      
+      // Process current and expansion locations
       if (req.body.expansionLocationData.currentOutletLocations) {
-        processLocationUpdates(
-          'expansionLocationData.currentOutletLocations',
-          req.body.expansionLocationData.currentOutletLocations
-        );
+        const currentLocations = processLocationUpdates(req.body.expansionLocationData.currentOutletLocations);
+        if (currentLocations) {
+          expansionUpdate.currentOutletLocations = currentLocations;
+        }
       }
-
-      // Process expansionLocations
+      
       if (req.body.expansionLocationData.expansionLocations) {
-        processLocationUpdates(
-          'expansionLocationData.expansionLocations',
-          req.body.expansionLocationData.expansionLocations
-        );
+        const expansionLocations = processLocationUpdates(req.body.expansionLocationData.expansionLocations);
+        if (expansionLocations) {
+          expansionUpdate.expansionLocations = expansionLocations;
+        }
+      }
+      
+      if (Object.keys(expansionUpdate).length > 0) {
+        setNestedFields('expansionLocationData', expansionUpdate);
       }
     }
 
-    // Handle file uploads and other updates (existing code)
+    // Handle file uploads
     const uploadedFiles = {};
-    const singleFileFields = [
-      'brandLogo',
-      'exteriorOutlet',
-      'franchisePromotionVideo',
-      'gstCertificate',
-      'interiorOutlet',
-      'pancard',
-      'businessPlan',
-      'awards'
+    const fileFields = [
+      'brandLogo', 'exteriorOutlet', 'franchisePromotionVideo',
+      'gstCertificate', 'interiorOutlet', 'pancard', 
+      'businessPlan', 'awards'
     ];
 
     if (req.files) {
-      for (const field of singleFileFields) {
+      for (const field of fileFields) {
         const files = req.files[field];
         if (files && files.length > 0) {
           const urls = await Promise.all(
-            files.map((file) => uploadFileToS3(file.path, file.mimetype))
+            files.map((file) => uploadFileToR2(file.path, file.mimetype))
           );
-          uploadedFiles[field] = urls.length === 1 ? urls[0] : urls;
+          // Filter out any empty values
+          uploadedFiles[field] = urls.filter(url => url);
         }
       }
     }
 
-      // Handle uploads from request body (for URL updates)
+    // Handle uploads from request body
     if (req.body.uploads) {
       for (const [field, value] of Object.entries(req.body.uploads)) {
         if (value !== undefined && value !== null) {
-          updateData[`uploads.${field}`] = value;
+          // Clean array fields by removing any empty objects or invalid values
+          if (Array.isArray(value)) {
+            updateData[`uploads.${field}`] = value.filter(item => 
+              item && typeof item === 'string' && item.trim() !== ''
+            );
+          } else {
+            updateData[`uploads.${field}`] = value;
+          }
         }
       }
     }
 
-
     // Merge uploaded files with update data
     for (const [field, value] of Object.entries(uploadedFiles)) {
-      updateData[`uploads.${field}`] = value;
+      if (value && value.length > 0) {
+        updateData[`uploads.${field}`] = value;
+      }
     }
 
     // If no data to update, return early
@@ -1057,6 +1013,33 @@ const deleteBrandListingByUUID = async (req, res) => {
     return res
       .status(500)
       .json({ error: "Failed to delete brand", details: error.message });
+  }
+};
+
+export const db = async (req, res) => {
+  try {
+    const data = await BrandListing.find({
+      "franchiseDetails.fico.investmentRange": "Rs.5 L - 10 L"
+    });
+
+    // Loop over each matching document and update
+    for (const item of data) {
+      await BrandListing.findByIdAndUpdate(
+        item._id,
+        {
+          $set: {
+            "franchiseDetails.fico.0.investmentRange": "Rs. 5 L - 10 L"
+          }
+        },
+        { new: true }
+      );
+    }
+
+    console.log(data);
+    return res.status(200).json({ updatedCount: data.length, data });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
