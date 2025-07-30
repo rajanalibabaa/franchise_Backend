@@ -152,6 +152,7 @@ console.log("Incoming data:", brandDetails.brandName);
     }));
 
     // Create all records in parallel after getting the UUID
+
     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
       BrandDetails.create({
         brandID,
@@ -206,58 +207,12 @@ console.log("Incoming data:", brandDetails.brandName);
   }
 };
 
-
-
-
-
-
-// const getAllBrands = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 10;
-//     const skip = (10 - 1) * limit;
-
-//     // Get total count for pagination metadata
-//     const total = await BrandListing.countDocuments({});
-
-//     const brands = await BrandListing.find({})
-//       .select("")
-//       .skip(skip)
-//       .limit(limit)
-//       .lean();
-
-//     const totalPages = Math.ceil(total / limit);
-
-//     return res.status(200).json(
-//       new ApiResponse(200, {
-//         brands,
-//         pagination: {
-//           totalItems: total,
-//           totalPages,
-//           currentPage: page,
-//           perPage: limit,
-//         },
-//       }, "✅ Brands fetched successfully")
-//     );
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ error: "Failed to fetch brands", details: error.message });
-//   }
-// };
-
-
-
-
 const getAllBrands = async (req, res) => {
   try {
     
-    const page = parseInt(req.query.page) || 2;
-    const pageTwo = parseInt(req.query.pageTwo) || 1;
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-
-    console.log(pageTwo)  
 
     const aggregationPipeline = [
       {
@@ -347,17 +302,13 @@ const getAllBrands = async (req, res) => {
       }, "Brand data fetched successfully")
     );
 
-
-    
   } catch (error) {
     console.error("Error fetching brands:", error);
-    return res.status(500).json(
+    return res.json(
       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
     );
   }
 };
-
-
 
 const getBrandListingByUUID = async (req, res) => {
   try {
@@ -410,20 +361,6 @@ const getBrandListingByUUID = async (req, res) => {
       .json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
-
-
-// Fields that accept single file uploads
-const singleFileFields = [
-  "brandLogo",
-  "exteriorOutlet",
-  "franchisePromotionVideo",
-  "gstCertificate",
-  "interiorOutlet",
-  "pancard",
-  "businessPlan",
-  "awards",
-];
-
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -716,6 +653,135 @@ export const db = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+export const reEntry = async (req, res) => {
+
+  const generateUUID = uuid()
+  const id = req.body.id
+  try {
+    const data = await BrandListing.findById({_id : new mongoose.Types.ObjectId(id)})
+
+  console.log(data)
+
+const exists = await BrandDetails.findOne({
+      "brandDetails.brandName": data.brandDetails.brandName
+    })
+
+    if (exists) {
+      return res.json(
+        new ApiResponse(400, {}, "Brand already exists")
+      );
+    }
+
+
+
+  const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
+      BrandDetails.create({
+        brandID : data.brandID,
+        uuid:generateUUID,
+        brandDetails : data.brandDetails
+      }),
+      BrandFranchiseDetails.create({
+        brandOwnerId: generateUUID,
+        franchiseDetails : data.franchiseDetails
+      }),
+      BrandExpansionLocationData.create({
+        brandOwnerId: generateUUID,
+        expansionLocationData : data.expansionLocationData
+      }),
+      BrandUploads.create({
+        brandOwnerId: generateUUID,
+        uploads: data.uploads
+      })
+    ]);
+
+
+    return res.json(
+      new ApiResponse(200,{
+        newBrand,newBrandExpansionLocationData,newBrandFranchiseDetails,newBrandUploads
+      },"reentry successfully")
+    )
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const allId = async(req,res) => {
+   const data = await BrandListing.find({})
+
+   console.log(data)
+
+   const arr = []
+   const id = data.map(d => {
+    arr.push(d._id)
+   })
+
+   return res.json(new ApiResponse(200,arr,"fetch successfully"))
+}
+
+
+export const getTopCafes = async (req, res) => {
+  try {
+    const data = await BrandFranchiseDetails.aggregate([
+      {
+        $match: {
+          "franchiseDetails.brandCategories.child": "Coffee & Tea Cafes"
+        }
+      },
+      {
+        $lookup: {
+          from: "branddetails",            // must match the actual MongoDB collection name (usually lowercase plural)
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo"
+        }
+      },
+      {
+        $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
+      },
+      {
+        $lookup:{
+          from:"branduploads",
+          localField:"brandOwnerId",
+          foreignField:"brandOwnerId",
+          as:"uploads"
+        }
+      },
+      {
+        $project: {
+          _id : 0,
+          // franchiseDetails: 1,
+
+          // uploadsData: 1,
+
+          brandId :"$brandInfo.brandID",
+          brandName : "$brandInfo.brandDetails.brandName",
+          brandCategories : "$franchiseDetails.brandCategories",
+          fico:"$franchiseDetails.fico",
+          logo:{
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
+            }
+          },
+          franchiseVideos: {
+            $ifNull: ["$uploads.uploads.franchisePromotionVideo", []]
+          },
+        }
+      }
+    ]);
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Error fetching top cafes:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
 
 export {
   createBrandListing,
