@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,getTopCafes,reEntry,updateBrandListingByUUID} from "../../controller/BrandController/BrandListingController.js"
+import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise} from "../../controller/BrandController/BrandListingController.js"
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
@@ -25,6 +25,7 @@ router.post(
 
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
+router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
 router.patch(
   "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([

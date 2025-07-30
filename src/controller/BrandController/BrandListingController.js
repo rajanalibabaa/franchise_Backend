@@ -362,6 +362,57 @@ const getBrandListingByUUID = async (req, res) => {
   }
 };
 
+export const getTopFoodFranchise = async (req,res)=>{
+   try {
+    const topFranchises = await BrandFranchiseDetails.aggregate([
+      { $match : { "franchiseDetails.brandCategories.sub" :"Food Franchises"}},
+      
+      {$lookup: {
+        from: "branddetails",
+        localField: "brandOwnerId",
+        foreignField: "uuid",
+        as: "brandInfo"
+      }} ,
+      {$lookup: {
+        from: "branduploads",
+        localField: "brandOwnerId",
+        foreignField: "brandOwnerId", 
+        as: "uploads"
+      }},
+      {$project:{
+        // brandInfo: 1,
+        // franchiseDetails: 1,
+        // uploads: 1,
+        _id: 0,
+        brandId : "$brandInfo.brandID",
+        brandName : "$brandInfo.brandDetails.brandName",
+        brandCategory : "$franchiseDetails.brandCategories",
+        fico : "$franchiseDetails.fico",
+        logo: {
+          $cond: {
+            if: { $isArray: "$uploads.uploads.brandLogo" },
+            then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+            else: null
+          }
+        },
+        franchiseVideos: {
+          $ifNull: ["$uploads.uploads.franchisePromotionVideo", []]
+        },
+      }}
+
+    ])
+    if (!topFranchises || topFranchises.length === 0) {
+      return res.status(404).json(new ApiResponse(404, null, "No top food franchises found"));
+    }
+    return res.status(200).json(new ApiResponse(200, topFranchises, "Top food franchises fetched successfully"));
+   } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+   }
+}
+
+
+
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
