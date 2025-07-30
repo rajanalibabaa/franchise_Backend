@@ -417,7 +417,7 @@ const getBrandListingByUUID = async (req, res) => {
 export const getTopFoodFranchise = async (req,res)=>{
    try {
     const topFranchises = await BrandFranchiseDetails.aggregate([
-      { $match : { "franchiseDetails.brandCategories.child" :"Coffee & Tea Cafes"}}, //QSR (Quick Service Restaurants)
+      { $match : { "franchiseDetails.brandCategories.sub" :"Food Franchises"}},
       
       {$lookup: {
         from: "branddetails",
@@ -462,6 +462,8 @@ export const getTopFoodFranchise = async (req,res)=>{
     return res.status(500).json({ message: "Server error" });
    }
 }
+
+
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
