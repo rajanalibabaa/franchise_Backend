@@ -5,6 +5,7 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
 import { FavoriteBrands, FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 
 
 
@@ -16,59 +17,85 @@ export const toggleFavoriteBrand = async (req, res) => {
     const investor = req?.investorUser;
     const brand = req?.brandUser;
 
-    // console.log("req :",req.body)
-
     // === If Brand is liking another Brand ===
     if (brand && brand._id) {
       if (!branduuid) {
         return res.status(400).json(new ApiResponse(400, {}, "Brand UUID is required"));
       }
 
-      const likedBrandData = await BrandListing.findOne({ uuid: branduuid });
+      const likedBrandData = await BrandDetails.findOne({ uuid: branduuid });
       if (!likedBrandData) {
         return res.status(404).json(new ApiResponse(404, {}, "Target brand not found"));
       }
 
-      const alreadyLiked = await FavoriteBrandsLikedBybrand.findOne({
-        brandUserId: brand._id,
-        "favoriteBrandBybrand.likedBrandID": { $in: [likedBrandData._id] }
+      // Check if already liked
+      const favoriteBrandDoc = await FavoriteBrandsLikedBybrand.findOne({
+        brandUserId: brand._id
       });
 
+      const alreadyLiked = favoriteBrandDoc?.favoriteBrandBybrand.some(
+        item => item.brandID.toString() === likedBrandData._id.toString()
+      );
+
       if (alreadyLiked) {
-        return res.status(400).json(new ApiResponse(400, {}, "Brand already added to favorites"));
+        // Remove from favorites
+        await FavoriteBrandsLikedBybrand.findOneAndUpdate(
+          { brandUserId: brand._id },
+          {
+            $pull: {
+              favoriteBrandBybrand: {
+                brandID: likedBrandData._id
+              }
+            }
+          }
+        );
+
+        await FavoriteBrands.findOneAndUpdate(
+          { brandOwnerId: likedBrandData._id },
+          {
+            $pull: {
+              favoriteBy: {
+                userID: brand._id
+              }
+            }
+          }
+        );
+
+        return res.status(200).json(
+          new ApiResponse(200, {}, "Brand removed from favorites successfully")
+        );
+      } else {
+        // Add to favorites
+        const updatedLikeByBrand = await FavoriteBrandsLikedBybrand.findOneAndUpdate(
+          { brandUserId: brand._id },
+          {
+            $push: {
+              favoriteBrandBybrand: {
+                brandID: likedBrandData._id,
+                addedAt: new Date(),
+              },
+            },
+          },
+          { new: true, upsert: true }
+        );
+
+        await FavoriteBrands.findOneAndUpdate(
+          { brandOwnerId: likedBrandData._id },
+          {
+            $push: {
+              favoriteBy: {
+                userID: brand._id,
+                addedAt: new Date(),
+              },
+            },
+          },
+          { new: true, upsert: true }
+        );
+
+        return res.status(200).json(
+          new ApiResponse(200, updatedLikeByBrand, "Favorite brand added successfully by brand")
+        );
       }
-
-      const updatedLikeByBrand = await FavoriteBrandsLikedBybrand.findOneAndUpdate(
-        { brandUserId: brand._id },
-        {
-          $push: {
-            favoriteBrandBybrand: {
-              likedBrandID: likedBrandData._id,
-              addedAt: new Date(),
-            },
-          },
-        },
-        { new: true, upsert: true }
-      );
-
-      await FavoriteBrands.findOneAndUpdate(
-        { brandUserId: likedBrandData._id },
-        {
-          $push: {
-            favoriteBrandByInvestors: {
-              investorID: brand._id, // Here used brand as a pseudo-investor
-              addedAt: new Date(),
-            },
-          },
-        },
-        { new: true, upsert: true }
-      );
-
-
-
-      return res.status(200).json(
-        new ApiResponse(200, updatedLikeByBrand, "Favorite brand added successfully by brand")
-      );
     }
 
     // === If Investor is liking a Brand ===
@@ -80,57 +107,84 @@ export const toggleFavoriteBrand = async (req, res) => {
       return res.status(400).json(new ApiResponse(400, {}, "Brand UUID is required"));
     }
 
-    const brandData = await BrandListing.findOne({ uuid: branduuid });
+    const brandData = await BrandDetails.findOne({ uuid: branduuid });
     if (!brandData) {
       return res.status(404).json(new ApiResponse(404, {}, "Brand not found"));
     }
 
-    const alreadyFavorited = await FavoriteBrandsLikedByInvestor.findOne({
-      InvestorUserId: investor._id,
-      "favoriteBrands.brandID": brandData._id,
+    // Check if already favorited
+    const favoriteInvestorDoc = await FavoriteBrandsLikedByInvestor.findOne({
+      InvestorUserId: investor._id
     });
 
+    const alreadyFavorited = favoriteInvestorDoc?.favoriteBrandByInvestor.some(
+      item => item.brandID.toString() === brandData._id.toString()
+    );
+
     if (alreadyFavorited) {
-      return res.status(400).json(new ApiResponse(400, {}, "Brand already added to favorites"));
+      // Remove from favorites
+      await FavoriteBrandsLikedByInvestor.findOneAndUpdate(
+        { InvestorUserId: investor._id },
+        {
+          $pull: {
+            favoriteBrandByInvestor: {
+              brandID: brandData._id
+            }
+          }
+        }
+      );
+
+      await FavoriteBrands.findOneAndUpdate(
+        { brandOwnerId: brandData._id },
+        {
+          $pull: {
+            favoriteBy: {
+              userID: investor._id
+            }
+          }
+        }
+      );
+
+      return res.status(200).json(
+        new ApiResponse(200, {}, "Brand removed from favorites successfully")
+      );
+    } else {
+      // Add to favorites
+      const updatedInvestorFavorite = await FavoriteBrandsLikedByInvestor.findOneAndUpdate(
+        { InvestorUserId: investor._id },
+        {
+          $push: {
+            favoriteBrandByInvestor: {
+              brandID: brandData._id,
+              addedAt: new Date(),
+            },
+          },
+        },
+        { new: true, upsert: true }
+      );
+
+      await FavoriteBrands.findOneAndUpdate(
+        { brandOwnerId: brandData._id },
+        {
+          $push: {
+            favoriteBy: {
+              userID: investor._id,
+              addedAt: new Date(),
+            },
+          },
+        },
+        { new: true, upsert: true }
+      );
+
+      return res.status(200).json(
+        new ApiResponse(200, updatedInvestorFavorite, "Favorite brand added successfully by investor")
+      );
     }
-
-    const updatedInvestorFavorite = await FavoriteBrandsLikedByInvestor.findOneAndUpdate(
-      { InvestorUserId: investor._id },
-      {
-        $push: {
-          favoriteBrands: {
-            brandID: brandData._id,
-            addedAt: new Date(),
-          },
-        },
-      },
-      { new: true, upsert: true }
-    );
-
-    await FavoriteBrands.findOneAndUpdate(
-      { brandUserId: brandData._id },
-      {
-        $push: {
-          favoriteBrandByInvestors: {
-            investorID: investor._id,
-            addedAt: new Date(),
-          },
-        },
-      },
-      { new: true, upsert: true }
-    );
-
-    // console.log("updatedInvestorFavorite :",updatedInvestorFavorite)
-
-    return res.status(200).json(
-      new ApiResponse(200, updatedInvestorFavorite, "Favorite brand added successfully by investor")
-    );
   } catch (error) {
     console.error("toggleFavoriteBrand error:", error);
     return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
-
 
 
 
@@ -150,12 +204,60 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         InvestorUserId: investor._id,
       }).lean();
 
-      if (!favoriteData?.favoriteBrands?.length) {
+      if (!favoriteData?.favoriteBrandByInvestor?.length) {
         return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
       }
 
       // Sort by newest liked first
-      const sortedFavorites = favoriteData.favoriteBrands.sort(
+      const sortedFavorites = favoriteData.favoriteBrandByInvestor.sort(
+        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
+      );
+
+      const brandIDs = sortedFavorites.map(item => item.brandID?.toString()).filter(Boolean);
+
+      if (!brandIDs.length) {
+        return res.json(new ApiResponse(200, [], "No valid brand IDs found"));
+      }
+
+      const allBrands = await BrandDetails.find({ _id: { $in: brandIDs } }).select(
+        '-__v -updatedAt -createdAt ' +
+        '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
+        '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
+        '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
+      ).lean();
+
+      // Create a map for faster lookup
+      const brandMap = new Map();
+      allBrands.forEach(brand => {
+        brandMap.set(brand._id.toString(), brand);
+      });
+
+      // Reconstruct the array in the original order with additional info
+      const result = sortedFavorites.map(fav => {
+        const brand = brandMap.get(fav.brandID.toString());
+        return brand ? {
+          ...brand,
+          addedAt: fav.addedAt // Include the timestamp when it was favorited
+        } : null;
+      }).filter(Boolean);
+
+      return res.json(
+        new ApiResponse(200, result, "Favorite brands retrieved successfully")
+      );
+    }
+
+    // === Brand Request ===
+    if (brand && uuid === brand.uuid) {
+      const favoriteData = await FavoriteBrandsLikedBybrand.findOne({
+        brandUserId: brand._id,
+      }).lean();
+
+      if (!favoriteData?.favoriteBrandBybrand?.length) {
+        return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
+      }
+
+      // Sort by newest liked first
+      const sortedFavorites = favoriteData.favoriteBrandBybrand.sort(
         (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
       );
 
@@ -178,62 +280,14 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         brandMap.set(brand._id.toString(), brand);
       });
 
-      // Reconstruct the array in the original order
-      const result = [];
-      for (const id of brandIDs) {
-        const brand = brandMap.get(id);
-        if (brand) {
-          result.push(brand);
-        }
-      }
-
-      return res.json(
-        new ApiResponse(200, result, "Favorite brands retrieved successfully")
-      );
-    }
-
-    // === Brand Request ===
-    if (brand && uuid === brand.uuid) {
-      const favoriteData = await FavoriteBrandsLikedBybrand.findOne({
-        brandUserId: brand._id,
-      }).lean();
-
-      if (!favoriteData?.favoriteBrandBybrand?.length) {
-        return res.json(new ApiResponse(200, [], "You haven't liked any brands yet"));
-      }
-
-      // Sort by newest liked first
-      const sortedFavorites = favoriteData.favoriteBrandBybrand.sort(
-        (a, b) => new Date(b.addedAt) - new Date(a.addedAt)
-      );
-
-      const likedBrandIDs = sortedFavorites.map(item => item.likedBrandID?.toString()).filter(Boolean);
-
-      if (!likedBrandIDs.length) {
-        return res.json(new ApiResponse(200, [], "No valid brand IDs found"));
-      }
-
-      const allBrands = await BrandListing.find({ _id: { $in: likedBrandIDs } }).select(
-        '-__v -updatedAt -createdAt ' +
-        '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress ' +
-        '-personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber ' +
-        '-brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber'
-      ).lean();
-
-      // Create a map for faster lookup
-      const brandMap = new Map();
-      allBrands.forEach(brand => {
-        brandMap.set(brand._id.toString(), brand);
-      });
-
-      // Reconstruct the array in the original order
-      const result = [];
-      for (const id of likedBrandIDs) {
-        const brand = brandMap.get(id);
-        if (brand) {
-          result.push(brand);
-        }
-      }
+      // Reconstruct the array in the original order with additional info
+      const result = sortedFavorites.map(fav => {
+        const brand = brandMap.get(fav.brandID.toString());
+        return brand ? {
+          ...brand,
+          addedAt: fav.addedAt // Include the timestamp when it was favorited
+        } : null;
+      }).filter(Boolean);
 
       return res.json(
         new ApiResponse(200, result, "Favorite brands retrieved successfully")
@@ -246,7 +300,6 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
-
 
 
 
