@@ -15,6 +15,7 @@ import uuid from "../../utils/uuid.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
+import { lookup } from "dns";
 
 
 const likeandshortlist = async(id) => {
@@ -375,6 +376,7 @@ const getAllBrands = async (req, res) => {
 
 const getBrandListingByUUID = async (req, res) => {
   try {
+<<<<<<< HEAD
     const { id } = req.params;
 
     const data = await BrandDetails.aggregate([
@@ -425,6 +427,42 @@ const getBrandListingByUUID = async (req, res) => {
               in: {
                 franchiseDetails: "$$firstFranchise.franchiseDetails"
               }
+=======
+    const { id: uuid } = req.params;
+   
+
+    let brand = await BrandListing.findOne({ uuid }).select(
+      "-_id -createdAt -updatedAt -__v"
+    );
+
+    if (!brand) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Brand not found"));
+    }
+
+    const mediaFields = [
+      "pancard",
+      "gstCertificate",
+      "brandLogo",
+      "interiorOutlet",
+      "franchisePromotionVideo",
+      "brandPromotionVideo",
+      "exteriorOutlet",
+    ];
+
+    brand = brand.toObject();
+
+    for (const field of mediaFields) {
+      if (Array.isArray(brand[field])) {
+        brand[field] = await Promise.all(
+          brand[field].map(async (key) => {
+            if (!key) return null;
+            try {
+              return await generateSignedUrl(key);
+            } catch {
+              return null;
+>>>>>>> df4506a1757a52a07218ccc8b3a4393f41c85d05
             }
           },
           uploads: {
@@ -483,7 +521,202 @@ const getBrandListingByUUID = async (req, res) => {
   }
 };
 
+export const getTopFoodFranchise = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const id = req.query.id || null;
 
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+    const aggregationPipeline = [
+      { 
+        $match: { 
+          "franchiseDetails.brandCategories.sub": "Food Franchises" 
+        } 
+      },
+      {
+        $lookup: {
+          from: "branddetails",
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo"
+        }
+      },
+      { 
+        $unwind: { 
+          path: "$brandInfo", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "brandOwnerId",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      { 
+        $unwind: { 
+          path: "$uploads", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
+      {
+        $addFields: {
+          isLiked: {
+            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          brandID: "$brandInfo.brandID",
+          uuid: "$brandOwnerId",
+          isLiked: 1,
+          isShortListed: 1,
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null]
+          },
+          fico: {
+            $ifNull: ["$franchiseDetails.fico", []]
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
+            }
+          },
+          franchiseVideos: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              else: null
+            }
+          }
+        }
+      },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    const [topFranchises, totalCount] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.countDocuments({ 
+        "franchiseDetails.brandCategories.sub": "Food Franchises" 
+      })
+    ]);
+
+    if (!topFranchises || topFranchises.length === 0) {
+      return res.json(new ApiResponse(404, null, "No top food franchises found"));
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return res.json(
+      new ApiResponse(200, {
+        brands: topFranchises,
+        pagination: {
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Top food franchises fetched successfully")
+    );
+
+  } catch (error) {
+    console.error("Error fetching top food franchises:", error);
+    return res.json(
+      new ApiResponse(500, null, `Failed to fetch top food franchises: ${error.message}`)
+    );
+  }
+};
+
+// export const getTopBeverageFranchise = async (req,res)=>{
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skip = (page - 1) * limit;
+//     const id = req.query.id || null;
+
+//     const { likedBrands , shortListedBrands } = await likeandshortlist(id);
+
+//     const topBeverageFranchises = await BrandFranchiseDetails.aggregate([
+//       {
+//         $match:{
+//           "franchiseDetails.brandCategories.main": "Food & Beverages"
+//         }  
+//       },
+//       {
+//         $lookup:{
+//           from: "branddetails",
+//           localField: "brandOwnerId",
+//           foreignField:"uuid",
+//           as: "brandInfo"
+//         }
+//       },
+//       {
+//         $unwind:{
+//           path: "$brandInfo",
+//           preserveNullAndEmptyArrays: true
+//         }
+//       },
+//       {
+//         $lookup: {
+//           from : "branduploads",
+//           localField: "brandOwnerId",
+//           foreignField: "brandOwnerId",
+//           as: "uploads"
+//         }
+//       },
+//       {
+//         $unwind: {
+//           path : "$uploads",
+//           preserveNullAndEmptyArrays: true
+//         }
+//       },
+//       {
+//         $project:{
+//           _id:0,
+//           brandID: "$brandInfo.brandID",
+//           uuid: "$brandOwnerId",
+//           brandname:"$brandInfo.brandDetails.brandName",
+//           brandCategories: {
+//             $ifNull: ["$franchiseDetails.brandCategories", null]
+//           },
+//           fico: {
+//             $ifNull: ["$franchiseDetails.fico", []]
+//           },
+//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0]  },
+//           franchiseVideos: {$arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },  
+//         }
+//       }
+//     ])
+//     if (!topBeverageFranchises || topBeverageFranchises.length === 0) {
+//       return res.json(new ApiResponse(404, null, "No top beverage franchises found"));
+//     }
+//     return res.json(
+//       new ApiResponse(200, topBeverageFranchises, "Top beverage franchises fetched successfully")
+//     );
+//     } catch (error) {
+//     console.error("Error fetching brands:", error);
+//     return res.json(
+//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
+//   }
+// }
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -750,8 +983,12 @@ const deleteBrandListingByUUID = async (req, res) => {
   }
 };
 
+<<<<<<< HEAD
 
 
+=======
+// direct id find for  nner changes
+>>>>>>> df4506a1757a52a07218ccc8b3a4393f41c85d05
 export const db = async (req, res) => {
   try {
     const data = await BrandListing.find({
@@ -779,7 +1016,7 @@ export const db = async (req, res) => {
   }
 };
 
-
+// suffle re entry code 
 export const reEntry = async (req, res) => {
   try {
     const data = await BrandListing.find({});
@@ -874,6 +1111,12 @@ export const allId = async(req,res) => {
 }
 
 
+<<<<<<< HEAD
+=======
+export const getTopCafes = async (req, res) => {
+};
+
+>>>>>>> df4506a1757a52a07218ccc8b3a4393f41c85d05
 
 
 export {
@@ -882,4 +1125,5 @@ export {
   getBrandListingByUUID,
   updateBrandListingByUUID,
   deleteBrandListingByUUID,
+  
 };

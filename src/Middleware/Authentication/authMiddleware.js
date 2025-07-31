@@ -1,4 +1,4 @@
-import BrandListing from "../../model/Brand/brandListingPage.js"
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js"
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js"
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js"
@@ -43,7 +43,7 @@ export const verifyJWT = async (req,res,next) => {
         )
     }
 
-    const brandUser = await BrandListing?.findOne({ uuid: decodedToken.brandUserUUID })
+    const brandUser = await BrandDetails?.findOne({ uuid: decodedToken.brandUserUUID })
     const investorUser = await InvsRegister?.findOne({ uuid: decodedToken.investorUUID });
     const thirdPartyUser = await ThirdPartyAuth?.findOne({ uuid: decodedToken.investorUUID });
     // console.log("brandUser: ",brandUser)
