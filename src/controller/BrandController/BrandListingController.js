@@ -316,9 +316,6 @@ const getAllBrands = async (req, res) => {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
           fico: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.fico", []]
-          },
-          fico: {
             $let: {
               vars: {
                 data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
