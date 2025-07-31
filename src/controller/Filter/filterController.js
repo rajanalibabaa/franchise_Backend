@@ -247,15 +247,24 @@ export const getAllBrandsAndFilter = async (req, res) => {
               null,
             ],
           },
-          fico: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.fico", []],
-          },
           brandDescription: {
             $ifNull: [
-              "$franchiseDetails.franchiseDetails.brandDescription",
-              "",
+              "$franchiseDetails.franchiseDetails.brandDescription",null
             ],
           },
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel"
+              }
+            }
+          },
+          
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
