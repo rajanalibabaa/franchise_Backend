@@ -271,9 +271,6 @@ const getAllBrands = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-   
-
-
     const aggregationPipeline = [
       {
         $lookup: {
@@ -327,7 +324,6 @@ const getAllBrands = async (req, res) => {
               }
             }
           },
-          
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
@@ -359,7 +355,7 @@ const getAllBrands = async (req, res) => {
     }
 
     const brands = shuffleArray(brandsData)
-
+    
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
@@ -551,6 +547,7 @@ export const getTopFoodFranchise = async (req, res) => {
           }
         }
       },
+      { $sort: { createdAt: -1 } },
       {
         $project: {
           _id: 0,
@@ -562,8 +559,17 @@ export const getTopFoodFranchise = async (req, res) => {
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
-          fico: {
-            $ifNull: ["$franchiseDetails.fico", []]
+         fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] }
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel"
+              }
+            }
           },
           logo: {
             $cond: {
@@ -595,6 +601,8 @@ export const getTopFoodFranchise = async (req, res) => {
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top food franchises found"));
     }
+    
+     const brands = shuffleArray(brandsData)
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
@@ -602,7 +610,7 @@ export const getTopFoodFranchise = async (req, res) => {
 
     return res.json(
       new ApiResponse(200, {
-        brands: brandsData,
+        brands: brands,
         pagination: {
           total: totalCount,
           totalPages,
@@ -674,6 +682,7 @@ export const getTopBeverageFranchise = async (req,res)=>{
           }
         }
       },
+       { $sort: { createdAt: -1 } },
       {
         $project:{
           _id:0,
@@ -686,7 +695,16 @@ export const getTopBeverageFranchise = async (req,res)=>{
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
           fico: {
-            $ifNull: ["$franchiseDetails.fico", []]
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel"
+              }
+            }
           },
           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0]  },
           franchiseVideos: {$arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },  
@@ -706,13 +724,15 @@ export const getTopBeverageFranchise = async (req,res)=>{
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top beverage franchises found"));
     }
+      
+     const brands = shuffleArray(brandsData)
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
     return res.json(
       new ApiResponse(200, {
-        brands: brandsData,
+        brands: brands,
         pagination: {
           total: totalCount,
           totalPages,
@@ -741,8 +761,6 @@ export const getTopLeadingFranchise = async (req, res) => {
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
 };
-
-
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -1010,7 +1028,6 @@ console.log("Request files:", req.files);
   }
 };
 
-
 const deleteBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1025,7 +1042,6 @@ const deleteBrandListingByUUID = async (req, res) => {
       .json({ error: "Failed to delete brand", details: error.message });
   }
 };
-
 
 
 export const db = async (req, res) => {
@@ -1215,7 +1231,7 @@ export const getTopCafes = async (req, res) => {
       { $skip: skip },
       { $limit: limit }
     ];
-
+     
     // Fetch paginated data & total count
     const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
