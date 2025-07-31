@@ -15,7 +15,7 @@ import uuid from "../../utils/uuid.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
-import { lookup } from "dns";
+
 
 const likeandshortlist = async(id) => {
 
