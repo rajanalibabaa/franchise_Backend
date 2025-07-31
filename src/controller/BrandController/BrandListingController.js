@@ -579,14 +579,14 @@ export const getTopFoodFranchise = async (req, res) => {
       { $limit: limit }
     ];
 
-    const [topFranchises, totalCount] = await Promise.all([
+    const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.countDocuments({ 
         "franchiseDetails.brandCategories.sub": "Food Franchises" 
       })
     ]);
 
-    if (!topFranchises || topFranchises.length === 0) {
+    if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top food franchises found"));
     }
 
@@ -596,7 +596,7 @@ export const getTopFoodFranchise = async (req, res) => {
 
     return res.json(
       new ApiResponse(200, {
-        brands: topFranchises,
+        brands: brandsData,
         pagination: {
           total: totalCount,
           totalPages,
@@ -690,14 +690,14 @@ export const getTopBeverageFranchise = async (req,res)=>{
       {$limit: limit}
     ];
 
-    const [topBeverageFranchises, totalCount] = await Promise.all([
+      const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.countDocuments({
         "franchiseDetails.brandCategories.sub":"Beverage Franchises"
       })
     ])
 
-    if (!topBeverageFranchises || topBeverageFranchises.length === 0) {
+    if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top beverage franchises found"));
     }
 
@@ -706,7 +706,7 @@ export const getTopBeverageFranchise = async (req,res)=>{
     const hasPrevious = page > 1;
     return res.json(
       new ApiResponse(200, {
-        brands: topBeverageFranchises,
+        brands: brandsData,
         pagination: {
           total: totalCount,
           totalPages,
@@ -1209,14 +1209,14 @@ export const getTopCafes = async (req, res) => {
     ];
 
     // Fetch paginated data & total count
-    const [getTopCafes, totalCount] = await Promise.all([
+    const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.countDocuments({
         "franchiseDetails.brandCategories.sub": "Dessert & Bakery"
       })
     ]);
 
-    if (!getTopCafes || getTopCafes.length === 0) {
+    if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No brands found"));
     }
 
@@ -1228,7 +1228,7 @@ export const getTopCafes = async (req, res) => {
     return res.json(new ApiResponse(200,{
       getTopCafes,
       pagination : {
-        total : totalCount,
+        total : brandsData,
         totalPages,
         currentPage : page,
         limit,
