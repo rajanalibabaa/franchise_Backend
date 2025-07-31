@@ -309,9 +309,6 @@ const getAllBrands = async (req, res) => {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
           fico: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.fico", []]
-          },
-          fico: {
             $let: {
               vars: {
                 data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
@@ -1018,8 +1015,6 @@ const deleteBrandListingByUUID = async (req, res) => {
   }
 };
 
-
-
 export const db = async (req, res) => {
   try {
     const data = await BrandListing.find({
@@ -1187,19 +1182,30 @@ export const getTopCafes = async (req, res) => {
           }
         }
       },
+      {$sort: { createdAt: -1}},
       {
         $project: {
           _id : 0,
-          // franchiseDetails: 1,
-          // uploadsData: 1,
-          // brandInfo : 1,
           isLiked: 1,
           isShortListed: 1,
           uuid : "$brandInfo.uuid",
           brandId :"$brandInfo.brandID",
           brandName : "$brandInfo.brandDetails.brandName",
-          brandCategories : "$franchiseDetails.brandCategories",
-          fico:"$franchiseDetails.fico",
+          brandCategories : {
+            $ifNull : ["$franchiseDetails.brandCategories", null]
+          },
+          fico : {
+            $let : {
+              vars : {
+                data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
+              },
+              in : {
+                investmentRange : "$$data.investmentRange",
+                areaRequired : "$$data.areaRequired",
+                franchiseModel : "$$data.franchiseModel"
+              }
+            }
+          },
           logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
         franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
         }
@@ -1209,16 +1215,16 @@ export const getTopCafes = async (req, res) => {
     ];
 
     // Fetch paginated data & total count
-    const [getTopCafes, totalCount] = await Promise.all([
+    const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.countDocuments({
-        "franchiseDetails.brandCategories.sub": "Dessert & Bakery"
-      })
+      BrandFranchiseDetails.countDocuments()
     ]);
 
-    if (!getTopCafes || getTopCafes.length === 0) {
+    if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No brands found"));
     }
+
+    const brands = shuffleArray(brandsData)
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
@@ -1226,7 +1232,7 @@ export const getTopCafes = async (req, res) => {
 
 
     return res.json(new ApiResponse(200,{
-      getTopCafes,
+      brands,
       pagination : {
         total : totalCount,
         totalPages,
@@ -1244,7 +1250,7 @@ export const getTopCafes = async (req, res) => {
   }
 };
 
-export const getDesertAndBakery = async(req,res) =>{
+export const getTopDesertAndBakery = async(req,res) =>{
 
   try {
     const page = parseInt(req.query.page) || 1;
@@ -1287,21 +1293,30 @@ export const getDesertAndBakery = async(req,res) =>{
         }
       }
     } , 
+    { $sort : { createdAt : -1}},
     {
       $project : {
-
-        // brandInfo : 1,
-        // franchiseDetails : 1,
-        // uploads : 1,
-
         _id : 0,
         isLiked: 1,
         isShortListed: 1,
         uuid : "$brandInfo.uuid",
         brandID : "$brandInfo.brandID",
         brandName : "$brandInfo.brandDetails.brandName",
-        brandCategories : "$franchiseDetails.brandCategories",
-        fico : "$franchiseDetails.fico",
+        brandCategories : {
+          $ifNull : ["$franchiseDetails.brandCategories", null]
+        },
+        fico : {
+          $let : {
+            vars : {
+              data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
+            },
+            in : {
+              investmentRange : "$$data.investmentRange",
+              areaRequired : "$$data.areaRequired",
+              franchiseModel : "$$data.franchiseModel"
+            }
+          }
+        },
         logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
         franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
     }
@@ -1311,23 +1326,23 @@ export const getDesertAndBakery = async(req,res) =>{
   ];
 
   // Fetch paginated data & total count
-  const [getDesertAndBakery, totalCount] = await Promise.all([
+  const [brandsData, totalCount] = await Promise.all([
     BrandFranchiseDetails.aggregate(aggregationPipeline),
-    BrandFranchiseDetails.countDocuments({
-      "franchiseDetails.brandCategories.sub" : "Dessert & Bakery"
-    })
+    BrandFranchiseDetails.countDocuments()
   ]);
 
-  if (!getDesertAndBakery || getDesertAndBakery.length === 0) {
+  if (!brandsData || brandsData.length === 0) {
     return res.json(new ApiResponse(404, null, "No brands found"));
   }
+
+  const brands = shuffleArray(brandsData)
 
   const totalPages = Math.ceil(totalCount / limit);
   const hasNext = page < totalPages;
   const hasPrevious = page > 1;
 
   return res.json(
-    new ApiResponse(200,{getDesertAndBakery, 
+    new ApiResponse(200,{brands, 
       pagination : {
       total : totalCount,
       totalPages,
@@ -1342,6 +1357,14 @@ export const getDesertAndBakery = async(req,res) =>{
     res.status(500).json({ message: "Server Error" });
   }
 
+};
+
+export const getTopTrucksAndKiosks = async(req,res) => {
+  try {
+    
+  } catch (error) {
+    
+  }
 }
 
 export {
