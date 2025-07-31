@@ -18,7 +18,7 @@ import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 
 
-const likeandshortlist = async(id) => {
+export const likeandshortlist = async(id) => {
 
   let likedBrands = [];
   let shortListedBrands = [];
@@ -898,66 +898,82 @@ const updateBrandListingByUUID = async (req, res) => {
       }
       
       if (req.body.expansionLocationData.expansionLocations) {
-        const expansionLocations = processLocationUpdates(req.body.expansionLocationData.expansionLocations);
-        if (expansionLocations) {
-          expansionUpdate.expansionLocations = expansionLocations;
-        }
-      }
-      
-      if (Object.keys(expansionUpdate).length > 0) {
-        setNestedFields('expansionLocationData', expansionUpdate);
+        processLocationUpdates(
+          'expansionLocationData.expansionLocations',
+          req.body.expansionLocationData.expansionLocations
+        );
       }
     }
-
     // Handle file uploads
     const uploadedFiles = {};
-    const fileFields = [
-      'brandLogo', 'exteriorOutlet', 'franchisePromotionVideo',
-      'gstCertificate', 'interiorOutlet', 'pancard', 
-      'businessPlan', 'awards'
-    ];
 
-    if (req.files) {
-      for (const field of fileFields) {
-        const files = req.files[field];
-        if (files && files.length > 0) {
-          const urls = await Promise.all(
-            files.map((file) => uploadFileToR2(file.path, file.mimetype))
-          );
-          // Filter out any empty values
-          uploadedFiles[field] = urls.filter(url => url);
+
+console.log("Uploaded files:", uploadedFiles);
+console.log("File fields:", fileFields);
+console.log("Request files:", req.files);
+
+    for (const field of fileFields) {
+      const files = req.files?.[field];
+      if (files?.length > 0) {
+        const isVideo = field.toLowerCase().includes("video");
+        const urls = await Promise.all(
+          files.map((file) => {
+            const contentType = isVideo ? "video/mp4" : file.mimetype;
+            return uploadFileToR2(file.path, contentType);
+          })
+        );
+        uploadedFiles[field] = urls;
+      }
+    }
+
+    // Handle awards separately (combining awardDoc and awardText)
+    if (uploadedFiles.awardDoc || req.body.awardText) {
+      let awardDis = [];
+      
+      if (req.body.awardText) {
+        try {
+          awardDis = Array.isArray(req.body.awardText) 
+            ? req.body.awardText 
+            : JSON.parse(req.body.awardText || "[]");
+        } catch (e) {
+          console.warn("Invalid awardText format:", e);
+          awardDis = [];
         }
       }
-    }
 
-    // Handle uploads from request body
-    if (req.body.uploads) {
-      for (const [field, value] of Object.entries(req.body.uploads)) {
-        if (value !== undefined && value !== null) {
-          // Clean array fields by removing any empty objects or invalid values
-          if (Array.isArray(value)) {
-            updateData[`uploads.${field}`] = value.filter(item => 
-              item && typeof item === 'string' && item.trim() !== ''
-            );
-          } else {
-            updateData[`uploads.${field}`] = value;
-          }
-        }
+      const awardDocs = uploadedFiles.awardDoc || [];
+      const awards = awardDocs.map((fileUrl, index) => ({
+        awardDescription: awardDis[index] || "",
+        awardImage: fileUrl
+      }));
+
+      if (awards.length > 0) {
+        updateData["uploads.awards"] = awards;
       }
     }
 
-    // Merge uploaded files with update data
-    for (const [field, value] of Object.entries(uploadedFiles)) {
-      if (value && value.length > 0) {
-        updateData[`uploads.${field}`] = value;
+    // Add other uploaded files to update data
+    for (const [field, urls] of Object.entries(uploadedFiles)) {
+      if (field !== "awardDoc") { // awards already handled separately
+        updateData[`uploads.${field}`] = urls;
       }
     }
 
-    // If no data to update, return early
+    // If no updates were provided
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: "No valid fields provided for update" });
+      return res.status(400).json({
+        success: false,
+        message: "No valid updates provided"
+      });
     }
 
+    // If no files were uploaded, return early
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid file uploads provided"
+      });
+    }
     const updatedBrand = await BrandListing.findOneAndUpdate(
       { uuid: id },
       { $set: updateData },
@@ -979,6 +995,7 @@ const updateBrandListingByUUID = async (req, res) => {
     });
   }
 };
+
 
 const deleteBrandListingByUUID = async (req, res) => {
   try {

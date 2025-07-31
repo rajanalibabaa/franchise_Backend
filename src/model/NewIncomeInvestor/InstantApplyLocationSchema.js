@@ -60,7 +60,7 @@ const InstantApplyInvestorSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  category: [
+  category: [  
     {
       main: { type: String },
       sub: { type: String },

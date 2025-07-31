@@ -29,8 +29,8 @@ export const sendEmailOTP = async (email, otp) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER,   // Your Gmail
-      pass: process.env.EMAIL_PASS    // App password or your mail pass
+      user: process.env.EMAIL_USER_SUPPORT,   // Your Gmail
+      pass: process.env.EMAIL_PASS_SUPPORT    // App password or your mail pass
     },
     tls: {
       rejectUnauthorized: false // <--- THIS FIXES THE SELF-SIGNED CERT ERROR
@@ -48,7 +48,7 @@ const transporter = nodemailer.createTransport({
 // };
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.EMAIL_USER_SUPPORT,
     to: email,
     subject: "Your Email OTP",
 
