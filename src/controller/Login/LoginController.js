@@ -4,7 +4,7 @@ import { generateOTP } from "../../utils/generateOTP.js";
 import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
-import BrandListing from "../../model/Brand/brandListingPage.js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 
 // Store OTP data with timestamp
@@ -47,7 +47,7 @@ const generateOTPforLogin = async (req, res) => {
 
     console.log("Investor data:", investorData);
 
-    const brandUserData = await BrandListing.findOne({
+    const brandUserData = await BrandDetails.findOne({
       $or: [
         ...(email ? [{ "brandDetails.email": email }] : []),
         ...(mobileNumber ? [{ "brandDetails.mobileNumber": mobileNumber }] : []),
@@ -140,7 +140,7 @@ const verifyLogin = async (req, res) => {
       ]
     }).select("-createdAt -_id");
 
-    const brandUserData = await BrandListing.findOne({
+    const brandUserData = await BrandDetails.findOne({
       $or: [
         { "brandDetails.email": otpData.emailORMobileNumber },
         { "brandDetails.mobileNumber": otpData.emailORMobileNumber }
