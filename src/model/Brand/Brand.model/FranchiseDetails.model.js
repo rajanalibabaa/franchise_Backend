@@ -31,7 +31,8 @@ const FranchiseDetailsSchema = new mongoose.Schema(
       ref: 'BrandDetails',
       required: true
     },
-    franchiseDetails:{aidFinancing: String,
+    franchiseDetails:{
+      aidFinancing: String,
     brandCategories: {
       main: String,
       sub: String,

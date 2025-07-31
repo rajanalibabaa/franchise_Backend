@@ -33,8 +33,8 @@ const BrandDetailsSchema = new mongoose.Schema(
     instagram: String,
     linkedin: String,
     gstNumber: String,
-    pancardNumber: String,
-    awardDescription:[{ type: String }],}
+    pancardNumber: String
+   }
   },
   {
     timestamps: true

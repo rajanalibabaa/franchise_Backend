@@ -11,6 +11,10 @@ const connectDatabase = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
+     // ✅ Removed deprecated options
+if (!mongoose.connection.readyState) {
+  const conn = await mongoose.connect(process.env.DB_URL);
+
 
     console.log(`✅ MongoDB connected successfully!`);
     console.log(`   Database: ${conn.connection.name}`);
@@ -21,6 +25,7 @@ const connectDatabase = async () => {
     console.log(
       `   Collections: ${collections.map((c) => c.name).join(", ")}`
     );
+  }
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1); // Exit process if DB connection fails
@@ -28,3 +33,4 @@ const connectDatabase = async () => {
 };
 
 export default connectDatabase;
+
