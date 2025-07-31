@@ -66,8 +66,6 @@ console.log("brand :",brand)
     return {likedBrands,shortListedBrands}
 }
 
-
-
 const createBrandListing = async (req, res) => {
   try {
     
@@ -260,8 +258,6 @@ console.log("Incoming data:", brandDetails.brandName);
   }
 };
 
-
-
 const getAllBrands = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -381,8 +377,6 @@ const getAllBrands = async (req, res) => {
     );
   }
 };
-
-
 
 const getBrandListingByUUID = async (req, res) => {
   try {
@@ -555,7 +549,7 @@ export const getTopFoodFranchise = async (req, res) => {
           uuid: "$brandOwnerId",
           isLiked: 1,
           isShortListed: 1,
-          brandname: "$brandInfo.brandDetails.brandName",
+          brandName: "$brandInfo.brandDetails.brandName",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
@@ -629,10 +623,11 @@ export const getTopFoodFranchise = async (req, res) => {
     );
   }
 };
+
 export const getTopBeverageFranchise = async (req,res)=>{
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
@@ -690,7 +685,7 @@ export const getTopBeverageFranchise = async (req,res)=>{
           uuid: "$brandOwnerId",
           isLiked: 1,
           isShortListed: 1,
-          brandname:"$brandInfo.brandDetails.brandName",
+          brandName:"$brandInfo.brandDetails.brandName",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
@@ -1166,7 +1161,7 @@ export const allId = async(req,res) => {
 export const getTopCafes = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
@@ -1282,7 +1277,7 @@ export const getTopDesertAndBakery = async(req,res) =>{
 
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
@@ -1390,7 +1385,7 @@ export const getTopDesertAndBakery = async(req,res) =>{
 export const getTopTrucksAndKiosks = async(req,res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
