@@ -15,6 +15,7 @@ import uuid from "../../utils/uuid.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
+import { lookup } from "dns";
 
 
 const likeandshortlist = async(id) => {
@@ -421,9 +422,202 @@ const getBrandListingByUUID = async (req, res) => {
   }
 };
 
+export const getTopFoodFranchise = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const id = req.query.id || null;
 
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
+    const aggregationPipeline = [
+      { 
+        $match: { 
+          "franchiseDetails.brandCategories.sub": "Food Franchises" 
+        } 
+      },
+      {
+        $lookup: {
+          from: "branddetails",
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo"
+        }
+      },
+      { 
+        $unwind: { 
+          path: "$brandInfo", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "brandOwnerId",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      { 
+        $unwind: { 
+          path: "$uploads", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
+      {
+        $addFields: {
+          isLiked: {
+            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          brandID: "$brandInfo.brandID",
+          uuid: "$brandOwnerId",
+          isLiked: 1,
+          isShortListed: 1,
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null]
+          },
+          fico: {
+            $ifNull: ["$franchiseDetails.fico", []]
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
+            }
+          },
+          franchiseVideos: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              else: null
+            }
+          }
+        }
+      },
+      { $skip: skip },
+      { $limit: limit }
+    ];
 
+    const [topFranchises, totalCount] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.countDocuments({ 
+        "franchiseDetails.brandCategories.sub": "Food Franchises" 
+      })
+    ]);
+
+    if (!topFranchises || topFranchises.length === 0) {
+      return res.json(new ApiResponse(404, null, "No top food franchises found"));
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return res.json(
+      new ApiResponse(200, {
+        brands: topFranchises,
+        pagination: {
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Top food franchises fetched successfully")
+    );
+
+  } catch (error) {
+    console.error("Error fetching top food franchises:", error);
+    return res.json(
+      new ApiResponse(500, null, `Failed to fetch top food franchises: ${error.message}`)
+    );
+  }
+};
+
+// export const getTopBeverageFranchise = async (req,res)=>{
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skip = (page - 1) * limit;
+//     const id = req.query.id || null;
+
+//     const { likedBrands , shortListedBrands } = await likeandshortlist(id);
+
+//     const topBeverageFranchises = await BrandFranchiseDetails.aggregate([
+//       {
+//         $match:{
+//           "franchiseDetails.brandCategories.main": "Food & Beverages"
+//         }  
+//       },
+//       {
+//         $lookup:{
+//           from: "branddetails",
+//           localField: "brandOwnerId",
+//           foreignField:"uuid",
+//           as: "brandInfo"
+//         }
+//       },
+//       {
+//         $unwind:{
+//           path: "$brandInfo",
+//           preserveNullAndEmptyArrays: true
+//         }
+//       },
+//       {
+//         $lookup: {
+//           from : "branduploads",
+//           localField: "brandOwnerId",
+//           foreignField: "brandOwnerId",
+//           as: "uploads"
+//         }
+//       },
+//       {
+//         $unwind: {
+//           path : "$uploads",
+//           preserveNullAndEmptyArrays: true
+//         }
+//       },
+//       {
+//         $project:{
+//           _id:0,
+//           brandID: "$brandInfo.brandID",
+//           uuid: "$brandOwnerId",
+//           brandname:"$brandInfo.brandDetails.brandName",
+//           brandCategories: {
+//             $ifNull: ["$franchiseDetails.brandCategories", null]
+//           },
+//           fico: {
+//             $ifNull: ["$franchiseDetails.fico", []]
+//           },
+//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0]  },
+//           franchiseVideos: {$arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },  
+//         }
+//       }
+//     ])
+//     if (!topBeverageFranchises || topBeverageFranchises.length === 0) {
+//       return res.json(new ApiResponse(404, null, "No top beverage franchises found"));
+//     }
+//     return res.json(
+//       new ApiResponse(200, topBeverageFranchises, "Top beverage franchises fetched successfully")
+//     );
+//     } catch (error) {
+//     console.error("Error fetching brands:", error);
+//     return res.json(
+//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
+//   }
+// }
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -813,113 +1007,7 @@ export const allId = async(req,res) => {
 }
 
 
-export const getTopFoodFranchise = async (req,res)=>{
-   try {
-    const topFranchises = await BrandFranchiseDetails.aggregate([
-      { $match : { "franchiseDetails.brandCategories.sub" :"Food Franchises"}},
-      
-      {$lookup: {
-        from: "branddetails",
-        localField: "brandOwnerId",
-        foreignField: "uuid",
-        as: "brandInfo"
-      }} ,
-      {$lookup: {
-        from: "branduploads",
-        localField: "brandOwnerId",
-        foreignField: "brandOwnerId", 
-        as: "uploads"
-      }},
-      {$project:{
-        // brandInfo: 1,
-        // franchiseDetails: 1,
-        // uploads: 1,
-        _id: 0,
-        brandId : "$brandInfo.brandID",
-        brandName : "$brandInfo.brandDetails.brandName",
-        brandCategory : "$franchiseDetails.brandCategories",
-        fico : "$franchiseDetails.fico",
-        logo: {
-          $cond: {
-            if: { $isArray: "$uploads.uploads.brandLogo" },
-            then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-            else: null
-          }
-        },
-        franchiseVideos: {
-          $ifNull: ["$uploads.uploads.franchisePromotionVideo", []]
-        },
-      }}
-
-    ])
-    if (!topFranchises || topFranchises.length === 0) {
-      return res.status(404).json(new ApiResponse(404, null, "No top food franchises found"));
-    }
-    return res.status(200).json(new ApiResponse(200, topFranchises, "Top food franchises fetched successfully"));
-   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server error" });
-   }
-}
-
-
 export const getTopCafes = async (req, res) => {
-  try {
-    const data = await BrandFranchiseDetails.aggregate([
-      {
-        $match: {
-          "franchiseDetails.brandCategories.child": "Coffee & Tea Cafes"
-        }
-      },
-      {
-        $lookup: {
-          from: "branddetails",            // must match the actual MongoDB collection name (usually lowercase plural)
-          localField: "brandOwnerId",
-          foreignField: "uuid",
-          as: "brandInfo"
-        }
-      },
-      {
-        $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
-      },
-      {
-        $lookup:{
-          from:"branduploads",
-          localField:"brandOwnerId",
-          foreignField:"brandOwnerId",
-          as:"uploads"
-        }
-      },
-      {
-        $project: {
-          _id : 0,
-          // franchiseDetails: 1,
-
-          // uploadsData: 1,
-
-          brandId :"$brandInfo.brandID",
-          brandName : "$brandInfo.brandDetails.brandName",
-          brandCategories : "$franchiseDetails.brandCategories",
-          fico:"$franchiseDetails.fico",
-          logo:{
-            $cond: {
-              if: { $isArray: "$uploads.uploads.brandLogo" },
-              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-              else: null
-            }
-          },
-          franchiseVideos: {
-            $ifNull: ["$uploads.uploads.franchisePromotionVideo", []]
-          },
-        }
-      }
-    ]);
-
-    res.status(200).json(data);
-  } catch (error) {
-    console.error("Error fetching top cafes:", error);
-    res.status(500).json({ message: "Server Error" });
-  }
 };
 
 

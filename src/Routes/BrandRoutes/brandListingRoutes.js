@@ -26,6 +26,7 @@ router.post(
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
 router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
+// router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
 router.patch(
   "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([
