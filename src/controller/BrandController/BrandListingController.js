@@ -15,7 +15,8 @@ import uuid from "../../utils/uuid.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
-import { lookup } from "dns";
+import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
+
 
 const likeandshortlist = async(id) => {
 
@@ -310,6 +311,19 @@ const getAllBrands = async (req, res) => {
           fico: {
             $ifNull: ["$franchiseDetails.franchiseDetails.fico", []]
           },
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel"
+              }
+            }
+          },
+          
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
@@ -370,53 +384,111 @@ const getAllBrands = async (req, res) => {
 
 const getBrandListingByUUID = async (req, res) => {
   try {
-    const { id: uuid } = req.params;
-   
+    const { id } = req.params;
 
-    let brand = await BrandListing.findOne({ uuid }).select(
-      "-_id -createdAt -updatedAt -__v"
-    );
-
-    if (!brand) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "Brand not found"));
-    }
-
-    const mediaFields = [
-      "pancard",
-      "gstCertificate",
-      "brandLogo",
-      "interiorOutlet",
-      "franchisePromotionVideo",
-      "brandPromotionVideo",
-      "exteriorOutlet",
-    ];
-
-    brand = brand.toObject();
-
-    for (const field of mediaFields) {
-      if (Array.isArray(brand[field])) {
-        brand[field] = await Promise.all(
-          brand[field].map(async (key) => {
-            if (!key) return null;
-            try {
-              return await generateSignedUrl(key);
-            } catch {
-              return null;
+    const data = await BrandDetails.aggregate([
+      {
+        $match: {
+          uuid: id
+        }
+      },
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "brandfranchisedetails"
+        }
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      {
+        $lookup: {
+          from: "brandexpansionlocationdatas",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "brandexpansionlocationdatas"
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          uuid: 1,
+          brandDetails: {
+            companyName: "$brandDetails.companyName",
+            brandName: "$brandDetails.brandName",
+            tagLine: "$brandDetails.tagLine",
+            brandID: "$brandID",
+          },
+          brandfranchisedetails: {
+            $let: {
+              vars: {
+                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
+              },
+              in: {
+                franchiseDetails: "$$firstFranchise.franchiseDetails"
+              }
             }
-          })
-        );
-        brand[field] = brand[field].filter(Boolean);
+          },
+          uploads: {
+            $let: {
+              vars: {
+                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
+              },
+              in: {
+                logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
+                franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
+                exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
+                interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
+                awards: {
+                  $cond: {
+                    if: {
+                      $and: [
+                        { $isArray: "$$firstUpload.uploads.awards" },
+                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
+                      ]
+                    },
+                    then: {
+                      $map: {
+                        input: "$$firstUpload.uploads.awards",
+                        as: "award",
+                        in: {
+                          awardDescription: "$$award.awardDescription",
+                          awardImage: "$$award.awardImage"
+                        }
+                      }
+                    },
+                    else: []
+                  }
+                }
+              }
+            }
+          },
+          brandexpansionlocationdatas: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
+              },
+              in: {
+                currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
+                expansionLocations: "$$data.expansionLocationData.expansionLocations"
+              }
+            }
+          },
+        }
       }
-    }
+    ]);
 
-    return res
-      .json(new ApiResponse(200, brand, "✅ Brand fetched successfully"));
+    return res.json(new ApiResponse(200, data, "✅ Brand fetched successfully"));
   } catch (error) {
-    // console.error("getBrandListingByUUID error:", error);
-    return res
-      .json(new ApiResponse(500, null, "Failed to fetch brand"));
+    console.error("getBrandListingByUUID error:", error);
+    return res.json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
 
@@ -526,7 +598,7 @@ export const getTopFoodFranchise = async (req, res) => {
           },
         }
       }
-    ]);
+    ];
 
     return res.json(new ApiResponse(200, data, "✅ Brand fetched successfully"));
   } catch (error) {
