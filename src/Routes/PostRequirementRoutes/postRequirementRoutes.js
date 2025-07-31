@@ -21,9 +21,9 @@ router.post(
   createPostRequirement
 );
 
-router.get('/post/postRequirements', getAllPostRequirement);
-router.get('/post/postRequirements/:id', getPostRequirementById);
-router.get('/post/postRequirements/uuid/:uuid', getPostRequirementByUUID); // (or use query params)
+router.get('/v1/post/postRequirements', getAllPostRequirement);
+router.get('/v1/post/postRequirements/:id', getPostRequirementById);
+router.get('/v1/post/postRequirements/uuid/:uuid', getPostRequirementByUUID); // (or use query params)
 
 router.put(
   '/postRequirements/:id',
@@ -32,6 +32,6 @@ router.put(
   updatePostRequirement
 );
 
-router.delete('/post/postRequirements/:id', deletePostRequirement);
+router.delete('/v1/post/postRequirements/:id', deletePostRequirement);
 
 export default router;

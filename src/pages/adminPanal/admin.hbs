@@ -105,7 +105,7 @@
         document.getElementById("manageContainer").style.display = "none";
         const menu = document.getElementById("franchiseDropdownMenu");
         const isVisible = menu.style.display === "block";
-        console.log("Dropdown is now");
+        {{!-- console.log("Dropdown is now"); --}}
         // Toggle the display property of the dropdown menu
         menu.style.display = isVisible ? "none" : "block";
 
@@ -131,7 +131,7 @@
     function toggleManage() {
         const menu = document.getElementById("ManageDropdownMenu");
         const isVisible = menu.style.display === "block";
-        console.log("Dropdown is now");
+        {{!-- console.log("Dropdown is now"); --}}
         // Toggle the display property of the dropdown menu
         menu.style.display = isVisible ? "none" : "block";
 
@@ -151,7 +151,7 @@
     }); --}}
 
     function handleAdminEditImage() {
-        console.log("Edit button clicked");
+        {{!-- console.log("Edit button clicked"); --}}
         document.getElementById("manageContainer").style.display = "block";
         document.getElementById("investorContainer").style.display = "none";
     }
@@ -167,14 +167,14 @@ function handleInvestors() {
     
     investorContainer = true
      document.getElementById("manageContainer").style.display = "none";
-    console.log(investorContainer)
+    {{!-- console.log(investorContainer) --}}
     if( investorContainer){
         document.getElementById("investorContainer").style.display = "block";
     }
   }
 
 async function handleDownloadBTN(id) {
-  console.log("Download button clicked for ID:", id);
+  {{!-- console.log("Download button clicked for ID:", id); --}}
 
   try {
     const response = await fetch(`http://localhost:5000/api/v1/admin/getInvestorById/${id}`, {
@@ -191,7 +191,7 @@ async function handleDownloadBTN(id) {
 
     const result = await response.json();
     const data = result.data;
-    console.log("Data fetched:", data);
+    {{!-- console.log("Data fetched:", data); --}}
 
     // Convert JSON to CSV
     const csvRows = [];

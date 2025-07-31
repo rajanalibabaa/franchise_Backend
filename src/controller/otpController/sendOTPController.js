@@ -26,9 +26,13 @@ const verifyToken = (token) => {
 // Send Email OTP
 export const requestEmailOtp = async (req, res) => {
     const { email } = req.body;
+
+    console.log(email);
     const otp = generateOTP();
-    console.log("OTP:", otp); // Log the OTP for debugging purposes
+    // console.log("OTP:", otp); // Log the OTP for debugging purposes
     const token = generateToken(email, otp);
+    console.log("Token:", token);
+    
 
     try {
         await sendEmailOTP(email, otp);
@@ -48,9 +52,9 @@ export const requestMobileOtp = async (req, res) => {
  // Log the mobile number for debugging purposes
     const otp = generateOTP();
     const token = generateToken(mobile, otp);
-    console.log("OTP:", otp); // Log the OTP for debugging purposes
+    // console.log("OTP:", otp); // Log the OTP for debugging purposes
 
-    console.log("Token:", token); // Log the token for debugging purposes
+    // console.log("Token:", token); // Log the token for debugging purposes
 
     try {
         await sendMobileSMS(mobile, otp);
@@ -70,8 +74,8 @@ export const requestWhatsAppOtp = async (req, res) => {
 
     const otp = generateOTP();
     const token = generateToken(mobile, otp);
-    console.log("OTP:", otp); // Log the OTP for debugging purposes
-    console.log("Token:", token); // Log the token for debugging purposes
+    // console.log("OTP:", otp); // Log the OTP for debugging purposes
+    // console.log("Token:", token); // Log the token for debugging purposes
 
 
     try {
@@ -84,7 +88,9 @@ export const requestWhatsAppOtp = async (req, res) => {
 
 // Controller to verify OTP
 export const verifyOTP = async (req, res) => {
+   
     const { identifier, otp, type } = req.body;
+     console.log(identifier, otp, type)
 
     // Validate required fields
     if (!identifier || !otp || !type) {
@@ -105,7 +111,7 @@ export const verifyOTP = async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1]; // Extract the token
-    console.log("Token:", token); // Log the token for debugging purposes
+    // console.log("Token:", token); // Log the token for debugging purposes
     
 
     try {

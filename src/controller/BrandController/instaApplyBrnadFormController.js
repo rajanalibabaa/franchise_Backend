@@ -1,16 +1,16 @@
-import {instantApply} from "../../model/Brand/brandFranchiseApply.js";
+import { instantApply } from "../../model/Brand/brandFranchiseApply.js";
 import uuid from "../../utils/uuid.js";
 import { sendInstantApplyEmail } from "../../utils/Centralized Email/centralizedEmail.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-
-
+import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantApplyPerfectAndPartial.js";
+import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
+import mongoose from "mongoose";
+import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
-   
-
     const {
       fullName,
       email,
@@ -26,46 +26,41 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyId
     } = req.body;
 
-    console.log(req.body)
+    console.log("req.body :", req.body);
 
     const exists = await BrandListing.findOne({
-      uuid : brandId
-    })
+      uuid: brandId
+    });
 
     if (!exists) {
       return res.json(
-        new ApiResponse(404,null,"Brand not found")
-      )
-    }
-
-     // Check if brand exists
-    const brand = await BrandListing.findOne({ uuid: brandId });
-    if (!brand) {
-      return res.status(404).json(new ApiResponse(404, null, "Brand not found"));
+        new ApiResponse(404, null, "Brand not found")
+      );
     }
 
     // Determine who is applying (Investor / Brand / other)
     let applyBy = "other";
-    let applyById = "other"
+    let applyById = "other";
     const isBrand = await BrandListing.findOne({ uuid: applyId });
     if (isBrand) {
       applyBy = "Brand";
-      applyById = isBrand?.uuid
+      applyById = isBrand?.uuid;
     } else {
       const isInvestor = await InvsRegister.findOne({ uuid: applyId });
       if (isInvestor) {
         applyBy = "Investor";
-        applyById = isInvestor?.uuid
+        applyById = isInvestor?.uuid;
       }
     }
+    
+  const { main, sub, child } = exists.franchiseDetails.brandCategories;
 
-
- 
     const newSubmission = new instantApply({
       uuid: uuid(),
       fullName,
       email,
       mobileNumber,
+      Categories: exists.franchiseDetails.brandCategories,
       state,
       district,
       city,
@@ -74,11 +69,11 @@ export const instaApplyBrandFormController = async (req, res) => {
       readyToInvest,
       brandId,
       brandName,
-      brandEmail : exists.brandDetails.email,
-      brandLogo : exists.uploads.brandLogo[0],
-      apply : {
+      brandEmail: exists.brandDetails.email,
+      brandLogo: exists.uploads.brandLogo[0],
+      apply: {
         applyBy,
-        applyId :  applyById,
+        applyId: applyById,
       }
     });
 
@@ -86,29 +81,60 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     if (!newSubmission) {
       return res.json(
-        new ApiResponse(500,null,"Somethink went wrong while newSubmission saving in database")
-      )
+        new ApiResponse(500, null, "Something went wrong while newSubmission saving in database")
+      );
     }
 
     res.json(
-      new ApiResponse(200,newSubmission, "Application submitted successfully")
+      new ApiResponse(200, newSubmission, "Application submitted successfully")
     );
 
-    await sendInstantApplyEmail(
+    
+
+    await instantApplyLocationMatch(
       fullName,
-      district,
+      email,
+      mobileNumber,
+      brandName,
+      brandId,
+      exists.brandDetails.email,
+      main,
+      sub,
+      child,
       state,
+      district,
       city,
       investmentRange,
       planToInvest,
       readyToInvest,
-      brandName,
-      exists.brandDetails.email,
-      email,
-      mobileNumber
+      applyBy,
+      applyById,
+      exists.uploads.brandLogo[0]
     );
 
-    return 
+
+    // Process perfect and partial matches
+  
+    // await instantApplyPerfectAndPartial(
+    //   fullName,
+    //   email,
+    //   mobileNumber,
+    //   brandName,
+    //   brandId,
+    //   exists.brandDetails.email,
+    //   main,
+    //   sub,
+    //   child,
+    //   state,
+    //   district,
+    //   city,
+    //   investmentRange,
+    //   planToInvest,
+    //   readyToInvest,
+    //   applyBy,
+    //   applyById,
+    //   exists.uploads.brandLogo[0]
+    // );
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
@@ -119,39 +145,60 @@ export const instaApplyBrandFormController = async (req, res) => {
 
 // Get all
 export const getAllInstaApplyToBrand = async (req, res) => {
-  const {id} = req.params
-  const BrandData = req.brandUser
+  const { id } = req.params;
+  const BrandData = req.brandUser;
 
-  if (id !== BrandData.uuid) {
-    return res.json(
-      new ApiResponse(401,{},"Unauthorized requset")
-    )
+
+  if (!id || id !== BrandData?.uuid) {
+    return res.status(401).json(
+      new ApiResponse(401, {}, "Unauthorized request")
+    );
   }
+
   try {
-    const instaApply = (await instantApply.find({brandId:BrandData.uuid}).select("-_id -createdAt -updatedAt -__v")).reverse();
-    
+    // Fetch instant applications with proper error handling
+    const instaApply = await InstantApplyLead.find({ "initialBrand.brandId": BrandData.uuid })
+      .select("-_id -__v")
+      .sort({ createdAt: -1 }) 
+      .lean(); 
+    console.log("instaApply:", instaApply);
 
-    const applyList = [];
+    // Process applications in parallel for better performance
+    const applyList = await Promise.all(
+      instaApply.map(async (application) => {
+        try {
+         
+          let data = await InvsRegister.findOne({ uuid: application.apply?.applyId })
+            .select("-_id -oldData")
+            .lean();
 
-    for (let i = 0; i < instaApply.length; i++) {
-      const application = instaApply[i];
-      let data = await InvsRegister.findOne({ uuid: application.apply?.applyId }).select("-_id -oldData");
-      if (!data) {
-        data = await BrandListing.findOne({ uuid: application.apply?.applyId });
-      }
+     
+          if (!data) {
+            data = await BrandListing.findOne({ uuid: application.apply?.applyId })
+              .lean();
+          }
 
-      if (data) {
-        applyList.push(data);
-      }
-    }
+          
+         
+          return data ? { ...application, userData: data } : application;
+        } catch (error) {
+          console.error(`Error processing application ${application._id}:`, error);
+          return application;
+        }
+      })
+    );
+
+
+
     return res.json(
-      new ApiResponse(200,applyList,"All instant apply application fetch successfully")
-    )
+      new ApiResponse(200, applyList, "All instant apply applications fetched successfully")
+    );
 
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching Insta Apply", error: error.message });
+    console.error("Error in getAllInstaApplyToBrand:", error);
+    return res.status(500).json(
+      new ApiResponse(500, null, `Error fetching Insta Apply: ${error.message}`)
+    );
   }
 };
 
@@ -171,11 +218,11 @@ export const getInstaApplyById = async (req, res) => {
 
     const myInstaApplies = await instantApply.find({ "apply.applyId": user.uuid });
 
-    console.log("myInstaApplies :",myInstaApplies)
+    // console.log("myInstaApplies :",myInstaApplies)
 
     if (!myInstaApplies || myInstaApplies.length === 0) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "User hasn't applied to any brand yet")
+      return res.json(
+        new ApiResponse(404, {}, "User hasn't applied to any brand yet")
       );
     }
 
@@ -190,13 +237,14 @@ export const getInstaApplyById = async (req, res) => {
       }
     }
 
-    return res.status(200).json(
-      new ApiResponse(200, applyList, "Apply list fetched successfully")
+    const reverse = applyList.reverse()
+    return res.json(
+      new ApiResponse(200, reverse, "Apply list fetched successfully")
     );
 
   } catch (error) {
     console.error("Error in getInstaApplyById:", error);
-    return res.status(500).json(
+    return res.json(
       new ApiResponse(500, null, "Error fetching Insta Apply")
     );
   }
@@ -209,8 +257,6 @@ export const updateInstaApply = async (req, res) => {
     const {
       fullName,
       location,
-      // franchiseModel,
-      // franchiseType,
       investmentRange,
       planToInvest,
       readyToInvest,
@@ -226,8 +272,6 @@ export const updateInstaApply = async (req, res) => {
       {
         fullName,
         location,
-        // franchiseModel,
-        // franchiseType,
         investmentRange,
         planToInvest,
         readyToInvest,
@@ -273,3 +317,24 @@ export const deleteInstaApply = async (req, res) => {
   }
 };
 
+export const getAllLeads = async (req,res) => {
+
+  const { id } = req.params;
+  const BrandData = req.brandUser;
+
+
+  if (!id || id !== BrandData?.uuid) {
+    return res.status(401).json(
+      new ApiResponse(401, {}, "Unauthorized request")
+    );
+  }
+
+    const leads = await InstantApplyLead.find({ "brandMatches.brandId": new mongoose.Types.ObjectId(BrandData._id) })
+      .select("-_id -__v")
+      .sort({ createdAt: -1 }) 
+      .lean(); 
+    console.log("instaApply:", leads.length);
+    return res.json(
+      new ApiResponse(200,leads, "All instant apply applications fetched successfully")
+    );
+}

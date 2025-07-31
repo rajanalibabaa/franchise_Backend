@@ -1,7 +1,7 @@
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
-import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
+import {sendEmailOTP} from "../../utils/Centralized Email/centralizedEmail.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
@@ -19,7 +19,7 @@ const OTP_EXPIRATION_MINUTES = 5;
 const generateOTPforLogin = async (req, res) => {
   try {
     const { email, mobileNumber } = req.body;
-    console.log("Request body:", req.body);
+    // console.log("Request body:", req.body);
 
     if (!email && !mobileNumber) {
       return res
@@ -45,7 +45,7 @@ const generateOTPforLogin = async (req, res) => {
       $or: [{ email }, { mobileNumber }],
     });
 
-    console.log("Investor data:", investorData);
+    // console.log("Investor data:", investorData);
 
     const brandUserData = await BrandDetails.findOne({
       $or: [
@@ -54,11 +54,11 @@ const generateOTPforLogin = async (req, res) => {
       ],
     });
 
-    console.log("Brand user data:", brandUserData);
+    // console.log("Brand user data:", brandUserData);
 
     const thirdPartyUsers = await ThirdPartyAuth.findOne({email:email, mobileNumber:mobileNumber});
 
-    console.log("thirdPartyUsers data:", thirdPartyUsers);
+    // console.log("thirdPartyUsers data:", thirdPartyUsers);
 
     if (!investorData && !brandUserData && !thirdPartyUsers) {
       return res
@@ -101,8 +101,8 @@ const verifyLogin = async (req, res) => {
       );
     }
 
-    console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
-    console.log("otpData.code:", typeof otpData.code, otpData.code);
+    // console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
+    // console.log("otpData.code:", typeof otpData.code, otpData.code);
 
     // Check if OTP exists
     if (!otpData.code) {

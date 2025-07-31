@@ -10,77 +10,87 @@ import { configureFacebookStrategy, configureGoogleStrategy } from './src/utils/
 import path from 'path';
 import s3Uploads from './src/Routes/s3Uploads/upload.js';
 import allRouters from './app.js';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import MongoStore from 'connect-mongo';
+import compression from "compression";
+dotenv.config();  // ✅ Load env FIRST
 
 const app = express();
 
+app.use(compression());
 
-dotenv.config();  
-app.use(cors( {
-    origin: ['https://foodandbeverage.mrfranchise.in','http://localhost:5173','http://localhost:5174'],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+// Security & Rate Limiting
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 min
+  max: 100,
+  message: "Too many requests, try again later."
+});
 
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-    credentials: true,
-    optionsSuccessStatus: 200,
+app.use(helmet());
+app.use(cors({
+  origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+  optionsSuccessStatus: 200,
 }));
-// Middlewares
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), 'public')));
-// app.use(bodyParser.json());
-// app.use(bodyParser.urlencoded({ extended: true }));
 
-
-
+// Session (make sure DB_URL and SESSION_SECRET exist in .env)
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
+  secret: process.env.SESSION_SECRET || "default_secret",
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.DB_URL,
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60, // 14 days
+  }),
+  cookie: {
+    maxAge: 14 * 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+  },
 }));
 
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
+configureGoogleStrategy();
+configureFacebookStrategy();
 
-  configureGoogleStrategy();
-  configureFacebookStrategy();
-   
-  connectDatabase();
+// Limit requests globally
+app.use(limiter);
 
-// Routes
-app.get('/', (req, res) => {
-    // res.render('home');
-    // res.send('Welcome to the Home Page!');
-    res.json({ message: 'Welcome to the Home Page!' });
-});
-app.use('/api',allRouters);
+// Connect to DB (ensure DB is connected before listening)
+const startServer = async () => {
+  try {
+    await connectDatabase(); // ✅ Wait for DB to connect
+    console.log("✅ Database connected");
 
-app.use("/api/v1/upload", s3Uploads)
+    // Routes
+    app.get('/', (req, res) => {
+      res.json({ message: 'Welcome to the Home Page!' });
+    });
 
+    app.use('/api', allRouters);
+    app.use('/api/v1/upload', s3Uploads);
 
+    // Error handler (must be last)
+    app.use(errorHandler);
 
+    app.listen(process.env.PORT, () => {
+      console.log(`🚀 Server is running on port ${process.env.PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err.message);
+    process.exit(1);
+  }
+};
 
-// Global Error Handler
-app.use(errorHandler);
-
-// Server Listener
-app.listen(process.env.PORT, () => {
-    console.log(`🚀 Server is running on port ${process.env.PORT}`);
-});
-
-app.listen(process.env.PORT,'0.0.0.0',() =>{
-    console.log(`Server is running on port ${process.env.PORT}...`);
-})
-
-app.post('/api/v1/verify-captcha', async (req, res) => {
-  const { token } = req.body;
-  const secretKey = process.env.REACT_APP_RECAPTCHA_SECRET_KEY;
-
-  const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
-  const response = await fetch(url, { method: 'POST' });
-  const data = await response.json();
-
-  res.json(data); // returns success or error
-});
+startServer();

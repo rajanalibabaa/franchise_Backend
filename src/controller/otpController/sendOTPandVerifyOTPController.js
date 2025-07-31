@@ -10,7 +10,7 @@ console.log("otpStore : ",otpStore)
 
 const generateNewEmailOTP = async (req, res) => {
     const { email, mobileNuber } = req.body; 
-    console.log("===== :", req.body);
+    // console.log("===== :", req.body);
 
     
     const brandExist = await BrandListing.find({ "personalDetails.email": email });
@@ -41,7 +41,7 @@ const generateNewEmailOTP = async (req, res) => {
 
 const verifynewEmailOTP = async (req, res) => {
     const { email, verifyOTP } = req.body;
-    console.log("verifyOTP :", verifyOTP);
+    // console.log("verifyOTP :", verifyOTP);
 
     const otpEntry = otpStore.get(email);
 
