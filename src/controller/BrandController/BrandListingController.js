@@ -66,6 +66,8 @@ console.log("brand :",brand)
     return {likedBrands,shortListedBrands}
 }
 
+
+
 const createBrandListing = async (req, res) => {
   try {
     
@@ -258,6 +260,8 @@ console.log("Incoming data:", brandDetails.brandName);
   }
 };
 
+
+
 const getAllBrands = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -266,6 +270,9 @@ const getAllBrands = async (req, res) => {
     const id = req.query.id || null;
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+   
+
 
     const aggregationPipeline = [
       {
@@ -307,9 +314,6 @@ const getAllBrands = async (req, res) => {
           brandname: "$brandDetails.brandName",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
-          },
-          fico: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.fico", []]
           },
           fico: {
             $let: {
@@ -381,6 +385,8 @@ const getAllBrands = async (req, res) => {
     );
   }
 };
+
+
 
 const getBrandListingByUUID = async (req, res) => {
   try {
@@ -734,7 +740,9 @@ export const getTopLeadingFranchise = async (req, res) => {
     return res.json(
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
-}
+};
+
+
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -1226,7 +1234,7 @@ export const getTopCafes = async (req, res) => {
 
 
     return res.json(new ApiResponse(200,{
-      getTopCafes,
+       brands : getTopCafes,
       pagination : {
         total : brandsData,
         totalPages,
@@ -1327,7 +1335,8 @@ export const getDesertAndBakery = async(req,res) =>{
   const hasPrevious = page > 1;
 
   return res.json(
-    new ApiResponse(200,{getDesertAndBakery, 
+    new ApiResponse(200,{
+      brands : getDesertAndBakery, 
       pagination : {
       total : totalCount,
       totalPages,
