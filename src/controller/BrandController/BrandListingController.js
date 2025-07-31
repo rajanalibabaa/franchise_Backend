@@ -1237,7 +1237,7 @@ export const getTopCafes = async (req, res) => {
 
 
     return res.json(new ApiResponse(200,{
-      getTopCafes,
+       brands : getTopCafes,
       pagination : {
         total : totalCount,
         totalPages,
@@ -1338,7 +1338,8 @@ export const getDesertAndBakery = async(req,res) =>{
   const hasPrevious = page > 1;
 
   return res.json(
-    new ApiResponse(200,{getDesertAndBakery, 
+    new ApiResponse(200,{
+      brands : getDesertAndBakery, 
       pagination : {
       total : totalCount,
       totalPages,
