@@ -6,10 +6,11 @@ const connectDatabase = async () => {
     // Example in .env:
     // DB_URL=mongodb+srv://<user>:<pass>@mrfranchise.vanempq.mongodb.net/Mrfranchise?retryWrites=true&w=majority&appName=mrfranchise
 
-     // ✅ Removed deprecated options
-if (!mongoose.connection.readyState) {
-  const conn = await mongoose.connect(process.env.DB_URL);
-
+    const conn = await mongoose.connect(process.env.DB_URL, {
+       maxPoolSize: 50, // allows multiple queries in parallel
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
 
     console.log(`✅ MongoDB connected successfully!`);
     console.log(`   Database: ${conn.connection.name}`);
@@ -18,10 +19,10 @@ if (!mongoose.connection.readyState) {
     // List collections for debugging
     const collections = await conn.connection.db.listCollections().toArray();
     console.log(
-      `   Collections: ${collections.map((c) => c.name).join(", ")}`
+      `Collections: ${collections.map((c) => c.name).join(", ")}`
     );
   }
-  } catch (err) {
+  catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1); // Exit process if DB connection fails
   }

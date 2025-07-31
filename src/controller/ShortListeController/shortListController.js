@@ -13,32 +13,52 @@ export const postShortListed = async (req, res) => {
     try {
         // Validate authorization
         if (id !== investor?.uuid && id !== brand?.uuid) {
-            return res.json(
+            return res.status(403).json(
                 new ApiResponse(403, {}, "Unauthorized request")
+            );
+        }
+
+        // Validate required fields
+        if (!shortListedId) {
+            return res.status(400).json(
+                new ApiResponse(400, {}, "shortListedId is required")
             );
         }
 
         const brandToShortlist = await BrandDetails.findOne({ uuid: shortListedId });
         if (!brandToShortlist) {
-            return res.json(
+            return res.status(404).json(
                 new ApiResponse(404, {}, "Brand not found")
             );
         }
 
-        // Check if already shortlisted
+        // Build query to check existing shortlist
         const query = {
             brandOwnerId: brandToShortlist._id,
-            $or: [
-                { "ShortListedBy.investor.userId": investor?._id },
-                { "ShortListedBy.brand.userId": brand?._id }
-            ]
+            $or: []
         };
 
+        if (investor) {
+            query.$or.push({ "ShortListedBy.investor.userId": investor._id });
+        }
+        if (brand) {
+            query.$or.push({ "ShortListedBy.brand.userId": brand._id });
+        }
+
+        // If no valid user found
+        if (query.$or.length === 0) {
+            return res.status(403).json(
+                new ApiResponse(403, {}, "No valid user found for shortlisting")
+            );
+        }
+
+        // Check for existing shortlist entry
         const existingShortlist = await ShortListed.findOne(query);
 
         if (existingShortlist) {
+            // Remove from shortlist if already exists
             await ShortListed.findByIdAndDelete(existingShortlist._id);
-            return res.json(
+            return res.status(200).json(
                 new ApiResponse(200, { action: 'removed' }, "Removed from shortlist")
             );
         }
@@ -46,7 +66,6 @@ export const postShortListed = async (req, res) => {
         // Create new shortlist entry
         const shortlistData = {
             brandOwnerId: brandToShortlist._id,
-            uuid: shortListedId, 
             ShortListedBy: {}
         };
 
@@ -62,33 +81,36 @@ export const postShortListed = async (req, res) => {
             };
         }
 
-        const newShortlist = await ShortListed.create(shortlistData);
-
-        if (!newShortlist) {
-            return res.json(
-                new ApiResponse(500, {}, "Failed to create shortlist")
+        // Create with conflict handling
+        try {
+            const newShortlist = await ShortListed.create(shortlistData);
+            return res.status(201).json(
+                new ApiResponse(201, { action: 'added' }, "Added to shortlist successfully")
             );
+        } catch (createError) {
+            if (createError.code === 11000) {
+                // Handle race condition where duplicate was created between find and create
+                return res.status(200).json(
+                    new ApiResponse(200, { action: 'added' }, "Item was already in your shortlist")
+                );
+            }
+            throw createError;
         }
-
-        return res.json(
-            new ApiResponse(200, { action: 'added' }, "Added to shortlist successfully")
-        );
 
     } catch (error) {
         console.error("Shortlist error:", error);
         
         if (error.code === 11000) {
-            return res.json(
-                new ApiResponse(409, {}, "duplicate key")
+            return res.status(409).json(
+                new ApiResponse(409, {}, "This item is already in your shortlist")
             );
         }
 
-        return res.json(
+        return res.status(500).json(
             new ApiResponse(500, {}, "Internal server error")
         );
     }
 };
-
 
 export const getShortListedById = async (req, res) => {
     try {
