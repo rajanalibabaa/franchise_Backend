@@ -1,4 +1,3 @@
-import { ref } from "joi";
 import mongoose from "mongoose";
 
 // -- Subschema for FICO (Franchise Investment Cost Options)
@@ -27,12 +26,12 @@ const FicoSchema = new mongoose.Schema(
 const FranchiseDetailsSchema = new mongoose.Schema(
   {
     brandOwnerId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       unique: true,
       ref: 'BrandDetails',
       required: true
     },
-    aidFinancing: String,
+    franchiseDetails:{aidFinancing: String,
     brandCategories: {
       main: String,
       sub: String,
@@ -49,18 +48,12 @@ const FranchiseDetailsSchema = new mongoose.Schema(
     totalOutlets: String,
     fico: [FicoSchema],
     trainingSupport: [String],
-    uniqueSellingPoints: [String],
-    uuid: {
-          type: String,
-          default: uuid,
-          unique: true,
-          ref: 'BrandDetails',
-        },
-   
+    uniqueSellingPoints: [String],}
+      
   },
   {
     timestamps: true
   }
 );
 
-export const FranchiseDetails = mongoose.model("FranchiseDetails", FranchiseDetailsSchema);
+export const BrandFranchiseDetails = mongoose.model("BrandFranchiseDetails", FranchiseDetailsSchema);

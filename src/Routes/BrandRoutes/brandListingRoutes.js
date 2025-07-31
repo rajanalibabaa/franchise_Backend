@@ -17,7 +17,6 @@ router.post(
     { name: 'businessPlan', maxCount: 1 },
     { name: 'exteriorOutlet', maxCount: 5 },
     { name: 'franchisePromotionVideo', maxCount: 1 },
-    { name: 'brandPromotionVideo', maxCount: 1 },
     { name: 'gstCertificate', maxCount: 1 },
     { name: 'interiorOutlet', maxCount: 5 }
   ])

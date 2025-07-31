@@ -3,12 +3,12 @@ import mongoose from "mongoose";
 const ExpansionLocationDataSchema = new mongoose.Schema(
   {
     brandOwnerId: {
-          type: mongoose.Schema.Types.ObjectId,
+          type: String,
           unique: true,
           ref: 'BrandDetails',
           required: true
         },
-    currentOutletLocations: {
+   expansionLocationData:{ currentOutletLocations: {
       domestic: {
         locations: [
           {
@@ -73,16 +73,11 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
       }
     },
     isInternationalExpansion: String,
-    uuid: {
-              type: String,
-              default: uuid,
-              unique: true,
-              ref: 'BrandDetails',
-            },
+  }
   },
   {
     timestamps: true
   }
 );
 
-export const ExpansionLocationData = mongoose.model("ExpansionLocationData", ExpansionLocationDataSchema);
+export const BrandExpansionLocationData = mongoose.model("BrandExpansionLocationData", ExpansionLocationDataSchema);

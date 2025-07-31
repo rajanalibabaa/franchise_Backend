@@ -1,18 +1,16 @@
 import mongoose from "mongoose";
-import uuid from "../../utils/uuid.js"
 
 const BrandDetailsSchema = new mongoose.Schema(
   {
     uuid: {
       type: String,
-      default: uuid,
       unique: true
     },
     brandID: {
       type: String,
       unique: true
     },
-    fullName: String,
+    brandDetails : {fullName: String,
     email: String,
     mobileNumber: String,
     whatsappNumber: String,
@@ -35,8 +33,8 @@ const BrandDetailsSchema = new mongoose.Schema(
     instagram: String,
     linkedin: String,
     gstNumber: String,
-    pancardNumber: String,
-    awardDescription: { type: String },
+    pancardNumber: String
+   }
   },
   {
     timestamps: true

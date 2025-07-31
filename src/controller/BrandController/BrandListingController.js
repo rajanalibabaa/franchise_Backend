@@ -4,134 +4,22 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import {
   generateSignedUrl,
   uploadFileToR2,
-  uploadFileToS3,
 } from "../../utils/Uploads/s3Uploader.js";
 // import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import generateCustomId from "../../helpers/brandIdGenerater.js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
+import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
+import { BrandExpansionLocationData } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
+import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
+import uuid from "../../utils/uuid.js";
 
-// const createBrandListing = async (req, res) => {
-//   try {
-//     const fileFields = [
-//       "awardDoc",
-//       "brandLogo",
-//       "pancard",
-//       "businessPlan",
-//       "exteriorOutlet",
-//       "franchisePromotionVideo",
-//       "brandPromotionVideo",
-//       "gstCertificate",
-//       "interiorOutlet"
-//     ];
-// // console.log("Available awardDoc files:", req.files?.awardDoc?.length || 0);
-//     // Parse incoming JSON strings safely
-//     const brandDetails = req.body.brandDetails
-//     const franchiseDetails = req.body.franchiseDetails 
-//     const expansionLocationData = req.body.expansionLocationData 
-//     // const brandDetails = JSON.parse(req.body.brandDetails || "{}");
-//     // const franchiseDetails = JSON.parse(req.body.franchiseDetails || "{}");
-//     // const expansionLocationData = JSON.parse(req.body.expansionLocationData || "{}");
-
-//     // ✅ Parse awardText safely as array
-//     let awardDis = [];
-
-
-
-//     if (Array.isArray(brandDetails.awardText)) {
-//       awardDis = brandDetails.awardText;
-//     } else if (typeof brandDetails.awardText === "string") {
-//       try {
-//         awardDis = JSON.parse(brandDetails.awardText);
-//       } catch (e) {
-//         console.warn("Invalid awardText JSON:", e);
-//         awardDis = [];
-//       }
-//     }
-
-//     // Generate brand ID using groupId if provided
-//     const group = franchiseDetails?.brandCategories?.groupId || null;
-//     const customId = await generateCustomId(group);
-
-
-   
-
-//     // Upload files to R2
-//     const uploadedFiles = {};
-//     for (const field of fileFields) {
-//       const files = req.files?.[field];
-//       // console.log("files :",field)
-//       if (!field) {
-//         //  console.log("field not found :",field)
-//          return
-//       }
-//       if (files?.length > 0) {
-//         const isVideo = field.toLowerCase().includes("video");
-//         const urls = await Promise.all(
-//           files.map((file) => {
-//             const contentType = isVideo ? "video/mp4" : file.mimetype;
-//             return uploadFileToR2(file.path, contentType);
-//           })
-//         );
-//         uploadedFiles[field] = urls;
-//       }
-//     }
-
-//     // ✅ Build structured awards array
-//     const awardDocs = uploadedFiles.awardDoc || [];
-//     const awards = awardDocs.map((fileUrl, index) => ({
-//       awardDescription: awardDis[index] || "",
-//       awardImage: fileUrl
-//     }));
-
-//     // Create the brand listing document
-//     const newBrand = await BrandListing.create({
-//       brandID: customId,
-//       brandDetails,
-//       franchiseDetails,
-//       expansionLocationData,
-//       uploads: {
-//         brandLogo: uploadedFiles.brandLogo || [],
-//         gstCertificate: uploadedFiles.gstCertificate || [],
-//         pancard: uploadedFiles.pancard || [],
-//         exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-//         interiorOutlet: uploadedFiles.interiorOutlet || [],
-//         franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-//         brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-//         businessPlan: uploadedFiles.businessPlan || [],
-//         awards: awards
-//       }
-//     });
-
-//     if (!newBrand) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Failed to create brand listing in the database"
-//       });
-//     }
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//       newBrand,
-//        "Brand listing created successfully",
-      
-//       )
-//     );
-
-//   } catch (error) {
-//     console.error("❌ Brand Creation Error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Failed to create brand listing",
-//       error: error.message
-//     });
-//   }
-// };
 
 
 const createBrandListing = async (req, res) => {
   try {
-    console.log("Incoming data:", req.body);
-
+    
+    const id = uuid(); // Make sure this is properly imported/defined
+console.log("Incoming data:", req.body);
     const fileFields = [
       "awardDoc",
       "brandLogo",
@@ -157,6 +45,13 @@ const createBrandListing = async (req, res) => {
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
     const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
 
+    // Validate required fields
+    if (!brandDetails || !franchiseDetails || !expansionLocationData) {
+      return res.json(
+        new ApiResponse(400, {}, "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing")
+      );
+    }
+
     const normalizeDistrictData = (districtObj, fallbackName) => {
       if (!districtObj.district && fallbackName) districtObj.district = fallbackName;
       if (!Array.isArray(districtObj.cities) || districtObj.cities.length === 0) {
@@ -167,11 +62,9 @@ const createBrandListing = async (req, res) => {
 
     const normalizeLocations = (locations, isInternational = false) => {
       if (!Array.isArray(locations)) return [];
-
       return locations.map(loc => {
         const key = isInternational ? "states" : "state";
         const districtKey = isInternational ? "district" : "districts";
-
         if (Array.isArray(loc[districtKey])) {
           loc[districtKey] = loc[districtKey].map(d => normalizeDistrictData(d, loc[key]));
         }
@@ -202,108 +95,148 @@ const createBrandListing = async (req, res) => {
 
     // Parse award descriptions
     let awardDescriptions = [];
-
-
-    if (Array.isArray(brandDetails.awardText)) {
-      awardDescriptions = brandDetails.awardText;
-    } else if (typeof brandDetails.awardText === "string") {
-      try {
-        awardDescriptions = JSON.parse(brandDetails.awardText);
-      } catch (e) {
-        console.warn("Invalid awardText JSON:", e);
+    if (brandDetails.awardText) {
+      if (Array.isArray(brandDetails.awardText)) {
+        awardDescriptions = brandDetails.awardText;
+      } else if (typeof brandDetails.awardText === "string") {
+        try {
+          awardDescriptions = JSON.parse(brandDetails.awardText);
+        } catch (e) {
+          console.warn("Invalid awardText JSON:", e);
+        }
       }
     }
-let awardDis = [];
+
     // Generate brandID
     const groupId = franchiseDetails?.brandCategories?.groupId || null;
     const brandID = await generateCustomId(groupId);
 
-     // Upload files to R2
+    // Upload files to R2
     const uploadedFiles = {};
     for (const field of fileFields) {
-      const files = req.files?.[field];
-      // console.log("files :",field)
-      if (!field) {
-        //  console.log("field not found :",field)
-         return
-      }
-      if (files?.length > 0) {
-        const isVideo = field.toLowerCase().includes("video");
-        const urls = await Promise.all(
-          files.map((file) => {
-            const contentType = isVideo ? "video/mp4" : file.mimetype;
-            return uploadFileToR2(file.path, contentType);
-          })
-        );
-        uploadedFiles[field] = urls;
+      if (req.files?.[field]?.length > 0) {
+        try {
+          const isVideo = field.toLowerCase().includes("video");
+          const urls = await Promise.all(
+            req.files[field].map(async (file) => {
+              const contentType = isVideo ? "video/mp4" : file.mimetype;
+              return await uploadFileToR2(file.path, contentType);
+            })
+          );
+          uploadedFiles[field] = urls.filter(url => url !== null);
+        } catch (error) {
+          console.error(`Error uploading ${field} files:`, error);
+          uploadedFiles[field] = [];
+        }
       }
     }
 
-    // ✅ Build structured awards array
+    // Build structured awards array
     const awardDocs = uploadedFiles.awardDoc || [];
     const awards = awardDocs.map((fileUrl, index) => ({
-      awardDescription: awardDis[index] || "",
+      awardDescription: awardDescriptions[index] || "",
       awardImage: fileUrl
     }));
-    // Create new brand entry
-    const newBrand = await BrandListing.create({
-      brandID,
-      brandDetails,
-      franchiseDetails,
-      expansionLocationData,
-      uploads: {
-        brandLogo: uploadedFiles.brandLogo || [],
-        gstCertificate: uploadedFiles.gstCertificate || [],
-        pancard: uploadedFiles.pancard || [],
-        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-        interiorOutlet: uploadedFiles.interiorOutlet || [],
-        franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-        businessPlan: uploadedFiles.businessPlan || [],
-        awards
-      }
-    });
 
-    return res.json(new ApiResponse(200, newBrand, "Brand listing created successfully"));
+    // Create all records in parallel after getting the UUID
+    const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
+      BrandDetails.create({
+        brandID,
+        uuid:id,
+        brandDetails
+      }),
+      BrandFranchiseDetails.create({
+        brandOwnerId: id,
+        franchiseDetails
+      }),
+      BrandExpansionLocationData.create({
+        brandOwnerId: id,
+        expansionLocationData
+      }),
+      BrandUploads.create({
+        brandOwnerId: id,
+        uploads: {
+          brandLogo: uploadedFiles.brandLogo || [],
+          gstCertificate: uploadedFiles.gstCertificate || [],
+          pancard: uploadedFiles.pancard || [],
+          exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+          interiorOutlet: uploadedFiles.interiorOutlet || [],
+          franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+          brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+          businessPlan: uploadedFiles.businessPlan || [],
+          awards
+        }
+      })
+    ]);
+
+    // Check if all records were created successfully
+    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
+      return res.json(
+        new ApiResponse(500, {}, "Failed to create one or more brand records")
+      );
+    }
+
+    return res.json(
+      new ApiResponse(201, {
+        brand: newBrand,
+        franchise: newBrandFranchiseDetails,
+        locations: newBrandExpansionLocationData,
+        uploads: newBrandUploads
+      }, "Brand listing created successfully")
+    );
+
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create brand listing",
-      error: error.message
-    });
+    return res.json(
+      new ApiResponse(500, {}, `Failed to create brand listing: ${error.message}`)
+    );
   }
 };
 
 
+
+
+
+
+// const getAllBrands = async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+//     const skip = (10 - 1) * limit;
+
+//     // Get total count for pagination metadata
+//     const total = await BrandListing.countDocuments({});
+
+//     const brands = await BrandListing.find({})
+//       .select("")
+//       .skip(skip)
+//       .limit(limit)
+//       .lean();
+
+//     const totalPages = Math.ceil(total / limit);
+
+//     return res.status(200).json(
+//       new ApiResponse(200, {
+//         brands,
+//         pagination: {
+//           totalItems: total,
+//           totalPages,
+//           currentPage: page,
+//           perPage: limit,
+//         },
+//       }, "✅ Brands fetched successfully")
+//     );
+//   } catch (error) {
+//     return res
+//       .status(500)
+//       .json({ error: "Failed to fetch brands", details: error.message });
+//   }
+// };
+
+
 const getAllBrands = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (10 - 1) * limit;
-
-    // Get total count for pagination metadata
-    const total = await BrandListing.countDocuments({});
-
-    const brands = await BrandListing.find({})
-      .select("")
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const totalPages = Math.ceil(total / limit);
-
-    return res.status(200).json(
-      new ApiResponse(200, {
-        brands,
-        pagination: {
-          totalItems: total,
-          totalPages,
-          currentPage: page,
-          perPage: limit,
-        },
-      }, "✅ Brands fetched successfully")
-    );
+    
   } catch (error) {
     return res
       .status(500)
@@ -312,6 +245,38 @@ const getAllBrands = async (req, res) => {
 };
 
 
+
+// const getBrandListingByUUID = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const brandData = req.brandUser;
+
+//     if (id !== brandData?.uuid) {
+//       return res.status(403).json(
+//         new ApiResponse(403, null, "Unauthorized request")
+//       );
+//     }
+
+//     const brand = await BrandListing.findOne({ uuid: brandData.uuid })
+//       .select("-_id -createdAt -updatedAt -__v");
+
+//     if (!brand) {
+//       return res.status(404).json(
+//         new ApiResponse(404, null, "Brand not found")
+//       );
+//     }
+
+//     return res.status(200).json(
+//       new ApiResponse(200, brand, "✅ Brand fetched successfully")
+//     );
+
+//   } catch (error) {
+//     console.error("getBrandListingByUUID error:", error);
+//     return res.status(500).json(
+//       new ApiResponse(500, null, "Failed to fetch brand")
+//     );
+//   }
+// };
 
 const getBrandListingByUUID = async (req, res) => {
   try {
