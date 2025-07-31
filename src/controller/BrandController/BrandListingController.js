@@ -495,7 +495,7 @@ const getBrandListingByUUID = async (req, res) => {
 export const getTopFoodFranchise = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
@@ -509,98 +509,105 @@ export const getTopFoodFranchise = async (req, res) => {
       },
       {
         $lookup: {
-          from: "brandfranchisedetails",
-          localField: "uuid",
-          foreignField: "brandOwnerId",
-          as: "brandfranchisedetails"
+          from: "branddetails",
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo"
         }
+      },
+      { 
+        $unwind: { 
+          path: "$brandInfo", 
+          preserveNullAndEmptyArrays: true 
+        } 
       },
       {
         $lookup: {
           from: "branduploads",
-          localField: "uuid",
+          localField: "brandOwnerId",
           foreignField: "brandOwnerId",
           as: "uploads"
         }
       },
+      { 
+        $unwind: { 
+          path: "$uploads", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
       {
-        $lookup: {
-          from: "brandexpansionlocationdatas",
-          localField: "uuid",
-          foreignField: "brandOwnerId",
-          as: "brandexpansionlocationdatas"
+        $addFields: {
+          isLiked: {
+            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
         }
       },
       {
         $project: {
           _id: 0,
-          uuid: 1,
-          brandDetails: {
-            companyName: "$brandDetails.companyName",
-            brandName: "$brandDetails.brandName",
-            tagLine: "$brandDetails.tagLine",
-            brandID: "$brandID",
+          brandID: "$brandInfo.brandID",
+          uuid: "$brandOwnerId",
+          isLiked: 1,
+          isShortListed: 1,
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null]
           },
-          brandfranchisedetails: {
-            $let: {
-              vars: {
-                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
-              },
-              in: {
-                franchiseDetails: "$$firstFranchise.franchiseDetails"
-              }
+          fico: {
+            $ifNull: ["$franchiseDetails.fico", []]
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
             }
           },
-          uploads: {
-            $let: {
-              vars: {
-                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
-              },
-              in: {
-                logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
-                franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
-                exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
-                interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
-                awards: {
-                  $cond: {
-                    if: {
-                      $and: [
-                        { $isArray: "$$firstUpload.uploads.awards" },
-                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
-                      ]
-                    },
-                    then: {
-                      $map: {
-                        input: "$$firstUpload.uploads.awards",
-                        as: "award",
-                        in: {
-                          awardDescription: "$$award.awardDescription",
-                          awardImage: "$$award.awardImage"
-                        }
-                      }
-                    },
-                    else: []
-                  }
-                }
-              }
+          franchiseVideos: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              else: null
             }
-          },
-          brandexpansionlocationdatas: {
-            $let: {
-              vars: {
-                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
-              },
-              in: {
-                currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
-                expansionLocations: "$$data.expansionLocationData.expansionLocations"
-              }
-            }
-          },
+          }
         }
-      }
+      },
+      { $skip: skip },
+      { $limit: limit }
     ];
 
-    return res.json(new ApiResponse(200, data, "✅ Brand fetched successfully"));
+    const [topFranchises, totalCount] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.countDocuments({ 
+        "franchiseDetails.brandCategories.sub": "Food Franchises" 
+      })
+    ]);
+
+    if (!topFranchises || topFranchises.length === 0) {
+      return res.json(new ApiResponse(404, null, "No top food franchises found"));
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return res.json(
+      new ApiResponse(200, {
+        brands: topFranchises,
+        pagination: {
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Top food franchises fetched successfully")
+    );
+
   } catch (error) {
     console.error("Error fetching top food franchises:", error);
     return res.json(
@@ -608,7 +615,6 @@ export const getTopFoodFranchise = async (req, res) => {
     );
   }
 };
-
 export const getTopBeverageFranchise = async (req,res)=>{
   try {
     const page = parseInt(req.query.page) || 1;
