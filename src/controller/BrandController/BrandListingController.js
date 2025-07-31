@@ -15,6 +15,7 @@ import uuid from "../../utils/uuid.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
+import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 
 
 const likeandshortlist = async(id) => {
@@ -49,7 +50,7 @@ console.log("brand :",brand)
             brandUserId: brand._id
           });
            console.log("brandFavorites id :",brandFavorites)
-          likedBrands = brandFavorites?.favoriteBrandBybrand.map  (b => b.likedBrandID.toString()) || [];
+          likedBrands = brandFavorites?.favoriteBrandBybrand.map  (b => b.brandID.toString()) || [];
 
          
           const brandShortList = await ShortListed.find({
@@ -302,6 +303,7 @@ const getAllBrands = async (req, res) => {
           }
         }
       },
+      { $sort: { createdAt: -1 } },
       {
         $project: {
           _id: 0,
@@ -333,17 +335,20 @@ const getAllBrands = async (req, res) => {
         }
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
+      
     ];
 
-    const [brands, totalCount] = await Promise.all([
+    const [brandsData, totalCount] = await Promise.all([
       BrandDetails.aggregate(aggregationPipeline),
       BrandDetails.countDocuments()
     ]);
 
-    if (!brands || brands.length === 0) {
+    if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No brands found"));
     }
+
+    const brands = shuffleArray(brandsData)
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
