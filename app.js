@@ -45,6 +45,7 @@ router.use(complaintRoutes);
 router.use(adminAuthRoutes);
 router.use(InvestorRouter);
 router.use(brandListingRoutes);
+router.use(filterRouter);
 
 // admin
 router.use(adminRoutess);

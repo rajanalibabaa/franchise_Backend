@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
-import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 
 
 export const postShortListed = async (req, res) => {
@@ -18,7 +18,7 @@ export const postShortListed = async (req, res) => {
             );
         }
 
-        const brandToShortlist = await BrandListing.findOne({ uuid: shortListedId });
+        const brandToShortlist = await BrandDetails.findOne({ uuid: shortListedId });
         if (!brandToShortlist) {
             return res.json(
                 new ApiResponse(404, {}, "Brand not found")
