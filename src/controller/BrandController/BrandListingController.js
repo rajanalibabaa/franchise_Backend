@@ -66,6 +66,8 @@ console.log("brand :",brand)
     return {likedBrands,shortListedBrands}
 }
 
+
+
 const createBrandListing = async (req, res) => {
   try {
     
@@ -258,6 +260,8 @@ console.log("Incoming data:", brandDetails.brandName);
   }
 };
 
+
+
 const getAllBrands = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -266,6 +270,9 @@ const getAllBrands = async (req, res) => {
     const id = req.query.id || null;
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+   
+
 
     const aggregationPipeline = [
       {
@@ -381,6 +388,8 @@ const getAllBrands = async (req, res) => {
     );
   }
 };
+
+
 
 const getBrandListingByUUID = async (req, res) => {
   try {
@@ -728,7 +737,9 @@ export const getTopLeadingFranchise = async (req, res) => {
     return res.json(
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
-}
+};
+
+
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
