@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes,getDesertAndBakery,db} from "../../controller/BrandController/BrandListingController.js"
+import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes,getDesertAndBakery,db,getTopTrucksAndKiosks} from "../../controller/BrandController/BrandListingController.js"
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
@@ -28,6 +28,7 @@ router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
 router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
 router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
 router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)
+router.get("/v1/brandlisting/getTopTrucksAndKiosks",getTopTrucksAndKiosks)
 router.patch(
   "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([
