@@ -757,6 +757,8 @@ export const getTopLeadingFranchise = async (req, res) => {
   }
 };
 
+
+
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
