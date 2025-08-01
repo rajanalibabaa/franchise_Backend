@@ -23,14 +23,15 @@ if (!mongoose.connection.readyState) {
     // List collections for debugging
     const collections = await conn.connection.db.listCollections().toArray();
     console.log(
-      `   Collections: ${collections.map((c) => c.name).join(", ")}`
+      `Collections: ${collections.map((c) => c.name).join(", ")}`
     );
   }
-  } catch (err) {
+ } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
     process.exit(1); // Exit process if DB connection fails
   }
-};
+
+}
 
 export default connectDatabase;
 
