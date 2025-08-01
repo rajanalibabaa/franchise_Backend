@@ -755,10 +755,7 @@ export const getTopLeadingFranchise = async (req, res) => {
     return res.json(
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
-};
-
-
-
+ };
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1259,7 +1256,7 @@ export const getTopCafes = async (req, res) => {
     return res.json(new ApiResponse(200,{
       brands,
       pagination : {
-        total : brandsData,
+        total : totalCount,
         totalPages,
         currentPage : page,
         limit,
@@ -1490,93 +1487,128 @@ export const getTopTrucksAndKiosks = async(req,res) => {
   }
 }
 
-// export const getTopRestaurants = async (req,res)=>{
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
+export const getTopRestaurants = async (req,res)=>{
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
+    const id = req.query.id || null;
 
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-//     const aggregationPipeline  = [
-//       {
-//     $match: {
-//     $or: [
-//       { "franchiseDetails.brandCategories.child": "QSR (Quick Service Restaurants)" },
-//       { "franchiseDetails.brandCategories.child": "Multi Cuisine Restaurants" },
-//       { "franchiseDetails.brandCategories.child": "Seafood-Based Restaurants" }
-//          ]
-//        }
-//       },
-//       {
-//         $lookup: {
-//           from: "branddetails",            // must match the actual MongoDB collection name (usually lowercase plural)
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo"
-//         }
-//       },
-//       {
-//         $lookup:{
-//           from:"branduploads",
-//           localField:"brandOwnerId",
-//           foreignField:"brandOwnerId",
-//           as:"uploads"
-//         }
-//       },
-//       {
-//         $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
-//       },
-//       {
-//         $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }
-//       },
-//       {
-//       $addFields: {
-//           isLiked: {
-//             $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
-//           },
-//           isShortListed: {
-//             $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-//           }
-//         }
-//       },
-//       {$sort: { createdAt: -1}},
-//       {
-//         $project: {
-//           _id : 0,
-//           isLiked: 1,
-//           isShortListed: 1,
-//           uuid : "$brandInfo.uuid",
-//           brandId :"$brandInfo.brandID",
-//           brandName : "$brandInfo.brandDetails.brandName",
-//           brandCategories : {
-//             $ifNull : ["$franchiseDetails.brandCategories", null]
-//           },
-//           fico : {
-//             $let : {
-//               vars : {
-//                 data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
-//               },
-//               in : {
-//                 investmentRange : "$$data.investmentRange",
-//                 areaRequired : "$$data.areaRequired",
-//                 franchiseModel : "$$data.franchiseModel"
-//               }
-//             }
-//           },
-//           logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
-//         franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
-//         }
-//       },
-//       { $skip: skip },
-//       { $limit: limit }
-//     ];
-//   } catch (error) {
-//     console.error("Error fetching top cafes:", error);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// }
+    const aggregationPipeline  = [
+      {
+    $match: {
+    $or: [
+      { "franchiseDetails.brandCategories.child": "QSR (Quick Service Restaurants)" },
+      { "franchiseDetails.brandCategories.child": "Multi Cuisine Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Seafood-Based Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Vegetarian-Only Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Health-Focused Restaurants" },
+         ]
+       }
+      },
+      {
+        $lookup: {
+          from: "branddetails", 
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo"
+        }
+      },
+      {
+        $lookup:{
+          from:"branduploads",
+          localField:"brandOwnerId",
+          foreignField:"brandOwnerId",
+          as:"uploads"
+        }
+      },
+      {
+        $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
+      },
+      {
+        $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }
+      },
+      {
+      $addFields: {
+          isLiked: {
+            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
+        }
+      },
+      {$sort: { createdAt: -1}},
+      {
+        $project: {
+          _id : 0,
+          isLiked: 1,
+          isShortListed: 1,
+          uuid : "$brandInfo.uuid",
+          brandId :"$brandInfo.brandID",
+          brandName : "$brandInfo.brandDetails.brandName",
+          brandCategories : {
+            $ifNull : ["$franchiseDetails.brandCategories", null]
+          },
+          fico : {
+            $let : {
+              vars : {
+                data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
+              },
+              in : {
+                investmentRange : "$$data.investmentRange",
+                areaRequired : "$$data.areaRequired",
+                franchiseModel : "$$data.franchiseModel"
+              }
+            }
+          },
+          logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
+        franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
+        }
+      },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+     // Fetch paginated data & total count
+    const [brandsData, totalCount] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.countDocuments()
+    ]);
+
+    if (!brandsData || brandsData.length === 0) {
+      return res.json(new ApiResponse(404, null, "No brands found"));
+    }
+
+    const brands = shuffleArray(brandsData)
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+
+    return res.json(new ApiResponse(200,{
+      brands,
+      pagination : {
+        total : totalCount,
+        totalPages,
+        currentPage : page,
+        limit,
+        hasNext,
+        hasPrevious
+      }
+    }, "Brands fetched successfully"
+  )
+);
+
+  } catch (error) {
+    console.error("Error fetching top cafes:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+}
 
 export {
   createBrandListing,
