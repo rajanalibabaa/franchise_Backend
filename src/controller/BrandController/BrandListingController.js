@@ -549,7 +549,7 @@ export const getTopFoodFranchise = async (req, res) => {
           uuid: "$brandOwnerId",
           isLiked: 1,
           isShortListed: 1,
-          brandName: "$brandInfo.brandDetails.brandName",
+          brandname: "$brandInfo.brandDetails.brandName",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
@@ -685,7 +685,7 @@ export const getTopBeverageFranchise = async (req,res)=>{
           uuid: "$brandOwnerId",
           isLiked: 1,
           isShortListed: 1,
-          brandName:"$brandInfo.brandDetails.brandName",
+          brandname:"$brandInfo.brandDetails.brandName",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
@@ -1215,7 +1215,7 @@ export const getTopCafes = async (req, res) => {
           isShortListed: 1,
           uuid : "$brandInfo.uuid",
           brandId :"$brandInfo.brandID",
-          brandName : "$brandInfo.brandDetails.brandName",
+          brandname : "$brandInfo.brandDetails.brandName",
           brandCategories : {
             $ifNull : ["$franchiseDetails.brandCategories", null]
           },
@@ -1326,7 +1326,7 @@ export const getTopDesertAndBakery = async(req,res) =>{
         isShortListed: 1,
         uuid : "$brandInfo.uuid",
         brandID : "$brandInfo.brandID",
-        brandName : "$brandInfo.brandDetails.brandName",
+        brandname : "$brandInfo.brandDetails.brandName",
         brandCategories : {
           $ifNull : ["$franchiseDetails.brandCategories", null]
         },
@@ -1435,7 +1435,7 @@ export const getTopTrucksAndKiosks = async(req,res) => {
           isShortListed : 1,
           uuid : "$brandInfo.uuid",
           brandID : "$brandInfo.brandID",
-          brandName : "$brandInfo.brandDetails.brandName",
+          brandname : "$brandInfo.brandDetails.brandName",
           brandCategories : {
             $ifNull : ["$franchiseDetails.brandCategories", null]
           },
