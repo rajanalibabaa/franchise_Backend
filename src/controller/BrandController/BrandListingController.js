@@ -383,9 +383,12 @@ const getAllBrands = async (req, res) => {
 };
 
 const getBrandListingByUUID = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
+  const userId = req.query.userId || null;
 
+  try {
+    
+    const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
     const data = await BrandDetails.aggregate([
       {
         $match: {
@@ -417,9 +420,21 @@ const getBrandListingByUUID = async (req, res) => {
         }
       },
       {
+        $addFields: {
+          isLiked: {
+            $in: ["$_id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$_id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
+        }
+      },
+      {
         $project: {
           _id: 0,
           uuid: 1,
+          isLiked: 1,
+          isShortListed: 1,
           brandDetails: {
             companyName: "$brandDetails.companyName",
             brandName: "$brandDetails.brandName",

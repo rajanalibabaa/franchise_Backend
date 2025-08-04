@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import uuid from "../../utils/uuid.js";
+
 
 const ShortListedSchema = new mongoose.Schema(
     {
@@ -29,7 +29,6 @@ const ShortListedSchema = new mongoose.Schema(
         },
         uuid: {
             type: String,
-            default: uuid(),
             unique: true
         }
     },

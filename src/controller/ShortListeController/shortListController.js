@@ -2,23 +2,22 @@ import mongoose from "mongoose";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
-
+import uuid from "../../utils/uuid.js";
 
 export const postShortListed = async (req, res) => {
     const { id } = req.params;
     const { shortListedId } = req.body;
     const investor = req?.investorUser;
     const brand = req?.brandUser;
+    const  generateUUID = uuid()
 
     try {
-        // Validate authorization
         if (id !== investor?.uuid && id !== brand?.uuid) {
             return res.status(403).json(
                 new ApiResponse(403, {}, "Unauthorized request")
             );
         }
 
-        // Validate required fields
         if (!shortListedId) {
             return res.status(400).json(
                 new ApiResponse(400, {}, "shortListedId is required")
@@ -32,7 +31,6 @@ export const postShortListed = async (req, res) => {
             );
         }
 
-        // Build query to check existing shortlist
         const query = {
             brandOwnerId: brandToShortlist._id,
             $or: []
@@ -45,26 +43,23 @@ export const postShortListed = async (req, res) => {
             query.$or.push({ "ShortListedBy.brand.userId": brand._id });
         }
 
-        // If no valid user found
         if (query.$or.length === 0) {
             return res.status(403).json(
                 new ApiResponse(403, {}, "No valid user found for shortlisting")
             );
         }
 
-        // Check for existing shortlist entry
         const existingShortlist = await ShortListed.findOne(query);
 
         if (existingShortlist) {
-            // Remove from shortlist if already exists
             await ShortListed.findByIdAndDelete(existingShortlist._id);
             return res.status(200).json(
                 new ApiResponse(200, { action: 'removed' }, "Removed from shortlist")
             );
         }
 
-        // Create new shortlist entry
         const shortlistData = {
+            uuid:generateUUID , // ✅ Explicit UUID to avoid E11000
             brandOwnerId: brandToShortlist._id,
             ShortListedBy: {}
         };
@@ -81,25 +76,14 @@ export const postShortListed = async (req, res) => {
             };
         }
 
-        // Create with conflict handling
-        try {
-            const newShortlist = await ShortListed.create(shortlistData);
-            return res.status(201).json(
-                new ApiResponse(201, { action: 'added' }, "Added to shortlist successfully")
-            );
-        } catch (createError) {
-            if (createError.code === 11000) {
-                // Handle race condition where duplicate was created between find and create
-                return res.status(200).json(
-                    new ApiResponse(200, { action: 'added' }, "Item was already in your shortlist")
-                );
-            }
-            throw createError;
-        }
+        const newShortlist = await ShortListed.create(shortlistData);
+        return res.status(201).json(
+            new ApiResponse(201, { action: 'added' }, "Added to shortlist successfully")
+        );
 
     } catch (error) {
         console.error("Shortlist error:", error);
-        
+
         if (error.code === 11000) {
             return res.status(409).json(
                 new ApiResponse(409, {}, "This item is already in your shortlist")
@@ -111,7 +95,6 @@ export const postShortListed = async (req, res) => {
         );
     }
 };
-
 export const getShortListedById = async (req, res) => {
     try {
         console.log(req.params);
