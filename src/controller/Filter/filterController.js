@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { likeandshortlist } from "../BrandController/BrandListingController.js";
+import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
+import { BrandExpansionLocationData } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
 
 export const getAllBrandsAndFilter = async (req, res) => {
   try {
@@ -73,7 +75,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
             { $regex: serchterm, $options: "i" }
         },
         {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.district":
+          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts":
             { $regex: serchterm, $options: "i" }
         },
         {
@@ -148,10 +150,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
             "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.district":
               district,
           },
-          {
-            "brandexpansionlocationdata.expansionLocationData.currentOutletLocations.domestic.locations.districts.district":
-              district,
-          },
+       
         ],
       });
     }
@@ -359,6 +358,234 @@ export const getAllBrandsAndFilter = async (req, res) => {
     console.error("Error fetching brands:", error);
     return res.json(
       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+    );
+  }
+};
+
+
+export const getAllBrandFiltersdata = async (req, res) => {
+  const { sub, district, state  } = req.query;
+
+  try {
+
+  
+
+     if (sub) {
+      const childcatData = await BrandFranchiseDetails.aggregate([
+        {
+          $match: {
+            "franchiseDetails.brandCategories.sub": sub
+          }
+        },
+        {
+          $project: {
+            childcat: "$franchiseDetails.brandCategories.child"
+          }
+        },
+        {
+          $match: {
+            childcat: { $exists: true, $ne: null, $ne: "" }
+          }
+        },
+        {
+          $group: {
+            _id: "$childcat"
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            child: "$_id"
+          }
+        },
+        { 
+          $sort: { child: 1 }
+        }
+      ]);
+
+      console.log("Child categories data:", childcatData);
+      const childcatNames = childcatData.map(item => item.child);
+      return res.json(
+        new ApiResponse(200, childcatNames, "Child categories fetched successfully")
+      );
+    }
+ 
+    // Handle district filter - return cities for the district
+    if (district) {
+      const citiesData = await BrandExpansionLocationData.aggregate([
+        {
+          $match: {
+            "expansionLocationData.expansionLocations.domestic.locations.districts.district": district
+          }
+        },
+        {
+          $unwind: "$expansionLocationData.expansionLocations.domestic.locations"
+        },
+        {
+          $unwind: "$expansionLocationData.expansionLocations.domestic.locations.districts"
+        },
+        {
+          $match: {
+            "expansionLocationData.expansionLocations.domestic.locations.districts.district": district
+          }
+        },
+        {
+          $unwind: "$expansionLocationData.expansionLocations.domestic.locations.districts.cities"
+        },
+        {
+          $group: {
+            _id: "$expansionLocationData.expansionLocations.domestic.locations.districts.cities"
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            city: "$_id"
+          }
+        },
+        {
+          $sort: {
+            city: 1
+          }
+        }
+      ]);
+
+      const cityNames = citiesData.map(item => item.city);
+      return res.json(
+        new ApiResponse(200, cityNames, "Cities fetched successfully")
+      );
+    }
+
+    // Handle state filter - return districts for the state
+    if (state) {
+      const districtsData = await BrandExpansionLocationData.aggregate([
+        {
+          $match: {
+            "expansionLocationData.expansionLocations.domestic.locations.state": state
+          }
+        },
+        {
+          $unwind: "$expansionLocationData.expansionLocations.domestic.locations"
+        },
+        {
+          $match: {
+            "expansionLocationData.expansionLocations.domestic.locations.state": state
+          }
+        },
+        {
+          $unwind: "$expansionLocationData.expansionLocations.domestic.locations.districts"
+        },
+        {
+          $group: {
+            _id: "$expansionLocationData.expansionLocations.domestic.locations.districts.district"
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            district: "$_id"
+          }
+        },
+        {
+          $sort: {
+            district: 1
+          }
+        }
+      ]);
+
+      const districtNames = districtsData.map(item => item.district);
+      return res.json(
+        new ApiResponse(200, districtNames, "Districts fetched successfully")
+      );
+    }
+
+    // Main filter aggregation for all data
+    const filters = await BrandFranchiseDetails.aggregate([
+      {
+        $lookup: {
+          from: "brandexpansionlocationdatas",
+          localField: "brandOwnerId",
+          foreignField: "brandOwnerId",
+          as: "brandexpansionlocationdata",
+        },
+      },
+      {
+        $unwind: {
+          path: "$brandexpansionlocationdata",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          maincat: "$franchiseDetails.brandCategories.main",
+          subcat: "$franchiseDetails.brandCategories.sub",
+          // childcat: "$franchiseDetails.brandCategories.child",
+          investmentRange: "$franchiseDetails.fico.investmentRange",
+          franchiseModel: "$franchiseDetails.fico.franchiseModel",
+          states: "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state",
+          // districts: "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.district",
+          // cities: "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.cities",
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          maincat: { $addToSet: "$maincat" },
+          subcat: { $addToSet: "$subcat" },
+          // childcat: { $addToSet: "$childcat" },
+          investmentRange: { $addToSet: "$investmentRange" },
+          franchiseModel: { $addToSet: "$franchiseModel" },
+          states: { $addToSet: "$states" },
+          // districts: { $addToSet: "$districts" },
+          // cities: { $addToSet: "$cities" },
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          maincat: 1,
+          subcat: 1,
+          // childcat: 1,
+          investmentRange: 1,
+          franchiseModel: 1,
+          states: 1,
+          // districts: 1,
+          // cities: 1,
+        }
+      }
+    ]);
+
+   console.log("Brand filters data:", filters);
+      
+    // Flatten arrays of arrays and remove duplicates
+    const processField = (field) => {
+      if (!field) return [];
+      // Handle nested arrays (like cities which might be arrays within arrays)
+      const flattened = field.flat(Infinity);
+      return [...new Set(flattened.filter(item => item !== undefined && item !== null && item !== ''))];
+    };
+
+    const result = filters.length > 0 ? filters[0] : {};
+    
+    const processedFilters = {
+      maincat: processField(result.maincat),
+      subcat: processField(result.subcat),
+      // childcat: processField(result.childcat),
+      investmentRange: processField(result.investmentRange),
+      franchiseModel: processField(result.franchiseModel),
+      states: processField(result.states).sort(),
+      // districts: processField(result.districts).sort(),
+      // cities: processField(result.cities).sort(),
+    };
+
+    return res.json(
+      new ApiResponse(200, processedFilters, "Brand filters fetched successfully")
+    );
+  } catch (error) {
+    console.error("Error fetching brand filters:", error);
+    return res.json(
+      new ApiResponse(500, null, `Failed to fetch brand filters: ${error.message}`)
     );
   }
 };
