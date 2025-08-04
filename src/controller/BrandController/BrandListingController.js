@@ -265,6 +265,10 @@ const getAllBrands = async (req, res) => {
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
+
+    console.log("======id===== :",id)
+    console.log("=====page====== :",page)
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const aggregationPipeline = [
