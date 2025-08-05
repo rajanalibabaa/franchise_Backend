@@ -11,6 +11,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
+    console.log("-------- :",req.query)
 
     // Get all filters from query parameters (changed from body to query)
     const {

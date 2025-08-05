@@ -3,6 +3,7 @@ import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import uuid from "../../utils/uuid.js";
+import { likeandshortlist } from "../BrandController/BrandListingController.js";
 
 export const postShortListed = async (req, res) => {
     const { id } = req.params;
@@ -95,40 +96,190 @@ export const postShortListed = async (req, res) => {
         );
     }
 };
+
 export const getShortListedById = async (req, res) => {
-    try {
-        console.log(req.params);
-        const { id } = req.params;
-        const investor = req?.investorUser;
-        const brand = req?.brandUser;
+  try {
+    const { id } = req.params;
+    const investor = req?.investorUser;
+    const brand = req?.brandUser;
+    const page = parseInt(req.query.page) || 1;
+     const limit = parseInt(req.query.limit) || 10
+     const skip = (page - 1) * limit
 
-        if (id !== investor?.uuid  &&  id !== brand?.uuid) {
-        return res.json(
-            new ApiResponse(403,{},"Unathorized request")
-        )
+    if (id !== investor?.uuid && id !== brand?.uuid) {
+      return res.json(
+        new ApiResponse(403, {}, "Unauthorized request")
+      ); 
+    }
+    
+     
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+    const matchCondition = [];
+
+    if (investor?._id) {
+      matchCondition.push({ "ShortListedBy.investor.userId": new mongoose.Types.ObjectId(investor._id) });
     }
 
-        const shortListed = await ShortListed.find({
-            $or: [
-                { "ShortListedBy.investor.userId": investor?._id },
-                { "ShortListedBy.brand.userId": brand?._id },
-            ]
-        })
-        .populate("brandOwnerId")
-        .populate("ShortListedBy.investor.userId")
-        .populate("ShortListedBy.brand.userId");
-
-        console.log(shortListed);
-        return res.json(
-            new ApiResponse(200, shortListed, "Short listed brands fetched successfully")
-        );
-    } catch (error) {
-        console.error("Error fetching short listed brands:", error);
-        return res.status(500).json(
-            new ApiResponse(500, null, "Internal Server Error")
-        );
+    if (brand?._id) {
+      matchCondition.push({ "ShortListedBy.brand.userId": new mongoose.Types.ObjectId(brand._id) });
     }
+
+    const shortListed = await ShortListed.aggregate([
+      {
+        $match: {
+          $or: matchCondition
+        }
+      },
+      {
+        $lookup: {
+          from: "branddetails",
+          localField: "brandOwnerId",
+          foreignField: "_id",
+          as: "brandInfo"
+        }
+      },
+      { $unwind: "$brandInfo" },
+      {
+        $lookup: {
+          from: "invsregisters",
+          localField: "ShortListedBy.investor.userId",
+          foreignField: "_id",
+          as: "investorInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$investorInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: "branddetails",
+          localField: "ShortListedBy.brand.userId",
+          foreignField: "_id",
+          as: "brandUserInfo"
+        }
+      },
+      {
+        $unwind: {
+          path: "$brandUserInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "brandInfo.uuid",
+          foreignField: "brandOwnerId",
+          as: "franchiseDetails"
+        }
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "brandInfo.uuid",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
+      {
+              $addFields: {
+                isLiked: {
+                  $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+                },
+                isShortListed: {
+                  $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+                }
+              }
+            },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          _id: 0,
+          uuid: "$brandInfo.uuid",
+          brandName: "$brandInfo.brandDetails.brandName",
+          brandID: "$brandInfo.brandID",
+          tagLine: "$brandInfo.brandDetails.tagLine",
+          companyName: "$brandInfo.brandDetails.companyName",
+          isLiked: 1,
+          isShortListed: 1,
+        //   brandfranchisedetails: 1,
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+          },
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel"
+              }
+            }
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
+            }
+          },
+          franchiseVideos: {
+             $cond: {
+              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              else: null
+            }
+          }
+        }
+      },
+      {$skip : skip},
+      {$limit : limit}  
+      ]);
+
+      const totalCount = await ShortListed.aggregate([
+        {
+        $match: {
+          $or: matchCondition
+        }
+      },
+      ])
+
+    //   console.log(shortListed.length)
+    //   console.log(totalCount.length)
+      
+      const totalPages = Math.ceil (totalCount.length / limit);
+      const hasNext = page < totalPages;
+      const hasPrevious = page > 1
+    return res.json(
+      new ApiResponse(200, {
+        brands:shortListed,
+        pagination: {
+          total: totalCount.length,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Short listed brands fetched successfully")
+    );
+
+  } catch (error) {
+    console.error("Error fetching short listed brands:", error);
+    return res.json(
+      new ApiResponse(500, null, "Internal Server Error")
+    );
+  }
 };
+
+
 
 
 export const getShortListedDataForOwner = async( req,res) => {

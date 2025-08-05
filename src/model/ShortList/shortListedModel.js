@@ -5,7 +5,7 @@ const ShortListedSchema = new mongoose.Schema(
     {
         brandOwnerId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "BrandListing",
+            ref: "BrandDetails",
         },
         ShortListedBy: {
             investor: {
@@ -23,7 +23,7 @@ const ShortListedSchema = new mongoose.Schema(
                 },
                 userId: {
                     type: mongoose.Schema.Types.ObjectId,
-                    ref: "BrandListing",
+                    ref: "BrandDetails",
                 }
             }
         },
