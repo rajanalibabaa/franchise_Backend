@@ -61,7 +61,7 @@ console.log("brand :",brand)
       }
     }
 
-    console.log("shortListedBrands :",shortListedBrands)
+    // console.log("shortListedBrands :",shortListedBrands)
 
     return {likedBrands,shortListedBrands}
 }
