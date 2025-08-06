@@ -1,3 +1,4 @@
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { ViewedBrandsByBrands, ViewedBrandsByInvestor, ViewedToBrands } from "../../model/ViewedBrands/viewedBrands.model.js";
@@ -16,7 +17,7 @@ export const postViewBrands = async (req, res) => {
       return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
     }
 
-    const targetBrand = await BrandListing.findOne({ uuid: viewedID });
+    const targetBrand = await BrandDetails.findOne({ uuid: viewedID });
     if (!targetBrand) {
       return res.json(new ApiResponse(404, {}, "Target brand not found"));
     }
