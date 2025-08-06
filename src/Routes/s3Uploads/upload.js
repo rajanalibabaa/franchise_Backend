@@ -4,6 +4,8 @@ import fs from 'fs';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import s3 from '../../utils/Uploads/s3.js';
 import upload from '../../utils/Uploads/multerConfig.js';
+import { addTextWatermarkToImage} from "../../utils/Uploads/imageProcessor.js"; // Assuming this is where image processing logic is defined
+import { addTextWatermarkToVideo} from "../../utils/Uploads/videoProcessor.js"; // Assuming this is where image processing logic is defined
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -16,10 +18,21 @@ router.post('/media/multiple', upload.array('files', 10), async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
+    const watermarkText = 'www.MrFranchise.in';
+
     // Create a list of promises for concurrent uploads
     const uploadPromises = req.files.map(async (file) => {
-      const fileContent = fs.readFileSync(file.path);
-      const fileKey = `${Date.now()}-${file.originalname}`;
+      let processedPath = file.path;
+
+      if (file.mimetype.startsWith('image/')) {
+        // Process image (e.g., add watermark)
+        processedPath = await addTextWatermarkToImage(file.path, watermarkText);
+      } else if (file.mimetype.startsWith('video/')) {
+        // Process video (e.g., add watermark)
+        processedPath = await addTextWatermarkToVideo(file.path, watermarkText);
+      }
+      const fileContent = fs.readFileSync(processedPath);
+ const fileKey = `${Date.now()}-${file.originalname.replace(/\.(jpg|jpeg|png|webp|gif|mp4|mov)$/, processedPath.endsWith('.webp') ? '.webp' : '.mp4')}`;
 
       const command = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
@@ -31,7 +44,10 @@ router.post('/media/multiple', upload.array('files', 10), async (req, res) => {
       await s3.send(command);
 
       // Clean up local file
-      fs.unlinkSync(file.path);
+       fs.unlinkSync(file.path);
+      if (processedPath !== file.path) {
+        fs.unlinkSync(processedPath);
+      }
 
       const fileUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
       return fileUrl;
