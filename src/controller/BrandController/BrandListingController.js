@@ -382,6 +382,8 @@ const getAllBrands = async (req, res) => {
   }
 };
 
+
+
 const getBrandListingByUUID = async (req, res) => {
   const { id } = req.params;
   const userId = req.query.userId || null;
@@ -1832,6 +1834,9 @@ export const getBrandsByCategory = async (req, res) => {
     return res.json(new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`));
   }
 };
+
+
+
 
 
 export {

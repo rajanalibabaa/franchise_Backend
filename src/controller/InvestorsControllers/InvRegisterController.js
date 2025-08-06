@@ -100,28 +100,28 @@ export const createInvestor = async (req, res) => {
     res.status(201).json(new ApiResponse(201, investor, "Investor created successfully"));
 
     // 🔔 Optional: trigger additional action (like email, notification)
-    if (Array.isArray(preferences) && preferences.length > 0) {
-      preferences.forEach(pref => {
-        const category = pref.category?.map(data => ({
-          main: data.main,
-          sub: data.sub,
-          child: data.child
-        })) || [];
+    // if (Array.isArray(preferences) && preferences.length > 0) {
+    //   preferences.forEach(pref => {
+    //     const category = pref.category?.map(data => ({
+    //       main: data.main,
+    //       sub: data.sub,
+    //       child: data.child
+    //     })) || [];
 
-        newIncomerInvestorController(
-          email,
-          firstName,
-          category,
-          pref.locationType || "",
-          pref.preferredCountry || pref.preferredCuntry || "",
-          pref.preferredState || "",
-          pref.preferredDistrict || "",
-          pref.preferredCity || "",
-          pref.investmentRange || "",
+    //     newIncomerInvestorController(
+    //       email,
+    //       firstName,
+    //       category,
+    //       pref.locationType || "",
+    //       pref.preferredCountry || pref.preferredCuntry || "",
+    //       pref.preferredState || "",
+    //       pref.preferredDistrict || "",
+    //       pref.preferredCity || "",
+    //       pref.investmentRange || "",
           
-        );
-      });
-    }
+    //     );
+    //   });
+    // }
 
     return
 
@@ -392,7 +392,7 @@ export const updateInvestor = async (req, res) => {
 
             // Sanitize old preferences for history
             const sanitizedOldPreferences = (oldData.preferences || []).map((pref) => ({
-                investmentRange: pref.investmentRange || '',
+                investmentRange: pref.investmentRange.trim() || '',
                 investmentAmount: pref.investmentAmount || '',
                 preferredCountry: pref.preferredCountry || '',
                 preferredState: pref.preferredState || '',
