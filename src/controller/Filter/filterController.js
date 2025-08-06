@@ -10,8 +10,8 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
-    const id = req.query.id || null;
-    console.log("-------- :",req.query)
+    const id = req.query.id ;
+    console.log("-------- :",req.query.id)
 
     // Get all filters from query parameters (changed from body to query)
     const {
@@ -368,8 +368,6 @@ export const getAllBrandFiltersdata = async (req, res) => {
   const { sub, district, state  } = req.query;
 
   try {
-
-  
 
      if (sub) {
       const childcatData = await BrandFranchiseDetails.aggregate([
