@@ -2,6 +2,7 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 
 // Ensure 'uploads/' directory exists
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -46,5 +47,5 @@ const fileFilter = (req, file, cb) => {
 };
 
 // Export configured multer instance
-const upload = multer({ storage, fileFilter });
+const upload = multer({ storage, fileFilter ,limits: { fileSize: 10 * 1024 * 1024 } }) // 10 MB limit;
 export default upload;  
