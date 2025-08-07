@@ -1,8 +1,10 @@
+import mongoose from "mongoose";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { ViewedBrandsByBrands, ViewedBrandsByInvestor, ViewedToBrands } from "../../model/ViewedBrands/viewedBrands.model.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
+import { likeandshortlist } from "../BrandController/BrandListingController.js";
 
 export const postViewBrands = async (req, res) => {
   try {
@@ -11,10 +13,8 @@ export const postViewBrands = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
-    console.log("viewedID :",req.body)
-
     if (paramsID !== investor?.uuid && paramsID !== brand?.uuid) {
-      return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
+      return res.json(new ApiResponse(403, {}, "Unauthorized request"));
     }
 
     const targetBrand = await BrandDetails.findOne({ uuid: viewedID });
@@ -24,22 +24,20 @@ export const postViewBrands = async (req, res) => {
 
     // === Investor Viewing a Brand ===
     if (investor?.uuid && paramsID === investor.uuid) {
-      const investorView = await ViewedBrandsByInvestor.findOne({
+      
+      const existingInvestorView = await ViewedBrandsByInvestor.findOne({
         InvestorUserId: investor._id,
         "viewedByInvestors.BrandID": targetBrand._id
       });
 
-      if (investorView) {
+      if (existingInvestorView) {
+       
         await ViewedBrandsByInvestor.updateOne(
-          {
-            InvestorUserId: investor._id,
-            "viewedByInvestors.BrandID": targetBrand._id
-          },
-          {
-            $set: { "viewedByInvestors.$.addedAt": new Date() }
-          }
+          { InvestorUserId: investor._id, "viewedByInvestors.BrandID": targetBrand._id },
+          { $set: { "viewedByInvestors.$.addedAt": new Date() } }
         );
       } else {
+        
         await ViewedBrandsByInvestor.findOneAndUpdate(
           { InvestorUserId: investor._id },
           {
@@ -50,42 +48,54 @@ export const postViewBrands = async (req, res) => {
               }
             }
           },
-          { new: true, upsert: true }
+          { upsert: true, new: true }
         );
       }
 
-      await ViewedToBrands.findOneAndUpdate(
-        { brandUserID: targetBrand._id },
-        {
-          $push: {
-            viewedByInvestors: {
-              InvestorID: investor._id,
-              addedAt: new Date()
+      // Update the brand's record of being viewed
+      const existingBrandViewRecord = await ViewedToBrands.findOne({
+        brandUserID: targetBrand._id,
+        "viewedByInvestors.InvestorID": investor._id
+      });
+
+      if (existingBrandViewRecord) {
+        await ViewedToBrands.updateOne(
+          { brandUserID: targetBrand._id, "viewedByInvestors.InvestorID": investor._id },
+          { $set: { "viewedByInvestors.$.addedAt": new Date() } }
+        );
+      } else {
+        await ViewedToBrands.findOneAndUpdate(
+          { brandUserID: targetBrand._id },
+          {
+            $push: {
+              viewedByInvestors: {
+                InvestorID: investor._id,
+                addedAt: new Date()
+              }
             }
-          }
-        },
-        { new: true, upsert: true }
-      );
+          },
+          { upsert: true, new: true }
+        );
+      }
 
       return res.json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
     }
 
     // === Brand Viewing Another Brand ===
     if (brand?.uuid && paramsID === brand.uuid) {
-      const brandView = await ViewedBrandsByBrands.findOne({
+      
+      
+      const existingBrandView = await ViewedBrandsByBrands.findOne({
         brandUserID: brand._id,
         "viewedByBrands.BrandID": targetBrand._id
       });
 
-      if (brandView) {
+
+      if (existingBrandView) {
+     
         await ViewedBrandsByBrands.updateOne(
-          {
-            brandUserID: brand._id,
-            "viewedByBrands.BrandID": targetBrand._id
-          },
-          {
-            $set: { "viewedByBrands.$.addedAt": new Date() }
-          }
+          { brandUserID: brand._id, "viewedByBrands.BrandID": targetBrand._id },
+          { $set: { "viewedByBrands.$.addedAt": new Date() } }
         );
       } else {
         await ViewedBrandsByBrands.findOneAndUpdate(
@@ -98,32 +108,42 @@ export const postViewBrands = async (req, res) => {
               }
             }
           },
-          { new: true, upsert: true }
+          { upsert: true, new: true }
         );
       }
 
-      const a = await ViewedToBrands.findOneAndUpdate(
-        { brandUserID: targetBrand._id },
-        {
-          $push: {
-            viewedByBrands: {
-              BrandID: brand._id,
-              addedAt: new Date()
+      const existingTargetBrandView = await ViewedToBrands.findOne({
+        brandUserID: targetBrand._id,
+        "viewedByBrands.BrandID": brand._id
+      });
+
+      if (existingTargetBrandView) {
+        await ViewedToBrands.updateOne(
+          { brandUserID: targetBrand._id, "viewedByBrands.BrandID": brand._id },
+          { $set: { "viewedByBrands.$.addedAt": new Date() } }
+        );
+      } else {
+        await ViewedToBrands.findOneAndUpdate(
+          { brandUserID: targetBrand._id },
+          {
+            $push: {
+              viewedByBrands: {
+                BrandID: brand._id,
+                addedAt: new Date()
+              }
             }
-          }
-        },
-        { new: true, upsert: true }
-      );
+          },
+          { upsert: true, new: true }
+        );
+      }
 
-      console.log("a :",a)
-
-      return res.status(200).json(new ApiResponse(200, a, "Viewed brand successfully recorded"));
+      return res.json(new ApiResponse(200, {}, "Viewed brand successfully recorded"));
     }
 
-    return res.status(400).json(new ApiResponse(400, {}, "Invalid request"));
+    return res.json(new ApiResponse(400, {}, "Invalid request"));
   } catch (err) {
     console.error("Error in postViewBrands:", err);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal server error"));
+    return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
 
@@ -132,61 +152,137 @@ export const getAllViewBrandByID = async (req, res) => {
     const { id } = req.params;
     const investor = req.investorUser;
     const brand = req.brandUser;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+    let brandIds = []
 
     if (investor && investor._id) {
-      if (id !== investor.uuid) {
-        return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
-      }
+       const viewedData = await ViewedBrandsByInvestor.findOne({ InvestorUserId: investor._id })
 
-      const allViewedBrands = await ViewedBrandsByInvestor.findOne({ InvestorUserId: investor._id })
-        .select("-_id -createdAt -updatedAt -__v")
-        .populate({
-          path: "viewedByInvestors.BrandID",
-          select: "-__v -updatedAt -createdAt -personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress -personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber -brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber"
-        });
-
-        // console.log("allViewedBrands :",allViewedBrands)
-
-      if (!allViewedBrands || !allViewedBrands.viewedByInvestors?.length) {
-        return res.status(200).json(new ApiResponse(200, [], "No brands viewed yet"));
-      }
-
-      const sortedBrands = allViewedBrands.viewedByInvestors
-        .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
-        .map(item => item.BrandID);
-
-        // console.log("sortedBrands :",sortedBrands)
-
-      return res.json(new ApiResponse(200, sortedBrands, "Viewed brands retrieved successfully"));
+    if (!viewedData?.viewedByInvestors?.length) {
+              return res.json(new ApiResponse(200, [], "You haven't viewed any brands yet"));
+            }
+       viewedData.viewedByInvestors.map((b) =>{
+        brandIds.push(b.BrandID)
+       } )
+    } else {
+       const viewedData = await ViewedBrandsByBrands.findOne({ brandUserID: brand._id })
+       if (!viewedData?.viewedByBrands?.length) {
+                 return res.json(new ApiResponse(200, [], "You haven't viewed any brands yet"));
+               }
+       viewedData.viewedByBrands.map((b) =>{
+        brandIds.push(b.BrandID)
+       } )
     }
+console.log(brandIds)
+    let  result = []
+          for (let i = 0; i < brandIds.length; i++) {
+           const data = await BrandDetails.aggregate([
+              {
+                $match: {
+                  _id: brandIds[i] 
+                }
+              },
+                    {
+                      $lookup: {
+                        from: "brandfranchisedetails",
+                        localField: "uuid",
+                        foreignField: "brandOwnerId",
+                        as: "franchiseDetails"
+                      }
+                    },
+                    {
+                      $lookup: {
+                        from: "branduploads",
+                        localField: "uuid",
+                        foreignField: "brandOwnerId",
+                        as: "uploads"
+                      }
+                    },
+                    { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+                    { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
+                    {
+                      $addFields: {
+                        isLiked: {
+                          $in: ["$_id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+                        },
+                        isShortListed: {
+                          $in: ["$_id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+                        }
+                      }
+                    },
+                    {
+                      $project: {
+                        _id: 0,
+                        brandID: "$brandID",
+                        uuid: 1,
+                        isLiked: 1,
+                        isShortListed: 1,
+                        brandname: "$brandDetails.brandName",
+                        brandCategories: {
+                          $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+                        },
+                        fico: {
+                          $let: {
+                            vars: {
+                              data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+                            },
+                            in: {
+                              investmentRange: "$$data.investmentRange",
+                              areaRequired: "$$data.areaRequired",
+                              franchiseModel: "$$data.franchiseModel"
+                            }
+                          }
+                        },
+                        logo: {
+                          $cond: {
+                            if: { $isArray: "$uploads.uploads.brandLogo" },
+                            then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+                            else: null
+                          }
+                        },
+                        franchiseVideos: {
+                           $cond: {
+                            if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+                            then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+                            else: null
+                          }
+                        }
+                      }
+                    },
+                    { $skip: skip },
+                    { $limit: limit },
+            ])
+    
+            result.unshift(data[0])
+          }
+    
+          const totalCount = brandIds.length
 
-    if (brand && brand._id) {
-      if (id !== brand.uuid) {
-        return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
-      }
+        const totalPages = Math.ceil(totalCount / limit);
+        const hasNext = page < totalPages;
+        const hasPrevious = page > 1;
 
-      const brandData = await ViewedBrandsByBrands.findOne({ brandUserID: brand._id })
-        .select("-_id -createdAt -updatedAt -__v")
-        .populate({
-          path: "viewedByBrands.BrandID",
-          select: "-__v -updatedAt -createdAt -personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress -personalDetails.expansionLocation.pancardNumber -personalDetails.expansionLocation.gstNumber -brandDetails.pancard -brandDetails.gstCertificate -personalDetails.pancardNumber -personalDetails.gstNumber"
-        });
-
-      if (!brandData || !brandData.viewedByBrands?.length) {
-        return res.status(200).json(new ApiResponse(200, [], "No brands viewed yet"));
-      }
-
-      const sortedBrands = brandData.viewedByBrands
-        .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
-        .map(item => item.BrandID);
-
-      return res.json(new ApiResponse(200, sortedBrands, "Viewed brands retrieved successfully"));
-    }
-
-    return res.status(403).json(new ApiResponse(403, {}, "Unauthorized request"));
+        return res.json(
+          new ApiResponse(200, {
+        brands: result,
+        pagination: {
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Viewed brands retrieved successfully")
+        );
+      
   } catch (err) {
     console.error("Error in getAllViewBrandByID:", err);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal server error"));
+    return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
 
