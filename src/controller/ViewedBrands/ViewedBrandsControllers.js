@@ -343,58 +343,32 @@ export const deleteViewBrandByID = async (req, res) => {
   }
 };
 
-export const getAllViewBrands = async (req, res) => {
+export const getViewBrandsByAll = async (req, res) => {
   try {
     const { id } = req.params;
     const brand = req.brandUser;
 
-    // Authorization check
     if (id !== brand?.uuid) {
-      return res.status(403).json(
+      return res.json(
         new ApiResponse(403, {}, "Unauthorized request")
       );
     }
 
-    // Fetch viewed data with necessary fields only
     const viewedData = await ViewedToBrands.findOne(
       { brandUserID: brand._id },
-      { viewedByInvestors: 1, viewedByBrands: 1 }
     )
-    .populate({
-      path: 'viewedByInvestors.InvestorID',
-      select: '-password -refreshToken -__v'
-    })
-    .populate({
-      path: 'viewedByBrands.BrandID',
-      select: '-personalDetails.email -personalDetails.mobileNumber -personalDetails.headOfficeAddress  -__v'
-    })
-    .lean(); // Convert to plain JS object for better performance
 
-    if (!viewedData) {
-      return res.status(200).json(
-        new ApiResponse(200, { investors: [], brands: [] }, "No viewing data found")
-      );
-    }
+    const brandViewed = viewedData?.viewedByBrands?.length
+    const investorViewed = viewedData?.viewedByInvestors?.length
 
-    // Process investors data
-    const investors = (viewedData.viewedByInvestors || [])
-      .filter(item => item?.InvestorID) // Filter out null references
-      .sort((a, b) => b.addedAt - a.addedAt) // Direct date comparison
-      .map(({ InvestorID }) => InvestorID);
+    const total = investorViewed + brandViewed || 0
+    
 
-    // Process brands data with deduplication
-    const seenBrandIds = new Set();
-    const brands = (viewedData.viewedByBrands || [])
-      .filter(view => {
-        if (!view?.BrandID) return false;
-        const brandId = view.BrandID._id.toString();
-        return !seenBrandIds.has(brandId) && seenBrandIds.add(brandId);
-      })
-      .sort((a, b) => b.addedAt - a.addedAt)
-      .map(({ BrandID }) => BrandID);
-
-    return res.status(200).json(
-      new ApiResponse(200, { investors, brands }, "View data retrieved successfully")
+   
+    return res.json(
+      new ApiResponse(200, {
+        totalViewCount : total
+      }, "View data retrieved successfully")
     );
 
   } catch (error) {
