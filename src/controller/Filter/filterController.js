@@ -11,7 +11,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const id = req.query.id ;
-    console.log("-------- :",req.query.id)
+    // console.log("-------- :",req.query.id)
 
     // Get all filters from query parameters (changed from body to query)
     const {
@@ -29,18 +29,18 @@ export const getAllBrandsAndFilter = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    console.log("Filters:", {
-      maincat,
-      subcat,
-      childcat,
-      serchterm,
-      country,
-      state,
-      district,
-      city,
-      investmentRange,
-      modelType,
-    });
+    // console.log("Filters:", {
+    //   maincat,
+    //   subcat,
+    //   childcat,
+    //   serchterm,
+    //   country,
+    //   state,
+    //   district,
+    //   city,
+    //   investmentRange,
+    //   modelType,
+    // });
 
     // Build match conditions
     const match = {};
@@ -402,7 +402,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         }
       ]);
 
-      console.log("Child categories data:", childcatData);
+      // console.log("Child categories data:", childcatData);
       const childcatNames = childcatData.map(item => item.child);
       return res.json(
         new ApiResponse(200, childcatNames, "Child categories fetched successfully")
@@ -555,7 +555,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       }
     ]);
 
-   console.log("Brand filters data:", filters);
+  //  console.log("Brand filters data:", filters);
       
     // Flatten arrays of arrays and remove duplicates
     const processField = (field) => {

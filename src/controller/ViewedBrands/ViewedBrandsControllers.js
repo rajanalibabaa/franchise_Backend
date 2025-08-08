@@ -13,6 +13,8 @@ export const postViewBrands = async (req, res) => {
     const investor = req.investorUser;
     const brand = req.brandUser;
 
+    console.log("view :",viewedID)
+
     if (paramsID !== investor?.uuid && paramsID !== brand?.uuid) {
       return res.json(new ApiResponse(403, {}, "Unauthorized request"));
     }
@@ -157,27 +159,35 @@ export const getAllViewBrandByID = async (req, res) => {
     const skip = (page - 1) * limit;
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    let brandIds = []
+    let brandIds = [];
 
     if (investor && investor._id) {
-       const viewedData = await ViewedBrandsByInvestor.findOne({ InvestorUserId: investor._id })
+      const viewedData = await ViewedBrandsByInvestor.findOne({ InvestorUserId: investor._id });
 
-    if (!viewedData?.viewedByInvestors?.length) {
-              return res.json(new ApiResponse(200, [], "You haven't viewed any brands yet"));
-            }
-       viewedData.viewedByInvestors.map((b) =>{
-        brandIds.push(b.BrandID)
-       } )
+      if (!viewedData?.viewedByInvestors?.length) {
+        return res.json(new ApiResponse(200, [], "You haven't viewed any brands yet"));
+      }
+
+      viewedData.viewedByInvestors
+        .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt)) 
+        .forEach((b) => {
+          brandIds.push(b.BrandID);
+        });
+
     } else {
-       const viewedData = await ViewedBrandsByBrands.findOne({ brandUserID: brand._id })
-       if (!viewedData?.viewedByBrands?.length) {
-                 return res.json(new ApiResponse(200, [], "You haven't viewed any brands yet"));
-               }
-       viewedData.viewedByBrands.map((b) =>{
-        brandIds.push(b.BrandID)
-       } )
+      const viewedData = await ViewedBrandsByBrands.findOne({ brandUserID: brand._id });
+
+      if (!viewedData?.viewedByBrands?.length) {
+        return res.json(new ApiResponse(200, [], "You haven't viewed any brands yet"));
+      }
+
+      viewedData.viewedByBrands
+        .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
+        .forEach((b) => {
+          brandIds.push(b.BrandID);
+        });
     }
-console.log(brandIds)
+// console.log(brandIds)
     let  result = []
           for (let i = 0; i < brandIds.length; i++) {
            const data = await BrandDetails.aggregate([
