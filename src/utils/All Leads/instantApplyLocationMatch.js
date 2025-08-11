@@ -4,6 +4,7 @@ import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLoca
 import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js";
 import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema .js";
 import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema .js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 
 export const instantApplyLocationMatch = async (
   fullName,
@@ -25,6 +26,26 @@ export const instantApplyLocationMatch = async (
   applyId,
   brandLogo
 ) => {
+console.log("Starting instantApplyLocationMatch with parameters:", {
+  fullName,
+  email,
+  mobileNumber,
+  brandName,        
+  brandId,
+  brandEmail,
+  mainCategory,
+  subCategory,
+  childCategory,
+  state,
+  district,
+  city,
+  investmentRange,
+  planToInvest,
+  readyToInvest,
+  applyBy,
+  applyId,
+  brandLogo
+});
 
 const config = await SystemConfig.findOne();
   const BATCH_SIZE = config?.batchSize || 7;
@@ -32,7 +53,10 @@ const config = await SystemConfig.findOne();
 
   try {
     const OverAllBrandExists = await BrandListing.find({});
+  
+    
     const totalBrands = OverAllBrandExists.length;
+      console.log("OverAllBrandExists: ", totalBrands);
     if (totalBrands === 0) throw new Error("No brands found in the database");
 
     let brandBatchDoc = await BrandBatch.findOne({ brandId });
@@ -54,6 +78,7 @@ const config = await SystemConfig.findOne();
       const end = start + BATCH_SIZE;
 
       const currentSlice = OverAllBrandExists.slice(start, end);
+      console.log("Current Slice: ", currentSlice.length);
       const filtered = [];
       const limitReached = [];
 
@@ -224,15 +249,14 @@ const config = await SystemConfig.findOne();
       })),
       batch: currentBatch,
       totalBrands,
-    };
+    }; 
 
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
     throw error;
   }
-};
-
-
+ };
+ 
 export const getSystemConfig = async (req, res) => {
   try {
     const config = await SystemConfig.findOne();
