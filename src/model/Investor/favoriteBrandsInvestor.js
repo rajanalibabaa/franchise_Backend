@@ -35,7 +35,7 @@ const favoriteBrandLikedsSchema = new mongoose.Schema(
         
     },
     {
-        timestamps: true, // adds createdAt and updatedAt
+        timestamps: true, 
     }
 );
 
@@ -50,7 +50,8 @@ const favoriteBrandsSchema = new mongoose.Schema(
     {
         brandOwnerId:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing",required:true},
         favoriteBy:[{
-            userID:{type:mongoose.Schema.Types.ObjectId,ref:"InvsRegister"},
+            likeByInvestor:{type:mongoose.Schema.Types.ObjectId,ref:"InvsRegister"},
+            likeByBrand:{type:mongoose.Schema.Types.ObjectId,ref:"BrandListing"},
            addedAt:{type:Date,default:Date.now},
              _id:false
         }],
@@ -58,7 +59,7 @@ const favoriteBrandsSchema = new mongoose.Schema(
         
     },
     {
-        timestamps: true, // adds createdAt and updatedAt
+        timestamps: true, 
     }
 );
 
