@@ -22,12 +22,12 @@ export const toggleFavoriteBrand = async (req, res) => {
     // === If Brand is liking another Brand ===
     if (brand && brand._id) {
       if (!branduuid) {
-        return res.status(400).json(new ApiResponse(400, {}, "Brand UUID is required"));
+        return res.json(new ApiResponse(400, {}, "Brand UUID is required"));
       }
 
       const likedBrandData = await BrandDetails.findOne({ uuid: branduuid });
       if (!likedBrandData) {
-        return res.status(404).json(new ApiResponse(404, {}, "Target brand not found"));
+        return res.json(new ApiResponse(404, {}, "Target brand not found"));
       }
 
       // Check if already liked
@@ -57,13 +57,13 @@ export const toggleFavoriteBrand = async (req, res) => {
           {
             $pull: {
               favoriteBy: {
-                userID: brand._id
+                likeByBrand: brand._id
               }
             }
           }
         );
 
-        return res.status(200).json(
+        return res.json(
           new ApiResponse(200, {}, "Brand removed from favorites successfully")
         );
       } else {
@@ -86,7 +86,7 @@ export const toggleFavoriteBrand = async (req, res) => {
           {
             $push: {
               favoriteBy: {
-                userID: brand._id,
+                likeByBrand: brand._id,
                 addedAt: new Date(),
               },
             },
@@ -102,16 +102,16 @@ export const toggleFavoriteBrand = async (req, res) => {
 
     // === If Investor is liking a Brand ===
     if (!investor || !investor._id) {
-      return res.status(401).json(new ApiResponse(401, {}, "Please login first to add favorite brand"));
+      return res.json(new ApiResponse(401, {}, "Please login first to add favorite brand"));
     }
 
     if (!branduuid) {
-      return res.status(400).json(new ApiResponse(400, {}, "Brand UUID is required"));
+      return res.json(new ApiResponse(400, {}, "Brand UUID is required"));
     }
 
     const brandData = await BrandDetails.findOne({ uuid: branduuid });
     if (!brandData) {
-      return res.status(404).json(new ApiResponse(404, {}, "Brand not found"));
+      return res.json(new ApiResponse(404, {}, "Brand not found"));
     }
 
     // Check if already favorited
@@ -141,13 +141,13 @@ export const toggleFavoriteBrand = async (req, res) => {
         {
           $pull: {
             favoriteBy: {
-              userID: investor._id
+              likeByInvestor: investor._id
             }
           }
         }
       );
 
-      return res.status(200).json(
+      return res.json(
         new ApiResponse(200, {}, "Brand removed from favorites successfully")
       );
     } else {
@@ -170,7 +170,7 @@ export const toggleFavoriteBrand = async (req, res) => {
         {
           $push: {
             favoriteBy: {
-              userID: investor._id,
+              likeByInvestor: investor._id,
               addedAt: new Date(),
             },
           },
@@ -178,13 +178,13 @@ export const toggleFavoriteBrand = async (req, res) => {
         { new: true, upsert: true }
       );
 
-      return res.status(200).json(
+      return res.json(
         new ApiResponse(200, updatedInvestorFavorite, "Favorite brand added successfully by investor")
       );
     }
   } catch (error) {
     console.error("toggleFavoriteBrand error:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
 

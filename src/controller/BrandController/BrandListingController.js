@@ -382,8 +382,6 @@ const getAllBrands = async (req, res) => {
   }
 };
 
-
-
 const getBrandListingByUUID = async (req, res) => {
   const { id } = req.params;
   const userId = req.query.userId || null;
@@ -781,6 +779,7 @@ export const getTopLeadingFranchise = async (req, res) => {
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
  };
+
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1836,7 +1835,191 @@ export const getBrandsByCategory = async (req, res) => {
 };
 
 
+export const getBrandById = async (req, res) => {
+  const { id } = req.params;
 
+  const brand = req.brandUser;
+  if (id !== brand?.uuid) {
+    return res.json(
+      new ApiResponse(401,null,"Unathorize request")
+    )
+  }
+
+  try {
+    
+    const data = await BrandDetails.aggregate([
+      {
+        $match: {
+          uuid: id
+        }
+      },
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "brandfranchisedetails"
+        }
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      {
+        $lookup: {
+          from: "brandexpansionlocationdatas",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "brandexpansionlocationdatas"
+        }
+      },
+      {
+        $lookup: {
+          from: "viewedtobrands",
+          localField: "_id",
+          foreignField: "brandUserID",
+          as: "totalViewData"
+        }
+      },
+      {
+        $addFields: {
+          totalInvestorViews: {
+            $cond: [
+              { $gt: [{ $size: "$totalViewData" }, 0] },
+              { $size: { $arrayElemAt: ["$totalViewData.viewedByInvestors", 0] } },
+              0
+            ]
+          },
+          totalBrandViews: {
+            $cond: [
+              { $gt: [{ $size: "$totalViewData" }, 0] },
+              { $size: { $arrayElemAt: ["$totalViewData.viewedByBrands", 0] } },
+              0
+            ]
+          }
+        }
+      },
+      {
+      $lookup: {
+          from: "shortlisteds",
+          localField: "_id",
+          foreignField: "brandOwnerId",
+          as: "shortlisteds"
+        }
+      },
+      {
+        $addFields: {
+          totalSortlistCount: {
+            $cond: [
+              { $isArray: "$shortlisteds" },
+              { $size: "$shortlisteds" },
+              0
+            ]
+          }
+        }
+      },
+      {
+      $lookup: {
+          from: "favoritebrands",
+          localField: "_id",
+          foreignField: "brandOwnerId",
+          as: "favoritebrands"
+        }
+      },
+      {
+        $addFields: {
+          totalLikedCount: {
+            $cond: [
+              { $isArray: "$favoritebrands" },
+              { $size: "$favoritebrands.favoriteBy" },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          // uuid: 1,
+          // brandDetails: 1,
+          // franchisedetails: {
+          //   $let: {
+          //     vars: {
+          //       firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
+          //     },
+          //     in: {
+          //       franchiseDetails: "$$firstFranchise.franchiseDetails"
+          //     }
+          //   }
+          // },
+          // uploads: {
+          //   $let: {
+          //     vars: {
+          //       firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
+          //     },
+          //     in: {
+          //       logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
+          //       franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
+          //       exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
+          //       interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
+          //       businessPlan: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] }, null] },
+          //       gstCertificate:  { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0] }, null] },
+          //       pancard: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] }, null] },
+          //       awards: {
+          //         $cond: {
+          //           if: {
+          //             $and: [
+          //               { $isArray: "$$firstUpload.uploads.awards" },
+          //               { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
+          //             ]
+          //           },
+          //           then: {
+          //             $map: {
+          //               input: "$$firstUpload.uploads.awards",
+          //               as: "award",
+          //               in: {
+          //                 awardDescription: "$$award.awardDescription",
+          //                 awardImage: "$$award.awardImage"
+          //               }
+          //             }
+          //           },
+          //           else: []
+          //         }
+          //       }
+          //     }
+          //   }
+          // },
+          // expansionlocationdatas: {
+          //   $let: {
+          //     vars: {
+          //       data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
+          //     },
+          //     in: {
+          //       currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
+          //       expansionLocations: "$$data.expansionLocationData.expansionLocations",
+          //       isInternationalExpansion: "$$data.expansionLocationData.isInternationalExpansion"
+          //     }
+          //   }
+          // },
+          totalViewCount: {
+            $add: ["$totalInvestorViews", "$totalBrandViews"]
+          },
+          totalSortlistCount : 1,
+          totalLikedCount : 1,
+        }
+      }
+    ]);
+
+    return res.json(new ApiResponse(200, data[0], "✅ Brand fetched successfully"));
+  } catch (error) {
+    console.error("getBrandListingByUUID error:", error);
+    return res.json(new ApiResponse(500, null, "Failed to fetch brand"));
+  }
+};
 
 
 export {
