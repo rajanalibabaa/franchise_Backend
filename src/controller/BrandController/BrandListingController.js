@@ -1947,7 +1947,7 @@ export const getBrandById = async (req, res) => {
           _id: 0,
           uuid: 1,
           brandDetails: 1,
-          franchisedetailsdata: {
+          franchisedetaildata: {
             $let: {
               vars: {
                 firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
