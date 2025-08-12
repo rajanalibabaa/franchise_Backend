@@ -8,6 +8,7 @@ import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantAppl
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 import mongoose from "mongoose";
 import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
@@ -52,7 +53,7 @@ export const instaApplyBrandFormController = async (req, res) => {
         applyById = isInvestor?.uuid;
       }
     }
-    
+
   const { main, sub, child } = exists.franchiseDetails.brandCategories;
 
     const newSubmission = new instantApply({
@@ -89,8 +90,6 @@ export const instaApplyBrandFormController = async (req, res) => {
       new ApiResponse(200, newSubmission, "Application submitted successfully")
     );
 
-    
-
     await instantApplyLocationMatch(
       fullName,
       email,
@@ -112,29 +111,28 @@ export const instaApplyBrandFormController = async (req, res) => {
       exists.uploads.brandLogo[0]
     );
 
-
     // Process perfect and partial matches
-  
-    // await instantApplyPerfectAndPartial(
-    //   fullName,
-    //   email,
-    //   mobileNumber,
-    //   brandName,
-    //   brandId,
-    //   exists.brandDetails.email,
-    //   main,
-    //   sub,
-    //   child,
-    //   state,
-    //   district,
-    //   city,
-    //   investmentRange,
-    //   planToInvest,
-    //   readyToInvest,
-    //   applyBy,
-    //   applyById,
-    //   exists.uploads.brandLogo[0]
-    // );
+
+    await instantApplyPerfectAndPartial(
+      fullName,
+      email,
+      mobileNumber,
+      brandName,
+      brandId,
+      exists.brandDetails.email,
+      main,
+      sub,
+      child,
+      state,
+      district,
+      city,
+      investmentRange,
+      planToInvest,
+      readyToInvest,
+      applyBy,
+      applyById,
+      exists.uploads.brandLogo[0]
+    );
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
@@ -142,63 +140,240 @@ export const instaApplyBrandFormController = async (req, res) => {
   }
 };
 
+// export const instaApplyBrandFormController = async (req, res) => {
+//   try {
+//     const {
+//       fullName,
+//       email,
+//       mobileNumber,
+//       state,
+//       district,
+//       city,
+//       investmentRange,
+//       planToInvest,
+//       readyToInvest,
+//       brandId,
+//       brandName,
+//       applyId,
+//     } = req.body;
+
+//     console.log("req.body :", req.body);
+
+//     // Use aggregation to fetch brand data from all three collections
+//     const brandAggregate = await BrandDetails.aggregate([
+//       {
+//         $match: { uuid: brandId },
+//       },
+//       {
+//         $lookup: {
+//           from: "brandfranchisedetails",
+//           localField: "uuid",
+//           foreignField: "brandOwnerId",
+//           as: "franchiseDetails",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "brandexpansionlocationdata",
+//           localField: "uuid",
+//           foreignField: "brandOwnerId",
+//           as: "expansionLocationData",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "branduploads", // This is the missing lookup
+//           localField: "uuid",
+//           foreignField: "brandOwnerId",
+//           as: "uploads",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$franchiseDetails",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$expansionLocationData",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$uploads",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $limit: 1,
+//       },
+//     ]);
+
+//     console.log("brandAggregate :", brandAggregate);
+
+//     if (!brandAggregate || brandAggregate.length === 0) {
+//       return res.json(new ApiResponse(404, null, "Brand not found"));
+//     }
+
+//     const exists = brandAggregate[0];
+
+//     // Determine who is applying (Investor / Brand / other)
+//     let applyBy = "other";
+//     let applyById = "other";
+
+//     const isBrand = await BrandDetails.findOne({ uuid: applyId });
+//     if (isBrand) {
+//       applyBy = "Brand";
+//       applyById = isBrand?.uuid;
+//     } else {
+//       const isInvestor = await InvsRegister.findOne({ uuid: applyId });
+//       if (isInvestor) {
+//         applyBy = "Investor";
+//         applyById = isInvestor?.uuid;
+//       }
+//     }
+
+//     const { main, sub, child } =
+//       exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
+//     console.log("main, sub, child :", main, sub, child);
+
+//     const newSubmission = new instantApply({
+//       uuid: uuid(),
+//       fullName,
+//       email,
+//       mobileNumber,
+//       Categories:
+//         exists.franchiseDetails?.franchiseDetails?.brandCategories || {},
+//       state,
+//       district,
+//       city,
+//       investmentRange,
+//       planToInvest,
+//       readyToInvest,
+//       brandId,
+//       brandName,
+//       brandEmail: exists.brandDetails?.email,
+//       brandLogo: exists.uploads?.uploads?.brandLogo?.[0],
+//       apply: {
+//         applyBy,
+//         applyId: applyById,
+//       },
+//     });
+
+//     await newSubmission.save();
+//     console.log("newSubmission :", newSubmission);
+
+//     if (!newSubmission) {
+//       return res.json(
+//         new ApiResponse(
+//           500,
+//           null,
+//           "Something went wrong while newSubmission saving in database"
+//         )
+//       );
+//     }
+
+//     res.json(
+//       new ApiResponse(200, newSubmission, "Application submitted successfully")
+//     );
+
+//     await instantApplyLocationMatch(
+//       fullName,
+//       email,
+//       mobileNumber,
+//       brandName,
+//       brandId,
+//       exists.brandDetails?.email,
+//       main,
+//       sub,
+//       child,
+//       state,
+//       district,
+//       city,
+//       investmentRange,
+//       planToInvest,
+//       readyToInvest,
+//       applyBy,
+//       applyById,
+//       exists.uploads?.uploads?.brandLogo
+//     );
+//   } catch (error) {
+//     console.error("Error in instaApplyBrandFormController:", error);
+//     return res
+//       .status(500)
+//       .json(new ApiResponse(500, {}, "Internal server error"));
+//   }
+// };
 
 // Get all
+
 export const getAllInstaApplyToBrand = async (req, res) => {
   const { id } = req.params;
   const BrandData = req.brandUser;
 
-
   if (!id || id !== BrandData?.uuid) {
-    return res.status(401).json(
-      new ApiResponse(401, {}, "Unauthorized request")
-    );
+    return res
+      .status(401)
+      .json(new ApiResponse(401, {}, "Unauthorized request"));
   }
 
   try {
     // Fetch instant applications with proper error handling
-    const instaApply = await InstantApplyLead.find({ "initialBrand.brandId": BrandData.uuid })
+    const instaApply = await InstantApplyLead.find({
+      "initialBrand.brandId": BrandData.uuid,
+    })
       .select("-_id -__v")
-      .sort({ createdAt: -1 }) 
-      .lean(); 
+      .sort({ createdAt: -1 })
+      .lean();
     console.log("instaApply:", instaApply);
 
     // Process applications in parallel for better performance
     const applyList = await Promise.all(
       instaApply.map(async (application) => {
         try {
-         
-          let data = await InvsRegister.findOne({ uuid: application.apply?.applyId })
+          let data = await InvsRegister.findOne({
+            uuid: application.apply?.applyId,
+          })
             .select("-_id -oldData")
             .lean();
 
-     
           if (!data) {
-            data = await BrandListing.findOne({ uuid: application.apply?.applyId })
-              .lean();
+            data = await BrandListing.findOne({
+              uuid: application.apply?.applyId,
+            }).lean();
           }
 
-          
-         
           return data ? { ...application, userData: data } : application;
         } catch (error) {
-          console.error(`Error processing application ${application._id}:`, error);
+          console.error(
+            `Error processing application ${application._id}:`,
+            error
+          );
           return application;
         }
       })
     );
 
-
-
     return res.json(
-      new ApiResponse(200, applyList, "All instant apply applications fetched successfully")
+      new ApiResponse(
+        200,
+        applyList,
+        "All instant apply applications fetched successfully"
+      )
     );
-
   } catch (error) {
     console.error("Error in getAllInstaApplyToBrand:", error);
-    return res.status(500).json(
-      new ApiResponse(500, null, `Error fetching Insta Apply: ${error.message}`)
-    );
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(
+          500,
+          null,
+          `Error fetching Insta Apply: ${error.message}`
+        )
+      );
   }
 };
 
@@ -209,14 +384,15 @@ export const getInstaApplyById = async (req, res) => {
     const { id } = req.params;
     const user = req.investorUser || req.brandUser;
 
-  
     if (!user || id !== user?.uuid) {
-      return res.status(401).json(
-        new ApiResponse(401, {}, "Unauthorized request")
-      );
+      return res
+        .status(401)
+        .json(new ApiResponse(401, {}, "Unauthorized request"));
     }
 
-    const myInstaApplies = await instantApply.find({ "apply.applyId": user.uuid });
+    const myInstaApplies = await instantApply.find({
+      "apply.applyId": user.uuid,
+    });
 
     // console.log("myInstaApplies :",myInstaApplies)
 
@@ -237,16 +413,13 @@ export const getInstaApplyById = async (req, res) => {
       }
     }
 
-    const reverse = applyList.reverse()
+    const reverse = applyList.reverse();
     return res.json(
       new ApiResponse(200, reverse, "Apply list fetched successfully")
     );
-
   } catch (error) {
     console.error("Error in getInstaApplyById:", error);
-    return res.json(
-      new ApiResponse(500, null, "Error fetching Insta Apply")
-    );
+    return res.json(new ApiResponse(500, null, "Error fetching Insta Apply"));
   }
 };
 
@@ -317,24 +490,28 @@ export const deleteInstaApply = async (req, res) => {
   }
 };
 
-export const getAllLeads = async (req,res) => {
-
+export const getAllLeads = async (req, res) => {
   const { id } = req.params;
   const BrandData = req.brandUser;
 
-
   if (!id || id !== BrandData?.uuid) {
-    return res.status(401).json(
-      new ApiResponse(401, {}, "Unauthorized request")
-    );
+    return res
+      .status(401)
+      .json(new ApiResponse(401, {}, "Unauthorized request"));
   }
 
-    const leads = await InstantApplyLead.find({ "brandMatches.brandId": new mongoose.Types.ObjectId(BrandData._id) })
-      .select("-_id -__v")
-      .sort({ createdAt: -1 }) 
-      .lean(); 
-    console.log("instaApply:", leads.length);
-    return res.json(
-      new ApiResponse(200,leads, "All instant apply applications fetched successfully")
-    );
-}
+  const leads = await InstantApplyLead.find({
+    "brandMatches.brandId": new mongoose.Types.ObjectId(BrandData._id),
+  })
+    .select("-_id -__v")
+    .sort({ createdAt: -1 })
+    .lean();
+  console.log("instaApply:", leads.length);
+  return res.json(
+    new ApiResponse(
+      200,
+      leads,
+      "All instant apply applications fetched successfully"
+    )
+  );
+};
