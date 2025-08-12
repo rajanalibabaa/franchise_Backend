@@ -387,9 +387,6 @@ const getBrandListingByUUID = async (req, res) => {
   const userId = req.query.userId || null;
 
 
-  console.log("req.params :",req.params)
-
-  console.log("req.query :",req.query.userId)
   try {
     
     const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
