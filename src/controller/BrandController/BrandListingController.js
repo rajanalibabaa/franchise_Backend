@@ -1923,7 +1923,7 @@ export const getBrandById = async (req, res) => {
         }
       },
       {
-      $lookup: {
+        $lookup: {
           from: "favoritebrands",
           localField: "_id",
           foreignField: "brandOwnerId",
@@ -1933,78 +1933,79 @@ export const getBrandById = async (req, res) => {
       {
         $addFields: {
           totalLikedCount: {
-            $cond: [
-              { $isArray: "$favoritebrands" },
-              { $size: "$favoritebrands.favoriteBy" },
-              0
-            ]
+            $sum: {
+              $map: {
+                input: "$favoritebrands",
+                in: { $size: { $ifNull: ["$$this.favoriteBy", []] } }
+              }
+            }
           }
         }
       },
       {
         $project: {
           _id: 0,
-          // uuid: 1,
-          // brandDetails: 1,
-          // franchisedetails: {
-          //   $let: {
-          //     vars: {
-          //       firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
-          //     },
-          //     in: {
-          //       franchiseDetails: "$$firstFranchise.franchiseDetails"
-          //     }
-          //   }
-          // },
-          // uploads: {
-          //   $let: {
-          //     vars: {
-          //       firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
-          //     },
-          //     in: {
-          //       logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
-          //       franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
-          //       exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
-          //       interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
-          //       businessPlan: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] }, null] },
-          //       gstCertificate:  { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0] }, null] },
-          //       pancard: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] }, null] },
-          //       awards: {
-          //         $cond: {
-          //           if: {
-          //             $and: [
-          //               { $isArray: "$$firstUpload.uploads.awards" },
-          //               { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
-          //             ]
-          //           },
-          //           then: {
-          //             $map: {
-          //               input: "$$firstUpload.uploads.awards",
-          //               as: "award",
-          //               in: {
-          //                 awardDescription: "$$award.awardDescription",
-          //                 awardImage: "$$award.awardImage"
-          //               }
-          //             }
-          //           },
-          //           else: []
-          //         }
-          //       }
-          //     }
-          //   }
-          // },
-          // expansionlocationdatas: {
-          //   $let: {
-          //     vars: {
-          //       data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
-          //     },
-          //     in: {
-          //       currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
-          //       expansionLocations: "$$data.expansionLocationData.expansionLocations",
-          //       isInternationalExpansion: "$$data.expansionLocationData.isInternationalExpansion"
-          //     }
-          //   }
-          // },
+          uuid: 1,
+          brandDetails: 1,
+          franchisedetailsdata: {
+            $let: {
+              vars: {
+                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
+              },
+              in: {
+                franchiseDetails: "$$firstFranchise.franchiseDetails"
+              }
+            }
+          },
+          uploads: {
+            $let: {
+              vars: {
+                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
+              },
+              in: {
+                logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
+                franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
+                exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
+                interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
+                businessPlan: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] }, null] },
+                gstCertificate:  { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0] }, null] },
+                pancard: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] }, null] },
+                awards: {
+                  $cond: {
+                    if: {
+                      $and: [
+                        { $isArray: "$$firstUpload.uploads.awards" },
+                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
+                      ]
+                    },
+                    then: {
+                      $map: {
+                        input: "$$firstUpload.uploads.awards",
+                        as: "award",
+                        in: {
+                          awardDescription: "$$award.awardDescription",
+                          awardImage: "$$award.awardImage"
+                        }
+                      }
+                    },
+                    else: []
+                  }
+                }
+              }
+            }
+          },
+          expansionlocationdata: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
+              },
+              in: {
+                currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
+                expansionLocations: "$$data.expansionLocationData.expansionLocations",
+                isInternationalExpansion: "$$data.expansionLocationData.isInternationalExpansion"
+              }
+            }
+          },
           totalViewCount: {
             $add: ["$totalInvestorViews", "$totalBrandViews"]
           },
