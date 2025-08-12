@@ -1862,6 +1862,9 @@ export const getBrandById = async (req, res) => {
         }
       },
       {
+        $unwind: { path: "$brandfranchisedetails", preserveNullAndEmptyArrays: true }
+      },
+      {
         $lookup: {
           from: "branduploads",
           localField: "uuid",
@@ -1947,16 +1950,8 @@ export const getBrandById = async (req, res) => {
           _id: 0,
           uuid: 1,
           brandDetails: 1,
-          franchisedetaildata: {
-            $let: {
-              vars: {
-                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
-              },
-              in: {
-                franchiseDetails: "$$firstFranchise.franchiseDetails"
-              }
-            }
-          },
+          brandID : 1,
+          franchiseDetails : "$brandfranchisedetails.franchiseDetails",
           uploads: {
             $let: {
               vars: {
