@@ -1,6 +1,7 @@
 import express from "express";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes, getTopDesertAndBakery, getTopTrucksAndKiosks, getTopRestaurants,getBrandsByCategory} from "../../controller/BrandController/BrandListingController.js"
+import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes, getTopDesertAndBakery, getTopTrucksAndKiosks, getTopRestaurants,getBrandsByCategory, getBrandById} from "../../controller/BrandController/BrandListingController.js"
+import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.post(
 
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
+router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
 router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
 router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
 router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)

@@ -29,19 +29,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    // console.log("Filters:", {
-    //   maincat,
-    //   subcat,
-    //   childcat,
-    //   serchterm,
-    //   country,
-    //   state,
-    //   district,
-    //   city,
-    //   investmentRange,
-    //   modelType,
-    // });
-
+   
     // Build match conditions
     const match = {};
 
