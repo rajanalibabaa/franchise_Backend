@@ -8,6 +8,7 @@ import path from 'path';
 import { readFile, unlink } from 'fs/promises';
 import mime from 'mime-types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { console } from 'inspector';
 
 dotenv.config();
 
@@ -76,6 +77,8 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
 
 export const uploadFileToR2 = async (filePath, mimetype) => {
   if (!filePath) throw new Error("File path is required");
+
+  console.log(`📂 Uploading file to R2: ${filePath}`);
 
   try {
     if (!existsSync(filePath)) {
@@ -158,18 +161,30 @@ export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
   }
 };
 
-export const deleteFileFromR2 = async (fileKey) => {
-  const command = new DeleteObjectCommand({
-    Bucket: process.env.R2_BUCKET_NAME,
-    Key: fileKey,
-  });
+export const deleteFileFromR2 = async (filePathOrUrl) => {
+  if (!filePathOrUrl) {
+    throw new Error("File path or key is required for deletion");
+  }
+
+ 
+  const baseUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "") || "";
+  console.log(`Base URL for R2: ${baseUrl}`);
+  const fileKey = filePathOrUrl.startsWith("http")
+    ? filePathOrUrl.replace(baseUrl + "/", "")
+    : filePathOrUrl;
+  console.log(`File key to delete: ${fileKey}`);
 
   try {
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: fileKey,
+    });
+
     await s3.send(command);
-    // console.log(`✅ File "${fileKey}" deleted successfully from R2.`);
-    return { success: true };
+    console.log(`✅ Deleted from R2: ${fileKey}`);
+    return { success: true, message: `File "${fileKey}" deleted successfully.` };
   } catch (error) {
-    console.error(`❌ Error deleting file from R2:`, error.message);
-    throw new Error('Failed to delete file from R2');
+    console.error(`❌ Failed to delete "${fileKey}" from R2:`, error);
+    throw new Error(`Failed to delete "${fileKey}" from R2: ${error.message}`);
   }
 };
