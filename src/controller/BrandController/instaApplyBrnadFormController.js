@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 
+
 export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {
@@ -24,25 +25,76 @@ export const instaApplyBrandFormController = async (req, res) => {
       readyToInvest,
       brandId,
       brandName,
-      applyId
+      applyId,
     } = req.body;
 
     console.log("req.body :", req.body);
 
-    const exists = await BrandListing.findOne({
-      uuid: brandId
-    });
+    // Use aggregation to fetch brand data from all three collections
+    const brandAggregate = await BrandDetails.aggregate([
+      {
+        $match: { uuid: brandId },
+      },
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "franchiseDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "brandexpansionlocationdata",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "expansionLocationData",
+        },
+      },
+      {
+        $lookup: {
+          from: "branduploads", // This is the missing lookup
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "uploads",
+        },
+      },
+      {
+        $unwind: {
+          path: "$franchiseDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unwind: {
+          path: "$expansionLocationData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unwind: {
+          path: "$uploads",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $limit: 1,
+      },
+    ]);
 
-    if (!exists) {
-      return res.json(
-        new ApiResponse(404, null, "Brand not found")
-      );
+    console.log("brandAggregate :", brandAggregate);
+
+    if (!brandAggregate || brandAggregate.length === 0) {
+      return res.json(new ApiResponse(404, null, "Brand not found"));
     }
+
+    const exists = brandAggregate[0];
 
     // Determine who is applying (Investor / Brand / other)
     let applyBy = "other";
     let applyById = "other";
-    const isBrand = await BrandListing.findOne({ uuid: applyId });
+
+    const isBrand = await BrandDetails.findOne({ uuid: applyId });
     if (isBrand) {
       applyBy = "Brand";
       applyById = isBrand?.uuid;
@@ -54,14 +106,17 @@ export const instaApplyBrandFormController = async (req, res) => {
       }
     }
 
-  const { main, sub, child } = exists.franchiseDetails.brandCategories;
+    const { main, sub, child } =
+      exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
+    console.log("main, sub, child :", main, sub, child);
 
     const newSubmission = new instantApply({
       uuid: uuid(),
       fullName,
       email,
       mobileNumber,
-      Categories: exists.franchiseDetails.brandCategories,
+      Categories:
+        exists.franchiseDetails?.franchiseDetails?.brandCategories || {},
       state,
       district,
       city,
@@ -70,19 +125,24 @@ export const instaApplyBrandFormController = async (req, res) => {
       readyToInvest,
       brandId,
       brandName,
-      brandEmail: exists.brandDetails.email,
-      brandLogo: exists.uploads.brandLogo[0],
+      brandEmail: exists.brandDetails?.email,
+      brandLogo: exists.uploads?.uploads?.brandLogo?.[0],
       apply: {
         applyBy,
         applyId: applyById,
-      }
+      },
     });
 
     await newSubmission.save();
+    console.log("newSubmission :", newSubmission);
 
     if (!newSubmission) {
       return res.json(
-        new ApiResponse(500, null, "Something went wrong while newSubmission saving in database")
+        new ApiResponse(
+          500,
+          null,
+          "Something went wrong while newSubmission saving in database"
+        )
       );
     }
 
@@ -96,7 +156,7 @@ export const instaApplyBrandFormController = async (req, res) => {
       mobileNumber,
       brandName,
       brandId,
-      exists.brandDetails.email,
+      exists.brandDetails?.email,
       main,
       sub,
       child,
@@ -108,204 +168,15 @@ export const instaApplyBrandFormController = async (req, res) => {
       readyToInvest,
       applyBy,
       applyById,
-      exists.uploads.brandLogo[0]
+      exists.uploads?.uploads?.brandLogo
     );
-
-    // Process perfect and partial matches
-
-    await instantApplyPerfectAndPartial(
-      fullName,
-      email,
-      mobileNumber,
-      brandName,
-      brandId,
-      exists.brandDetails.email,
-      main,
-      sub,
-      child,
-      state,
-      district,
-      city,
-      investmentRange,
-      planToInvest,
-      readyToInvest,
-      applyBy,
-      applyById,
-      exists.uploads.brandLogo[0]
-    );
-
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
-    return res.status(500).json(new ApiResponse(500, {}, "Internal server error"));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
-// export const instaApplyBrandFormController = async (req, res) => {
-//   try {
-//     const {
-//       fullName,
-//       email,
-//       mobileNumber,
-//       state,
-//       district,
-//       city,
-//       investmentRange,
-//       planToInvest,
-//       readyToInvest,
-//       brandId,
-//       brandName,
-//       applyId,
-//     } = req.body;
-
-//     console.log("req.body :", req.body);
-
-//     // Use aggregation to fetch brand data from all three collections
-//     const brandAggregate = await BrandDetails.aggregate([
-//       {
-//         $match: { uuid: brandId },
-//       },
-//       {
-//         $lookup: {
-//           from: "brandfranchisedetails",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "franchiseDetails",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "brandexpansionlocationdata",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "expansionLocationData",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads", // This is the missing lookup
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$franchiseDetails",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$expansionLocationData",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$uploads",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       {
-//         $limit: 1,
-//       },
-//     ]);
-
-//     console.log("brandAggregate :", brandAggregate);
-
-//     if (!brandAggregate || brandAggregate.length === 0) {
-//       return res.json(new ApiResponse(404, null, "Brand not found"));
-//     }
-
-//     const exists = brandAggregate[0];
-
-//     // Determine who is applying (Investor / Brand / other)
-//     let applyBy = "other";
-//     let applyById = "other";
-
-//     const isBrand = await BrandDetails.findOne({ uuid: applyId });
-//     if (isBrand) {
-//       applyBy = "Brand";
-//       applyById = isBrand?.uuid;
-//     } else {
-//       const isInvestor = await InvsRegister.findOne({ uuid: applyId });
-//       if (isInvestor) {
-//         applyBy = "Investor";
-//         applyById = isInvestor?.uuid;
-//       }
-//     }
-
-//     const { main, sub, child } =
-//       exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
-//     console.log("main, sub, child :", main, sub, child);
-
-//     const newSubmission = new instantApply({
-//       uuid: uuid(),
-//       fullName,
-//       email,
-//       mobileNumber,
-//       Categories:
-//         exists.franchiseDetails?.franchiseDetails?.brandCategories || {},
-//       state,
-//       district,
-//       city,
-//       investmentRange,
-//       planToInvest,
-//       readyToInvest,
-//       brandId,
-//       brandName,
-//       brandEmail: exists.brandDetails?.email,
-//       brandLogo: exists.uploads?.uploads?.brandLogo?.[0],
-//       apply: {
-//         applyBy,
-//         applyId: applyById,
-//       },
-//     });
-
-//     await newSubmission.save();
-//     console.log("newSubmission :", newSubmission);
-
-//     if (!newSubmission) {
-//       return res.json(
-//         new ApiResponse(
-//           500,
-//           null,
-//           "Something went wrong while newSubmission saving in database"
-//         )
-//       );
-//     }
-
-//     res.json(
-//       new ApiResponse(200, newSubmission, "Application submitted successfully")
-//     );
-
-//     await instantApplyLocationMatch(
-//       fullName,
-//       email,
-//       mobileNumber,
-//       brandName,
-//       brandId,
-//       exists.brandDetails?.email,
-//       main,
-//       sub,
-//       child,
-//       state,
-//       district,
-//       city,
-//       investmentRange,
-//       planToInvest,
-//       readyToInvest,
-//       applyBy,
-//       applyById,
-//       exists.uploads?.uploads?.brandLogo
-//     );
-//   } catch (error) {
-//     console.error("Error in instaApplyBrandFormController:", error);
-//     return res
-//       .status(500)
-//       .json(new ApiResponse(500, {}, "Internal server error"));
-//   }
-// };
 
 // Get all
 

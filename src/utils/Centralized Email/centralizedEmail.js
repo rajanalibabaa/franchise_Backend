@@ -95,6 +95,17 @@ export const sendInstantApplyLeadLocation = async (
   planToInvest,
   readyToInvest
 ) => {
+  console.log( "dddd:",fullName,
+  email,
+  mobileNumber,
+  brandEmail,
+  brandCompanyName,
+  categories,
+  location,
+  investmentRange,
+  emailSubject,
+  planToInvest,
+  readyToInvest)
   console.log(categories, location, ".o.o.o");
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = "instantApply_LeadLocation_template"; // Ensure this matches the template file name in the 'templates' folder
