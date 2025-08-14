@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes, getTopDesertAndBakery, getTopTrucksAndKiosks, getTopRestaurants,getBrandsByCategory, getBrandById} from "../../controller/BrandController/BrandListingController.js"
+import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes, getTopDesertAndBakery, getTopTrucksAndKiosks, getTopRestaurants,getBrandsByCategory, getBrandById, updateBrandImageById} from "../../controller/BrandController/BrandListingController.js"
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
@@ -49,6 +49,21 @@ router.patch(
     { name: 'interiorOutlet', maxCount: 5 }
   ]),
   updateBrandListingByUUID
+);
+router.patch(
+  "/v1/brandlisting/updateBrandImageById/:id",
+  upload.fields([
+    { name: 'awardDoc', maxCount: 10 },
+    { name: 'brandLogo', maxCount: 1 },
+    { name: 'pancard', maxCount: 1 },
+    { name: 'businessPlan', maxCount: 1 },
+    { name: 'exteriorOutlet', maxCount: 5 },
+    { name: 'franchisePromotionVideo', maxCount: 1 },
+    { name: 'brandPromotionVideo', maxCount: 1 },
+    { name: 'gstCertificate', maxCount: 1 },
+    { name: 'interiorOutlet', maxCount: 5 }
+  ]),
+  updateBrandImageById
 );
 router.delete("/v1/brandlisting/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 
