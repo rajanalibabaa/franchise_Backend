@@ -150,6 +150,10 @@ export const instaApplyBrandFormController = async (req, res) => {
       new ApiResponse(200, newSubmission, "Application submitted successfully")
     );
 
+    
+
+
+
     await instantApplyLocationMatch(
       fullName,
       email,
@@ -179,6 +183,8 @@ export const instaApplyBrandFormController = async (req, res) => {
 };
 
 // Get all
+
+
 
 export const getAllInstaApplyToBrand = async (req, res) => {
   const { id } = req.params;
