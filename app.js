@@ -1,11 +1,8 @@
 import express from "express";
 import thirdPartyAuthRouter from "./src/Routes/ThirdpartyRoutes/thirdpartyAuthenticationRouters.js";
-// import InvestorloginRouter from './src/Routes/InvestorRoutes/InvestorLoginRoutes.js';
-// import invsRegisterRoutes from "./src/Routes/invRegisterRoutes.js";
 
 import feedbackRoutes from "./src/Routes/FeedbackRoutes/feedbackRoutes.js";
 import complaintRoutes from "./src/Routes/ComplaintRoutes/complaintRoutes.js";
-import brandRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import adminRoutess from "./src/Routes/AdminRoutes/adminsRoutes.js";
 import postRequireRoutes from "./src/Routes/PostRequirementRoutes/postRequirementRoutes.js";
 import { AdminDashBoardClientRouter } from "./src/Routes/AdminRoutes/AdminDashBoardClientRouter.js";
@@ -19,7 +16,6 @@ import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
 import adminAuthRoutes from "./src/Routes/AdminRoutes/adminAuthRoutes.js";
-// import incomeInvestor from "./src/Routes/newIncomerInvestorRoutes/newincomerInvestorRoutes.js"
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
 import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
@@ -39,9 +35,6 @@ router.use(postRequireRoutes);
 
 router.use(feedbackRoutes);
 router.use(complaintRoutes);
-// router.use('/instaApply', instaApplyRoutes);
-// router.use(brandRoutes )
-// router.use('/newIncomerInvestor',incomeInvestor );
 router.use(adminAuthRoutes);
 router.use(InvestorRouter);
 router.use(brandListingRoutes);
