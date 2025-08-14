@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import {
+  deleteFileFromR2,
   generateSignedUrl,
   uploadFileToR2,
 } from "../../utils/Uploads/s3Uploader.js";
@@ -387,9 +388,6 @@ const getBrandListingByUUID = async (req, res) => {
   const userId = req.query.userId || null;
 
 
-  console.log("req.params :",req.params)
-
-  console.log("req.query :",req.query.userId)
   try {
     
     const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
@@ -780,497 +778,6 @@ export const getTopLeadingFranchise = async (req, res) => {
   }
  };
 
-// const updateBrandListingByUUID = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const fileFields = [
-//       "brandLogo",
-//       "exteriorOutlet",
-//       "franchisePromotionVideo",
-//       "gstCertificate",
-//       "interiorOutlet",
-//       "pancard",
-//       "businessPlan",
-//       "awardDoc",
-//     ];
- 
-//     // Object to track which schemas need updating
-//     const updates = {
-//       brandDetails: {},
-//       franchiseDetails: {},
-//       expansionLocationData: {},
-//       uploads: {},
-//     };
- 
-//     // Helper function to set nested fields
-//     const setNestedFields = (baseObj, basePath, fields) => {
-//       for (const [key, value] of Object.entries(fields)) {
-//         if (value !== undefined && value !== null) {
-//           baseObj[`${basePath}.${key}`] = value;
-//         }
-//       }
-//     };
- 
-//     // Handle brandDetails updates
-
-//      const ParseBrandDetails = JSON.parse(req.body.brandDetails)
-//      const ParseFranchiseDetails = JSON.parse(req.body.franchiseDetails)
-//   console.log(ParseFranchiseDetails)
-   
-//     if ( ParseBrandDetails || req.body.brandDetails) {
-//       const brandDetailsFields = [
-//         "fullName",
-//         "email",
-//         "mobileNumber",
-//         "whatsappNumber",
-//         "companyName",
-//         "brandName",
-//         "tagLine",
-//         "ceoName",
-//         "ceoEmail",
-//         "ceoMobile",
-//         "officeEmail",
-//         "officeMobile",
-//         "headOfficeAddress",
-//         "country",
-//         "state",
-//         "district",
-//         "city",
-//         "pincode",
-//         "website",
-//         "facebook",
-//         "instagram",
-//         "linkedin",
-//         "gstNumber",
-//         "pancardNumber",
-//       ];
- 
-//       const brandDetailsUpdate = {};
-//       for (const field of brandDetailsFields) {
-//         if (ParseBrandDetails[field] !== undefined) {
-//           brandDetailsUpdate[field] = ParseBrandDetails[field];
-//         }
-//       }
- 
-//       if (Object.keys(brandDetailsUpdate).length > 0) {
-//         setNestedFields(
-//           updates.brandDetails,
-//           "brandDetails",
-//           brandDetailsUpdate
-//         );
-//       }
-//     }
- 
-//     // Handle franchiseDetails updates
-//     if (ParseFranchiseDetails) {
-//       if (!updates.franchiseDetails.$set) {
-//         updates.franchiseDetails.$set = {};
-//       }
- 
-//       // Top-level fields
-//       const franchiseTopLevelFields = [
-//         "aidFinancing",
-//         "brandDescription",
-//         "companyOwnedOutlets",
-//         "consultationOrAssistance",
-//         "establishedYear",
-//         "franchiseDevelopment",
-//         "franchiseOutlets",
-//         "franchiseSinceYear",
-//         "totalOutlets",
-//       ];
- 
-//       for (const field of franchiseTopLevelFields) {
-//         if (ParseFranchiseDetails[field] !== undefined) {
-//           updates.franchiseDetails.$set[`franchiseDetails.${field}`] =
-//             ParseFranchiseDetails[field];
-//         }
-//       }
- 
-//       // Brand categories
-//       if (ParseFranchiseDetails.brandCategories) {
-//         const brandCategoriesFields = ["main", "sub", "groupId", "child"];
-//         for (const field of brandCategoriesFields) {
-//           if (ParseFranchiseDetails.brandCategories[field] !== undefined) {
-//             updates.franchiseDetails.$set[
-//               `franchiseDetails.brandCategories.${field}`
-//             ] = ParseFranchiseDetails.brandCategories[field];
-//           }
-//         }
-//       }
- 
-//       // Training support
-//       if (Array.isArray(ParseFranchiseDetails.trainingSupport)) {
-//        ParseFranchiseDetails.trainingSupport.forEach((item, index) => {
-//           updates.franchiseDetails.$set[
-//             `franchiseDetails.trainingSupport.${index}`
-//           ] = item;
-//         });
-//       }
- 
-//       // Unique selling points
-//       if (Array.isArray(ParseFranchiseDetails.uniqueSellingPoints)) {
-//        ParseFranchiseDetails.uniqueSellingPoints.forEach((item, index) => {
-//           updates.franchiseDetails.$set[
-//             `franchiseDetails.uniqueSellingPoints.${index}`
-//           ] = item;
-//         });
-//       }
- 
-//       // FICO array
-//       if (Array.isArray(ParseFranchiseDetails.fico)) {
-//         ParseFranchiseDetails.fico.forEach((ficoItem, index) => {
-//           const ficoFields = [
-//             "investmentRange",
-//             "areaRequired",
-//             "franchiseModel",
-//             "franchiseType",
-//             "franchiseFee",
-//             "royaltyFee",
-//             "stockInvestment",
-//             "royaltyFeeUnit",
-//             "interiorCost",
-//             "otherCost",
-//             "roi",
-//             "payBackPeriod",
-//             "breakEven",
-//             "requireWorkingCapital",
-//             "marginOnSales",
-//             "agreementPeriod",
-//           ];
- 
-//           ficoFields.forEach((field) => {
-//             if (ficoItem[field] !== undefined) {
-//               updates.franchiseDetails.$set[
-//                 `franchiseDetails.fico.${index}.${field}`
-//               ] = ficoItem[field];
-//             }
-//           });
-//         });
-//       }
-//     }
- 
- 
-//   if (req.body.expansionLocationData) {
-//   updates.expansionLocationData = updates.expansionLocationData || {};
-//   updates.expansionLocationData.$set = updates.expansionLocationData.$set || {};
- 
-//   // Handle deletions first
-//   if (req.body.expansionLocationData.deletedItems) {
-//     const { deletedItems } = req.body.expansionLocationData;
-   
-//     // Handle deleted states - removes entire state objects including all districts and cities
-//     if (deletedItems.states && deletedItems.states.length > 0) {
-//       updates.expansionLocationData.$pull = updates.expansionLocationData.$pull || {};
-     
-//       // Domestic locations (both current and expansion)
-//       updates.expansionLocationData.$pull['currentOutletLocations.domestic.locations'] = {
-//         state: { $in: deletedItems.states }
-//       };
-//       updates.expansionLocationData.$pull['expansionLocations.domestic.locations'] = {
-//         state: { $in: deletedItems.states }
-//       };
-     
-//       // International locations (both current and expansion)
-//       updates.expansionLocationData.$pull['currentOutletLocations.international.country'] = {
-//         states: { $in: deletedItems.states }
-//       };
-//       updates.expansionLocationData.$pull['expansionLocations.international.country'] = {
-//         states: { $in: deletedItems.states }
-//       };
-//     }
-   
-//     // Handle deleted districts - removes districts and their cities
-//     if (deletedItems.districts && deletedItems.districts.length > 0) {
-//       // Group districts by state for efficient processing
-//       const districtsByState = {};
-//       deletedItems.districts.forEach(({ state, district }) => {
-//         if (!districtsByState[state]) {
-//           districtsByState[state] = [];
-//         }
-//         districtsByState[state].push(district);
-//       });
-     
-//       // Process each state's districts
-//       for (const [state, districts] of Object.entries(districtsByState)) {
-//         updates.expansionLocationData.$pull = updates.expansionLocationData.$pull || {};
-       
-//         // Domestic locations
-//         updates.expansionLocationData.$pull[
-//           'currentOutletLocations.domestic.locations.$[domesticState].districts'
-//         ] = {
-//           district: { $in: districts }
-//         };
-//         updates.expansionLocationData.$pull[
-//           'expansionLocations.domestic.locations.$[expansionState].districts'
-//         ] = {
-//           district: { $in: districts }
-//         };
-       
-//         // International locations
-//         updates.expansionLocationData.$pull[
-//           'currentOutletLocations.international.country.$[currentCountry].district'
-//         ] = {
-//           district: { $in: districts }
-//         };
-//         updates.expansionLocationData.$pull[
-//           'expansionLocations.international.country.$[expansionCountry].district'
-//         ] = {
-//           district: { $in: districts }
-//         };
-       
-//         // Add array filters
-//         updates.expansionLocationData.arrayFilters = updates.expansionLocationData.arrayFilters || [];
-//         updates.expansionLocationData.arrayFilters.push(
-//           { 'domesticState.state': state },
-//           { 'expansionState.state': state },
-//           { 'currentCountry.states': state },
-//           { 'expansionCountry.states': state }
-//         );
-//       }
-//     }
-   
-//     // Handle deleted cities - removes specific cities from districts
-//     if (deletedItems.cities && deletedItems.cities.length > 0) {
-//       // Group cities by state and district
-//       const citiesByLocation = {};
-//       deletedItems.cities.forEach(({ state, district, city }) => {
-//         const key = `${state}|${district}`;
-//         if (!citiesByLocation[key]) {
-//           citiesByLocation[key] = [];
-//         }
-//         citiesByLocation[key].push(city);
-//       });
-     
-//       // Process each location
-//       for (const [key, cities] of Object.entries(citiesByLocation)) {
-//         const [state, district] = key.split('|');
-       
-//         updates.expansionLocationData.$pull = updates.expansionLocationData.$pull || {};
-       
-//         // Domestic locations
-//         updates.expansionLocationData.$pull[
-//           'currentOutletLocations.domestic.locations.$[domesticState].districts.$[domesticDistrict].cities'
-//         ] = {
-//           $in: cities
-//         };
-//         updates.expansionLocationData.$pull[
-//           'expansionLocations.domestic.locations.$[expansionState].districts.$[expansionDistrict].cities'
-//         ] = {
-//           $in: cities
-//         };
-       
-//         // International locations
-//         updates.expansionLocationData.$pull[
-//           'currentOutletLocations.international.country.$[currentCountry].district.$[currentIntlDistrict].cities'
-//         ] = {
-//           $in: cities
-//         };
-//         updates.expansionLocationData.$pull[
-//           'expansionLocations.international.country.$[expansionCountry].district.$[expansionIntlDistrict].cities'
-//         ] = {
-//           $in: cities
-//         };
-       
-//         // Add array filters
-//         updates.expansionLocationData.arrayFilters = updates.expansionLocationData.arrayFilters || [];
-//         updates.expansionLocationData.arrayFilters.push(
-//           { 'domesticState.state': state },
-//           { 'domesticDistrict.district': district },
-//           { 'expansionState.state': state },
-//           { 'expansionDistrict.district': district },
-//           { 'currentCountry.states': state },
-//           { 'currentIntlDistrict.district': district },
-//           { 'expansionCountry.states': state },
-//           { 'expansionIntlDistrict.district': district }
-//         );
-//       }
-//     }
-//   }
- 
-//   // Handle additions/updates
-//   if (req.body.expansionLocationData.currentOutletLocations?.domestic?.locations) {
-//     updates.expansionLocationData.$set['currentOutletLocations.domestic.locations'] =
-//       req.body.expansionLocationData.currentOutletLocations.domestic.locations;
-//   }
- 
-//   if (req.body.expansionLocationData.currentOutletLocations?.international?.country) {
-//     updates.expansionLocationData.$set['currentOutletLocations.international.country'] =
-//       req.body.expansionLocationData.currentOutletLocations.international.country;
-//   }
- 
-//   if (req.body.expansionLocationData.expansionLocations?.domestic?.locations) {
-//     updates.expansionLocationData.$set['expansionLocations.domestic.locations'] =
-//       req.body.expansionLocationData.expansionLocations.domestic.locations;
-//   }
- 
-//   if (req.body.expansionLocationData.expansionLocations?.international?.country) {
-//     updates.expansionLocationData.$set['expansionLocations.international.country'] =
-//       req.body.expansionLocationData.expansionLocations.international.country;
-//   }
- 
-//   if (req.body.expansionLocationData.isInternationalExpansion !== undefined) {
-//     updates.expansionLocationData.$set['isInternationalExpansion'] =
-//       req.body.expansionLocationData.isInternationalExpansion;
-//   }
-//   }
- 
-//     const uploadedFiles = {};
- 
-//     for (const field of fileFields) {
-//       const files = req.files?.[field];
-//       if (files?.length > 0) {
-//         const isVideo = field.toLowerCase().includes("video");
-//         const urls = await Promise.all(
-//           files.map((file) => {
-//             const contentType = isVideo ? "video/mp4" : file.mimetype;
-//             return uploadFileToR2(file.path, contentType);
-//           })
-//         );
-//         uploadedFiles[field] = urls;
-//       }
-//     }
- 
-//     // Handle awards separately (combining awardDoc and awardText)
-//     if (uploadedFiles.awardDoc || req.body.awardText) {
-//       let awardDis = [];
- 
-//       if (req.body.awardText) {
-//         try {
-//           awardDis = Array.isArray(req.body.awardText)
-//             ? req.body.awardText
-//             : JSON.parse(req.body.awardText || "[]");
-//         } catch (e) {
-//           console.warn("Invalid awardText format:", e);
-//           awardDis = [];
-//         }
-//       }
- 
-//       const awardDocs = uploadedFiles.awardDoc || [];
-//       const awards = awardDocs.map((fileUrl, index) => ({
-//         awardDescription: awardDis[index] || "",
-//         awardImage: fileUrl,
-//       }));
- 
-//       if (awards.length > 0) {
-//         updates.uploads.$set = updates.uploads.$set || {};
-//         updates.uploads.$set["uploads.awards"] = awards;
-//       }
-//     }
- 
-//     // Add other uploaded files to update data
-//     for (const [field, urls] of Object.entries(uploadedFiles)) {
-//       if (field !== "awardDoc") {
-//         updates.uploads.$set = updates.uploads.$set || {};
-//         updates.uploads.$set[`uploads.${field}`] = urls;
-//       }
-//     }
- 
-//     // Check if any updates are present
-//     const hasUpdates = Object.values(updates).some(
-//       (updateObj) =>
-//         (updateObj.$set && Object.keys(updateObj.$set).length > 0) ||
-//         Object.keys(updateObj).length > 0
-//     );
- 
-//     if (!hasUpdates) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "No valid updates provided",
-//       });
-//     }
- 
-//     // Perform updates in a transaction
-//     const session = await mongoose.startSession();
-//     session.startTransaction();
- 
-//     try {
-//       // Update each schema as needed
-//       const updatedBrands = {};
- 
-//       if (Object.keys(updates.brandDetails).length > 0) {
-//         updatedBrands.brandDetails = await BrandDetails.findOneAndUpdate(
-//           { uuid: id },
-//           updates.brandDetails,
-//           { new: true, runValidators: true, session }
-//         );
-//       }
- 
-//       if (
-//         updates.franchiseDetails.$set &&
-//         Object.keys(updates.franchiseDetails.$set).length > 0
-//       ) {
-//         updatedBrands.franchiseDetails =
-//           await BrandFranchiseDetails.findOneAndUpdate(
-//             { brandOwnerId: id },
-//             updates.franchiseDetails,
-//             { new: true, runValidators: true, session }
-//           );
-//       }
- 
-//       if (
-//         updates.expansionLocationData.$set &&
-//         Object.keys(updates.expansionLocationData.$set).length > 0
-//       ) {
-//         updatedBrands.expansionLocationData =
-//           await BrandExpansionLocationData.findOneAndUpdate(
-//             { brandOwnerId: id },
-//             updates.expansionLocationData,
-//             { new: true, runValidators: true, session }
-//           );
-//       }
- 
-//       if (
-//         updates.uploads.$set &&
-//         Object.keys(updates.uploads.$set).length > 0
-//       ) {
-//         updatedBrands.uploads = await BrandUploads.findOneAndUpdate(
-//           { brandOwnerId: id },
-//           updates.uploads,
-//           { new: true, runValidators: true, session }
-//         );
-//       }
- 
-//       await session.commitTransaction();
-//       session.endSession();
- 
-//       // Combine the updated data for response
-//       const responseData = {
-//         brandDetails:
-//           updatedBrands.brandDetails ||
-//           (await BrandDetails.findOne({ uuid: id })),
-//         franchiseDetails:
-//           updatedBrands.franchiseDetails ||
-//           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
-//         expansionLocationData:
-//           updatedBrands.expansionLocationData ||
-//           (await BrandExpansionLocationData.findOne({ brandOwnerId: id })),
-//         uploads:
-//           updatedBrands.uploads ||
-//           (await BrandUploads.findOne({ brandOwnerId: id })),
-//       };
- 
-//       return res
-//         .status(200)
-//         .json(
-//           new ApiResponse(200, responseData, "✅ Brand updated successfully")
-//         );
-//     } catch (error) {
-//       await session.abortTransaction();
-//       session.endSession();
-//       throw error;
-//     }
-//   } catch (error) {
-//     console.error("Error updating brand:", error);
-//     return res.status(500).json({
-//       error: "Failed to update brand",
-//       details: error.message,
-//     });
-//   }
-// };
-
-
-
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1499,6 +1006,105 @@ const updateBrandListingByUUID = async (req, res) => {
     });
   }
 };
+
+export const updateBrandImageById = async (req, res) => {
+  try {
+    const { imageDeleteData } = req.body;
+    let data = null;
+
+    if (imageDeleteData) {
+      for (const [key, value] of Object.entries(imageDeleteData)) {
+        console.log(`Field to delete from: ${key}`);
+        for (const img of value) {
+          await deleteFileFromR2(img);
+          data = await BrandUploads.findOneAndUpdate(
+            {
+              $and: [
+                { brandOwnerId: req.params.id },
+                { [`uploads.${key}`]: { $in: [img] } },
+              ],
+            },
+            { $pull: { [`uploads.${key}`]: img } },
+            { new: true, runValidators: true }
+          );
+        }
+      }
+    }
+
+    const fileFields = [
+      "brandLogo",
+      "franchisePromotionVideo",
+      "gstCertificate",
+      "pancard",
+      "businessPlan",
+    ];
+    const multiFileFields = ["exteriorOutlet", "interiorOutlet"];
+
+    const oldUploads = await BrandUploads.findOne({
+      brandOwnerId: req.params.id,
+    });
+
+    if (!oldUploads) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "No uploads found for this brand owner"));
+    }
+
+    for (const field of fileFields) {
+      const uploadedFile = req.files?.[field]?.[0];
+      if (uploadedFile) {
+        if (oldUploads.uploads?.[field]?.length > 0) {
+          await deleteFileFromR2(oldUploads.uploads[field][0]);
+        }
+
+        const newFileUrl = await uploadFileToR2(
+          uploadedFile.path,
+          uploadedFile.mimetype
+        );
+
+        data = await BrandUploads.findOneAndUpdate(
+          { brandOwnerId: req.params.id },
+          { $set: { [`uploads.${field}`]: [newFileUrl] } },
+          { new: true, runValidators: true }
+        );
+      }
+    }
+
+    for (const field of multiFileFields) {
+      const uploadedFiles = req.files?.[field];
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        const newFileUrls = await Promise.all(
+          uploadedFiles.map((file) =>
+            uploadFileToR2(file.path, file.mimetype)
+          )
+        );
+
+        data = await BrandUploads.findOneAndUpdate(
+          { brandOwnerId: req.params.id },
+          { $push: { [`uploads.${field}`]: { $each: newFileUrls } } },
+          { new: true, runValidators: true }
+        );
+      }
+    }
+
+    return res.json(
+      new ApiResponse(200, data, "Brand images updated successfully")
+    );
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(
+          500,
+          {},
+          "Something went wrong while updating brand images"
+        )
+      );
+  }
+};
+
+
 
 const deleteBrandListingByUUID = async (req, res) => {
   try {
