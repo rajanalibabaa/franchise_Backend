@@ -798,8 +798,8 @@ const updateBrandListingByUUID = async (req, res) => {
     };
 
     // Parse request body data
-    const ParseBrandDetails = req.body.brandDetails ? JSON.parse(req.body.brandDetails) : null;
-    const ParseFranchiseDetails = req.body.franchiseDetails ? JSON.parse(req.body.franchiseDetails) : null;
+    const ParseBrandDetails =  JSON.parse(req.body.brandDetails) 
+    const ParseFranchiseDetails =  JSON.parse(req.body.franchiseDetails) 
 
     // Handle brandDetails updates
     if (ParseBrandDetails) {
@@ -1103,7 +1103,6 @@ export const updateBrandImageById = async (req, res) => {
       );
   }
 };
-
 
 
 const deleteBrandListingByUUID = async (req, res) => {
