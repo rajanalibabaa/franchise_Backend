@@ -2,13 +2,13 @@ import mongoose from "mongoose";
 
 const ExpansionLocationDataSchema = new mongoose.Schema(
   {
-    brandOwnerId: {
+  brandOwnerId: {
           type: String,
           unique: true,
           ref: 'BrandDetails',
           required: true
-        },
-   expansionLocationData:{ 
+  },
+  expansionLocationData:{ 
     currentOutletLocations: {
       domestic: {
         locations: [
