@@ -8,7 +8,8 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
           ref: 'BrandDetails',
           required: true
         },
-   expansionLocationData:{ currentOutletLocations: {
+   expansionLocationData:{ 
+    currentOutletLocations: {
       domestic: {
         locations: [
           {
@@ -25,14 +26,14 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
         ]
       },
       international: {
-        country: [
+        locations: [
           {
             _id: false,
-            states: String,
-            district: [
+            country: String,
+            state: [
               {
                 _id: false,
-                district: String,
+                state: String,
                 cities: [String]
               }
             ]
@@ -57,14 +58,14 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
         ]
       },
       international: {
-        country: [
+        locations: [
           {
             _id: false,
-            states: String,
-            district: [
+            country: String,
+            state: [
               {
                 _id: false,
-                district: String,
+                state: String,
                 cities: [String]
               }
             ]

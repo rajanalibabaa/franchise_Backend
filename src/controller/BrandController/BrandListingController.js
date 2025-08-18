@@ -798,99 +798,154 @@ if (id && (addExpansionLocationData || removeExpansionLocationData)) {
 }
 };
 
-const expansionLocationData = async(id,add,remove) => {
-
+const expansionLocationData = async (id, add, remove) => {
   const oldExpansionLocationData = await BrandExpansionLocationData.findOne({
     brandOwnerId: id
   });
 
-  if(remove) {
+  // Clone old data safely
+  let updatedLocations =
+    JSON.parse(
+      JSON.stringify(
+        oldExpansionLocationData.expansionLocationData?.currentOutletLocations?.domestic?.locations || []
+      )
+    );
 
-  }
-  
+  // ---------- REMOVE Logic ----------
+  if (remove?.currentOutletLocations?.domestic) {
+    // 1. Remove States
+    if (remove.currentOutletLocations.domestic.state) {
+      updatedLocations = updatedLocations.filter(
+        loc => !remove.currentOutletLocations.domestic.state.includes(loc.state)
+      );
+    }
 
-if (add?.currentOutletLocations?.domestic) {
- 
-  let updatedLocations = 
-    oldExpansionLocationData.expansionLocationData?.currentOutletLocations?.domestic?.locations || [];
+    // 2. Remove Districts
+    if (remove.currentOutletLocations.domestic.districts) {
+      for (const [stateName, districts] of Object.entries(remove.currentOutletLocations.domestic.districts)) {
+        const stateEntry = updatedLocations.find(l => l.state === stateName);
+        if (stateEntry) {
+          stateEntry.districts = (stateEntry.districts || []).filter(
+            d => !districts.includes(d.district)
+          );
 
-  // ---------- 1. Add States ----------
-  if (add.currentOutletLocations.domestic.state) {
-    for (const loc of add.currentOutletLocations.domestic.state) {
-      const locationObj = typeof loc === "string" ? { state: loc, districts: [] } : loc;
-      const existingState = updatedLocations.find(l => l.state === locationObj.state);
-      if (!existingState) {
-        updatedLocations.push({ ...locationObj, districts: locationObj.districts || [] });
+          // cleanup empty states
+          if (stateEntry.districts.length === 0) {
+            updatedLocations = updatedLocations.filter(l => l.state !== stateName);
+          }
+        }
       }
     }
-  }
 
-  // ---------- 2. Add Districts ----------
-  if (add.currentOutletLocations.domestic.districts) {
-    for (const [stateName, districts] of Object.entries(add.currentOutletLocations.domestic.districts)) {
-      const stateEntry = updatedLocations.find(l => l.state === stateName);
-      if (!stateEntry) {
-        // If state doesn't exist yet, create it
-        updatedLocations.push({ state: stateName, districts: districts.map(d => ({ district: d, cities: [] })) });
-        continue;
-      }
+    // 3. Remove Cities
+    if (remove.currentOutletLocations.domestic.city) {
+      for (const [stateName, districtsObj] of Object.entries(remove.currentOutletLocations.domestic.city)) {
+        const stateEntry = updatedLocations.find(l => l.state === stateName);
+        if (stateEntry) {
+          for (const [districtName, districtData] of Object.entries(districtsObj)) {
+            const districtEntry = stateEntry.districts?.find(d => d.district === districtName);
+            if (districtEntry) {
+              districtEntry.cities = (districtEntry.cities || []).filter(
+                c => !(districtData.city || []).includes(c)
+              );
 
-      stateEntry.districts = stateEntry.districts || [];
-      for (const districtName of districts) {
-        const existingDistrict = stateEntry.districts.find(d => d.district === districtName);
-        if (!existingDistrict) {
-          stateEntry.districts.push({ district: districtName, cities: [] });
+              // cleanup empty districts
+              if (districtEntry.cities.length === 0) {
+                stateEntry.districts = stateEntry.districts.filter(d => d.district !== districtName);
+              }
+            }
+          }
+
+          // cleanup empty states
+          if (!stateEntry.districts || stateEntry.districts.length === 0) {
+            updatedLocations = updatedLocations.filter(l => l.state !== stateName);
+          }
         }
       }
     }
   }
 
-  // ---------- 3. Add Cities ----------
-  if (add.currentOutletLocations.domestic.city) {
-    for (const [stateName, districtsObj] of Object.entries(add.currentOutletLocations.domestic.city)) {
-      const stateEntry = updatedLocations.find(l => l.state === stateName);
-      if (!stateEntry) {
-        // If state not found, create with cities
-        const newState = { state: stateName, districts: [] };
+  // ---------- ADD Logic ----------
+  if (add?.currentOutletLocations?.domestic) {
+    // 1. Add States
+    if (add.currentOutletLocations.domestic.state) {
+      for (const loc of add.currentOutletLocations.domestic.state) {
+        const locationObj = typeof loc === "string" ? { state: loc, districts: [] } : loc;
+        let stateEntry = updatedLocations.find(l => l.state === locationObj.state);
+        if (!stateEntry) {
+          updatedLocations.push({ ...locationObj, districts: locationObj.districts || [] });
+        }
+      }
+    }
+
+    // 2. Add Districts
+    if (add.currentOutletLocations.domestic.districts) {
+      for (const [stateName, districts] of Object.entries(add.currentOutletLocations.domestic.districts)) {
+        let stateEntry = updatedLocations.find(l => l.state === stateName);
+        if (!stateEntry) {
+          updatedLocations.push({
+            state: stateName,
+            districts: districts.map(d => ({ district: d, cities: [] }))
+          });
+          continue;
+        }
+
+        stateEntry.districts = stateEntry.districts || [];
+        for (const districtName of districts) {
+          const existingDistrict = stateEntry.districts.find(d => d.district === districtName);
+          if (!existingDistrict) {
+            stateEntry.districts.push({ district: districtName, cities: [] });
+          }
+        }
+      }
+    }
+
+    // 3. Add Cities
+    if (add.currentOutletLocations.domestic.city) {
+      for (const [stateName, districtsObj] of Object.entries(add.currentOutletLocations.domestic.city)) {
+        let stateEntry = updatedLocations.find(l => l.state === stateName);
+        if (!stateEntry) {
+          const newState = { state: stateName, districts: [] };
+          for (const [districtName, districtData] of Object.entries(districtsObj)) {
+            newState.districts.push({
+              district: districtName,
+              cities: Array.from(new Set(districtData.city || []))
+            });
+          }
+          updatedLocations.push(newState);
+          continue;
+        }
+
+        stateEntry.districts = stateEntry.districts || [];
         for (const [districtName, districtData] of Object.entries(districtsObj)) {
-          newState.districts.push({ district: districtName, cities: districtData.city || [] });
+          let districtEntry = stateEntry.districts.find(d => d.district === districtName);
+          if (!districtEntry) {
+            districtEntry = { district: districtName, cities: [] };
+            stateEntry.districts.push(districtEntry);
+          }
+          districtEntry.cities = Array.from(
+            new Set([...(districtEntry.cities || []), ...(districtData.city || [])])
+          );
         }
-        updatedLocations.push(newState);
-        continue;
-      }
-
-      stateEntry.districts = stateEntry.districts || [];
-      for (const [districtName, districtData] of Object.entries(districtsObj)) {
-        let districtEntry = stateEntry.districts.find(d => d.district === districtName);
-        if (!districtEntry) {
-          districtEntry = { district: districtName, cities: [] };
-          stateEntry.districts.push(districtEntry);
-        }
-
-        districtEntry.cities = Array.from(new Set([
-          ...(districtEntry.cities || []),
-          ...(districtData.city || [])
-        ]));
       }
     }
   }
 
-  // ---------- Final Single Update ----------
+  // ---------- Final Update ----------
   await BrandExpansionLocationData.findOneAndUpdate(
     { brandOwnerId: id },
     {
-      $set: { "expansionLocationData.currentOutletLocations.domestic.locations": updatedLocations }
+      $set: {
+        "expansionLocationData.currentOutletLocations.domestic.locations": updatedLocations
+      }
     },
     { new: true, runValidators: true }
   );
-}
 
+  // Return updated data
+  return await BrandExpansionLocationData.findOne({ brandOwnerId: id });
+};
 
-  const updatedData = await BrandExpansionLocationData.findOne({
-    brandOwnerId: id
-  });
-  return updatedData
-}
 
 export const updateBrandImageById = async (req, res) => {
   try {
@@ -1577,7 +1632,7 @@ export const getTopRestaurants = async (req,res)=>{
   }
 }
 
-export const getBrandsByCategory = async (req, res) => {
+export const getBrandsByCategory = async (req, res) => {  
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
