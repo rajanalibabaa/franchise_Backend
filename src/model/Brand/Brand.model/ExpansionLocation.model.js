@@ -30,7 +30,7 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
           {
             _id: false,
             country: String,
-            state: [
+            states: [
               {
                 _id: false,
                 state: String,
@@ -46,7 +46,7 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
         locations: [
           {
             _id: false,
-            state: String,
+            states: String,
             districts: [
               {
                 _id: false,
@@ -62,7 +62,7 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
           {
             _id: false,
             country: String,
-            state: [
+            states: [
               {
                 _id: false,
                 state: String,
