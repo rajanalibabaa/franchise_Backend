@@ -5,33 +5,38 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
+
+// this mail for sending otp for verify the login
 //o get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// const transporter = nodemailer.createTransport({
-//         // host: 'smtp.gmail.com',
-//         host:'smtp.hostinger.com',
-//         // port: 587,
-//         port:465,
-//         secure: true,
-//         auth: {
-//             user: process.env.EMAIL_USER_SUPPORT,
-//             pass: process.env.EMAIL_PASS_SUPPORT,
-//         },
-//         family: 4
-//     });
-
 const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+        // host: 'smtp.gmail.com',
+        host:'smtp.hostinger.com',
+        // port: 587,
+        port:465,
+        secure: true,
+        auth: {
+            user: process.env.EMAIL_USER_LOGIN,
+            pass: process.env.EMAIL_PASS_LOGIN,
+        },
+        tls: {
+    rejectUnauthorized: false, // Allow self-signed certs
   },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+        family: 4
+    });
+
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+//   tls: {
+//     rejectUnauthorized: false,
+//   },
+// });
 
 // Function to read HTML template and replace placeholders with dynamic dat;
 
@@ -60,7 +65,7 @@ export const sendEmail = async (to, subject, templateName, data) => {
   const html = getTemplate(templateName, data);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.EMAIL_USER_LOGIN,
     to,
     subject,
     html,

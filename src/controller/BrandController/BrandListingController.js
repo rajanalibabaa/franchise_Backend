@@ -1104,7 +1104,6 @@ export const updateBrandImageById = async (req, res) => {
   }
 };
 
-
 const deleteBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;

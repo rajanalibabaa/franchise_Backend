@@ -102,29 +102,25 @@ export const getShortListedById = async (req, res) => {
     const { id } = req.params;
     const investor = req?.investorUser;
     const brand = req?.brandUser;
-    const page = parseInt(req.query.page) || 1;
-     const limit = parseInt(req.query.limit) || 10
-     const skip = (page - 1) * limit
-
+ 
     if (id !== investor?.uuid && id !== brand?.uuid) {
       return res.json(
         new ApiResponse(403, {}, "Unauthorized request")
-      ); 
+      );
     }
-    
-     
+   
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
+ 
     const matchCondition = [];
-
+ 
     if (investor?._id) {
       matchCondition.push({ "ShortListedBy.investor.userId": new mongoose.Types.ObjectId(investor._id) });
     }
-
+ 
     if (brand?._id) {
       matchCondition.push({ "ShortListedBy.brand.userId": new mongoose.Types.ObjectId(brand._id) });
     }
-
+ 
     const shortListed = await ShortListed.aggregate([
       {
         $match: {
@@ -187,15 +183,15 @@ export const getShortListedById = async (req, res) => {
       { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
-              $addFields: {
-                isLiked: {
-                  $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
-                },
-                isShortListed: {
-                  $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-                }
-              }
-            },
+        $addFields: {
+          isLiked: {
+            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
+        }
+      },
       { $sort: { createdAt: -1 } },
       {
         $project: {
@@ -207,7 +203,6 @@ export const getShortListedById = async (req, res) => {
           companyName: "$brandInfo.brandDetails.companyName",
           isLiked: 1,
           isShortListed: 1,
-        //   brandfranchisedetails: 1,
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
@@ -231,46 +226,30 @@ export const getShortListedById = async (req, res) => {
             }
           },
           franchiseVideos: {
-             $cond: {
+            $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
               then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
               else: null
             }
           }
         }
-      },
-      {$skip : skip},
-      {$limit : limit}  
-      ]);
-
-      const totalCount = await ShortListed.aggregate([
-        {
-        $match: {
-          $or: matchCondition
-        }
-      },
-      ])
-
-    //   console.log(shortListed.length)
-    //   console.log(totalCount.length)
-      
-      const totalPages = Math.ceil (totalCount.length / limit);
-      const hasNext = page < totalPages;
-      const hasPrevious = page > 1
+      }
+    ]);
+ 
     return res.json(
       new ApiResponse(200, {
-        brands:shortListed,
+        brands: shortListed,
         pagination: {
-          total: totalCount.length,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNext,
-          hasPrevious
+          total: shortListed.length,
+          totalPages: 1,
+          currentPage: 1,
+          limit: shortListed.length,
+          hasNext: false,
+          hasPrevious: false
         }
       }, "Short listed brands fetched successfully")
     );
-
+ 
   } catch (error) {
     console.error("Error fetching short listed brands:", error);
     return res.json(
@@ -278,6 +257,7 @@ export const getShortListedById = async (req, res) => {
     );
   }
 };
+ 
 
 
 

@@ -5,8 +5,6 @@ import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
-
- 
  
 router.post(
 
