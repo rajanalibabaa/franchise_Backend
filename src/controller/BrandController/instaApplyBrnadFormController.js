@@ -396,25 +396,24 @@ export const getInstaApplyById = async (req, res) => {
       "apply.applyId": user.uuid,
     });
 
-    // console.log("myInstaApplies :",myInstaApplies)
-
     if (!myInstaApplies || myInstaApplies.length === 0) {
       return res.json(
         new ApiResponse(404, {}, "User hasn't applied to any brand yet")
       );
     }
 
-    const applyList = [];
+    // Fetch brand info for each application in parallel
+    const applyList = await Promise.all(
+      myInstaApplies.map(async (application) => {
+        const brand = await BrandListing.findOne({ uuid: application.brandId }).lean();
+        return {
+          application,
+          brand: brand || null,
+        };
+      })
+    );
 
-    for (let i = 0; i < myInstaApplies.length; i++) {
-      const application = myInstaApplies[i];
-      const brand = await BrandListing.findOne({ uuid: application.brandId });
-
-      if (brand) {
-        applyList.push(brand);
-      }
-    }
-
+    // Reverse for latest first
     const reverse = applyList.reverse();
     return res.json(
       new ApiResponse(200, reverse, "Apply list fetched successfully")
