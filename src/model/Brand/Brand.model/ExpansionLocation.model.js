@@ -2,13 +2,14 @@ import mongoose from "mongoose";
 
 const ExpansionLocationDataSchema = new mongoose.Schema(
   {
-    brandOwnerId: {
+  brandOwnerId: {
           type: String,
           unique: true,
           ref: 'BrandDetails',
           required: true
-        },
-   expansionLocationData:{ currentOutletLocations: {
+  },
+  expansionLocationData:{ 
+    currentOutletLocations: {
       domestic: {
         locations: [
           {
@@ -25,14 +26,14 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
         ]
       },
       international: {
-        country: [
+        locations: [
           {
             _id: false,
-            states: String,
-            district: [
+            country: String,
+            states: [
               {
                 _id: false,
-                district: String,
+                state: String,
                 cities: [String]
               }
             ]
@@ -45,7 +46,7 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
         locations: [
           {
             _id: false,
-            state: String,
+            states: String,
             districts: [
               {
                 _id: false,
@@ -57,14 +58,14 @@ const ExpansionLocationDataSchema = new mongoose.Schema(
         ]
       },
       international: {
-        country: [
+        locations: [
           {
             _id: false,
-            states: String,
-            district: [
+            country: String,
+            states: [
               {
                 _id: false,
-                district: String,
+                state: String,
                 cities: [String]
               }
             ]
