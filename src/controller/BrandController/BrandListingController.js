@@ -783,43 +783,40 @@ const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const addExpansionLocationData =
-  req.body.addExpansionLocationData ||
-  JSON?.parse(req.body.addExpansionLocationData || false);
-
-const removeExpansionLocationData =
-  req.body.removeExpansionLocationData ||
-  JSON?.parse(req.body.removeExpansionLocationData || false);
-
-  let expensionLocationData = null
-
-    if (id && (addExpansionLocationData || removeExpansionLocationData)) {
-       expensionLocationData = await expansionLocationData(id, addExpansionLocationData, removeExpansionLocationData);
-      // return res.json(
-      //   new ApiResponse(200, data, "Expansion location data updated successfully"
-      // ))
-    }
-      
-    // Object to track which schemas need updating
-    const updates = {
-      brandDetails: {},
-      franchiseDetails: {},
-    };
- 
-    // Helper function to set nested fields
-    const setNestedFields = (baseObj, basePath, fields) => {
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined && value !== null) {
-          baseObj[`${basePath}.${key}`] = value;
+    // ---------- Safe Parse Helper ----------
+    const safeParse = (data) => {
+      if (!data) return null;
+      if (typeof data === "string") {
+        try {
+          return JSON.parse(data);
+        } catch {
+          return null;
         }
       }
+      return data; // already object
     };
- 
-    // Parse request body data
-    const ParseBrandDetails =  JSON.parse(req.body.brandDetails)
-    const ParseFranchiseDetails =  JSON.parse(req.body.franchiseDetails)
- 
-    // Handle brandDetails updates
+
+    // ---------- Parse Expansion Location ----------
+    const addExpansionLocationData = safeParse(req.body.addExpansionLocationData);
+    const removeExpansionLocationData = safeParse(req.body.removeExpansionLocationData);
+
+    let expensionLocationData = null;
+    if (id && (addExpansionLocationData || removeExpansionLocationData)) {
+      expensionLocationData = await expansionLocationData(
+        id,
+        addExpansionLocationData,
+        removeExpansionLocationData
+      );
+    }
+
+    // ---------- Updates Container ----------
+    const updates = { $set: {} };
+
+    // ---------- Parse brand & franchise ----------
+    const ParseBrandDetails = safeParse(req.body.brandDetails);
+    const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
+
+    // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
       const brandDetailsFields = [
         "fullName",
@@ -847,30 +844,16 @@ const removeExpansionLocationData =
         "gstNumber",
         "pancardNumber",
       ];
- 
-      const brandDetailsUpdate = {};
+
       for (const field of brandDetailsFields) {
         if (ParseBrandDetails[field] !== undefined) {
-          brandDetailsUpdate[field] = ParseBrandDetails[field];
+          updates.$set[`brandDetails.${field}`] = ParseBrandDetails[field];
         }
       }
- 
-      if (Object.keys(brandDetailsUpdate).length > 0) {
-        setNestedFields(
-          updates.brandDetails,
-          "brandDetails",
-          brandDetailsUpdate
-        );
-      }
     }
- 
-    // Handle franchiseDetails updates
+
+    // ---------- FranchiseDetails ----------
     if (ParseFranchiseDetails) {
-      if (!updates.franchiseDetails.$set) {
-        updates.franchiseDetails.$set = {};
-      }
- 
-      // Top-level fields
       const franchiseTopLevelFields = [
         "aidFinancing",
         "brandDescription",
@@ -882,45 +865,35 @@ const removeExpansionLocationData =
         "franchiseSinceYear",
         "totalOutlets",
       ];
- 
+
       for (const field of franchiseTopLevelFields) {
         if (ParseFranchiseDetails[field] !== undefined) {
-          updates.franchiseDetails.$set[`franchiseDetails.${field}`] =
-            ParseFranchiseDetails[field];
+          updates.$set[`franchiseDetails.${field}`] = ParseFranchiseDetails[field];
         }
       }
- 
-      // Brand categories
+
       if (ParseFranchiseDetails.brandCategories) {
         const brandCategoriesFields = ["main", "sub", "groupId", "child"];
         for (const field of brandCategoriesFields) {
           if (ParseFranchiseDetails.brandCategories[field] !== undefined) {
-            updates.franchiseDetails.$set[
-              `franchiseDetails.brandCategories.${field}`
-            ] = ParseFranchiseDetails.brandCategories[field];
+            updates.$set[`franchiseDetails.brandCategories.${field}`] =
+              ParseFranchiseDetails.brandCategories[field];
           }
         }
       }
- 
-      // Training support
+
       if (Array.isArray(ParseFranchiseDetails.trainingSupport)) {
         ParseFranchiseDetails.trainingSupport.forEach((item, index) => {
-          updates.franchiseDetails.$set[
-            `franchiseDetails.trainingSupport.${index}`
-          ] = item;
+          updates.$set[`franchiseDetails.trainingSupport.${index}`] = item;
         });
       }
- 
-      // Unique selling points
+
       if (Array.isArray(ParseFranchiseDetails.uniqueSellingPoints)) {
         ParseFranchiseDetails.uniqueSellingPoints.forEach((item, index) => {
-          updates.franchiseDetails.$set[
-            `franchiseDetails.uniqueSellingPoints.${index}`
-          ] = item;
+          updates.$set[`franchiseDetails.uniqueSellingPoints.${index}`] = item;
         });
       }
- 
-      // FICO array
+
       if (Array.isArray(ParseFranchiseDetails.fico)) {
         ParseFranchiseDetails.fico.forEach((ficoItem, index) => {
           const ficoFields = [
@@ -941,62 +914,50 @@ const removeExpansionLocationData =
             "marginOnSales",
             "agreementPeriod",
           ];
- 
           ficoFields.forEach((field) => {
             if (ficoItem[field] !== undefined) {
-              updates.franchiseDetails.$set[
-                `franchiseDetails.fico.${index}.${field}`
-              ] = ficoItem[field];
+              updates.$set[`franchiseDetails.fico.${index}.${field}`] =
+                ficoItem[field];
             }
           });
         });
       }
     }
- 
-    // Check if any updates are present
-    const hasUpdates =
-      Object.keys(updates.brandDetails).length > 0 ||
-      (updates.franchiseDetails.$set && Object.keys(updates.franchiseDetails.$set).length > 0);
- 
-    if (!hasUpdates) {
+
+    // ---------- Check if updates exist ----------
+    if (Object.keys(updates.$set).length === 0 && !expensionLocationData) {
       return res.status(400).json({
         success: false,
         message: "No valid updates provided",
       });
     }
- 
-    // Perform updates in a transaction
+
+    // ---------- Run Transaction ----------
     const session = await mongoose.startSession();
     session.startTransaction();
- 
+
     try {
-      // Update each schema as needed
       const updatedBrands = {};
- 
-      if (Object.keys(updates.brandDetails).length > 0) {
+
+      if (Object.keys(updates.$set).some((f) => f.startsWith("brandDetails."))) {
         updatedBrands.brandDetails = await BrandDetails.findOneAndUpdate(
           { uuid: id },
-          updates.brandDetails,
+          { $set: updates.$set },
           { new: true, runValidators: true, session }
         );
       }
- 
-      if (
-        updates.franchiseDetails.$set &&
-        Object.keys(updates.franchiseDetails.$set).length > 0
-      ) {
-        updatedBrands.franchiseDetails =
-          await BrandFranchiseDetails.findOneAndUpdate(
-            { brandOwnerId: id },
-            updates.franchiseDetails,
-            { new: true, runValidators: true, session }
-          );
+
+      if (Object.keys(updates.$set).some((f) => f.startsWith("franchiseDetails."))) {
+        updatedBrands.franchiseDetails = await BrandFranchiseDetails.findOneAndUpdate(
+          { brandOwnerId: id },
+          { $set: updates.$set },
+          { new: true, runValidators: true, session }
+        );
       }
- 
+
       await session.commitTransaction();
       session.endSession();
- 
-      // Combine the updated data for response
+
       const responseData = {
         brandDetails:
           updatedBrands.brandDetails ||
@@ -1004,14 +965,12 @@ const removeExpansionLocationData =
         franchiseDetails:
           updatedBrands.franchiseDetails ||
           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
-        expensionLocationData : expensionLocationData || null
+        expensionLocationData: expensionLocationData || null,
       };
- 
+
       return res
         .status(200)
-        .json(
-          new ApiResponse(200, responseData, "✅ Brand updated successfully")
-        );
+        .json(new ApiResponse(200, responseData, "✅ Brand updated successfully"));
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
