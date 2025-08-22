@@ -984,7 +984,7 @@ const updateBrandListingByUUID = async (req, res) => {
     });
   }
 };
-
+ 
 
 const expansionLocationData = async (id, add, remove) => {
   //  return add
