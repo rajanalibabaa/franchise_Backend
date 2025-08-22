@@ -240,7 +240,7 @@ export const sendPostRequirementEmail = async (
   }
 };
 
-export const sendEmailOTP = async (email, otp) => {
+export const  sendEmailOTP = async (email, otp) => {
   try {
     const subject = "Verify Your Email Address";
     const emailTemplateName = "otp_template";
