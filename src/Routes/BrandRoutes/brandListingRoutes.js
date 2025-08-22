@@ -1,7 +1,8 @@
 import express from "express";
 import upload from "../../utils/Uploads/multerConfig.js";
-import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes, getTopDesertAndBakery, getTopTrucksAndKiosks, getTopRestaurants,getBrandsByCategory, getBrandById, updateBrandImageById} from "../../controller/BrandController/BrandListingController.js"
+import { allId, createBrandListing,deleteBrandListingByUUID,getAllBrands,getBrandListingByUUID,reEntry,updateBrandListingByUUID,getTopFoodFranchise, getTopBeverageFranchise, getTopLeadingFranchise,getTopCafes, getTopDesertAndBakery, getTopTrucksAndKiosks, getTopRestaurants,getBrandsByCategory, getBrandById,} from "../../controller/BrandController/BrandListingController.js"
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
+import { updateBrandImageById } from "../../controller/BrandController/uploadImages.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
