@@ -776,8 +776,7 @@ export const getTopLeadingFranchise = async (req, res) => {
     return res.json(
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
- };
-
+ }
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1145,7 +1144,6 @@ export const db = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const reEntry = async (req, res) => {
   try {
@@ -1891,7 +1889,6 @@ export const getBrandsByCategory = async (req, res) => {
     return res.json(new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`));
   }
 };
-
 
 export const getBrandById = async (req, res) => {
   const { id } = req.params;
