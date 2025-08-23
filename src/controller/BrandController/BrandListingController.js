@@ -70,8 +70,8 @@ console.log("brand :",brand)
 }
 
 const createBrandListing = async (req, res) => {
-  try {
-    
+  try {  
+    const { admin } = req.body;
     const id = uuid(); // Make sure this is properly imported/defined
 console.log("Incoming data:", req.body);
     const fileFields = [

@@ -155,13 +155,13 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
     },
 
     uploads: {
-      brandLogo: [String],
+      brandLogo: String,
       exteriorOutlet: [String],
-      franchisePromotionVideo: [String],
-      gstCertificate: [String],
+      franchisePromotionVideo: String,
+      gstCertificate: String,
       interiorOutlet: [String],
-      pancard: [String],
-      businessPlan: [String],
+      pancard: String,
+      businessPlan: String,
       // awards: [String],
       awards: [
         {
