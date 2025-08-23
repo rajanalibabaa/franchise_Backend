@@ -18,6 +18,7 @@ import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../..
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import { console } from "inspector";
+import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 
 
 export const likeandshortlist = async(id) => {
@@ -204,7 +205,10 @@ console.log("Incoming data:", brandDetails.brandName);
       awardImage: fileUrl
     }));
 
-    // Create all records in parallel after getting the UUID
+
+
+    if(admin){
+       // Create all records in parallel after getting the UUID
 
     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
       BrandDetails.create({
@@ -251,6 +255,32 @@ console.log("Incoming data:", brandDetails.brandName);
         uploads: newBrandUploads
       }, "Brand listing created successfully")
     );
+
+    }
+   
+
+    const brandData = await NewIncomingBrands.create({
+      brandID,
+      uuid: id,
+      brandDetails,
+      franchiseDetails,
+      expansionLocationData,
+      uploads: {
+        brandLogo: uploadedFiles.brandLogo || [],
+        gstCertificate: uploadedFiles.gstCertificate || [],
+        pancard: uploadedFiles.pancard || [],
+        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+        interiorOutlet: uploadedFiles.interiorOutlet || [],
+        franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        businessPlan: uploadedFiles.businessPlan || [],
+        awards
+      }
+    })
+    return res.json(
+      new ApiResponse(201,brandData, "Brand listing created successfully")
+    );
+
 
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
