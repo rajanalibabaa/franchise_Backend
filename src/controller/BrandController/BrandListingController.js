@@ -179,22 +179,24 @@ console.log("Incoming data:", brandDetails.brandName);
     const brandID = await generateCustomId(groupId);
 
     // Upload files to R2
+    // Upload files to R2 - videos will be converted to HLS, others direct upload
     const uploadedFiles = {};
     for (const field of fileFields) {
       if (req.files?.[field]?.length > 0) {
-        try {
-          const isVideo = field.toLowerCase().includes("video");
-          const urls = await Promise.all(
-            req.files[field].map(async (file) => {
-              const contentType = isVideo ? "video/mp4" : file.mimetype;
-              return await uploadFileToR2(file.path, contentType);
-            })
-          );
-          uploadedFiles[field] = urls.filter(url => url !== null);
-        } catch (error) {
-          console.error(`Error uploading ${field} files:`, error);
-          uploadedFiles[field] = [];
-        }
+        const urls = await Promise.all(
+          req.files[field].map(async (file) => {
+            // Convert videos to HLS, others direct upload
+            const isVideo = field.toLowerCase().includes("video");
+            const uploadedUrl = await uploadFileToR2(
+              file.path, 
+              file.mimetype, 
+              { convertToHLS: isVideo }
+            );
+            console.log(`✅ Uploaded ${field}:`, uploadedUrl);
+            return uploadedUrl;
+          })
+        );
+        uploadedFiles[field] = urls;
       }
     }
 
@@ -213,7 +215,7 @@ console.log("Incoming data:", brandDetails.brandName);
     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
       BrandDetails.create({
         brandID,
-        uuid:id,
+        uuid: id,
         brandDetails
       }),
       BrandFranchiseDetails.create({
