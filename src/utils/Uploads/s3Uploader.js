@@ -1,17 +1,17 @@
 
-import fs from 'fs/promises';
-import { existsSync } from 'fs'; // <-- add this for sync file check
+import * as fsp from "fs/promises";
+import fs from "fs"; // for sync methods
+import { exec,spawn } from "child_process";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import s3 from './s3.js';
 import dotenv from 'dotenv';
 import path from 'path';
-import { readFile, unlink } from 'fs/promises';
 import mime from 'mime-types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { console } from 'inspector';
-
+import util from "util";
 dotenv.config();
-
+const execAsync = util.promisify(exec);
 /**
  * Uploads a file to AWS S3 with content type and auto folder based on media type
  * @param {string} filePath - Local path of the file to upload
@@ -75,77 +75,108 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
 };
 
 
-export const uploadFileToR2 = async (filePath, mimetype) => {
-  if (!filePath) throw new Error("File path is required");
 
-  console.log(`📂 Uploading file to R2: ${filePath}`);
+// helper: run ffmpeg with args (Windows-safe)
+function runFFmpeg(args) {
+  return new Promise((resolve, reject) => {
+    const ffmpegBin = process.env.FFMPEG_PATH || "ffmpeg";
+    const p = spawn(ffmpegBin, args, { windowsHide: true });
 
-  try {
-    if (!existsSync(filePath)) {
-      throw new Error(`File not found at ${filePath}`);
-    }
-
-    const stats = await fs.stat(filePath);
-    if (stats.size === 0) {
-      await fs.unlink(filePath); // ✅ Properly unlinks empty file
-      throw new Error(`Empty file at ${filePath}`);
-    }
-
-    const originalFileName = path.basename(filePath);
-    const ext = path.extname(originalFileName).toLowerCase();
-    const baseName = path.basename(originalFileName, ext);
-
-    const contentType = mimetype || mime.lookup(ext) || "application/octet-stream";
-    const folder = contentType.startsWith("image/") ? "images" :
-                   contentType.startsWith("video/") ? "videos" :
-                   contentType.startsWith("audio/") ? "audio" :
-                   contentType.startsWith("application/") ? "documents" :
-                   "misc";
-
-    const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
-    const fileContent = await fs.readFile(filePath);
-
-    const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: fileKey,
-      Body: fileContent,
-      ContentType: contentType,
+    let stderr = "";
+    p.stderr.on("data", d => { 
+      stderr += d.toString(); 
+      console.log("FFmpeg:", d.toString());
     });
 
-    await s3.send(command);
+    p.stdout.on("data", d => console.log("FFmpeg out:", d.toString()));
 
-    // ✅ Delete local file after successful upload
-    try {
-      await fs.unlink(filePath); // ✅ Properly unlinks
-      console.log(`✅ Successfully deleted local temp file: ${filePath}`);
-    } catch (unlinkErr) {
-      console.error(`⚠️ Failed to delete temp file: ${filePath}`, unlinkErr.message);
+    p.on("error", reject);
+    p.on("close", code => {
+      if (code === 0) resolve();
+      else reject(new Error(`FFmpeg exited with code ${code}\n${stderr}`));
+    });
+  });
+}
+
+
+// helper: recursive uploader (keeps folders)
+async function uploadDirToR2(localDir, r2Prefix) {
+  const entries = fs.readdirSync(localDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = path.join(localDir, entry.name);
+    const key = `${r2Prefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      await uploadDirToR2(full, key);
+    } else {
+      const buf = await fsp.readFile(full);
+      const type = entry.name.endsWith(".m3u8")
+        ? "application/vnd.apple.mpegurl"
+        : "video/mp2t";
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+        Body: buf,
+        ContentType: type,
+      }));
+      console.log("📤 Uploaded:", key);
     }
-
-    // ✅ Return full public URL
-    if (process.env.R2_PUBLIC_URL) {
-      const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-      return `${baseUrl}/${fileKey}`;
-    }
-
-    return fileKey;
-
-  } catch (error) {
-    // 🧹 Cleanup even if upload fails
-    if (existsSync(filePath)) {
-      try {
-        await fs.unlink(filePath); // ✅ cleanup even on error
-        console.log(`🧹 Deleted local file after failed upload: ${filePath}`);
-      } catch (cleanupErr) {
-        console.error(`⚠️ Failed to cleanup file: ${filePath}`, cleanupErr.message);
-      }
-    }
-
-    console.error("❌ uploadFileToR2 Error:", error.message);
-    throw error;
   }
-};
+}
 
+
+
+export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
+  const { convertToHLS = false } = options;
+
+  if (!filePath) throw new Error("File path is required");
+  if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
+
+  const absInput = path.resolve(filePath);
+  const ext = path.extname(absInput).toLowerCase();
+  const baseName = path.basename(absInput, ext);
+  const contentType = mimetype || "video/mp4"; // fallback
+
+  if (contentType.startsWith("video/") && convertToHLS) {
+    try { await runFFmpeg(["-version"]); } 
+    catch { throw new Error("FFmpeg not found or not in PATH."); }
+
+    const videoId = Date.now().toString();
+    const hlsDir = path.resolve("uploads", "hls", videoId);
+    await fsp.mkdir(hlsDir, { recursive: true });
+
+    console.log("🚀 Converting to HLS:", absInput, "→", hlsDir);
+
+    // Simple 2-resolution HLS
+    const args = [
+      "-y",
+      "-i", absInput,
+      "-preset", "veryfast",
+      "-c:v", "libx264",
+      "-c:a", "aac",
+      "-f", "hls",
+      "-hls_time", "6",
+      "-hls_playlist_type", "vod",
+      "-hls_segment_filename", path.join(hlsDir, "seg_%03d.ts"),
+      path.join(hlsDir, "prog_index.m3u8")
+    ];
+
+    await runFFmpeg(args);
+
+    // Verify output
+    const playlistPath = path.join(hlsDir, "prog_index.m3u8");
+    // if (!fs.existsSync(playlistPath)) throw new Error("HLS conversion failed: playlist not found");
+const publicUrl = `${process.env.SERVER_URL || 'http://localhost:5000'}/uploads/hls/${videoId}/prog_index.m3u8`;
+
+    console.log("✅ HLS conversion finished:", publicUrl);
+
+    // TODO: uploadDirToR2(hlsDir, `videos/${videoId}`);
+    // Cleanup local files if needed
+    return publicUrl;
+  }
+
+  // Direct upload fallback
+  return absInput;
+};
 
 export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
   const command = new GetObjectCommand({
