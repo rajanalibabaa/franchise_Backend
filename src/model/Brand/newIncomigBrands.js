@@ -169,7 +169,11 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
           awardImage: { type: String }
         }
       ]
-    }
+    },
+    seen : {
+      type: Boolean,
+      default: false
+    },
   },
   {
     timestamps: true

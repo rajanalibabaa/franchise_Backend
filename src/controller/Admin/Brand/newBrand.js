@@ -35,6 +35,7 @@ export const getNewIncomingBrands = async (req, res) => {
     }
 
     const totalBrands = await NewIncomingBrands.countDocuments();
+    const unSeenBrandsCount = await NewIncomingBrands.find({seen: false}).countDocuments();
     const totalPages = Math.ceil(totalBrands / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
@@ -48,7 +49,8 @@ export const getNewIncomingBrands = async (req, res) => {
             totalPages,
             totalBrands,
             hasNext,
-            hasPrevious
+            hasPrevious,
+            unSeenBrandsCount
         }, "New incoming brands fetched successfully")
     )
   } catch (error) {
