@@ -12,6 +12,24 @@ import { console } from 'inspector';
 import util from "util";
 dotenv.config();
 const execAsync = util.promisify(exec);
+
+// ✅ Helper: build public URL from uploads folder
+function getPublicUploadUrl(filename) {
+  return `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/${filename}`;
+}
+
+
+// ✅ Helper: safely delete a file
+async function safeUnlink(filePath) {
+  try {
+    await fsp.unlink(filePath);
+    console.log(`🗑️ Deleted temp file: ${filePath}`);
+  } catch (err) {
+    console.warn(`⚠️ Could not delete temp file ${filePath}: ${err.message}`);
+  }
+}
+
+
 /**
  * Uploads a file to AWS S3 with content type and auto folder based on media type
  * @param {string} filePath - Local path of the file to upload
@@ -149,33 +167,58 @@ export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
     // Simple 2-resolution HLS
     const args = [
       "-y",
-      "-i", absInput,
-      "-preset", "veryfast",
-      "-c:v", "libx264",
-      "-c:a", "aac",
-      "-f", "hls",
-      "-hls_time", "6",
-      "-hls_playlist_type", "vod",
-      "-hls_segment_filename", path.join(hlsDir, "seg_%03d.ts"),
-      path.join(hlsDir, "prog_index.m3u8")
+      "-i",
+      absInput,
+      "-preset",
+      "veryfast",
+      "-c:v",
+      "libx264",
+      "-c:a",
+      "aac",
+      "-f",
+      "hls",
+      "-hls_time",
+      "6",
+      "-hls_playlist_type",
+      "vod",
+      "-hls_segment_filename",
+      path.join(hlsDir, "seg_%03d.ts"),
+      path.join(hlsDir, "prog_index.m3u8"),
     ];
 
     await runFFmpeg(args);
 
     // Verify output
-    const playlistPath = path.join(hlsDir, "prog_index.m3u8");
+    // const playlistPath = path.join(hlsDir, "prog_index.m3u8");
     // if (!fs.existsSync(playlistPath)) throw new Error("HLS conversion failed: playlist not found");
-const publicUrl = `${process.env.SERVER_URL || 'http://localhost:5000'}/uploads/hls/${videoId}/prog_index.m3u8`;
-
+ const publicUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/hls/${videoId}/prog_index.m3u8`;
     console.log("✅ HLS conversion finished:", publicUrl);
+
+ // ✅ delete original file after conversion
+    await safeUnlink(absInput);
 
     // TODO: uploadDirToR2(hlsDir, `videos/${videoId}`);
     // Cleanup local files if needed
     return publicUrl;
   }
 
-  // Direct upload fallback
-  return absInput;
+// / 📂 Direct upload fallback (fix here ✅)
+  const uploadsDir = path.resolve("uploads");
+  await fsp.mkdir(uploadsDir, { recursive: true });
+
+  const newFileName = `${Date.now()}-${baseName}${ext}`;
+  const destPath = path.join(uploadsDir, newFileName);
+
+  if (absInput !== destPath) {
+    await fsp.copyFile(absInput, destPath);
+  }
+
+    // ✅ delete original file after copying
+  await safeUnlink(absInput);
+  
+
+  // ✅ Return proper URL instead of absInput
+  return getPublicUploadUrl(newFileName);
 };
 
 export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
