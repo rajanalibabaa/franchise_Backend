@@ -32,10 +32,11 @@ export const requestEmailOtp = async (req, res) => {
     // console.log("OTP:", otp); // Log the OTP for debugging purposes
     const token = generateToken(email, otp);
     console.log("Token:", token);
-    
+    const subject = "Verify Your Email Address";
+    const emailTemplateName = "otp_template";
 
     try {
-        await sendEmailOTP(email, otp);
+        await sendEmailOTP (email, subject, emailTemplateName, { otp });
         res.status(200).json({ message: "Email OTP sent successfully.", token });
     } catch (error) {
         res.status(500).json({ error: "Failed to send Email OTP." });
