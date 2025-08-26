@@ -376,14 +376,80 @@ async function uploadDirToR2(localDir, r2Prefix) {
   }
 }
 
+
+// ✅ Enhanced file security check with retry logic
+export const secureFileAccess = async (filePath, maxRetries = 5, retryDelay = 100) => {
+  let attempts = 0;
+  
+  while (attempts < maxRetries) {
+    try {
+      if (!existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+      
+      await fsp.access(filePath, fsp.constants.R_OK);
+      
+      const stats = await fsp.stat(filePath);
+      if (stats.size === 0) {
+        throw new Error(`File is empty: ${filePath}`);
+      }
+      
+      return true;
+    } catch (error) {
+      attempts++;
+      if (attempts >= maxRetries) {
+        console.error(`❌ File access failed after ${maxRetries} attempts:`, error.message);
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+};
+
+// ✅ Helper to get temporary file path (for Multer uploads)
+export const getTempFilePath = (file) => {
+  if (!file || !file.path) {
+    throw new Error("Invalid file object");
+  }
+  
+  // Check if file exists with retry
+  let exists = existsSync(file.path);
+  let retryCount = 0;
+  
+  while (!exists && retryCount < 3) {
+    setTimeout(() => {}, 50); // brief delay
+    exists = existsSync(file.path);
+    retryCount++;
+  }
+  
+  if (!exists) {
+    throw new Error(`Temp file not found: ${file.path}`);
+  }
+  
+  return file.path;
+};
+
 export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
   const { convertToHLS = false, videoId = null } = options;
 
-  // ✅ Enhanced file existence check with better error message
-  if (!existsSync(filePath)) {
-    console.error(`❌ File not found: ${filePath}`);
+  // ✅ Enhanced file existence check with retry logic
+  let fileExists = false;
+  let retryCount = 0;
+  const maxRetries = 5;
+  const retryDelay = 100; // ms
+
+  while (!fileExists && retryCount < maxRetries) {
+    fileExists = existsSync(filePath);
+    if (!fileExists) {
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      retryCount++;
+    }
+  }
+
+  if (!fileExists) {
+    console.error(`❌ File not found after ${maxRetries} retries: ${filePath}`);
     console.error(`❌ Current working directory: ${process.cwd()}`);
-    throw new Error(`File not found: ${filePath}. Please ensure the file was uploaded correctly.`);
+    throw new Error(`File not found: ${filePath}. The file may have been moved or deleted before processing.`);
   }
 
   const absInput = path.resolve(filePath);
@@ -391,8 +457,8 @@ export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
   const baseName = path.basename(absInput, ext);
   const contentType = mimetype || mime.lookup(ext) || "application/octet-stream";
 
-  console.log(`📁 Processing file: ${absInput}`);
-  console.log(`📊 Content type: ${contentType}`);
+   console.log(`📁 Processing file: ${absInput}`);
+  console.log(`📊 Content type: ${contentType}, Size: ${fs.statSync(absInput).size} bytes`);
 
   // 🎥 Video → HLS
   if (contentType.startsWith("video/") && convertToHLS) {
@@ -446,48 +512,63 @@ export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
     }
   }
 
-  // 📂 Direct upload to R2 or local fallback
+ // 📂 Direct upload to R2 or local fallback
   if (process.env.R2_BUCKET_NAME) {
-    // Upload directly to R2
-    const fileKey = `uploads/${Date.now()}-${baseName}${ext}`;
-    const fileContent = await fsp.readFile(absInput);
-    
-    await s3.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: fileKey,
-      Body: fileContent,
-      ContentType: contentType,
-    }));
-    
-    // ✅ Only delete after successful upload
-    await safeUnlink(absInput);
-    
-    const publicUrl = `${process.env.R2_PUBLIC_URL || process.env.SERVER_URL}/${fileKey}`;
-    console.log("✅ Uploaded to R2:", publicUrl);
-    return publicUrl;
-  } else {
-    // Local fallback - check if file is already in uploads directory
-    const uploadsDir = path.resolve("uploads");
-    await fsp.mkdir(uploadsDir, { recursive: true });
-
-    // ✅ If file is already in uploads directory, don't move it
-    if (absInput.startsWith(uploadsDir)) {
-      console.log("✅ File already in uploads directory");
-      const fileName = path.basename(absInput);
-      const publicUrl = getPublicUploadUrl(fileName);
-      console.log("✅ Serving from uploads:", publicUrl);
+    try {
+      // Upload directly to R2
+      const fileKey = `uploads/${Date.now()}-${baseName}${ext}`;
+      const fileContent = await fsp.readFile(absInput);
+      
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileKey,
+        Body: fileContent,
+        ContentType: contentType,
+      }));
+      
+      // ✅ Only delete after successful upload
+      await safeUnlink(absInput);
+      
+      const publicUrl = `${process.env.R2_PUBLIC_URL || process.env.SERVER_URL}/${fileKey}`;
+      console.log("✅ Uploaded to R2:", publicUrl);
       return publicUrl;
+    } catch (error) {
+      console.error("❌ R2 upload failed:", error);
+      throw error;
     }
+  } else {
+    // ✅ FIXED: Local fallback handling
+    try {
+      const uploadsDir = path.resolve("uploads");
+      await fsp.mkdir(uploadsDir, { recursive: true });
 
-    // ✅ Move file to uploads directory
-    const newFileName = `${Date.now()}-${baseName}${ext}`;
-    const destPath = path.join(uploadsDir, newFileName);
+      // Check if file is already in the final uploads directory
+      const isAlreadyInUploads = absInput.startsWith(uploadsDir + path.sep);
+      
+      if (isAlreadyInUploads) {
+        console.log("✅ File already in uploads directory:", path.basename(absInput));
+        const fileName = path.basename(absInput);
+        const publicUrl = getPublicUploadUrl(fileName);
+        console.log("✅ Serving from uploads:", publicUrl);
+        return publicUrl;
+      }
 
-    await fsp.rename(absInput, destPath);
+      // File is in temp directory, move it to final uploads directory
+      const newFileName = `${Date.now()}-${baseName}${ext}`;
+      const destPath = path.join(uploadsDir, newFileName);
 
-    const publicUrl = getPublicUploadUrl(newFileName);
-    console.log("✅ Uploaded locally:", publicUrl);
-    return publicUrl;
+      // Use copy + delete instead of rename for better reliability
+      await fsp.copyFile(absInput, destPath);
+      await safeUnlink(absInput);
+
+      const publicUrl = getPublicUploadUrl(newFileName);
+      console.log("✅ Uploaded locally:", publicUrl);
+      return publicUrl;
+      
+    } catch (error) {
+      console.error("❌ Local upload failed:", error);
+      throw error;
+    }
   }
 };
 
