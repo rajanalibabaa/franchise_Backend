@@ -2623,7 +2623,6 @@ export const getBrandById = async (req, res) => {
   }
 };
 
-
 export {
   createBrandListing,
   getAllBrands,
