@@ -6,8 +6,6 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
-
- 
  
 router.post(
 

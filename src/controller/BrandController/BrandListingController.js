@@ -68,7 +68,6 @@ console.log("brand :",brand)
 
     return {likedBrands,shortListedBrands}
 }
-
 const createBrandListing = async (req, res) => {
   try {  
     const { admin } = req.body;
@@ -809,8 +808,7 @@ export const getTopLeadingFranchise = async (req, res) => {
     return res.json(
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
- };
-
+ }
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -829,8 +827,11 @@ const updateBrandListingByUUID = async (req, res) => {
     };
 
     // ---------- Parse Expansion Location ----------
-    const addExpansionLocationData = safeParse(req.body.addExpansionLocationData);
-    const removeExpansionLocationData = safeParse(req.body.removeExpansionLocationData);
+    const addExpansionLocationData = safeParse(req.body.addExpansionLocationData) || req.body.addExpansionLocationData;
+    const removeExpansionLocationData = safeParse(req.body.removeExpansionLocationData) || req.body.removeExpansionLocationData;
+    // console.log("Add Expansion Location Data:", addExpansionLocationData);
+    // console.log("Remove Expansion Location Data:", removeExpansionLocationData);
+    console.log("Brand ID:", removeExpansionLocationData);
 
     let expensionLocationData = null;
     if (id && (addExpansionLocationData || removeExpansionLocationData)) {
@@ -1016,7 +1017,6 @@ const updateBrandListingByUUID = async (req, res) => {
     });
   }
 };
- 
 
 const expansionLocationData = async (id, add, remove) => {
   //  return add
@@ -1590,10 +1590,9 @@ const expansionLocationData = async (id, add, remove) => {
   return await BrandExpansionLocationData.findOne({ brandOwnerId: id });
 };
 
-
 export const updateBrandImageById = async (req, res) => {
   try {
-    const  { imageDeleteData } = req.body;
+    const { imageDeleteData } = req.body;
     let data = null;
 
     if (imageDeleteData) {
@@ -1729,7 +1728,6 @@ export const db = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const reEntry = async (req, res) => {
   try {
@@ -2276,7 +2274,7 @@ export const getTopRestaurants = async (req,res)=>{
   }
 }
 
-export const getBrandsByCategory = async (req, res) => {  
+export const getBrandsByCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
@@ -2476,7 +2474,6 @@ export const getBrandsByCategory = async (req, res) => {
   }
 };
 
-
 export const getBrandById = async (req, res) => {
   const { id } = req.params;
 
@@ -2658,7 +2655,6 @@ export const getBrandById = async (req, res) => {
     return res.json(new ApiResponse(500, null, "Failed to fetch brand"));
   }
 };
-
 
 export {
   createBrandListing,
