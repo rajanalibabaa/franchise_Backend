@@ -1,3 +1,4 @@
+import { log } from "console";
 import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandExpansionLocationData } from "../../../model/Brand/Brand.model/ExpansionLocation.model.js";
 import { BrandFranchiseDetails } from "../../../model/Brand/Brand.model/FranchiseDetails.model.js";
@@ -23,7 +24,10 @@ export const getNewIncomingBrands = async (req, res) => {
             brandName: "$brandDetails.brandName",
             fullName: "$brandDetails.fullName",
             brandCategories: "$franchiseDetails.brandCategories",
-            investmentRange: "$franchiseDetails.fico.investmentRange",
+            investmentRange:{ $cond: { if: { $gt: [ { $size: "$franchiseDetails.fico.investmentRange" }, 0 ] }, then: { $arrayElemAt: [ "$franchiseDetails.fico.investmentRange", 0 ] }, else: null } }, 
+            // logo: {$arrayElemAt : ["$uploads.brandLogo"]}, 
+            logo: { $cond: { if: { $gt: [ { $size: "$uploads.brandLogo" }, 0 ] }, then: { $arrayElemAt: [ "$uploads.brandLogo", 0 ] }, else: null } }, 
+            seen: 1, 
             createdAt: 1
         } }
     ])

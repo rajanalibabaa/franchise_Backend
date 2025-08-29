@@ -14,15 +14,19 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import MongoStore from 'connect-mongo';
 import compression from "compression";
+import { createServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
+import { mainSocket } from './src/socket/mainSocket.js';
+
 dotenv.config();  // ✅ Load env FIRST
 
 const app = express();
 
+// Middlewares
 app.use(compression());
 
-// Security & Rate Limiting
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 min
+  windowMs: 1 * 60 * 1000,
   max: 100,
   message: "Too many requests, try again later."
 });
@@ -41,7 +45,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Session (make sure DB_URL and SESSION_SECRET exist in .env)
+// Session
 app.use(session({
   secret: process.env.SESSION_SECRET || "default_secret",
   resave: false,
@@ -58,19 +62,32 @@ app.use(session({
   },
 }));
 
-// Initialize Passport
+// Passport
 app.use(passport.initialize());
 app.use(passport.session());
 configureGoogleStrategy();
 configureFacebookStrategy();
 
-// Limit requests globally
+// Global rate limit
 app.use(limiter);
-app.use('/uploads', express.static(path.resolve('./uploads')));
-// Connect to DB (ensure DB is connected before listening)
+
+// ✅ Create HTTP server & Socket.IO
+const httpServer = createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
+    credentials: true,
+  },
+});
+
+// ✅ Socket.IO connection
+io.on("connection", (socket) => mainSocket(socket, io));
+
+
+// ✅ Start server
 const startServer = async () => {
   try {
-    await connectDatabase(); // ✅ Wait for DB to connect
+    await connectDatabase();
     console.log("✅ Database connected");
 
     // Routes
@@ -81,10 +98,11 @@ const startServer = async () => {
     app.use('/api', allRouters);
     app.use('/api/v1/upload', s3Uploads);
 
-    // Error handler (must be last)
+    // Error handler
     app.use(errorHandler);
 
-    app.listen(process.env.PORT, () => {
+    // ✅ Use httpServer.listen (not app.listen)
+    httpServer.listen(process.env.PORT, () => {
       console.log(`🚀 Server is running on port ${process.env.PORT}`);
     });
   } catch (err) {
