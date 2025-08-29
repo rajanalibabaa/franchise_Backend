@@ -17,6 +17,8 @@ import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
+import { console } from "inspector";
+import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 
 
 export const likeandshortlist = async(id) => {
@@ -67,8 +69,8 @@ console.log("brand :",brand)
     return {likedBrands,shortListedBrands}
 }
 const createBrandListing = async (req, res) => {
-  try {
-    
+  try {  
+    const { admin } = req.body;
     const id = uuid(); // Make sure this is properly imported/defined
 console.log("Incoming data:", req.body);
     const fileFields = [
@@ -176,22 +178,24 @@ console.log("Incoming data:", brandDetails.brandName);
     const brandID = await generateCustomId(groupId);
 
     // Upload files to R2
+    // Upload files to R2 - videos will be converted to HLS, others direct upload
     const uploadedFiles = {};
     for (const field of fileFields) {
       if (req.files?.[field]?.length > 0) {
-        try {
-          const isVideo = field.toLowerCase().includes("video");
-          const urls = await Promise.all(
-            req.files[field].map(async (file) => {
-              const contentType = isVideo ? "video/mp4" : file.mimetype;
-              return await uploadFileToR2(file.path, contentType);
-            })
-          );
-          uploadedFiles[field] = urls.filter(url => url !== null);
-        } catch (error) {
-          console.error(`Error uploading ${field} files:`, error);
-          uploadedFiles[field] = [];
-        }
+        const urls = await Promise.all(
+          req.files[field].map(async (file) => {
+            // Convert videos to HLS, others direct upload
+            const isVideo = field.toLowerCase().includes("video");
+            const uploadedUrl = await uploadFileToR2(
+              file.path, 
+              file.mimetype, 
+              { convertToHLS: isVideo }
+            );
+            console.log(`✅ Uploaded ${field}:`, uploadedUrl);
+            return uploadedUrl;
+          })
+        );
+        uploadedFiles[field] = urls;
       }
     }
 
@@ -202,12 +206,15 @@ console.log("Incoming data:", brandDetails.brandName);
       awardImage: fileUrl
     }));
 
-    // Create all records in parallel after getting the UUID
+
+
+    if(admin){
+       // Create all records in parallel after getting the UUID
 
     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
       BrandDetails.create({
         brandID,
-        uuid:id,
+        uuid: id,
         brandDetails
       }),
       BrandFranchiseDetails.create({
@@ -249,6 +256,32 @@ console.log("Incoming data:", brandDetails.brandName);
         uploads: newBrandUploads
       }, "Brand listing created successfully")
     );
+
+    }
+   
+
+    const brandData = await NewIncomingBrands.create({
+      brandID,
+      uuid: id,
+      brandDetails,
+      franchiseDetails,
+      expansionLocationData,
+      uploads: {
+        brandLogo: uploadedFiles.brandLogo || [],
+        gstCertificate: uploadedFiles.gstCertificate || [],
+        pancard: uploadedFiles.pancard || [],
+        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+        interiorOutlet: uploadedFiles.interiorOutlet || [],
+        franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        businessPlan: uploadedFiles.businessPlan || [],
+        awards
+      }
+    })
+    return res.json(
+      new ApiResponse(201,brandData, "Brand listing created successfully")
+    );
+
 
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
@@ -2445,11 +2478,11 @@ export const getBrandById = async (req, res) => {
   const { id } = req.params;
 
   const brand = req.brandUser;
-  if (id !== brand?.uuid) {
-    return res.json(
-      new ApiResponse(401,null,"Unathorize request")
-    )
-  }
+  // if (id !== brand?.uuid) {
+  //   return res.json(
+  //     new ApiResponse(401,null,"Unathorize request")
+  //   )
+  // }
 
   try {
     

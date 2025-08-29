@@ -25,6 +25,7 @@ import { InstantApplyRouter } from "./src/Routes/BrandRoutes/instantApplyRoutes.
 import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js";
 import { OtherIndustriesRouter } from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
 import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js";
+import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/newIncomingBrandRoutes.js";
 
 const router = express.Router();
 
@@ -82,8 +83,17 @@ router.use(subscribeRouter);
 // OtherIndustries
 router.use(OtherIndustriesRouter);
 
+
+
+
 //shortListRouter
 router.use(shortListRouter);
+
+
+//Admin New Incoming Brands Routes
+
+router.use(newIncomingBrandRouter)
+
 function getRoutes(router, basePath = "") {
   const routes = [];
   router.stack.forEach((layer) => {
@@ -297,5 +307,8 @@ function getMethodBadgeColor(method) {
       return "secondary";
   }
 }
+
+
+
 
 export default router;

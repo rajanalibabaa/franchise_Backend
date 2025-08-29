@@ -66,7 +66,7 @@ configureFacebookStrategy();
 
 // Limit requests globally
 app.use(limiter);
-
+app.use('/uploads', express.static(path.resolve('./uploads')));
 // Connect to DB (ensure DB is connected before listening)
 const startServer = async () => {
   try {

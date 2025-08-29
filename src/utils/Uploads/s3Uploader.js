@@ -1,16 +1,281 @@
 
-import fs from 'fs/promises';
-import { existsSync } from 'fs'; // <-- add this for sync file check
+// import * as fsp from "fs/promises";
+// import fs, { existsSync } from "fs"; // for sync methods
+// import { exec,spawn } from "child_process";
+// import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+// import s3 from './s3.js';
+// import dotenv from 'dotenv';
+// import path from 'path';
+// import mime from 'mime-types';
+// import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+// import { console } from 'inspector';
+// import util from "util";
+// dotenv.config();
+
+// // ✅ Helper: build public URL from uploads folder
+// function getPublicUploadUrl(filename) {
+//   const serverUrl = process.env.SERVER_URL || "http://localhost:5000";
+//   return `${serverUrl}/uploads/${filename}`;
+// }
+ 
+// // ✅ Helper: safely delete a file
+// // Safely delete a file if it exists
+// async function safeUnlink(filePath) {
+//   try {
+//     if (existsSync(filePath)) {
+//       await fsp.unlink(filePath);
+//       console.log(`🗑️ Deleted: ${filePath}`);
+//     }
+//   } catch (err) {
+//     console.warn(`⚠️ Could not delete file ${filePath}: ${err.message}`);
+//   }
+// }
+
+
+// /**
+//  * Uploads a file to AWS S3 with content type and auto folder based on media type
+//  * @param {string} filePath - Local path of the file to upload
+//  * @param {string} mimetype - MIME type of the file (optional)
+//  * @returns {string} - Public URL of the uploaded S3 object
+//  */
+// export const uploadFileToS3 = async (filePath, mimetype = null) => {
+//   // Check if the file exists
+//   if (!existsSync(filePath)) {
+//     console.error(`❌ File does not exist at path: ${filePath}`);
+//     throw new Error(`File not found at ${filePath}`);
+//   }
+
+//   const originalFileName = path.basename(filePath);
+//   const ext = path.extname(originalFileName);
+//   const baseName = path.basename(originalFileName, ext);
+
+//   const contentType = mimetype || mime.lookup(ext) || 'application/octet-stream';
+
+//   // Folder based on content type
+//   const folder = contentType.startsWith('image/')
+//     ? 'images'
+//     : contentType.startsWith('video/')
+//     ? 'videos'
+//     : contentType.startsWith('application/')
+//     ? 'documents'
+//     : 'misc';
+
+//   const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
+
+//   try {
+//     const fileContent = await fs.readFile(filePath);
+
+//     const command = new PutObjectCommand({
+//       Bucket: process.env.BUCKET_NAME,
+//       Key: fileKey,
+//       Body: fileContent,
+//       ContentType: contentType,
+//       // ACL: 'public-read' // Optional: Uncomment if public access is needed
+//     });
+
+//     await s3.send(command);
+//     // console.log(`✅ Uploaded to S3: ${fileKey}`);
+
+//     // Try deleting the local file
+//     try {
+//       await fs.unlink(filePath);
+//       // console.log(`🗑️ Deleted local temp file: ${filePath}`);
+//     } catch (unlinkErr) {
+//       console.warn(`⚠️ Could not delete temp file: ${unlinkErr.message}`);
+//     }
+
+//     // Construct public S3 URL
+//     const s3Url = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
+//     return s3Url;
+
+//   } catch (err) {
+//     console.error('❌ Upload to S3 failed:', err.message);
+//     throw new Error('Failed to upload file to S3');
+//   }
+// };
+
+
+// function runFFmpeg(args) {
+//   return new Promise((resolve, reject) => {
+//     const ffmpegBin = process.env.FFMPEG_PATH || "ffmpeg";
+//     const p = spawn(ffmpegBin, args, { windowsHide: true });
+
+//     let stderr = "";
+//     p.stderr.on("data", d => {
+//       stderr += d.toString();
+//       console.log("FFmpeg:", d.toString());
+//     });
+
+//     p.on("error", reject);
+//     p.on("close", code => code === 0 ? resolve() : reject(new Error(`FFmpeg exited with code ${code}\n${stderr}`)));
+//   });
+// }
+
+
+// // helper: recursive uploader (keeps folders)
+// async function uploadDirToR2(localDir, r2Prefix) {
+//   const entries = fs.readdirSync(localDir, { withFileTypes: true });
+//   for (const entry of entries) {
+//     const full = path.join(localDir, entry.name);
+//     const key = `${r2Prefix}/${entry.name}`;
+//     if (entry.isDirectory()) {
+//       await uploadDirToR2(full, key);
+//     } else {
+//       const buf = await fsp.readFile(full);
+//       const type = entry.name.endsWith(".m3u8")
+//         ? "application/vnd.apple.mpegurl"
+//         : "video/mp2t";
+//       await s3.send(new PutObjectCommand({
+//         Bucket: process.env.R2_BUCKET_NAME,
+//         Key: key,
+//         Body: buf,
+//         ContentType: type,
+//       }));
+//       console.log("📤 Uploaded:", key);
+//     }
+//   }
+// }
+
+
+
+// export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
+//   const { convertToHLS = false, videoId = null } = options;
+
+//   if (!existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
+
+//   const absInput = path.resolve(filePath);
+//   const ext = path.extname(absInput).toLowerCase();
+//   const baseName = path.basename(absInput, ext);
+//   const contentType = mimetype || "video/mp4";
+
+//   // 🎥 Video → HLS
+//   if (contentType.startsWith("video/") && convertToHLS) {
+//     try { await runFFmpeg(["-version"]); } 
+//     catch { throw new Error("FFmpeg not installed or not in PATH."); }
+
+//     // ✅ stable output folder if videoId provided else use Date.now()
+//     const id = videoId || Date.now().toString(); 
+//     const hlsDir = path.resolve("uploads", "hls", id);
+
+//     // ✅ Remove old folder if exists (for re-upload)
+//     if (existsSync(hlsDir)) {
+//       await fsp.rm(hlsDir, { recursive: true, force: true });
+//     }
+//     await fsp.mkdir(hlsDir, { recursive: true });
+
+//     const args = [
+//       "-y",
+//       "-i", absInput,
+//       "-preset", "veryfast",
+//       "-c:v", "libx264",
+//       "-c:a", "aac",
+//       "-f", "hls",
+//       "-hls_time", "6",
+//       "-hls_playlist_type", "vod",
+//       "-hls_segment_filename", path.join(hlsDir, "seg_%03d.ts"),
+//       path.join(hlsDir, "prog_index.m3u8"),
+//     ];
+
+//     await runFFmpeg(args);
+//     await safeUnlink(absInput); // ✅ delete uploaded source
+
+//     const publicUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/hls/${id}/prog_index.m3u8`;
+//     console.log("✅ HLS ready at:", publicUrl);
+
+//     return publicUrl;
+//   }
+
+// // 📂 Direct upload fallback (image/docs)
+// const uploadsDir = path.resolve("uploads");
+// await fsp.mkdir(uploadsDir, { recursive: true });
+
+// const newFileName = `${Date.now()}-${baseName}${ext}`;
+// const destPath = path.join(uploadsDir, newFileName);
+
+// // ✅ Move file into uploads folder
+// if (absInput !== destPath) {
+//   await fsp.copyFile(absInput, destPath);
+// }
+
+// // Delete temp input file
+// await safeUnlink(absInput);
+
+// // ✅ Always return public URL (NOT absInput)
+// const publicUrl = getPublicUploadUrl(newFileName);
+// console.log("✅ Uploaded image available at:", publicUrl);
+// return publicUrl;
+
+// };
+
+
+
+// export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
+//   const command = new GetObjectCommand({
+//     Bucket: process.env.R2_BUCKET_NAME,
+//     Key: fileKey,
+//   });
+
+//   try {
+//     return await getSignedUrl(s3, command, { expiresIn });
+//   } catch (error) {
+//     console.error("❌ Error generating signed URL:", error.message);
+//     throw error;
+//   }
+// };
+
+// export const deleteFileFromR2 = async (filePathOrUrl) => {
+//   if (!filePathOrUrl) throw new Error("File path or key is required");
+
+//   const baseUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "") || "";
+//   const fileKey = filePathOrUrl.startsWith("http")
+//     ? filePathOrUrl.replace(baseUrl + "/", "")
+//     : filePathOrUrl;
+
+//   try {
+//     await s3.send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET_NAME, Key: fileKey }));
+//     console.log(`✅ Deleted from R2: ${fileKey}`);
+//     return { success: true };
+//   } catch (error) {
+//     console.error(`❌ Failed to delete "${fileKey}" from R2:`, error);
+//     throw error;
+//   }
+// };
+import * as fsp from "fs/promises";
+import fs, { existsSync } from "fs";
+import { spawn } from "child_process";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import s3 from './s3.js';
 import dotenv from 'dotenv';
 import path from 'path';
-import { readFile, unlink } from 'fs/promises';
 import mime from 'mime-types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { console } from 'inspector';
 
 dotenv.config();
+
+// ✅ Helper: build public URL from uploads folder
+function getPublicUploadUrl(filename) {
+  return `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/${filename}`;
+}
+
+// ✅ Helper: safely delete a file
+async function safeUnlink(filePath) {
+  try {
+    await fsp.unlink(filePath);
+    console.log(`🗑️ Deleted temp file: ${filePath}`);
+  } catch (err) {
+    console.warn(`⚠️ Could not delete temp file ${filePath}: ${err.message}`);
+  }
+}
+
+// ✅ Helper: Validate environment variables
+function validateEnv() {
+  const requiredEnvVars = ['BUCKET_NAME', 'AWS_REGION'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+}
 
 /**
  * Uploads a file to AWS S3 with content type and auto folder based on media type
@@ -19,7 +284,8 @@ dotenv.config();
  * @returns {string} - Public URL of the uploaded S3 object
  */
 export const uploadFileToS3 = async (filePath, mimetype = null) => {
-  // Check if the file exists
+  validateEnv();
+  
   if (!existsSync(filePath)) {
     console.error(`❌ File does not exist at path: ${filePath}`);
     throw new Error(`File not found at ${filePath}`);
@@ -43,26 +309,19 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
   const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
 
   try {
-    const fileContent = await fs.readFile(filePath);
+    const fileContent = await fsp.readFile(filePath);
 
     const command = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
       Key: fileKey,
       Body: fileContent,
       ContentType: contentType,
-      // ACL: 'public-read' // Optional: Uncomment if public access is needed
     });
 
     await s3.send(command);
-    // console.log(`✅ Uploaded to S3: ${fileKey}`);
 
     // Try deleting the local file
-    try {
-      await fs.unlink(filePath);
-      // console.log(`🗑️ Deleted local temp file: ${filePath}`);
-    } catch (unlinkErr) {
-      console.warn(`⚠️ Could not delete temp file: ${unlinkErr.message}`);
-    }
+    await safeUnlink(filePath);
 
     // Construct public S3 URL
     const s3Url = `https://${process.env.BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
@@ -74,80 +333,282 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
   }
 };
 
+function runFFmpeg(args) {
+  return new Promise((resolve, reject) => {
+    const ffmpegBin = process.env.FFMPEG_PATH || "ffmpeg";
+    const p = spawn(ffmpegBin, args, { windowsHide: true });
 
-export const uploadFileToR2 = async (filePath, mimetype) => {
-  if (!filePath) throw new Error("File path is required");
-
-  console.log(`📂 Uploading file to R2: ${filePath}`);
-
-  try {
-    if (!existsSync(filePath)) {
-      throw new Error(`File not found at ${filePath}`);
-    }
-
-    const stats = await fs.stat(filePath);
-    if (stats.size === 0) {
-      await fs.unlink(filePath); // ✅ Properly unlinks empty file
-      throw new Error(`Empty file at ${filePath}`);
-    }
-
-    const originalFileName = path.basename(filePath);
-    const ext = path.extname(originalFileName).toLowerCase();
-    const baseName = path.basename(originalFileName, ext);
-
-    const contentType = mimetype || mime.lookup(ext) || "application/octet-stream";
-    const folder = contentType.startsWith("image/") ? "images" :
-                   contentType.startsWith("video/") ? "videos" :
-                   contentType.startsWith("audio/") ? "audio" :
-                   contentType.startsWith("application/") ? "documents" :
-                   "misc";
-
-    const fileKey = `${folder}/${Date.now()}-${baseName}${ext}`;
-    const fileContent = await fs.readFile(filePath);
-
-    const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: fileKey,
-      Body: fileContent,
-      ContentType: contentType,
+    let stderr = "";
+    p.stderr.on("data", d => {
+      stderr += d.toString();
+      console.log("FFmpeg:", d.toString());
     });
 
-    await s3.send(command);
+    p.on("error", reject);
+    p.on("close", code => code === 0 ? resolve() : reject(new Error(`FFmpeg exited with code ${code}\n${stderr}`)));
+  });
+}
 
-    // ✅ Delete local file after successful upload
+// helper: recursive uploader (keeps folders)
+async function uploadDirToR2(localDir, r2Prefix) {
+  const entries = await fsp.readdir(localDir, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const full = path.join(localDir, entry.name);
+    const key = `${r2Prefix}/${entry.name}`;
+    
+    if (entry.isDirectory()) {
+      await uploadDirToR2(full, key);
+    } else {
+      const buf = await fsp.readFile(full);
+      const type = entry.name.endsWith(".m3u8")
+        ? "application/vnd.apple.mpegurl"
+        : "video/mp2t";
+      
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+        Body: buf,
+        ContentType: type,
+      }));
+      console.log("📤 Uploaded:", key);
+    }
+  }
+}
+
+
+// ✅ Enhanced file security check with retry logic
+export const secureFileAccess = async (filePath, maxRetries = 5, retryDelay = 100) => {
+  let attempts = 0;
+  
+  while (attempts < maxRetries) {
     try {
-      await fs.unlink(filePath); // ✅ Properly unlinks
-      console.log(`✅ Successfully deleted local temp file: ${filePath}`);
-    } catch (unlinkErr) {
-      console.error(`⚠️ Failed to delete temp file: ${filePath}`, unlinkErr.message);
-    }
-
-    // ✅ Return full public URL
-    if (process.env.R2_PUBLIC_URL) {
-      const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-      return `${baseUrl}/${fileKey}`;
-    }
-
-    return fileKey;
-
-  } catch (error) {
-    // 🧹 Cleanup even if upload fails
-    if (existsSync(filePath)) {
-      try {
-        await fs.unlink(filePath); // ✅ cleanup even on error
-        console.log(`🧹 Deleted local file after failed upload: ${filePath}`);
-      } catch (cleanupErr) {
-        console.error(`⚠️ Failed to cleanup file: ${filePath}`, cleanupErr.message);
+      if (!existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
       }
+      
+      await fsp.access(filePath, fsp.constants.R_OK);
+      
+      const stats = await fsp.stat(filePath);
+      if (stats.size === 0) {
+        throw new Error(`File is empty: ${filePath}`);
+      }
+      
+      return true;
+    } catch (error) {
+      attempts++;
+      if (attempts >= maxRetries) {
+        console.error(`❌ File access failed after ${maxRetries} attempts:`, error.message);
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-
-    console.error("❌ uploadFileToR2 Error:", error.message);
-    throw error;
   }
 };
 
+// ✅ Helper to get temporary file path (for Multer uploads)
+export const getTempFilePath = (file) => {
+  if (!file || !file.path) {
+    throw new Error("Invalid file object");
+  }
+  
+  // Check if file exists with retry
+  let exists = existsSync(file.path);
+  let retryCount = 0;
+  
+  while (!exists && retryCount < 3) {
+    setTimeout(() => {}, 50); // brief delay
+    exists = existsSync(file.path);
+    retryCount++;
+  }
+  
+  if (!exists) {
+    throw new Error(`Temp file not found: ${file.path}`);
+  }
+  
+  return file.path;
+};
+
+export const uploadFileToR2 = async (filePath, mimetype, options = {}) => {
+  const { convertToHLS = false, videoId = null } = options;
+
+  // ✅ Enhanced file existence check with retry logic
+  let fileExists = false;
+  let retryCount = 0;
+  const maxRetries = 5;
+  const retryDelay = 100; // ms
+
+  while (!fileExists && retryCount < maxRetries) {
+    fileExists = existsSync(filePath);
+    if (!fileExists) {
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      retryCount++;
+    }
+  }
+
+  if (!fileExists) {
+    console.error(`❌ File not found after ${maxRetries} retries: ${filePath}`);
+    console.error(`❌ Current working directory: ${process.cwd()}`);
+    throw new Error(`File not found: ${filePath}. The file may have been moved or deleted before processing.`);
+  }
+
+  const absInput = path.resolve(filePath);
+  const ext = path.extname(absInput).toLowerCase();
+  const baseName = path.basename(absInput, ext);
+  const contentType = mimetype || mime.lookup(ext) || "application/octet-stream";
+
+   console.log(`📁 Processing file: ${absInput}`);
+  console.log(`📊 Content type: ${contentType}, Size: ${fs.statSync(absInput).size} bytes`);
+
+  // 🎥 Video → HLS
+  if (contentType.startsWith("video/") && convertToHLS) {
+    try { 
+      await runFFmpeg(["-version"]); 
+    } catch { 
+      throw new Error("FFmpeg not installed or not in PATH."); 
+    }
+
+    const id = videoId || Date.now().toString(); 
+    const hlsDir = path.resolve("uploads", "hls", id);
+
+    // Remove old folder if exists
+    if (existsSync(hlsDir)) {
+      await fsp.rm(hlsDir, { recursive: true, force: true });
+    }
+    await fsp.mkdir(hlsDir, { recursive: true });
+
+    const args = [
+      "-y",
+      "-i", absInput,
+      "-preset", "veryfast",
+      "-c:v", "libx264",
+      "-c:a", "aac",
+      "-f", "hls",
+      "-hls_time", "6",
+      "-hls_playlist_type", "vod",
+      "-hls_segment_filename", path.join(hlsDir, "seg_%03d.ts"),
+      path.join(hlsDir, "prog_index.m3u8"),
+    ];
+
+    await runFFmpeg(args);
+    
+    // ✅ Only delete the source file after successful HLS conversion
+    await safeUnlink(absInput);
+
+    // Upload HLS files to R2 if R2_BUCKET_NAME is configured
+    if (process.env.R2_BUCKET_NAME) {
+      await uploadDirToR2(hlsDir, `hls/${id}`);
+      // Clean up local HLS files after upload
+      await fsp.rm(hlsDir, { recursive: true, force: true });
+      
+      const publicUrl = `${process.env.R2_PUBLIC_URL || process.env.SERVER_URL}/hls/${id}/prog_index.m3u8`;
+      console.log("✅ HLS ready at:", publicUrl);
+      return publicUrl;
+    } else {
+      // Fallback to local serving
+      const publicUrl = `${process.env.SERVER_URL || "http://localhost:5000"}/uploads/hls/${id}/prog_index.m3u8`;
+      console.log("✅ HLS ready at:", publicUrl);
+      return publicUrl;
+    }
+  }
+
+ // 📂 Direct upload to R2 or local fallback
+  if (process.env.R2_BUCKET_NAME) {
+    try {
+      // Upload directly to R2
+      const fileKey = `uploads/${Date.now()}-${baseName}${ext}`;
+      const fileContent = await fsp.readFile(absInput);
+      
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileKey,
+        Body: fileContent,
+        ContentType: contentType,
+      }));
+      
+      // ✅ Only delete after successful upload
+      await safeUnlink(absInput);
+      
+      const publicUrl = `${process.env.R2_PUBLIC_URL || process.env.SERVER_URL}/${fileKey}`;
+      console.log("✅ Uploaded to R2:", publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error("❌ R2 upload failed:", error);
+      throw error;
+    }
+  } else {
+    // ✅ FIXED: Local fallback handling
+    try {
+      const uploadsDir = path.resolve("uploads");
+      await fsp.mkdir(uploadsDir, { recursive: true });
+
+      // Check if file is already in the final uploads directory
+      const isAlreadyInUploads = absInput.startsWith(uploadsDir + path.sep);
+      
+      if (isAlreadyInUploads) {
+        console.log("✅ File already in uploads directory:", path.basename(absInput));
+        const fileName = path.basename(absInput);
+        const publicUrl = getPublicUploadUrl(fileName);
+        console.log("✅ Serving from uploads:", publicUrl);
+        return publicUrl;
+      }
+
+      // File is in temp directory, move it to final uploads directory
+      const newFileName = `${Date.now()}-${baseName}${ext}`;
+      const destPath = path.join(uploadsDir, newFileName);
+
+      // Use copy + delete instead of rename for better reliability
+      await fsp.copyFile(absInput, destPath);
+      await safeUnlink(absInput);
+
+      const publicUrl = getPublicUploadUrl(newFileName);
+      console.log("✅ Uploaded locally:", publicUrl);
+      return publicUrl;
+      
+    } catch (error) {
+      console.error("❌ Local upload failed:", error);
+      throw error;
+    }
+  }
+};
+
+// ✅ Helper to validate and ensure file exists before processing
+export const ensureFileExists = async (filePath) => {
+  if (!existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+  
+  // Check if file is accessible
+  try {
+    await fsp.access(filePath, fsp.constants.R_OK);
+    return true;
+  } catch (error) {
+    throw new Error(`File not accessible: ${filePath} - ${error.message}`);
+  }
+};
+
+// ✅ Helper to get file info for debugging
+export const getFileInfo = (filePath) => {
+  if (!existsSync(filePath)) {
+    return { exists: false, path: filePath };
+  }
+  
+  const stats = fs.statSync(filePath);
+  return {
+    exists: true,
+    path: filePath,
+    size: stats.size,
+    modified: stats.mtime,
+    isFile: stats.isFile(),
+    isDirectory: stats.isDirectory()
+  };
+};
 
 export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
+  if (!process.env.R2_BUCKET_NAME) {
+    throw new Error("R2_BUCKET_NAME environment variable is not configured");
+  }
+
   const command = new GetObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME,
     Key: fileKey,
@@ -162,29 +623,31 @@ export const generateSignedUrl = async (fileKey, expiresIn = 3600) => {
 };
 
 export const deleteFileFromR2 = async (filePathOrUrl) => {
-  if (!filePathOrUrl) {
-    throw new Error("File path or key is required for deletion");
+  if (!process.env.R2_BUCKET_NAME) {
+    throw new Error("R2_BUCKET_NAME environment variable is not configured");
   }
 
- 
-  const baseUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, "") || "";
-  console.log(`Base URL for R2: ${baseUrl}`);
-  const fileKey = filePathOrUrl.startsWith("http")
-    ? filePathOrUrl.replace(baseUrl + "/", "")
-    : filePathOrUrl;
-  console.log(`File key to delete: ${fileKey}`);
+  if (!filePathOrUrl) throw new Error("File path or key is required");
+
+  let fileKey;
+  
+  if (filePathOrUrl.startsWith("http")) {
+    // Extract key from URL
+    const url = new URL(filePathOrUrl);
+    fileKey = url.pathname.substring(1); // Remove leading slash
+  } else {
+    fileKey = filePathOrUrl;
+  }
 
   try {
-    const command = new DeleteObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: fileKey,
-    });
-
-    await s3.send(command);
+    await s3.send(new DeleteObjectCommand({ 
+      Bucket: process.env.R2_BUCKET_NAME, 
+      Key: fileKey 
+    }));
     console.log(`✅ Deleted from R2: ${fileKey}`);
-    return { success: true, message: `File "${fileKey}" deleted successfully.` };
+    return { success: true };
   } catch (error) {
     console.error(`❌ Failed to delete "${fileKey}" from R2:`, error);
-    throw new Error(`Failed to delete "${fileKey}" from R2: ${error.message}`);
+    throw error;
   }
 };
