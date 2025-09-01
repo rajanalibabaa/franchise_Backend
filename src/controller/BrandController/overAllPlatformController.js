@@ -22,25 +22,10 @@ import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import {likeandshortlist} from "../../controller/BrandController/BrandListingController.js"
 
 
+
+
+
 export const overAllPlatform = async (req, res) => {
-  try {
-    res.status(200).json({
-      status: "success",
-      message: "API is working fine",
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Internal Server Error",
-    });
-  } finally {
-    console.log("overAllPlatform API called");
-  }     
-};
-
-
-
-export const getTopAutomotive = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
@@ -63,16 +48,16 @@ export const getTopAutomotive = async (req, res) => {
           "franchiseDetails.brandCategories.main": main
         }
       },
-       {
-        $match: {
-          "franchiseDetails.brandCategories.sub": sub
-        }
-      },
-      {
-        $match: {
-          "franchiseDetails.brandCategories.child": child
-        }
-      },
+      //  {
+      //   $match: {
+      //     "franchiseDetails.brandCategories.sub": sub
+      //   }
+      // },
+      // {
+      //   $match: {
+      //     "franchiseDetails.brandCategories.child": child
+      //   }
+      // },
       {
         $lookup: {
           from: "branddetails",
