@@ -1830,13 +1830,25 @@ export const getTopCafes = async (req, res) => {
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
+    const { main , sub , child} = req.query
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const aggregationPipeline  = [
-      {
+      // {
+      //   $match: {
+      //     "franchiseDetails.brandCategories.child": "Coffee & Tea Cafes"
+      //   }
+      // },
+
+       {
         $match: {
-          "franchiseDetails.brandCategories.child": "Coffee & Tea Cafes"
+          "franchiseDetails.brandCategories.main": main
+        }
+      },
+       {
+        $match: {
+          "franchiseDetails.brandCategories.child": child
         }
       },
       {

@@ -26,6 +26,7 @@ import { subscribeRouter } from "./src/Routes/SubcribeRoutes/subscribeRoutes.js"
 import { OtherIndustriesRouter } from "./src/Routes/OtherIndustriesRoutes/OtherIndustriesRoutes.js";
 import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js";
 import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/newIncomingBrandRoutes.js";
+import { overAllPlatformRoutes } from "./src/Routes/BrandRoutes/overAllPlatformRoutes.js";
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.use(adminAuthRoutes);
 router.use(InvestorRouter);
 router.use(brandListingRoutes);
 router.use(filterRouter);
+router.use(overAllPlatformRoutes)
 
 // admin
 router.use(adminRoutess);
