@@ -2664,7 +2664,7 @@ export const getFoodAndBeverageCategory = async (req, res) => {
 export const getBrandById = async (req, res) => {
   const { id } = req.params;
 
-  const brand = req.brandUser;
+  // const brand = req.brandUser;
   // if (id !== brand?.uuid) {
   //   return res.json(
   //     new ApiResponse(401,null,"Unathorize request")

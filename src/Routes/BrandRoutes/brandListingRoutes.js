@@ -58,7 +58,9 @@ router.get(
   getFoodAndBeverageCategory
 );
 router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
+// router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
 router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
+
 router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
 router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
 router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)

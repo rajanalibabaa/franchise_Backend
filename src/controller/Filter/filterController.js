@@ -13,7 +13,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const id = req.query.id ;
     // console.log("-------- :",req.query.id)
 
-    // Get all filters from query parameters (changed from body to query)
     const {
       maincat,
       subcat,
@@ -84,7 +83,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     if (subcat)
       match["franchiseDetails.franchiseDetails.brandCategories.sub"] = subcat;
     if (childcat)
-      match["franchiseDetails.franchiseDetails.brandCategories.child"] =childcat;
+      match["franchiseDetails.franchiseDetails.brandCategories.child"] = childcat;
 
     // Investment range filter (for array of objects)
     if (investmentRange) {
@@ -160,7 +159,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     }
 
     if (locationConditions.length > 0) {
-      match.$and = (match.$and || []).concat(locationConditions);
+      match.$and = (match?.$and || []).concat(locationConditions);
     }
 
     const aggregationPipeline = [
@@ -325,7 +324,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
-
+    
     return res.json(
       new ApiResponse(
         200,
@@ -351,332 +350,102 @@ export const getAllBrandsAndFilter = async (req, res) => {
   }
 };
 
-// export const getAllFoodAndBeverageCategoryBrandsAndFilter = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 20;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id;
-
-//     // Get all filters from query parameters
-//     const {
-//       maincat,
-//       subcat,
-//       childcat,
-//       serchterm,
-//       country,
-//       state,
-//       district,
-//       city,
-//       investmentRange,
-//       modelType,
-//     } = req.query || {};
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     // Build match conditions
-//     let match = {};
-
-//     // Category logic: maincat, subcat, childcat
-//     let mainCategory;
-//     let relatedCategories = [];
-//     let matchCategory = {};
-
-//     // If childcat or subcat is provided, fetch mainCategory and relatedCategories
-//     if (childcat) {
-//       const categoryInfo = await BrandFranchiseDetails.aggregate([
-//         { $match: { "franchiseDetails.brandCategories.child": childcat } },
-//         {
-//           $group: {
-//             _id: "$franchiseDetails.brandCategories.main",
-//             subCategories: { $addToSet: "$franchiseDetails.brandCategories.sub" }
-//           }
-//         },
-//         { $project: { _id: 0, mainCategory: "$_id", subCategories: 1 } }
-//       ]);
-//       if (!categoryInfo || categoryInfo.length === 0) {
-//         return res.json(new ApiResponse(404, null, "Child category not found"));
-//       }
-//       mainCategory = categoryInfo[0].mainCategory;
-//       relatedCategories = [childcat];
-//       matchCategory = {
-//         "franchiseDetails.franchiseDetails.brandCategories.main": mainCategory,
-//         "franchiseDetails.franchiseDetails.brandCategories.child": childcat
-//       };
-//     } else if (subcat) {
-//       const categoryInfo = await BrandFranchiseDetails.aggregate([
-//         { $match: { "franchiseDetails.brandCategories.sub": subcat } },
-//         {
-//           $group: {
-//             _id: "$franchiseDetails.brandCategories.main",
-//             subCategories: { $addToSet: "$franchiseDetails.brandCategories.sub" }
-//           }
-//         },
-//         { $project: { _id: 0, mainCategory: "$_id", subCategories: 1 } }
-//       ]);
-//       if (!categoryInfo || categoryInfo.length === 0) {
-//         return res.json(new ApiResponse(404, null, "Sub category not found"));
-//       }
-//       mainCategory = categoryInfo[0].mainCategory;
-//       relatedCategories = categoryInfo[0].subCategories;
-//       matchCategory = {
-//         "franchiseDetails.franchiseDetails.brandCategories.main": mainCategory,
-//         "franchiseDetails.franchiseDetails.brandCategories.sub": { $in: relatedCategories }
-//       };
-//     } else if (maincat) {
-//       mainCategory = maincat;
-//       matchCategory = {
-//         "franchiseDetails.franchiseDetails.brandCategories.main": maincat
-//       };
-//     }
-
-//     // Only allow Food & Beverage main category
-//     if (mainCategory && mainCategory !== "Food & Beverage") {
-//       return res.json(new ApiResponse(404, null, "Brand not found"));
-//     }
-
-//     // Merge category match into main match
-//     match = { ...match, ...matchCategory };
-
-//     // Text search for brandName or brandDescription
-//     if (serchterm) {
-//       match.$or = [
-//         { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
-//         { "franchiseDetails.franchiseDetails.brandDescription": { $regex: serchterm, $options: "i" } },
-//         { "franchiseDetails.franchiseDetails.brandCategories.main": { $regex: serchterm, $options: "i" } },
-//         { "franchiseDetails.franchiseDetails.brandCategories.sub": { $regex: serchterm, $options: "i" } },
-//         { "franchiseDetails.franchiseDetails.brandCategories.child": { $regex: serchterm, $options: "i" } },
-//         { "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state": { $regex: serchterm, $options: "i" } },
-//         { "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.state": { $regex: serchterm, $options: "i" } },
-//         { "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.district": { $regex: serchterm, $options: "i" } },
-//         { "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.cities": { $regex: serchterm, $options: "i" } },
-//         { "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.city": { $regex: serchterm, $options: "i" } },
-//       ];
-//     }
-
-//     // Investment range filter (for array of objects)
-//     if (investmentRange) {
-//       match["franchiseDetails.franchiseDetails.fico"] = {
-//         $elemMatch: { investmentRange: investmentRange },
-//       };
-//     }
-//     // Model type filter
-//     if (modelType) {
-//       match["franchiseDetails.franchiseDetails.fico.franchiseModel"] = modelType;
-//     }
-
-//     // Location filters - for both current outlets and expansion locations
-//     const locationConditions = [];
-
-//     if (country) {
-//       locationConditions.push({
-//         $or: [
-//           { "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.country": country },
-//           { "brandexpansionlocationdata.expansionLocationData.currentOutletLocations.international.country": country },
-//         ],
-//       });
-//     }
-//     if (state) {
-//       locationConditions.push({
-//         $or: [
-//           { "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state": state },
-//           { "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.state": state },
-//         ],
-//       });
-//     }
-//     if (district) {
-//       locationConditions.push({
-//         $or: [
-//           { "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.district": district },
-//         ],
-//       });
-//     }
-//     if (city) {
-//       locationConditions.push({
-//         $or: [
-//           { "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.cities": city },
-//           { "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.city": city },
-//         ],
-//       });
-//     }
-//     if (locationConditions.length > 0) {
-//       match.$and = (match.$and || []).concat(locationConditions);
-//     }
-
-//     const aggregationPipeline = [
-//       {
-//         $lookup: {
-//           from: "brandfranchisedetails",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "franchiseDetails",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "brandexpansionlocationdatas",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "brandexpansionlocationdata",
-//         },
-//       },
-//       { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
-//       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-//       { $unwind: { path: "$brandexpansionlocationdata", preserveNullAndEmptyArrays: true } },
-//       ...(Object.keys(match).length > 0 ? [{ $match: match }] : []),
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$_id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$_id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: 0,
-//           brandID: "$brandID",
-//           uuid: 1,
-//           isLiked: 1,
-//           isShortListed: 1,
-//           brandname: "$brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: [
-//               "$franchiseDetails.franchiseDetails.brandCategories",
-//               null,
-//             ],
-//           },
-//           brandDescription: {
-//             $ifNull: [
-//               "$franchiseDetails.franchiseDetails.brandDescription", null
-//             ],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel"
-//               }
-//             }
-//           },
-//           logo: {
-//             $cond: {
-//               if: { $isArray: "$uploads.uploads.brandLogo" },
-//               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//               else: null,
-//             },
-//           },
-//           franchiseVideos: {
-//             $cond: {
-//               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-//               then: {
-//                 $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//               },
-//               else: null,
-//             },
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     // Count total matching documents
-//     const countPipeline = [
-//       {
-//         $lookup: {
-//           from: "brandfranchisedetails",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "franchiseDetails",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "brandexpansionlocationdatas",
-//           localField: "uuid",
-//           foreignField: "brandOwnerId",
-//           as: "brandexpansionlocationdata",
-//         },
-//       },
-//       { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
-//       { $unwind: { path: "$brandexpansionlocationdata", preserveNullAndEmptyArrays: true } },
-//       ...(Object.keys(match).length > 0 ? [{ $match: match }] : []),
-//       { $count: "total" },
-//     ];
-
-//     const [brands, countResult] = await Promise.all([
-//       BrandDetails.aggregate(aggregationPipeline),
-//       BrandDetails.aggregate(countPipeline),
-//     ]);
-
-//     const totalCount = countResult[0]?.total || 0;
-
-//     if (!brands || brands.length === 0) {
-//       return res.json(
-//         new ApiResponse(404, null, "No brands found matching the criteria")
-//       );
-//     }
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           mainCategory,
-//           relatedCategories,
-//           currentCategory: childcat || subcat || maincat,
-//           brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Brand data fetched successfully"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching brands:", error);
-//     return res.json(
-//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
-//     );
-//   }
-// }
-
-
-
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main,sub, district, state  } = req.query;
-  console.log("Main category:", main);
+
 
   try {
+
+  if (main) {
+  const subcatData = await BrandFranchiseDetails.aggregate([
+    {
+      $match: {
+        "franchiseDetails.brandCategories.main": main
+      }
+    },
+    {
+      $lookup: {
+        from: "brandexpansionlocationdatas",
+        localField: "brandOwnerId",
+        foreignField: "brandOwnerId",
+        as: "brandexpansionlocationdata",
+      },
+    },
+    {
+      $unwind: {
+        path: "$brandexpansionlocationdata",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        subcat: "$franchiseDetails.brandCategories.sub",
+        childcat: "$franchiseDetails.brandCategories.child",
+        investmentRange: "$franchiseDetails.fico.investmentRange",
+        franchiseModel: "$franchiseDetails.fico.franchiseModel",
+        states: "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state",
+      }
+    },
+    {
+      $unwind: { 
+        path: "$states", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $unwind: { 
+        path: "$franchiseModel", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $unwind: { 
+        path: "$investmentRange", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $match: {
+        subcat: { $exists: true, $ne: null, $ne: "" },
+        childcat: { $exists: true, $ne: null, $ne: "" }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        subcat: { $addToSet: "$subcat" },
+        childcat: { $addToSet: "$childcat" },
+        investmentRange: { $addToSet: "$investmentRange" },
+        franchiseModel: { $addToSet: "$franchiseModel" },
+        states: { $addToSet: "$states" }, // now flat unique list
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        subcat: 1,
+        childcat: 1,
+        investmentRange: 1,
+        franchiseModel: 1,
+        states: 1
+      }
+    }
+  ]);
+
+  const result = subcatData[0] || { 
+    subcat: [], 
+    childcat: [], 
+    investmentRange: [], 
+    franchiseModel: [], 
+    states: [] 
+  };
+
+  return res.json(
+    new ApiResponse(200, result, "sub categories fetched successfully")
+  );
+}
+
+
 
      if (sub) {
       const childcatData = await BrandFranchiseDetails.aggregate([
@@ -770,7 +539,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
     }
 
     // Handle state filter - return districts for the state
-    if (state) {
+    if (state) { 
       const districtsData = await BrandExpansionLocationData.aggregate([
         {
           $match: {
