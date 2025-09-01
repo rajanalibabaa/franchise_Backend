@@ -550,6 +550,7 @@ export const getTopFoodFranchise = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
+
     const aggregationPipeline = [
       { 
         $match: { 
@@ -2473,6 +2474,192 @@ export const getBrandsByCategory = async (req, res) => {
     return res.json(new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`));
   }
 };
+
+
+export const getFoodAndBeverageCategory = async (req, res) => {  
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
+    const id = req.query.id || null;
+    const childCategory = req.query.childCategory || null;
+    const subCategory = req.query.subCategory || null;
+
+    if (!childCategory && !subCategory) {
+      return res.json(new ApiResponse(400, null, "Either childCategory or subCategory is required"));
+    }
+
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+    let mainCategory;
+    let relatedCategories = [];
+    let matchCondition = {};
+
+    if (childCategory) {
+      const categoryInfo = await BrandFranchiseDetails.aggregate([
+        { $match: { "franchiseDetails.brandCategories.child": childCategory } },
+        {
+          $group: {
+            _id: "$franchiseDetails.brandCategories.main",
+            subCategories: { $addToSet: "$franchiseDetails.brandCategories.sub" }
+          }
+        },
+        { $project: { _id: 0, mainCategory: "$_id", subCategories: 1 } }
+      ]);
+
+      if (!categoryInfo || categoryInfo.length === 0) {
+        return res.json(new ApiResponse(404, null, "Child category not found"));
+      }
+
+      mainCategory = categoryInfo[0].mainCategory;
+      relatedCategories = [childCategory];
+      matchCondition = {
+        "franchiseDetails.brandCategories.main": mainCategory,
+        "franchiseDetails.brandCategories.child": childCategory
+      };
+
+    } else if (subCategory) {
+      const categoryInfo = await BrandFranchiseDetails.aggregate([
+        { $match: { "franchiseDetails.brandCategories.sub": subCategory } },
+        {
+          $group: {
+            _id: "$franchiseDetails.brandCategories.main",
+            subCategories: { $addToSet: "$franchiseDetails.brandCategories.sub" }
+          }
+        },
+        { $project: { _id: 0, mainCategory: "$_id", subCategories: 1 } }
+      ]);
+
+      if (!categoryInfo || categoryInfo.length === 0) {
+        return res.json(new ApiResponse(404, null, "Sub category not found"));
+      }
+
+      mainCategory = categoryInfo[0].mainCategory;
+      relatedCategories = categoryInfo[0].subCategories;
+      matchCondition = {
+        "franchiseDetails.brandCategories.main": mainCategory,
+        "franchiseDetails.brandCategories.sub": { $in: relatedCategories }
+      };
+    }
+
+    // Only allow Food & Beverage main category
+    if (mainCategory === "Food & Beverage") {
+      return res.json(new ApiResponse(404, null, "Brand not found"));
+    }
+
+    const aggregationPipeline = [
+      { $match: matchCondition },
+      {
+        $lookup: {
+          from: "branddetails",
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo"
+        }
+      },
+      { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "brandOwnerId",
+          foreignField: "brandOwnerId",
+          as: "uploads"
+        }
+      },
+      { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          isLiked: {
+            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          },
+          isShortListed: {
+            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+          }
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          _id: 0,
+          brandID: "$brandInfo.brandID",
+          uuid: "$brandOwnerId",
+          isLiked: 1,
+          isShortListed: 1,
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null]
+          },
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] }
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel"
+              }
+            }
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null
+            }
+          },
+          franchiseVideos: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              else: null
+            }
+          }
+        }
+      },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    const [brandsData, totalCount] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.countDocuments(matchCondition)
+    ]);
+
+    if (!brandsData || brandsData.length === 0) {
+      return res.json(new ApiResponse(404, null, "No brands found for this category"));
+    }
+
+    const brands = brandsData;
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return res.json(
+      new ApiResponse(200, {
+        mainCategory,
+        relatedCategories,
+        currentCategory: childCategory || subCategory,
+        brands,
+        pagination: {
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
+        }
+      }, "Brands fetched successfully by category")
+    );
+  } catch (error) {
+    console.error("Error fetching brands by category:", error);
+    return res.json(new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`));
+  }
+};
+
+
+
 
 export const getBrandById = async (req, res) => {
   const { id } = req.params;
