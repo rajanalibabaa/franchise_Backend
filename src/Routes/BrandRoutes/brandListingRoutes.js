@@ -24,6 +24,7 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
+ 
 
 router.post(
   "/v1/brandlisting/createBrandListing",
@@ -56,6 +57,18 @@ router.get(
   "/v1/brandlisting/getFoodAndBeverageCategory",
   getFoodAndBeverageCategory
 );
+router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
+// router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
+router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
+
+router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
+router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
+router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)
+router.get('/v1/brandlisting/getTopCafes',getTopCafes)
+router.get('/v1/brandlisting/getTopDesertAndBakery',getTopDesertAndBakery)
+router.get('/v1/brandlisting/getTopTrucksAndKiosks',getTopTrucksAndKiosks)
+router.get('/v1/brandlisting/getTopRestaurants',getTopRestaurants)
+router.get('/v1/brandlisting/getBrandsByChildCategory',getBrandsByCategory)
 router.patch(
   "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([
