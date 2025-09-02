@@ -12,55 +12,91 @@ export const getNewIncomingBrands = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
-    const id = req.query.id || null;
-    // const NewIncomingBrands = mongoose.model("NewIncomingBrands");
-    const brands = await NewIncomingBrands.aggregate([
-        { $limit: limit },
-        { $skip: skip },
-        { $project: { 
-            _id: 0,
-            uuid: 1,
-            brandID: 1,
-            brandName: "$brandDetails.brandName",
-            fullName: "$brandDetails.fullName",
-            brandCategories: "$franchiseDetails.brandCategories",
-            investmentRange:{ $cond: { if: { $gt: [ { $size: "$franchiseDetails.fico.investmentRange" }, 0 ] }, then: { $arrayElemAt: [ "$franchiseDetails.fico.investmentRange", 0 ] }, else: null } }, 
-            // logo: {$arrayElemAt : ["$uploads.brandLogo"]}, 
-            logo: { $cond: { if: { $gt: [ { $size: "$uploads.brandLogo" }, 0 ] }, then: { $arrayElemAt: [ "$uploads.brandLogo", 0 ] }, else: null } }, 
-            seen: 1, 
-            createdAt: 1
-        } }
-    ])
-    
-    if (brands.length === 0) {
-      return res.json(
-        new ApiResponse(304,null , "No new incoming brands found")
-      )
+
+    const { startDate, endDate } = req.query;
+
+    const matchStage = {};
+    if (startDate || endDate) {
+      matchStage.createdAt = {};
+      if (startDate) {
+        matchStage.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        matchStage.createdAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+      }
     }
 
-    const totalBrands = await NewIncomingBrands.countDocuments();
-    const unSeenBrandsCount = await NewIncomingBrands.find({seen: false}).countDocuments();
+    
+    const brands = await NewIncomingBrands.aggregate([
+      { $match: matchStage },
+      
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          uuid: 1,
+          brandID: 1,
+          brandName: "$brandDetails.brandName",
+          fullName: "$brandDetails.fullName",
+          brandCategories: "$franchiseDetails.brandCategories",
+          investmentRange: {
+            $cond: {
+              if: { $gt: [{ $size: "$franchiseDetails.fico.investmentRange" }, 0] },
+              then: { $arrayElemAt: ["$franchiseDetails.fico.investmentRange", 0] },
+              else: null,
+            },
+          },
+          logo: {
+            $cond: {
+              if: { $gt: [{ $size: "$uploads.brandLogo" }, 0] },
+              then: { $arrayElemAt: ["$uploads.brandLogo", 0] },
+              else: null,
+            },
+          },
+          seen: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
+    const totalBrands = await NewIncomingBrands.countDocuments(matchStage);
+
+    const unSeenBrandsCount = await NewIncomingBrands.countDocuments({
+      ...matchStage,
+      seen: false,
+    });
+
     const totalPages = Math.ceil(totalBrands / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
 
+    if (brands.length === 0) {
+      return res.json(
+        new ApiResponse(304, null, "No new incoming brands found")
+      );
+    }
 
     return res.json(
-      new ApiResponse(200, 
+      new ApiResponse(
+        200,
         {
-            brands,
-            currentPage: page,
-            totalPages,
-            totalBrands,
-            hasNext,
-            hasPrevious,
-            unSeenBrandsCount
-        }, "New incoming brands fetched successfully")
-    )
+          brands,
+          currentPage: page,
+          totalPages,
+          totalBrands,
+          hasNext,
+          hasPrevious,
+          unSeenBrandsCount,
+        },
+        "New incoming brands fetched successfully"
+      )
+    );
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in getNewIncomingBrands:", error);
+    return res.status(500).json({ message: error.message });
   }
-}
+};
+
 
 export const getNewIncomingBrandById = async (req, res) => {
   try {
@@ -172,7 +208,13 @@ export const deleteBrandById = async (req, res) => {
               })
             ]);
 
-        if (!newBrand && !newBrandFranchiseDetails && !newBrandExpansionLocationData && !newBrandUploads) {
+        const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete(
+          {
+            uuid:id
+          }
+        )  
+
+        if ((!newBrand && !newBrandFranchiseDetails && !newBrandExpansionLocationData && !newBrandUploads) || !deletenewIncomingBrand) {
             return res.json(
                 new ApiResponse(404, null, "No brand found with the given ID")
             )
@@ -186,6 +228,35 @@ export const deleteBrandById = async (req, res) => {
                 locations: newBrandExpansionLocationData,
                 uploads: newBrandUploads
               }, "Brand listing deleted successfully")
+        )
+
+    } catch (error) {
+        return res.json(
+            new ApiResponse(500, null, "Internal Server Error")
+        )
+    }
+}
+export const deleteNewIncomingBrandById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        
+
+        const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete(
+          {
+            uuid:id
+          }
+        )  
+
+        if (!deletenewIncomingBrand) {
+            return res.json(
+                new ApiResponse(404, null, "No brand found with the given ID")
+            )
+        }
+
+        
+        return res.json(
+            new ApiResponse(200, null, "Brand listing deleted successfully")
         )
 
     } catch (error) {
