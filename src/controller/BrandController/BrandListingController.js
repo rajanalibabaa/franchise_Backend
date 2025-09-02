@@ -550,6 +550,7 @@ export const getTopFoodFranchise = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
+
     const aggregationPipeline = [
       { 
         $match: { 
@@ -2478,11 +2479,11 @@ export const getBrandById = async (req, res) => {
   const { id } = req.params;
 
   const brand = req.brandUser;
-  // if (id !== brand?.uuid) {
-  //   return res.json(
-  //     new ApiResponse(401,null,"Unathorize request")
-  //   )
-  // }
+  if (id !== brand?.uuid) {
+    return res.json(
+      new ApiResponse(401,null,"Unathorize request")
+    )
+  }
 
   try {
     

@@ -70,6 +70,8 @@ configureFacebookStrategy();
 
 // Global rate limit
 app.use(limiter);
+app.use('/uploads', express.static(path.resolve('./uploads')));
+// Connect to DB (ensure DB is connected before listening)
 
 // ✅ Create HTTP server & Socket.IO
 const httpServer = createServer(app);

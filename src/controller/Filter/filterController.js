@@ -13,7 +13,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const id = req.query.id ;
     // console.log("-------- :",req.query.id)
 
-    // Get all filters from query parameters (changed from body to query)
     const {
       maincat,
       subcat,
@@ -84,7 +83,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     if (subcat)
       match["franchiseDetails.franchiseDetails.brandCategories.sub"] = subcat;
     if (childcat)
-      match["franchiseDetails.franchiseDetails.brandCategories.child"] =childcat;
+      match["franchiseDetails.franchiseDetails.brandCategories.child"] = childcat;
 
     // Investment range filter (for array of objects)
     if (investmentRange) {
@@ -160,7 +159,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     }
 
     if (locationConditions.length > 0) {
-      match.$and = (match.$and || []).concat(locationConditions);
+      match.$and = (match?.$and || []).concat(locationConditions);
     }
 
     const aggregationPipeline = [
@@ -325,7 +324,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
-
+    
     return res.json(
       new ApiResponse(
         200,
@@ -351,17 +350,113 @@ export const getAllBrandsAndFilter = async (req, res) => {
   }
 };
 
-
 export const getAllBrandFiltersdata = async (req, res) => {
-  const { sub, district, state  } = req.query;
+  const { main,sub, district, state  } = req.query;
+
 
   try {
+
+  if (main) {
+  const subcatData = await BrandFranchiseDetails.aggregate([
+    {
+      $match: {
+        "franchiseDetails.brandCategories.main": main
+      }
+    },
+    {
+      $lookup: {
+        from: "brandexpansionlocationdatas",
+        localField: "brandOwnerId",
+        foreignField: "brandOwnerId",
+        as: "brandexpansionlocationdata",
+      },
+    },
+    {
+      $unwind: {
+        path: "$brandexpansionlocationdata",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        subcat: "$franchiseDetails.brandCategories.sub",
+        childcat: "$franchiseDetails.brandCategories.child",
+        investmentRange: "$franchiseDetails.fico.investmentRange",
+        franchiseModel: "$franchiseDetails.fico.franchiseModel",
+        states: "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state",
+      }
+    },
+    {
+      $unwind: { 
+        path: "$states", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $unwind: { 
+        path: "$franchiseModel", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $unwind: { 
+        path: "$investmentRange", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $match: {
+        subcat: { $exists: true, $ne: null, $ne: "" },
+        childcat: { $exists: true, $ne: null, $ne: "" }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        subcat: { $addToSet: "$subcat" },
+        childcat: { $addToSet: "$childcat" },
+        investmentRange: { $addToSet: "$investmentRange" },
+        franchiseModel: { $addToSet: "$franchiseModel" },
+        states: { $addToSet: "$states" }, // now flat unique list
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        subcat: 1,
+        childcat: 1,
+        investmentRange: 1,
+        franchiseModel: 1,
+        states: 1
+      }
+    }
+  ]);
+
+  const result = subcatData[0] || { 
+    subcat: [], 
+    childcat: [], 
+    investmentRange: [], 
+    franchiseModel: [], 
+    states: [] 
+  };
+
+  return res.json(
+    new ApiResponse(200, result, "sub categories fetched successfully")
+  );
+}
+
+
 
      if (sub) {
       const childcatData = await BrandFranchiseDetails.aggregate([
         {
           $match: {
             "franchiseDetails.brandCategories.sub": sub
+          }
+        },
+        {
+          $match: {
+            "franchiseDetails.brandCategories.main": main
           }
         },
         {
@@ -444,7 +539,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
     }
 
     // Handle state filter - return districts for the state
-    if (state) {
+    if (state) { 
       const districtsData = await BrandExpansionLocationData.aggregate([
         {
           $match: {
