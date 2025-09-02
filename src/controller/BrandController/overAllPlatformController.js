@@ -25,39 +25,44 @@ import {likeandshortlist} from "../../controller/BrandController/BrandListingCon
 
 
 
-export const overAllPlatform = async (req, res) => {
+export const overAllPlatformOnlyMainCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
-
+ 
     const { main , sub , child} = req.query
-
+ 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-
+ 
+    const OverAllCategory = [];
+   
+    if (main) {
+      OverAllCategory.push({ "franchiseDetails.brandCategories.main": main });
+    }
+    if (main && sub) {
+      OverAllCategory.push({ "franchiseDetails.brandCategories.main": main });
+      OverAllCategory.push({ "franchiseDetails.brandCategories.sub": sub });
+    }
+    if (main && sub && child) {
+      OverAllCategory.push({ "franchiseDetails.brandCategories.main": main });
+      OverAllCategory.push({ "franchiseDetails.brandCategories.sub": sub });
+      OverAllCategory.push({ "franchiseDetails.brandCategories.child": child });
+    }
+ 
+ 
     const aggregationPipeline = [
-      // { 
-      //   $match: { 
-      //     "franchiseDetails.brandCategories.main": "Automotive" 
-      //   } 
-      // },
         {
         $match: {
-          "franchiseDetails.brandCategories.main": main
+          $and: [
+            // { "franchiseDetails.brandCategories.sub": { $ne: null } },
+            // { "franchiseDetails.brandCategories.sub": { $ne: "" } },
+            ...OverAllCategory
+          ]
         }
       },
-      //  {
-      //   $match: {
-      //     "franchiseDetails.brandCategories.sub": sub
-      //   }
-      // },
-      // {
-      //   $match: {
-      //     "franchiseDetails.brandCategories.child": child
-      //   }
-      // },
+     
       {
         $lookup: {
           from: "branddetails",
@@ -66,11 +71,11 @@ export const overAllPlatform = async (req, res) => {
           as: "brandInfo"
         }
       },
-      { 
-        $unwind: { 
-          path: "$brandInfo", 
-          preserveNullAndEmptyArrays: true 
-        } 
+      {
+        $unwind: {
+          path: "$brandInfo",
+          preserveNullAndEmptyArrays: true
+        }
       },
       {
         $lookup: {
@@ -80,11 +85,11 @@ export const overAllPlatform = async (req, res) => {
           as: "uploads"
         }
       },
-      { 
-        $unwind: { 
-          path: "$uploads", 
-          preserveNullAndEmptyArrays: true 
-        } 
+      {
+        $unwind: {
+          path: "$uploads",
+          preserveNullAndEmptyArrays: true
+        }
       },
       {
         $addFields: {
@@ -139,24 +144,24 @@ export const overAllPlatform = async (req, res) => {
       { $skip: skip },
       { $limit: limit }
     ];
-
+ 
     const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.countDocuments({ 
-        "franchiseDetails.brandCategories.sub": "Food Franchises" 
+      BrandFranchiseDetails.countDocuments({
+        "franchiseDetails.brandCategories.sub": "Food Franchises"
       })
     ]);
-
+ 
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top food franchises found"));
     }
-    
+   
      const brands = shuffleArray(brandsData)
-
+ 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
-
+ 
     return res.json(
       new ApiResponse(200, {
         brands: brands,
@@ -170,7 +175,7 @@ export const overAllPlatform = async (req, res) => {
         }
       }, "Top food franchises fetched successfully")
     );
-
+ 
   } catch (error) {
     console.error("Error fetching top food franchises:", error);
     return res.json(
@@ -178,3 +183,4 @@ export const overAllPlatform = async (req, res) => {
     );
   }
 };
+ 
