@@ -22,24 +22,41 @@ dotenv.config();  // ✅ Load env FIRST
 
 const app = express();
 
-// Middlewares
-app.use(compression());
-
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 100,
   message: "Too many requests, try again later."
 });
 
-app.use(helmet());
-app.use(cors({
-  origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-  optionsSuccessStatus: 200,
-}));
+// Middlewares
+app.use(limiter);
 
+app.use(helmet());
+
+
+
+
+// app.use(cors({
+//   origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+//   optionsSuccessStatus: 200,
+// }));
+const allowedOrigins = ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'];
+
+app.use(cors({
+  origin: function(origin, callback){
+    if(!origin) return callback(null, true); // allow non-browser requests like Postman
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = 'CORS policy: This origin is not allowed';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+}));
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -59,6 +76,7 @@ app.use(session({
     maxAge: 14 * 24 * 60 * 60 * 1000,
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 }));
 
@@ -69,7 +87,6 @@ configureGoogleStrategy();
 configureFacebookStrategy();
 
 // Global rate limit
-app.use(limiter);
 app.use('/uploads', express.static(path.resolve('./uploads')));
 // Connect to DB (ensure DB is connected before listening)
 
