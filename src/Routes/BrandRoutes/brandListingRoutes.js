@@ -25,7 +25,7 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 
 const router = express.Router();
  
-
+``
 router.post(
   "/v1/brandlisting/createBrandListing",
   upload.fields([

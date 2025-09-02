@@ -11,7 +11,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const id = req.query.id ;
-    // console.log("-------- :",req.query.id)
+    console.log("-------- :",req.query.id)
 
     const {
       maincat,
@@ -28,6 +28,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
+    console.log(maincat)
    
     // Build match conditions
     const match = {};
@@ -353,6 +354,8 @@ export const getAllBrandsAndFilter = async (req, res) => {
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main,sub, district, state  } = req.query;
 
+
+  console.log(main)
 
   try {
 
