@@ -455,11 +455,6 @@ export const getAllBrandFiltersdata = async (req, res) => {
           }
         },
         {
-          $match: {
-            "franchiseDetails.brandCategories.main": main
-          }
-        },
-        {
           $project: {
             childcat: "$franchiseDetails.brandCategories.child"
           }
