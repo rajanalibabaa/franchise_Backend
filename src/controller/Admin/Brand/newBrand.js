@@ -236,6 +236,7 @@ export const deleteBrandById = async (req, res) => {
         )
     }
 }
+
 export const deleteNewIncomingBrandById = async (req, res) => {
     try {
         const { id } = req.params;
