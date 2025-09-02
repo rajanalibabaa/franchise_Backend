@@ -15,12 +15,11 @@ router.post(
     { name: 'brandLogo', maxCount: 1 },
     { name: 'pancard', maxCount: 1},
     { name: 'businessPlan', maxCount: 1 },
-    { name: 'exteriorOutlet', maxCount: 5 },
+    { name: 'exteriorOutlet', maxCount: 5 }, 
     { name: 'franchisePromotionVideo', maxCount: 1 },
     { name: 'gstCertificate', maxCount: 1 },
     { name: 'interiorOutlet', maxCount: 5 }
   ])
- 
 ,createBrandListing )
 
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);

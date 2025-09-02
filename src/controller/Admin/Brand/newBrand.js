@@ -12,55 +12,71 @@ export const getNewIncomingBrands = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
-    const id = req.query.id || null;
-    // const NewIncomingBrands = mongoose.model("NewIncomingBrands");
+
     const brands = await NewIncomingBrands.aggregate([
-        { $limit: limit },
-        { $skip: skip },
-        { $project: { 
-            _id: 0,
-            uuid: 1,
-            brandID: 1,
-            brandName: "$brandDetails.brandName",
-            fullName: "$brandDetails.fullName",
-            brandCategories: "$franchiseDetails.brandCategories",
-            investmentRange:{ $cond: { if: { $gt: [ { $size: "$franchiseDetails.fico.investmentRange" }, 0 ] }, then: { $arrayElemAt: [ "$franchiseDetails.fico.investmentRange", 0 ] }, else: null } }, 
-            // logo: {$arrayElemAt : ["$uploads.brandLogo"]}, 
-            logo: { $cond: { if: { $gt: [ { $size: "$uploads.brandLogo" }, 0 ] }, then: { $arrayElemAt: [ "$uploads.brandLogo", 0 ] }, else: null } }, 
-            seen: 1, 
-            createdAt: 1
-        } }
-    ])
-    
+      { $skip: skip },              // ✅ Skip first N docs
+      { $limit: limit },            // ✅ Then limit the page size
+      {
+        $project: {
+          _id: 0,
+          uuid: 1,
+          brandID: 1,
+          brandName: "$brandDetails.brandName",
+          fullName: "$brandDetails.fullName",
+          brandCategories: "$franchiseDetails.brandCategories",
+          investmentRange: {
+            $cond: {
+              if: { $gt: [{ $size: "$franchiseDetails.fico.investmentRange" }, 0] },
+              then: { $arrayElemAt: ["$franchiseDetails.fico.investmentRange", 0] },
+              else: null,
+            },
+          },
+          logo: {
+            $cond: {
+              if: { $gt: [{ $size: "$uploads.brandLogo" }, 0] },
+              then: { $arrayElemAt: ["$uploads.brandLogo", 0] },
+              else: null,
+            },
+          },
+          seen: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
+
     if (brands.length === 0) {
       return res.json(
-        new ApiResponse(304,null , "No new incoming brands found")
-      )
+        new ApiResponse(304, null, "No new incoming brands found")
+      );
     }
 
+    // ✅ Counts
     const totalBrands = await NewIncomingBrands.countDocuments();
-    const unSeenBrandsCount = await NewIncomingBrands.find({seen: false}).countDocuments();
+    const unSeenBrandsCount = await NewIncomingBrands.countDocuments({ seen: false });
     const totalPages = Math.ceil(totalBrands / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
 
-
     return res.json(
-      new ApiResponse(200, 
+      new ApiResponse(
+        200,
         {
-            brands,
-            currentPage: page,
-            totalPages,
-            totalBrands,
-            hasNext,
-            hasPrevious,
-            unSeenBrandsCount
-        }, "New incoming brands fetched successfully")
-    )
+          brands,
+          currentPage: page,
+          totalPages,
+          totalBrands,
+          hasNext,
+          hasPrevious,
+          unSeenBrandsCount,
+        },
+        "New incoming brands fetched successfully"
+      )
+    );
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
+
 
 export const getNewIncomingBrandById = async (req, res) => {
   try {
