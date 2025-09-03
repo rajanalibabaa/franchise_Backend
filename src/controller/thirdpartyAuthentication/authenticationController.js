@@ -83,7 +83,6 @@ const facebookAuthProfile = async(req,res) => {
         const phone = user.phoneNumbers?.[0]?.value
         // const accessToken = user.accessToken
 
-        // console.log("user : ", firstName , lastName , email , profilePhoto, phone)
 
         const exists = await ThirdPartyAuth.findOne({
             $and: [
