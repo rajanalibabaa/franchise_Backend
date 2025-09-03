@@ -6,6 +6,8 @@ import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
+import { RegisterSuperAdmin } from "../../model/Admin/superAdmin/registerSuperAdmin.js";
+
 
 // Store OTP data with timestamp
 let otpData = {
@@ -39,7 +41,7 @@ const generateOTPforLogin = async (req, res) => {
         .json(new ApiResponse(400, null, "Phone number must be 10 digits"));
     }
 
-    const emailORMobileNumber = email || mobileNumber;
+    let  emailORMobileNumber = email || mobileNumber;
 
     const investorData = await InvsRegister.findOne({
       $or: [{ email }, { mobileNumber }],
@@ -204,6 +206,72 @@ const verifyLogin = async (req, res) => {
     );
   }
 };
+
+let adminOTPData = {
+  code : null,
+  timestamp: null,
+  email : null
+}
+export const generateOTPforAdminLogin = async(req,res)=>{
+    const {email} = req.body
+
+    if(!email){
+      return res.json(
+        new ApiResponse(404,{},'Please Enter The Email')
+      )
+    }
+
+     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      return res
+        .json(new ApiResponse(400, null, "Invalid email format"));
+    }
+
+    const exist = await RegisterSuperAdmin.findOne({
+      adminEmail : email
+    })
+    console.log("exist",exist.adminEmail);
+    
+    if(!exist){
+      res.json
+      (new ApiResponse(400,{},'Email Not Exist'))
+    }
+  
+   const otp = generateOTP()
+   console.log("otp",otp);
+   
+   adminOTPData = {
+  code : otp,
+  timestamp: Date.now(),
+  email : exist.adminEmail}
+
+    if(exist.adminEmail){
+      await sendEmailOTP(exist.adminEmail,otp)
+    }
+    
+     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
+}
+
+
+export const verifyAdminLoginOTP = (req,res)=>{
+console.log("xnxx :",adminOTPData?.code)
+ const {verifyOTP} = req.body
+ console.log("verifyOTP",verifyOTP);
+ 
+ if(!verifyOTP){
+  return res.json(new ApiResponse(400,{},'Please Enter the OTP'))
+ }
+
+ if(verifyOTP!==adminOTPData?.code){
+  return res.json(new ApiResponse(400,{},'Wrong otp ,check And Give correct otp'))
+ }
+adminOTPData = {
+     code : null,
+     timestamp:null,
+     email:null
+    }
+ return res.json(new ApiResponse(200,{},'Verification succesfully'))
+
+}
 
 export {
   generateOTPforLogin,

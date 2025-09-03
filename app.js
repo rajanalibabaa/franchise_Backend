@@ -26,6 +26,7 @@ import { OtherIndustriesRouter } from "./src/Routes/OtherIndustriesRoutes/OtherI
 import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js";
 import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/newIncomingBrandRoutes.js";
 import { overAllPlatformRoutes } from "./src/Routes/BrandRoutes/overAllPlatformRoutes.js";
+import { superAdminRouter } from "./src/Routes/AdminRoutes/superAdminRoutes/superAdminRoutes.js";
 
 const router = express.Router();
 
@@ -83,6 +84,9 @@ router.use(subscribeRouter);
 // OtherIndustries
 router.use(OtherIndustriesRouter);
 
+// superAdminRouter
+
+router.use(superAdminRouter)
 
 
 
