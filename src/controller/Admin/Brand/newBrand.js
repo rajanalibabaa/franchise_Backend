@@ -13,25 +13,9 @@ export const getNewIncomingBrands = async (req, res) => {
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
 
-    const { startDate, endDate } = req.query;
-
-    const matchStage = {};
-    if (startDate || endDate) {
-      matchStage.createdAt = {};
-      if (startDate) {
-        matchStage.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        matchStage.createdAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
-      }
-    }
-
-    
     const brands = await NewIncomingBrands.aggregate([
-      { $match: matchStage },
-      
-      { $skip: skip },
-      { $limit: limit },
+      { $skip: skip },              // ✅ Skip first N docs
+      { $limit: limit },            // ✅ Then limit the page size
       {
         $project: {
           _id: 0,
@@ -59,22 +43,19 @@ export const getNewIncomingBrands = async (req, res) => {
         },
       },
     ]);
-    const totalBrands = await NewIncomingBrands.countDocuments(matchStage);
-
-    const unSeenBrandsCount = await NewIncomingBrands.countDocuments({
-      ...matchStage,
-      seen: false,
-    });
-
-    const totalPages = Math.ceil(totalBrands / limit);
-    const hasNext = page < totalPages;
-    const hasPrevious = page > 1;
 
     if (brands.length === 0) {
       return res.json(
         new ApiResponse(304, null, "No new incoming brands found")
       );
     }
+
+    // ✅ Counts
+    const totalBrands = await NewIncomingBrands.countDocuments();
+    const unSeenBrandsCount = await NewIncomingBrands.countDocuments({ seen: false });
+    const totalPages = Math.ceil(totalBrands / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
 
     return res.json(
       new ApiResponse(

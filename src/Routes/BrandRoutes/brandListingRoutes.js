@@ -17,7 +17,7 @@ import {
   getTopRestaurants,
   getBrandsByCategory,
   getBrandById,
-  getFoodAndBeverageCategory,
+  // getFoodAndBeverageCategory,
 } from "../../controller/BrandController/BrandListingController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { updateBrandImageById } from "../../controller/BrandController/uploadImages.js";
@@ -25,7 +25,7 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 
 const router = express.Router();
  
-
+``
 router.post(
   "/v1/brandlisting/createBrandListing",
   upload.fields([
@@ -53,10 +53,10 @@ router.get("/v1/brandlisting/getTopDesertAndBakery", getTopDesertAndBakery);
 router.get("/v1/brandlisting/getTopTrucksAndKiosks", getTopTrucksAndKiosks);
 router.get("/v1/brandlisting/getTopRestaurants", getTopRestaurants);
 router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
-router.get(
-  "/v1/brandlisting/getFoodAndBeverageCategory",
-  getFoodAndBeverageCategory
-);
+// router.get(
+//   "/v1/brandlisting/getFoodAndBeverageCategory",
+//   getFoodAndBeverageCategory
+// );
 router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
 // router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
 router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
