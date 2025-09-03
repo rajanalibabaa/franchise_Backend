@@ -97,7 +97,6 @@ export const getNewIncomingBrands = async (req, res) => {
   }
 };
 
-
 export const getNewIncomingBrandById = async (req, res) => {
   try {
     const { id } = req.params;

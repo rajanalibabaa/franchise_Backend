@@ -12,6 +12,6 @@ InstantApplyRouter.get("/v1/instantapply/getInstantApplyLocationLeadControllerBy
 InstantApplyRouter.get("/v1/instantapply/getAllInstaApply/:id",verifyJWT, getAllInstaApplyToBrand)
 
 InstantApplyRouter.get("/v1/instantapply/getAllLeads/:id",verifyJWT, getAllLeads)
- 
+
 
 

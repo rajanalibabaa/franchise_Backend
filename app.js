@@ -15,7 +15,6 @@ import { frontendHomePageBrandsRouter } from "./src/Routes/FeatureRoutes/Fronten
 import { Login } from "./src/Routes/Login/LoginRoutes.js";
 import { logoutRouter } from "./src/Routes/Logout/logoutRoute.js";
 import sendOtpRouter from "./src/Routes/otpSenderRouter/sendOtp.js";
-import adminAuthRoutes from "./src/Routes/AdminRoutes/adminAuthRoutes.js";
 import brandListingRoutes from "./src/Routes/BrandRoutes/brandListingRoutes.js";
 import { sendOTPVerifyOTPRoutes } from "./src/Routes/otpSenderRouter/sendOTPVerifyOTPRoutes.js";
 import { likeRouter } from "./src/Routes/LikeRouter/LikeRouter.js";
@@ -37,7 +36,6 @@ router.use(postRequireRoutes);
 
 router.use(feedbackRoutes);
 router.use(complaintRoutes);
-router.use(adminAuthRoutes);
 router.use(InvestorRouter);
 router.use(brandListingRoutes);
 router.use(filterRouter);

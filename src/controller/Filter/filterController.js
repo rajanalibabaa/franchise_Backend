@@ -380,6 +380,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
     {
       $project: {
         subcat: "$franchiseDetails.brandCategories.sub",
+        maincat: "$franchiseDetails.brandCategories.main",
         childcat: "$franchiseDetails.brandCategories.child",
         investmentRange: "$franchiseDetails.fico.investmentRange",
         franchiseModel: "$franchiseDetails.fico.franchiseModel",
@@ -389,6 +390,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
     {
       $unwind: { 
         path: "$states", 
+        preserveNullAndEmptyArrays: true 
+      }
+    },
+    {
+      $unwind: { 
+        path: "$maincat", 
         preserveNullAndEmptyArrays: true 
       }
     },
@@ -407,7 +414,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
     {
       $match: {
         subcat: { $exists: true, $ne: null, $ne: "" },
-        childcat: { $exists: true, $ne: null, $ne: "" }
+        childcat: { $exists: true, $ne: null, $ne: "" },
+        maincat: { $exists: true, $ne: null, $ne: "" }
       }
     },
     {
@@ -417,6 +425,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         childcat: { $addToSet: "$childcat" },
         investmentRange: { $addToSet: "$investmentRange" },
         franchiseModel: { $addToSet: "$franchiseModel" },
+        maincat: { $addToSet: "$maincat" },
         states: { $addToSet: "$states" }, // now flat unique list
       }
     },
@@ -427,7 +436,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
         childcat: 1,
         investmentRange: 1,
         franchiseModel: 1,
-        states: 1
+        states: 1,
+        maincat : 1
       }
     }
   ]);
@@ -437,11 +447,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
     childcat: [], 
     investmentRange: [], 
     franchiseModel: [], 
-    states: [] 
+    states: [] ,
+    maincat:[]
   };
 
   return res.json(
-    new ApiResponse(200, result, "sub categories fetched successfully")
+    new ApiResponse(200, result, "Categories fetched successfully")
   );
 }
 
