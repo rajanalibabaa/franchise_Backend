@@ -102,26 +102,30 @@ export const getShortListedById = async (req, res) => {
     const { id } = req.params;
     const investor = req?.investorUser;
     const brand = req?.brandUser;
- 
+    const main = req.query.main || req.query.maincat
+
     if (id !== investor?.uuid && id !== brand?.uuid) {
-      return res.json(
-        new ApiResponse(403, {}, "Unauthorized request")
-      );
+      return res.json(new ApiResponse(403, {}, "Unauthorized request"));
     }
-   
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
- 
+
     const matchCondition = [];
- 
+
     if (investor?._id) {
       matchCondition.push({ "ShortListedBy.investor.userId": new mongoose.Types.ObjectId(investor._id) });
     }
- 
+
     if (brand?._id) {
       matchCondition.push({ "ShortListedBy.brand.userId": new mongoose.Types.ObjectId(brand._id) });
     }
- 
-    const shortListed = await ShortListed.aggregate([
+
+    // ✅ Get pagination params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const shortListedAgg = await ShortListed.aggregate([
       {
         $match: {
           $or: matchCondition
@@ -172,6 +176,16 @@ export const getShortListedById = async (req, res) => {
           as: "franchiseDetails"
         }
       },
+      ...(main
+        ? [
+            {
+              $match: {
+                "franchiseDetails.franchiseDetails.brandCategories.main": main
+              }
+            }
+          ]
+        : []),
+
       {
         $lookup: {
           from: "branduploads",
@@ -233,23 +247,41 @@ export const getShortListedById = async (req, res) => {
             }
           }
         }
+      },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limit }
+          ],
+          totalCount: [
+            { $count: "count" }
+          ]
+        }
       }
     ]);
- 
+
+    const brands = shortListedAgg[0].data;
+    const totalCount = shortListedAgg[0].totalCount.length > 0 ? shortListedAgg[0].totalCount[0].count : 0;
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
     return res.json(
       new ApiResponse(200, {
-        brands: shortListed,
+        brands,
         pagination: {
-          total: shortListed.length,
-          totalPages: 1,
-          currentPage: 1,
-          limit: shortListed.length,
-          hasNext: false,
-          hasPrevious: false
+          total: totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNext,
+          hasPrevious
         }
       }, "Short listed brands fetched successfully")
     );
- 
+
   } catch (error) {
     console.error("Error fetching short listed brands:", error);
     return res.json(
@@ -257,8 +289,6 @@ export const getShortListedById = async (req, res) => {
     );
   }
 };
- 
-
 
 
 
