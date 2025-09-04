@@ -8,6 +8,7 @@ import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import mongoose from "mongoose";
 import { likeandshortlist } from "../BrandController/BrandListingController.js";
+import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
 
 
 
@@ -197,6 +198,7 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const main = req?.query?.main || req?.query?.maincat
 
      const { likedBrands, shortListedBrands } = await likeandshortlist(uuid);
     
@@ -237,109 +239,126 @@ export const getAllFavoriteBrandsByID = async (req, res) => {
         )
       }
 
-      let  result = []
-      for (let i = 0; i < brandIds.length; i++) {
-       const data = await BrandDetails.aggregate([
-          {
-            $match: {
-              _id: brandIds[i] 
-            }
-          },
-                {
-                  $lookup: {
-                    from: "brandfranchisedetails",
-                    localField: "uuid",
-                    foreignField: "brandOwnerId",
-                    as: "franchiseDetails"
-                  }
-                },
-                {
-                  $lookup: {
-                    from: "branduploads",
-                    localField: "uuid",
-                    foreignField: "brandOwnerId",
-                    as: "uploads"
-                  }
-                },
-                { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
-                { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-                {
-                  $addFields: {
-                    isLiked: {
-                      $in: ["$_id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
-                    },
-                    isShortListed: {
-                      $in: ["$_id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-                    }
-                  }
-                },
-                {
-                  $project: {
-                    _id: 0,
-                    brandID: "$brandID",
-                    uuid: 1,
-                    isLiked: 1,
-                    isShortListed: 1,
-                    brandname: "$brandDetails.brandName",
-                    brandCategories: {
-                      $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
-                    },
-                    fico: {
-                      $let: {
-                        vars: {
-                          data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
-                        },
-                        in: {
-                          investmentRange: "$$data.investmentRange",
-                          areaRequired: "$$data.areaRequired",
-                          franchiseModel: "$$data.franchiseModel"
-                        }
-                      }
-                    },
-                    logo: {
-                      $cond: {
-                        if: { $isArray: "$uploads.uploads.brandLogo" },
-                        then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-                        else: null
-                      }
-                    },
-                    franchiseVideos: {
-                       $cond: {
-                        if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-                        then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
-                        else: null
-                      }
-                    }
-                  }
-                },
-                { $skip: skip },
-                { $limit: limit },
-        ])
+ let result = [];213
+let totalCount = 0;
 
-        result.unshift(data[0])
+for (let i = 0; i < brandIds.length; i++) {
+  const pipeline = [
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(brandIds[i])
       }
+    },
+    {
+      $lookup: {
+        from: "brandfranchisedetails",
+        localField: "uuid",
+        foreignField: "brandOwnerId",
+        as: "franchiseDetails"
+      }
+    },
+    {
+      $lookup: {
+        from: "branduploads",
+        localField: "uuid",
+        foreignField: "brandOwnerId",
+        as: "uploads"
+      }
+    },
+    { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } }
+  ];
 
-        
+  // ✅ Filter by main category if provided
+  if (main) {
+    pipeline.push({
+      $match: {
+        "franchiseDetails.franchiseDetails.brandCategories.main": main
+      }
+    });
+  }
 
-        const totalCount = brandIds.length
-
-        const totalPages = Math.ceil(totalCount / limit);
-        const hasNext = page < totalPages;
-        const hasPrevious = page > 1;
-
-        return res.json(
-          new ApiResponse(200, {
-        brands: result,
-        pagination: {
-          total: totalCount,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNext,
-          hasPrevious
+  pipeline.push(
+    {
+      $addFields: {
+        isLiked: {
+          $in: ["$_id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+        },
+        isShortListed: {
+          $in: ["$_id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
         }
-      }, "Favorite brands retrieved successfully")
-        );
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        brandID: "$brandID",
+        uuid: 1,
+        isLiked: 1,
+        isShortListed: 1,
+        brandname: "$brandDetails.brandName",
+        brandCategories: {
+          $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+        },
+        fico: {
+          $let: {
+            vars: {
+              data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+            },
+            in: {
+              investmentRange: "$$data.investmentRange",
+              areaRequired: "$$data.areaRequired",
+              franchiseModel: "$$data.franchiseModel"
+            }
+          }
+        },
+        logo: {
+          $cond: {
+            if: { $isArray: "$uploads.uploads.brandLogo" },
+            then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+            else: null
+          }
+        },
+        franchiseVideos: {
+          $cond: {
+            if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+            then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+            else: null
+          }
+        }
+      }
+    }
+  );
+
+  const data = await BrandDetails.aggregate(pipeline);
+
+  if (data.length) {
+    totalCount++; 
+    if (totalCount > skip && result.length < limit) {
+      result.push(data[0]);
+    }
+  }
+}
+
+// ✅ Pagination info
+const totalPages = Math.ceil(totalCount / limit);
+const hasNext = page < totalPages;
+const hasPrevious = page > 1;
+
+return res.json(
+  new ApiResponse(200, {
+    brands: result,
+    pagination: {
+      total: totalCount,
+      totalPages,
+      currentPage: page,
+      limit,
+      hasNext,
+      hasPrevious
+    }
+  }, "Favorite brands retrieved successfully")
+);
+
       }
  catch (error) {
     console.error("getAllFavoriteBrandsByID error:", error);
