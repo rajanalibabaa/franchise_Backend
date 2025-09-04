@@ -20,11 +20,11 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import { console } from "inspector";
 import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import {likeandshortlist} from "../../controller/BrandController/BrandListingController.js"
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
 export const overAllPlatformOnlyMainCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -56,8 +56,8 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         {
         $match: {
           $and: [
-            // { "franchiseDetails.brandCategories.sub": { $ne: null } },
-            // { "franchiseDetails.brandCategories.sub": { $ne: "" } },
+            { "franchiseDetails.brandCategories.sub": { $ne: null } },
+            { "franchiseDetails.brandCategories.sub": { $ne: "" } },
             ...OverAllCategory
           ]
         }
@@ -183,4 +183,6 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     );
   }
 };
+ 
+ 
  

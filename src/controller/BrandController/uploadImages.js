@@ -164,10 +164,12 @@ import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader
 //   }
 // };
 
+
 export const updateBrandImageById = async (req, res) => {
   try {
     let imageDeleteData = null;
     let awardsToDelete = [];
+    let awardDescriptions = [];
 
     // Parse imageDeleteData safely
     if (req.body?.imageDeleteData) {
@@ -193,11 +195,33 @@ export const updateBrandImageById = async (req, res) => {
       }
     }
 
+    // Parse awardDescriptions safely (CHANGED FROM addAwardDescription)
+    if (req.body?.awardDescriptions) {
+      try {
+        awardDescriptions = typeof req.body.awardDescriptions === 'string'
+          ? JSON.parse(req.body.awardDescriptions)
+          : req.body.awardDescriptions;
+      } catch (error) {
+        console.error("Error parsing awardDescriptions:", error);
+        awardDescriptions = [];
+      }
+    }
+
     console.log("imageDeleteData:", imageDeleteData);
     console.log("awardsToDelete:", awardsToDelete);
+    console.log("awardDescriptions:", awardDescriptions);
 
     let data = null;
-    
+    const oldUploads = await BrandUploads.findOne({
+      brandOwnerId: req.params?.id,
+    });
+
+    if (!oldUploads) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, {}, "No uploads found for this brand owner"));
+    }
+
     // Handle file deletions
     if (imageDeleteData) {
       for (const [key, value] of Object.entries(imageDeleteData)) {
@@ -227,16 +251,6 @@ export const updateBrandImageById = async (req, res) => {
     ];
     const multiFileFields = ["exteriorOutlet", "interiorOutlet"];
 
-    const oldUploads = await BrandUploads.findOne({
-      brandOwnerId: req.params?.id,
-    });
-
-    if (!oldUploads) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, {}, "No uploads found for this brand owner"));
-    }
-
     // Handle single file uploads
     for (const field of fileFields) {
       const uploadedFile = req.files?.[field]?.[0];
@@ -257,7 +271,7 @@ export const updateBrandImageById = async (req, res) => {
         );
       }
     }
-
+    
     // Handle multiple file uploads
     for (const field of multiFileFields) {
       const uploadedFiles = req.files?.[field];
@@ -276,9 +290,9 @@ export const updateBrandImageById = async (req, res) => {
       }
     }
 
-    // Handle award deletions
+    // Handle award deletions FIRST (to maintain correct indices)
     if (awardsToDelete?.length > 0) {
-      awardsToDelete.sort((a, b) => b - a);
+      awardsToDelete.sort((a, b) => b - a); // Sort descending to avoid index issues
 
       for (const index of awardsToDelete) {
         const award = oldUploads.uploads.awards[index];
@@ -291,44 +305,50 @@ export const updateBrandImageById = async (req, res) => {
         oldUploads.uploads.awards.splice(index, 1);
       }
 
-      data = await oldUploads.save();
+      await oldUploads.save();
     }
 
-    // Handle new award uploads
+    // Handle new award uploads and updates
     const awardFiles = req.files?.awardDoc || [];
-    let awardDescriptions = [];
-
-    // Safely parse award descriptions
-    if (req.body?.addAwardDescription) {
-      try {
-        awardDescriptions = typeof req.body.addAwardDescription === 'string'
-          ? JSON.parse(req.body.addAwardDescription)
-          : req.body.addAwardDescription;
-      } catch (error) {
-        console.error("Error parsing addAwardDescription:", error);
-        awardDescriptions = [];
-      }
-    }
-
-    console.log("Award Descriptions:", awardDescriptions);
-
     const uploadedFiles = awardFiles.length > 0
       ? await Promise.all(awardFiles.map((file) => uploadFileToR2(file.path, file.mimetype)))
       : [];
 
-    const awardsToInsert = [];
+    // Process awards - this handles both new awards and updates to existing ones
+    if (awardDescriptions.length > 0 || uploadedFiles.length > 0) {
+      // Get current awards after deletions
+      const currentUploads = await BrandUploads.findOne({ brandOwnerId: req.params.id });
+      let currentAwards = currentUploads.uploads.awards || [];
 
-    for (let i = 0; i < Math.max(awardDescriptions.length, uploadedFiles.length); i++) {
-      awardsToInsert.push({
-        awardDescription: awardDescriptions[i] || "",
-        awardImage: uploadedFiles[i] || ""
+      // Update existing awards with new descriptions
+      awardDescriptions.forEach((awardDesc, index) => {
+        if (index < currentAwards.length) {
+          // Update existing award description
+          currentAwards[index].awardDescription = awardDesc.awardDescription || awardDesc;
+        } else {
+          // Add new award
+          currentAwards.push({
+            awardDescription: awardDesc.awardDescription || awardDesc,
+            awardImage: uploadedFiles[index] || ""
+          });
+        }
       });
-    }
 
-    if (awardsToInsert.length > 0) {
+      // Handle file updates for existing awards
+      uploadedFiles.forEach((fileUrl, index) => {
+        if (index < currentAwards.length) {
+          // Replace image for existing award
+          if (currentAwards[index].awardImage) {
+            deleteFileFromR2(currentAwards[index].awardImage).catch(console.error);
+          }
+          currentAwards[index].awardImage = fileUrl;
+        }
+      });
+
+      // Save updated awards
       data = await BrandUploads.findOneAndUpdate(
         { brandOwnerId: req.params.id },
-        { $push: { "uploads.awards": { $each: awardsToInsert } } },
+        { $set: { "uploads.awards": currentAwards } },
         { new: true, runValidators: true }
       );
     }
@@ -338,7 +358,7 @@ export const updateBrandImageById = async (req, res) => {
     );
     
   } catch (error) {
-    console.error(error);
+    console.error("Error in updateBrandImageById:", error);
     return res
       .status(500)
       .json(
