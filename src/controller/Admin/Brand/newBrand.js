@@ -73,10 +73,10 @@ export const getNewIncomingBrands = async (req, res) => {
       )
     );
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in getNewIncomingBrands:", error);
+    return res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getNewIncomingBrandById = async (req, res) => {
   try {
@@ -188,7 +188,13 @@ export const deleteBrandById = async (req, res) => {
               })
             ]);
 
-        if (!newBrand && !newBrandFranchiseDetails && !newBrandExpansionLocationData && !newBrandUploads) {
+        const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete(
+          {
+            uuid:id
+          }
+        )  
+
+        if ((!newBrand && !newBrandFranchiseDetails && !newBrandExpansionLocationData && !newBrandUploads) || !deletenewIncomingBrand) {
             return res.json(
                 new ApiResponse(404, null, "No brand found with the given ID")
             )
@@ -202,6 +208,36 @@ export const deleteBrandById = async (req, res) => {
                 locations: newBrandExpansionLocationData,
                 uploads: newBrandUploads
               }, "Brand listing deleted successfully")
+        )
+
+    } catch (error) {
+        return res.json(
+            new ApiResponse(500, null, "Internal Server Error")
+        )
+    }
+}
+
+export const deleteNewIncomingBrandById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        
+
+        const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete(
+          {
+            uuid:id
+          }
+        )  
+
+        if (!deletenewIncomingBrand) {
+            return res.json(
+                new ApiResponse(404, null, "No brand found with the given ID")
+            )
+        }
+
+        
+        return res.json(
+            new ApiResponse(200, null, "Brand listing deleted successfully")
         )
 
     } catch (error) {
