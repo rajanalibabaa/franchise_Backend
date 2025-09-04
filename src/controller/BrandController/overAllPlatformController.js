@@ -22,9 +22,6 @@ import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import {likeandshortlist} from "../../controller/BrandController/BrandListingController.js"
  
  
- 
- 
- 
 export const overAllPlatformOnlyMainCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
