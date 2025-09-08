@@ -166,20 +166,20 @@ export const getAllViewBrandByID = async (req, res) => {
     const skip = (page - 1) * limit;
     const main = req.query.main;
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
+ 
     let brandIds = [];
-
+ 
     if (investor && investor._id) {
       const viewedData = await ViewedBrandsByInvestor.findOne({
         InvestorUserId: investor._id,
       });
-
+ 
       if (!viewedData?.viewedByInvestors?.length) {
         return res.json(
           new ApiResponse(200, [], "You haven't viewed any brands yet")
         );
       }
-
+ 
       viewedData.viewedByInvestors
         .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
         .forEach((b) => {
@@ -189,20 +189,20 @@ export const getAllViewBrandByID = async (req, res) => {
       const viewedData = await ViewedBrandsByBrands.findOne({
         brandUserID: brand._id,
       });
-
+ 
       if (!viewedData?.viewedByBrands?.length) {
         return res.json(
           new ApiResponse(200, [], "You haven't viewed any brands yet")
         );
       }
-
+ 
       viewedData.viewedByBrands
         .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
         .forEach((b) => {
           brandIds.push(b.BrandID);
         });
     }
-
+ 
     let result = [];
     let totalCount = 0
     for (let i = 0; i < brandIds.length; i++) {
@@ -321,19 +321,19 @@ export const getAllViewBrandByID = async (req, res) => {
         { $skip: skip },
         { $limit: limit },
       ];
-
+ 
       const data = await BrandDetails.aggregate(pipeline);
       if (data.length) {
         totalCount += 1
         result.unshift(data[0])
       };
     }
-
+ 
     // const totalCount = brandIds.length;
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
-
+ 
     return res.json(
       new ApiResponse(
         200,
@@ -356,6 +356,7 @@ export const getAllViewBrandByID = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
+ 
 export const deleteViewBrandByID = async (req, res) => {
   try {
     const { id } = req.params;

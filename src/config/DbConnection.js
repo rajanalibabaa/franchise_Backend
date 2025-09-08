@@ -1,37 +1,27 @@
+// db.js
 import mongoose from "mongoose";
 
 const connectDatabase = async () => {
   try {
-    // Ensure your DB_URL includes the correct database: Mrfranchise
-    // Example in .env:
-    // DB_URL=mongodb+srv://<user>:<pass>@mrfranchise.vanempq.mongodb.net/Mrfranchise?retryWrites=true&w=majority&appName=mrfranchise
-
+    // Use DB_URL from your .env
     const conn = await mongoose.connect(process.env.DB_URL, {
-       maxPoolSize: 50, // allows multiple queries in parallel
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      maxPoolSize: 50, // allows multiple queries in parallel
     });
-     // ✅ Removed deprecated options
-if (!mongoose.connection.readyState) {
-  const conn = await mongoose.connect(process.env.DB_URL);
-
 
     console.log(`✅ MongoDB connected successfully!`);
     console.log(`   Database: ${conn.connection.name}`);
     console.log(`   Host: ${conn.connection.host}`);
 
-    // List collections for debugging
+    // Optional: List collections for debug
     const collections = await conn.connection.db.listCollections().toArray();
     console.log(
-      `Collections: ${collections.map((c) => c.name).join(", ")}`
+      `   Collections: ${collections.map((c) => c.name).join(", ") || "none"}`
     );
-  }
- } catch (err) {
+  } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
-    process.exit(1); // Exit process if DB connection fails
+    // Exit process so nodemon restarts it
+    process.exit(1);
   }
-
-}
+};
 
 export default connectDatabase;
-
