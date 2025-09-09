@@ -155,7 +155,6 @@ export const postViewBrands = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
 export const getAllViewBrandByID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -409,7 +408,6 @@ export const deleteViewBrandByID = async (req, res) => {
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
 export const getViewBrandsByAll = async (req, res) => {
   try {
     const { id } = req.params;
