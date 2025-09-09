@@ -165,10 +165,11 @@ export const getAllViewBrandByID = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const main = req.query.main;
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
- 
+
+    // ✅ Collect viewed brand IDs
     let brandIds = [];
- 
     if (investor && investor._id) {
       const viewedData = await ViewedBrandsByInvestor.findOne({
         InvestorUserId: investor._id,
@@ -179,12 +180,10 @@ export const getAllViewBrandByID = async (req, res) => {
           new ApiResponse(200, [], "You haven't viewed any brands yet")
         );
       }
- 
-      viewedData.viewedByInvestors
+
+      brandIds = viewedData.viewedByInvestors
         .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
-        .forEach((b) => {
-          brandIds.push(b.BrandID);
-        });
+        .map((b) => new mongoose.Types.ObjectId(b.BrandID));
     } else {
       const viewedData = await ViewedBrandsByBrands.findOne({
         brandUserID: brand._id,
@@ -195,141 +194,126 @@ export const getAllViewBrandByID = async (req, res) => {
           new ApiResponse(200, [], "You haven't viewed any brands yet")
         );
       }
- 
-      viewedData.viewedByBrands
+
+      brandIds = viewedData.viewedByBrands
         .sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt))
-        .forEach((b) => {
-          brandIds.push(b.BrandID);
-        });
+        .map((b) => new mongoose.Types.ObjectId(b.BrandID));
     }
- 
-    let result = [];
-    let totalCount = 0
-    for (let i = 0; i < brandIds.length; i++) {
-      const pipeline = [
-        {
-          $match: {
-            _id: brandIds[i],
-          },
-        },
-        {
-          $lookup: {
-            from: "brandfranchisedetails",
-            localField: "uuid",
-            foreignField: "brandOwnerId",
-            as: "franchiseDetails",
-          },
-        },
-        {
-          $lookup: {
-            from: "branduploads",
-            localField: "uuid",
-            foreignField: "brandOwnerId",
-            as: "uploads",
-          },
-        },
-        {
-          $unwind: {
-            path: "$franchiseDetails",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: "$uploads",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        // ✅ Apply filter if "main" query is passed
-        ...(main
-          ? [
-              {
-                $match: {
-                  "franchiseDetails.franchiseDetails.brandCategories.main": main,
-                },
-              },
-            ]
-          : []),
-        {
-          $addFields: {
-            isLiked: {
-              $in: [
-                "$_id",
-                likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-              ],
-            },
-            isShortListed: {
-              $in: [
-                "$_id",
-                shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-              ],
-            },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            brandID: "$brandID",
-            uuid: 1,
-            isLiked: 1,
-            isShortListed: 1,
-            brandname: "$brandDetails.brandName",
-            brandCategories: {
-              $ifNull: [
-                "$franchiseDetails.franchiseDetails.brandCategories",
-                null,
-              ],
-            },
-            fico: {
-              $let: {
-                vars: {
-                  data: {
-                    $arrayElemAt: [
-                      "$franchiseDetails.franchiseDetails.fico",
-                      0,
-                    ],
-                  },
-                },
-                in: {
-                  investmentRange: "$$data.investmentRange",
-                  areaRequired: "$$data.areaRequired",
-                  franchiseModel: "$$data.franchiseModel",
-                },
-              },
-            },
-            logo: {
-              $cond: {
-                if: { $isArray: "$uploads.uploads.brandLogo" },
-                then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-                else: null,
-              },
-            },
-            franchiseVideos: {
-              $cond: {
-                if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-                then: {
-                  $arrayElemAt: [
-                    "$uploads.uploads.franchisePromotionVideo",
-                    0,
-                  ],
-                },
-                else: null,
-              },
-            },
-          },
-        },
-        { $skip: skip },
-        { $limit: limit },
-      ];
- 
-      const data = await BrandDetails.aggregate(pipeline);
-      if (data.length) {
-        totalCount += 1
-        result.unshift(data[0])
-      };
+
+    if (!brandIds.length) {
+      return res.json(
+        new ApiResponse(200, [], "No viewed brands found")
+      );
     }
- 
-    // const totalCount = brandIds.length;
+
+    // ✅ Single pipeline for all brands
+    const pipeline = [
+      { $match: { _id: { $in: brandIds } } },
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "franchiseDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "uploads",
+        },
+      },
+      { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
+
+      // ✅ Filter by "main" if provided
+      ...(main
+        ? [
+            {
+              $match: {
+                "franchiseDetails.franchiseDetails.brandCategories.main": main,
+              },
+            },
+          ]
+        : []),
+
+      {
+        $addFields: {
+          isLiked: {
+            $in: [
+              "$_id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+          isShortListed: {
+            $in: [
+              "$_id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          brandID: "$brandID",
+          uuid: 1,
+          isLiked: 1,
+          isShortListed: 1,
+          brandname: "$brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null],
+          },
+          fico: {
+            $let: {
+              vars: {
+                data: {
+                  $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0],
+                },
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
+          },
+          logo: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.brandLogo" },
+              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              else: null,
+            },
+          },
+          franchiseVideos: {
+            $cond: {
+              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              else: null,
+            },
+          },
+        },
+      },
+
+      // ✅ Apply pagination
+      { $skip: skip },
+      { $limit: limit },
+    ];
+
+    // ✅ Count total before skip/limit
+    const totalCountPipeline = pipeline.filter(
+      (stage) => !("$skip" in stage) && !("$limit" in stage)
+    );
+    totalCountPipeline.push({ $count: "count" });
+
+    const [brands, totalResult] = await Promise.all([
+      BrandDetails.aggregate(pipeline),
+      BrandDetails.aggregate(totalCountPipeline),
+    ]);
+
+    const totalCount = totalResult.length ? totalResult[0].count : 0;
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
@@ -338,7 +322,7 @@ export const getAllViewBrandByID = async (req, res) => {
       new ApiResponse(
         200,
         {
-          brands: result,
+          brands,
           pagination: {
             total: totalCount,
             totalPages,
@@ -356,7 +340,6 @@ export const getAllViewBrandByID = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
- 
 export const deleteViewBrandByID = async (req, res) => {
   try {
     const { id } = req.params;
