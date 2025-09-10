@@ -10,9 +10,7 @@ const IG_USER_ID = process.env.IG_USER_ID;
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
 const LINKEDIN_URN = process.env.LINKEDIN_URN;
 
-/* ============================
-   Facebook
-=============================== */
+
 async function postToFacebook(message, mediaUrl) {
   try {
     if (!mediaUrl) {
@@ -44,9 +42,6 @@ async function postToFacebook(message, mediaUrl) {
   }
 }
 
-/* ============================
-   Instagram
-=============================== */
 async function postToInstagram(message, mediaUrl) {
   try {
     if (!mediaUrl) {
