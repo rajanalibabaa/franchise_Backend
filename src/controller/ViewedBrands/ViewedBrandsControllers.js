@@ -155,7 +155,6 @@ export const postViewBrands = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
 export const getAllViewBrandByID = async (req, res) => {
   try {
     const { id } = req.params;
@@ -168,7 +167,9 @@ export const getAllViewBrandByID = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    // ✅ Collect viewed brand IDs
+
+    console.log("like and shortlist ");
+
     let brandIds = [];
     if (investor && investor._id) {
       const viewedData = await ViewedBrandsByInvestor.findOne({
@@ -408,7 +409,6 @@ export const deleteViewBrandByID = async (req, res) => {
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
 export const getViewBrandsByAll = async (req, res) => {
   try {
     const { id } = req.params;
