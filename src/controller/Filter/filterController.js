@@ -63,6 +63,12 @@ export const getAllBrandsAndFilter = async (req, res) => {
           },
         },
         {
+          "franchiseDetails.franchiseDetails.fico.areaRequired": {
+            $regex: serchterm,
+            $options: "i",
+          },
+        },
+        {
           "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state":
             { $regex: serchterm, $options: "i" },
         },
@@ -575,7 +581,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         },
         {
           $unwind: {
-            path: "$investmentRange",
+            path: "$areaRequired",
             preserveNullAndEmptyArrays: true,
           },
         },
