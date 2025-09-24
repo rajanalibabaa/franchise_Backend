@@ -11,6 +11,7 @@ import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLoc
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js"
 
+
 export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {
@@ -515,4 +516,38 @@ export const getAllLeads = async (req, res) => {
       "All instant apply applications fetched successfully"
     )
   );
+};
+
+export const getAllInstantApply = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    
+    const total = await instantApply.countDocuments();
+
+    const data = await instantApply
+      .find({})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json(
+      new ApiResponse(200, {
+        success: true,
+        data,
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit),
+          limit
+        }
+      },
+      "Instant Apply Fetch Successfully"
+    )
+    );
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
