@@ -375,11 +375,11 @@ export const getAllBrandsAndFilter = async (req, res) => {
 
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state } = req.query;
-
+ 
   console.log(req.query);
-
+ 
   console.log(main);
-
+ 
   try {
     if ((sub && main) || sub) {
       const childcatData = await BrandFranchiseDetails.aggregate([
@@ -413,7 +413,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           $sort: { child: 1 },
         },
       ]);
-
+ 
       // console.log("Child categories data:", childcatData);
       const childcatNames = childcatData.map((item) => item.child);
       return res.json(
@@ -464,13 +464,13 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
       ]);
-
+ 
       const districtNames = districtsData.map((item) => item.district);
       return res.json(
         new ApiResponse(200, districtNames, "Districts fetched successfully")
       );
     }
-
+ 
     // Handle district filter - return cities for the district
     if (district) {
       const citiesData = await BrandExpansionLocationData.aggregate([
@@ -515,13 +515,13 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
       ]);
-
+ 
       const cityNames = citiesData.map((item) => item.city);
       return res.json(
         new ApiResponse(200, cityNames, "Cities fetched successfully")
       );
     }
-
+ 
     if (main) {
       const subcatData = await BrandFranchiseDetails.aggregate([
         {
@@ -617,7 +617,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
       ]);
-
+ 
       const result = subcatData[0] || {
         subcat: [],
         childcat: [],
@@ -626,12 +626,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
         states: [],
         maincat: [],
       };
-
+ 
       return res.json(
         new ApiResponse(200, result, "Categories fetched successfully")
       );
     }
-
+ 
     // Main filter aggregation for all data
     const filters = await BrandFranchiseDetails.aggregate([
       {
@@ -692,9 +692,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
         },
       },
     ]);
-
+ 
     //  console.log("Brand filters data:", filters);
-
+ 
     // Flatten arrays of arrays and remove duplicates
     const processField = (field) => {
       if (!field) return [];
@@ -708,9 +708,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
         ),
       ];
     };
-
+ 
     const result = filters.length > 0 ? filters[0] : {};
-
+ 
     const processedFilters = {
       maincat: processField(result.maincat),
       // subcat: processField(result.subcat),
@@ -722,7 +722,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       // districts: processField(result.districts).sort(),
       // cities: processField(result.cities).sort(),
     };
-
+ 
     return res.json(
       new ApiResponse(
         200,
@@ -741,6 +741,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
     );
   }
 };
+ 
 
 //   console.log(main);
 //   try {
