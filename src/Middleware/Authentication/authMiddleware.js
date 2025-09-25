@@ -1,3 +1,4 @@
+import { RegisterSuperAdmin } from "../../model/Admin/superAdmin/registerSuperAdmin.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js"
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js"
@@ -6,10 +7,7 @@ import jwt from 'jsonwebtoken'
 
 export const verifyJWT = async (req,res,next) => {
  
-    const token =  req.cookies?.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.body?.AccessToken
-
-    // console.log("ttttttttt: ",token)
-    // console.log("============== : ",req.header("Authorization")?.replace("Bearer ","") )
+    const token =  req.cookies?.adminAccessToken || req.cookies?.AccessToken || req.header("Authorization")?.replace("Bearer ","") || req.body?.AccessToken
 
     if (!token) {
         return res.json(
@@ -21,17 +19,19 @@ export const verifyJWT = async (req,res,next) => {
         )
     }
 
-    // if (token !== req.cookies?.AccessToken ) {
-    //     return res.json(
-    //         new ApiResponse(
-    //             401, 
-    //             null,
-    //             "Unauthorized request pleace login"
-    //         )
-    //     )
-    // }
-    const decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET)
 
+    let decodedToken = null;
+    try {
+      decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    } catch (err) {
+      try {
+        decodedToken = jwt.verify(token, process.env.ADMIN_ACCESS_TOKEN_SECRET);
+      } catch (error) {
+        return res.json(
+          new ApiResponse(401, null, "Unauthorized request, token invalid")
+        );
+      }
+    }
     //  console.log("decodedToken: ",decodedToken)
     if (!decodedToken) {
         return res.json(
@@ -43,14 +43,23 @@ export const verifyJWT = async (req,res,next) => {
         )
     }
 
-    const brandUser = await BrandDetails?.findOne({ uuid: decodedToken.brandUserUUID })
-    const investorUser = await InvsRegister?.findOne({ uuid: decodedToken.investorUUID });
-    const thirdPartyUser = await ThirdPartyAuth?.findOne({ uuid: decodedToken.investorUUID });
-    // console.log("brandUser: ",brandUser)
-    // console.log("investorUser: ",investorUser)
+    let admin = null
+    let brandUser = null
+    let investorUser = null
+    let thirdPartyUser = null
 
-    if (!brandUser && !investorUser && !thirdPartyUser) {
-         res.json(
+    if (decodedToken.adminUUID) {
+      admin = await RegisterSuperAdmin.findOne({ uuid: decodedToken.adminUUID });
+    } else if (decodedToken.brandUserUUID) {
+      brandUser = await BrandDetails.findOne({ uuid: decodedToken.brandUserUUID });
+    } else if (decodedToken.investorUUID) {
+      investorUser = await InvsRegister.findOne({ uuid: decodedToken.investorUUID });
+    } else if (decodedToken.thirdPartyUUID) {
+      thirdPartyUser = await ThirdPartyAuth.findOne({ uuid: decodedToken.thirdPartyUUID });
+    }
+
+    if (!brandUser && !investorUser && !thirdPartyUser && !admin) {
+         return res.json(
             new ApiResponse(
                 401, 
                 null,
@@ -62,5 +71,6 @@ export const verifyJWT = async (req,res,next) => {
     req.brandUser = brandUser
     req.investorUser = investorUser
     req.thirdPartyUser = thirdPartyUser
+    req.admin = admin
     next()
 }
