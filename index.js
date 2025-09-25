@@ -115,7 +115,7 @@ const io = new SocketIOServer(httpServer, {
 io.on("connection", (socket) => mainSocket(socket, io));
 
 // ✅ Start server
-const startServer = async () => {
+const startServer = async () => {                                                               
   try {
     await connectDatabase();
     console.log("✅ Database connected");

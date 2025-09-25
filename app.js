@@ -27,6 +27,7 @@ import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js
 import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/newIncomingBrandRoutes.js";
 import { overAllPlatformRoutes } from "./src/Routes/BrandRoutes/overAllPlatformRoutes.js";
 import { superAdminRouter } from "./src/Routes/AdminRoutes/superAdminRoutes/superAdminRoutes.js";
+import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
 
 const router = express.Router();
 
@@ -97,6 +98,7 @@ router.use(shortListRouter);
 //Admin New Incoming Brands Routes
 
 router.use(newIncomingBrandRouter)
+router.use(userRouter)
 
 function getRoutes(router, basePath = "") {
   const routes = [];
