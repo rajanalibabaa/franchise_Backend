@@ -18,7 +18,7 @@ let otpData = {
 
 const OTP_EXPIRATION_MINUTES = 5; 
 
-const generateOTPforLogin = async (req, res) => {
+const  generateOTPforLogin = async (req, res) => {
   try {
     const { email, mobileNumber } = req.body;
     // console.log("Request body:", req.body);
@@ -297,7 +297,7 @@ export const verifyAdminLoginOTP = async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      sameSite: "Lax",
     };
 
     const adminData = await RegisterSuperAdmin.findOneAndUpdate(

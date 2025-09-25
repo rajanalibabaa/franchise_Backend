@@ -17,7 +17,7 @@ const logOut = async (req, res) => {
   };
 
   // 👇 Log all cookies first
-  await console.log("🔑 Existing cookies from client request:", req.cookies);
+  // await console.log("🔑 Existing cookies from client request:", req.cookies);
 
   if (req?.admin && req.admin.uuid === uuid) {
     matchedUser = req.admin;
@@ -33,7 +33,7 @@ const logOut = async (req, res) => {
     matchedUser = req.thirdPartyUser;
   }
 
-  console.log("👤 Matched user:", matchedUser);
+  // console.log("Matched user:", matchedUser);
 
   if (!matchedUser) {
     return res.json(
