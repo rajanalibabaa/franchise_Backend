@@ -207,7 +207,6 @@ const verifyLogin = async (req, res) => {
   }
 };
 
-
 export const generateOTPforAdminLogin = async(req,res)=>{
     const {email} = req.body
 
@@ -243,7 +242,7 @@ export const generateOTPforAdminLogin = async(req,res)=>{
     const data = await RegisterSuperAdmin.findOneAndUpdate(
       {adminEmail: exist.adminEmail},
       {$set : {
-        otp: newOTP,
+        otp: newOTP, 
         otpExpired : timestamp,
       }},
       {new:true}
@@ -258,7 +257,6 @@ export const generateOTPforAdminLogin = async(req,res)=>{
      return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
 }
 
-
 export const verifyAdminLoginOTP = async (req, res) => {
   try {
     const { verifyOTP, email } = req.body;
@@ -268,8 +266,8 @@ export const verifyAdminLoginOTP = async (req, res) => {
     }
 
     const exists = await RegisterSuperAdmin.findOne({ adminEmail: email });
-    // console.log("Admin Exists:", exists);
-
+  
+    
     if (!exists) {
       return res.json(new ApiResponse(404, {}, "Admin not found"));
     }
@@ -308,12 +306,9 @@ export const verifyAdminLoginOTP = async (req, res) => {
         } 
       }, 
       { new: true }
-    ).select("-otp -otpExpired");
+    ).select(" -otp -otpExpired -_id ");
 
     res.cookie("adminAccessToken", adminAccessToken, cookieOptions);
-
-    // console.log("cookieOptions:", cookieOptions);
-    // console.log("Cookies from client request:", req.cookies.adminAccessToken); 
 
     return res.json(
       new ApiResponse(200, { adminAccessToken, adminData }, "Verification successful")
@@ -323,7 +318,6 @@ export const verifyAdminLoginOTP = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
-
 
 export {
   generateOTPforLogin,
