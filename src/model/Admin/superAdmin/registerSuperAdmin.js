@@ -15,6 +15,12 @@ import mongoose from "mongoose";
         type : String,
         required : true,
         unique :true
+    },
+    otp : {
+        type : String
+    },
+    otpExpired : {
+        type: Date
     }
  })
 

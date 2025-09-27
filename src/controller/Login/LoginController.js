@@ -18,7 +18,7 @@ let otpData = {
 
 const OTP_EXPIRATION_MINUTES = 5; 
 
-const generateOTPforLogin = async (req, res) => {
+const  generateOTPforLogin = async (req, res) => {
   try {
     const { email, mobileNumber } = req.body;
     // console.log("Request body:", req.body);
@@ -207,11 +207,6 @@ const verifyLogin = async (req, res) => {
   }
 };
 
-let adminOTPData = {
-  code : null,
-  timestamp: null,
-  email : null
-}
 export const generateOTPforAdminLogin = async(req,res)=>{
     const {email} = req.body
 
@@ -229,49 +224,100 @@ export const generateOTPforAdminLogin = async(req,res)=>{
     const exist = await RegisterSuperAdmin.findOne({
       adminEmail : email
     })
-    console.log("exist",exist.adminEmail);
+    // console.log("exist",exist.adminEmail);
     
     if(!exist){
       res.json
       (new ApiResponse(400,{},'Email Not Exist'))
     }
   
-   const otp = generateOTP()
-   console.log("otp",otp);
-   
-   adminOTPData = {
-  code : otp,
-  timestamp: Date.now(),
-  email : exist.adminEmail}
+    const newOTP = generateOTP()
+    console.log("otp",newOTP);
+    const timestamp = Date.now() + 5 * 60 * 1000;
 
-    if(exist.adminEmail){
-      await sendEmailOTP(exist.adminEmail,otp)
-    }
+    console.log(Date.now())
+    // console.log("time :",timestamp);
     
+    
+    const data = await RegisterSuperAdmin.findOneAndUpdate(
+      {adminEmail: exist.adminEmail},
+      {$set : {
+        otp: newOTP, 
+        otpExpired : timestamp,
+      }},
+      {new:true}
+    )
+    
+
+    if (!data) {
+      return res.json(new ApiResponse(500, {}, "Failed to update OTP. Please try again"));
+    }
+
+    await sendEmailOTP(email, newOTP);
      return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
 }
 
+export const verifyAdminLoginOTP = async (req, res) => {
+  try {
+    const { verifyOTP, email } = req.body;
 
-export const verifyAdminLoginOTP = (req,res)=>{
-console.log("xnxx :",adminOTPData?.code)
- const {verifyOTP} = req.body
- console.log("verifyOTP",verifyOTP);
- 
- if(!verifyOTP){
-  return res.json(new ApiResponse(400,{},'Please Enter the OTP'))
- }
-
- if(verifyOTP!==adminOTPData?.code){
-  return res.json(new ApiResponse(400,{},'Wrong otp ,check And Give correct otp'))
- }
-adminOTPData = {
-     code : null,
-     timestamp:null,
-     email:null
+    if (!email) {
+      return res.json(new ApiResponse(400, {}, "Please Generate OTP"));
     }
- return res.json(new ApiResponse(200,{},'Verification succesfully'))
 
-}
+    const exists = await RegisterSuperAdmin.findOne({ adminEmail: email });
+  
+    
+    if (!exists) {
+      return res.json(new ApiResponse(404, {}, "Admin not found"));
+    }
+
+    if (Date.now() > new Date(exists.otpExpired).getTime()) {
+      return res.json(new ApiResponse(400, {}, "OTP Expired"));
+    }
+
+    if (!verifyOTP) {
+      return res.json(new ApiResponse(400, {}, "Please Enter the OTP"));
+    }
+
+    if (verifyOTP !== exists.otp) {
+      return res.json(
+        new ApiResponse(400, {}, "Wrong OTP, please check and enter correct OTP")
+      );
+    }
+
+    const adminAccessToken = generateToken(
+      { adminUUID: exists.uuid },
+      process.env.ADMIN_ACCESS_TOKEN_SECRET,
+      process.env.ADMIN_ACCESS_TOKEN_EXPIRY
+    );
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+    };
+
+    const adminData = await RegisterSuperAdmin.findOneAndUpdate(
+      { adminEmail: email },
+      { $set: 
+        { 
+          otp: null, otpExpired: null
+        } 
+      }, 
+      { new: true }
+    ).select(" -otp -otpExpired -_id ");
+
+    res.cookie("adminAccessToken", adminAccessToken, cookieOptions);
+
+    return res.json(
+      new ApiResponse(200, { adminAccessToken, adminData }, "Verification successful")
+    );
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+};
 
 export {
   generateOTPforLogin,
