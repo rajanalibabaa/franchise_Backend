@@ -560,3 +560,87 @@ export const getAllInstantApply = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const getInstantApplyDropDownData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId =
+      req?.admin?.uuid || req.investorUser?.uuid || req.brandUser?.uuid;
+
+    if (!userId) {
+      return res.json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+   const docs = await instantApply.find({});
+
+    
+    const states = new Set();
+    const districts = new Set();
+    const cities = new Set();
+    const investmentRanges = new Set();
+
+    docs.forEach((doc) => {
+      if (doc.state) states.add(doc.state);
+      if (doc.district) districts.add(doc.district);
+      if (doc.city) cities.add(doc.city);
+      if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+    });
+
+
+    const responseData = {
+      states: [...states],
+      districts: [...districts],
+      cities: [...cities],
+      investmentRanges: [...investmentRanges],
+    };
+
+    return res.json(
+      new ApiResponse(200, responseData, "Dropdown data fetched successfully")
+    );
+  } catch (error) {
+    console.error("Error in getInstantApplyDropDownData:", error);
+    return res
+      .json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+};
+
+export const getInstantApplySearchData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId =
+      req?.admin?.uuid || req.investorUser?.uuid || req.brandUser?.uuid;
+    const { searchTerm, state, district, city ,investmentRange} = req.body;
+
+    if (!userId) {
+      return res.json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+
+    const query = {};
+
+    if (state) query.state = state;
+    if (district) query.district = district;
+    if (city) query.city = city;
+    if (investmentRange) query.investmentRange = investmentRange;
+
+    if (searchTerm) {
+      query.$or = [
+        // { fullName: { $regex: searchTerm, $options: "i" } },
+        // { email: { $regex: searchTerm, $options: "i" } },
+        // { mobileNumber: { $regex: searchTerm, $options: "i" } },
+        { brandName: { $regex: searchTerm, $options: "i" } },
+      ];
+    }
+
+    const responseData = await instantApply.find(query);
+
+    return res.json(
+      new ApiResponse(200, responseData, "Search data fetched successfully")
+    );
+  } catch (error) {
+    console.error("Error in getInstantApplySearchData:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+};
