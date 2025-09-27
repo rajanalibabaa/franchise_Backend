@@ -14,7 +14,7 @@ InstantApplyRouter.get("/v1/instantapply/getAllInstaApply/:id",verifyJWT, getAll
 InstantApplyRouter.get("/v1/instantapply/getAllLeads/:id",verifyJWT, getAllLeads)
 
 // admin
-InstantApplyRouter.get("/v1/instantapply/getAllInstantApply", getAllInstantApply)
+InstantApplyRouter.get("/v1/instantapply/getAllInstantApply/:id",verifyJWT, getAllInstantApply)
 
 
 

@@ -520,9 +520,18 @@ export const getAllLeads = async (req, res) => {
 
 export const getAllInstantApply = async (req, res) => {
   try {
+    const {id} = req.params
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    console.log(req.admin.uuid);
+    
+
+    if (id !== req.admin.uuid) {
+      return res.json(
+        new ApiResponse(401,{},"Unauthorized request")
+      )
+    }
 
     
     const total = await instantApply.countDocuments();
