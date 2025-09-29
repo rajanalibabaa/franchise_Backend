@@ -604,38 +604,340 @@ export const getInstantApplyDropDownData = async (req, res) => {
   }
 };
 
+
 export const getInstantApplySearchData = async (req, res) => {
   try {
     const { id } = req.params;
     const userId =
-      req?.admin?.uuid || req.investorUser?.uuid || req.brandUser?.uuid;
-    const { searchTerm, state, district, city ,investmentRange} = req.body;
+      req?.admin?.uuid || req?.investorUser?.uuid || req?.brandUser?.uuid;
+
+    const { searchTerm, state, district, city, investmentRange } =
+      req.body.payload || {};
 
     if (!userId) {
       return res.json(new ApiResponse(401, {}, "Unauthorized request"));
     }
 
+    let query = {};
+    let docs = [];
+    let responseData = {};
 
-    const query = {};
+    // Sets for unique filters
+    const states = new Set();
+    const districts = new Set();
+    const cities = new Set();
+    const investmentRanges = new Set();
 
-    if (state) query.state = state;
-    if (district) query.district = district;
-    if (city) query.city = city;
-    if (investmentRange) query.investmentRange = investmentRange;
+    if (state && district && city && investmentRange) {
+      query = { state, district ,city};
+      docs = await instantApply.find(query);
 
-    if (searchTerm) {
-      query.$or = [
-        // { fullName: { $regex: searchTerm, $options: "i" } },
-        // { email: { $regex: searchTerm, $options: "i" } },
-        // { mobileNumber: { $regex: searchTerm, $options: "i" } },
-        { brandName: { $regex: searchTerm, $options: "i" } },
-      ];
+      responseData = {
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+    if (state && district && city) {
+      query = { state, district ,city};
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+    if (state && district && investmentRanges) {
+      query = { state, district ,investmentRanges};
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        // if (doc.district) districts.add(doc.district);
+        // if (doc.city) cities.add(doc.city);
+        // if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // states: [...states],
+        // districts: [...districts],
+        // cities: [...cities],
+        // investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+    if (district && city && investmentRanges) {
+      query = { state, district ,investmentRanges};
+      docs = await instantApply.find(query);
+
+
+      responseData = {
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+    if (states && city && investmentRanges) {
+      query = { state, district ,investmentRanges};
+      docs = await instantApply.find(query);
+
+
+      responseData = {
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
     }
 
-    const responseData = await instantApply.find(query);
+    // Case 1: state + district
+    if (state && district) {
+      query = { state, district };
+      docs = await instantApply.find(query);
 
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        // if (doc.district) districts.add(doc.district);
+        if (doc.city) cities.add(doc.city);
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // states: [...states],
+        // cities: [...cities],
+        investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Case 2: state + city
+    if (state && city) {
+      query = { state, city };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.district) districts.add(doc.district);
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // districts: [...districts],
+        investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Case 3: state + investmentRange
+    if (state && investmentRange) {
+      query = { state, investmentRange };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.district) districts.add(doc.district);
+        // if (doc.city) cities.add(doc.city);
+      });
+
+      responseData = {
+        // districts: [...districts],
+        // cities: [...cities],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Case 4: district + investmentRange
+    if (district && investmentRange) {
+      query = { district, investmentRange };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        // if (doc.city) cities.add(doc.city);
+      });
+
+      responseData = {
+        // states: [...states],
+        // cities: [...cities],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Case 5: district + city
+    if (district && city) {
+      query = { district, city };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // states: [...states],
+        investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Case 6: investmentRange + city
+    if (investmentRange && city) {
+      query = { investmentRange, city };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        // if (doc.district) districts.add(doc.district);
+      });
+
+      responseData = {
+        // states: [...states],
+        // districts: [...districts],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Default case: single filters
+    if (state) {
+      query = { state };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+        if (doc.city) cities.add(doc.city);
+        if (doc.district) districts.add(doc.district);
+      });
+
+      responseData = {
+        investmentRanges: [...investmentRanges],
+        districts: [...districts],
+        cities: [...cities],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    if (district) {
+      query = { district };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        if (doc.city) cities.add(doc.city);
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // states: [...states],
+        cities: [...cities],
+        investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    if (city) {
+      query = { city };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        // if (doc.district) districts.add(doc.district);
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // states: [...states],
+        // districts: [...districts],
+        investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    if (investmentRange) {
+      query = { investmentRange };
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        // if (doc.state) states.add(doc.state);
+        // if (doc.district) districts.add(doc.district);
+        // if (doc.city) cities.add(doc.city);
+      });
+
+      responseData = {
+        // states: [...states],
+        // districts: [...districts],
+        // cities: [...cities],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Search term filter
+    if (searchTerm) {
+      query.$or = [{ brandName: { $regex: searchTerm, $options: "i" } }];
+      docs = await instantApply.find(query);
+
+      docs.forEach((doc) => {
+        if (doc.state) states.add(doc.state);
+        if (doc.district) districts.add(doc.district);
+        if (doc.city) cities.add(doc.city);
+        if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+      });
+
+      responseData = {
+        // states: [...states],
+        // districts: [...districts],
+        // cities: [...cities],
+        // investmentRanges: [...investmentRanges],
+        data: docs,
+      };
+      return res.json(
+        new ApiResponse(200, responseData, "Search data fetched successfully")
+      );
+    }
+
+    // Default: fetch all
+    docs = await instantApply.find(query);
     return res.json(
-      new ApiResponse(200, responseData, "Search data fetched successfully")
+      new ApiResponse(200, { data: docs }, "Search data fetched successfully")
     );
   } catch (error) {
     console.error("Error in getInstantApplySearchData:", error);
@@ -644,3 +946,4 @@ export const getInstantApplySearchData = async (req, res) => {
       .json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
+
