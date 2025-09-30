@@ -19,4 +19,3 @@ InstantApplyRouter.get("/v1/admin/instantapply/getInstantApplyDropDownData/:id",
 InstantApplyRouter.post("/v1/admin/instantapply/getInstantApplySearchData/:id",verifyJWT, getInstantApplySearchData)
 
 
-
