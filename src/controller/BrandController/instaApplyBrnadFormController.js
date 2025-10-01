@@ -608,7 +608,10 @@ export const getInstantApplySearchData = async (req, res) => {
       toDate,
     } = req.body.payload || {};
 
-    console.log(req.body);
+    const page = req.body?.payload?.page || 1;
+    const limit = req.body?.payload?.limit || 10;
+    const skip = (page - 1) * limit;
+    // console.log(skip)
 
     if (!userId) {
       return res.json(new ApiResponse(401, {}, "Unauthorized request"));
@@ -617,6 +620,7 @@ export const getInstantApplySearchData = async (req, res) => {
     let query = {};
     let docs = [];
     let responseData = {};
+    let totalPages = 0;
 
     // Sets for unique filters
     const states = new Set();
@@ -625,30 +629,40 @@ export const getInstantApplySearchData = async (req, res) => {
     const investmentRanges = new Set();
 
     if (fromDate || toDate) {
-            let start, end;
-
+      let start, end;
       if (fromDate) {
-        start = new Date(fromDate);
-        start.setHours(0, 0, 0, 0);  
+        const parsed = new Date(fromDate);
+        if (!isNaN(parsed)) {
+          start = parsed;
+          start.setHours(0, 0, 0, 0);
+        }
       }
 
       if (toDate) {
-        end = new Date(toDate);
-        end.setHours(23, 59, 59, 999);
+        const parsed = new Date(toDate);
+        if (!isNaN(parsed)) {
+          end = parsed;
+          end.setHours(23, 59, 59, 999);
+        }
       }
 
       const query = {};
       if (start && end) {
         query.createdAt = { $gte: start, $lte: end };
       } else if (start) {
-        query.createdAt = { $lte: start };
+        query.createdAt = { $gte: start };
       } else if (end) {
         query.createdAt = { $lte: end };
       }
 
-      const data = await instantApply.find(query);
+      const data = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
-      console.log(data);
+      totalPages = await instantApply.countDocuments(query);
+
       if (!data || data.length === 0) {
         return res.json(
           new ApiResponse(
@@ -659,21 +673,36 @@ export const getInstantApplySearchData = async (req, res) => {
         );
       }
 
-      responseData = {
-        data :data
-      }
+      const responseData = {
+        data,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
+      };
 
-      return res.json(new ApiResponse(200, responseData, "Data fetched successfully"));
-    
+      return res.json(
+        new ApiResponse(200, responseData, "Data fetched successfully")
+      );
     }
 
     // Search term filter
     if (searchTerm) {
       query.$or = [{ brandName: { $regex: searchTerm, $options: "i" } }];
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -682,20 +711,31 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (state && district && city && investmentRange) {
       query = { state, district, city, investmentRange };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
         query = { state, district, city };
-        docs = await instantApply.find(query);
-
+        docs = await instantApply
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit);
+        totalPages = await instantApply.countDocuments({});
         if (docs.length === 0) {
           query = { state, district };
-          docs = await instantApply.find(query);
-
+          docs = await instantApply
+            .find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+          totalPages = await instantApply.countDocuments({});
           if (docs.length === 0) {
-            
-
             docs = await instantApply.find({ state });
+            totalPages = await instantApply.countDocuments({});
             docs.forEach((doc) => {
               if (doc.city) cities.add(doc.city);
               if (doc.district) districts.add(doc.district);
@@ -708,6 +748,11 @@ export const getInstantApplySearchData = async (req, res) => {
               cities: [...cities],
               districts: [...districts],
               data: docs,
+              pagination: {
+                currentPage: page,
+                limit,
+                totalPages,
+              },
             };
             return res.json(
               new ApiResponse(
@@ -727,6 +772,11 @@ export const getInstantApplySearchData = async (req, res) => {
             investmentRanges: [...investmentRanges],
             cities: [...cities],
             data: docs,
+            pagination: {
+              currentPage: page,
+              limit,
+              totalPages,
+            },
           };
           return res.json(
             new ApiResponse(
@@ -744,6 +794,11 @@ export const getInstantApplySearchData = async (req, res) => {
         responseData = {
           investmentRanges: [...investmentRanges],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -752,6 +807,11 @@ export const getInstantApplySearchData = async (req, res) => {
 
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -760,16 +820,23 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (state && district && city) {
       query = { state, district, city };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
         query = { state, district };
-        docs = await instantApply.find(query);
-
+        docs = await instantApply
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit);
+        totalPages = await instantApply.countDocuments({});
         if (docs.length === 0) {
-          
-
           docs = await instantApply.find({ state });
+          totalPages = await instantApply.countDocuments({});
           docs.forEach((doc) => {
             if (doc.city) cities.add(doc.city);
             if (doc.district) districts.add(doc.district);
@@ -781,6 +848,11 @@ export const getInstantApplySearchData = async (req, res) => {
             cities: [...cities],
             districts: [...districts],
             data: docs,
+            pagination: {
+              currentPage: page,
+              limit,
+              totalPages,
+            },
           };
           return res.json(
             new ApiResponse(
@@ -800,6 +872,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -813,6 +890,11 @@ export const getInstantApplySearchData = async (req, res) => {
       responseData = {
         investmentRanges: [...investmentRanges],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -821,16 +903,24 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (state && district && investmentRange) {
       query = { state, district, investmentRange };
-      docs = await instantApply.find(query);
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
 
       if (docs.length === 0) {
         query = { state, district };
-        docs = await instantApply.find(query);
-
+        docs = await instantApply
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit);
+        totalPages = await instantApply.countDocuments({});
         if (docs.length === 0) {
-          
-
           docs = await instantApply.find({ state });
+          totalPages = await instantApply.countDocuments({});
           docs.forEach((doc) => {
             if (doc.city) cities.add(doc.city);
             if (doc.district) districts.add(doc.district);
@@ -842,6 +932,11 @@ export const getInstantApplySearchData = async (req, res) => {
             cities: [...cities],
             districts: [...districts],
             data: docs,
+            pagination: {
+              currentPage: page,
+              limit,
+              totalPages,
+            },
           };
           return res.json(
             new ApiResponse(
@@ -861,6 +956,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -868,6 +968,11 @@ export const getInstantApplySearchData = async (req, res) => {
       }
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -876,16 +981,23 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (district && city && investmentRange) {
       query = { district, city, investmentRange };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
         query = { district, city };
-        docs = await instantApply.find(query);
-
+        docs = await instantApply
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit);
+        totalPages = await instantApply.countDocuments({});
         if (docs.length === 0) {
-          
-
           docs = await instantApply.find({ district });
+          totalPages = await instantApply.countDocuments({});
           docs.forEach((doc) => {
             if (doc.city) cities.add(doc.city);
             if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
@@ -895,6 +1007,11 @@ export const getInstantApplySearchData = async (req, res) => {
             investmentRanges: [...investmentRanges],
             cities: [...cities],
             data: docs,
+            pagination: {
+              currentPage: page,
+              limit,
+              totalPages,
+            },
           };
           return res.json(
             new ApiResponse(
@@ -914,6 +1031,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -922,6 +1044,11 @@ export const getInstantApplySearchData = async (req, res) => {
 
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -930,15 +1057,24 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (state && city && investmentRange) {
       query = { state, city, investmentRange };
-      docs = await instantApply.find(query);
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
+
       if (docs.length === 0) {
         query = { state, city };
-        docs = await instantApply.find(query);
-
+        docs = await instantApply
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit);
+        totalPages = await instantApply.countDocuments({});
         if (docs.length === 0) {
-          
-
           docs = await instantApply.find({ state });
+          totalPages = await instantApply.countDocuments({});
           docs.forEach((doc) => {
             if (doc.city) cities.add(doc.city);
             if (doc.district) districts.add(doc.district);
@@ -950,6 +1086,11 @@ export const getInstantApplySearchData = async (req, res) => {
             cities: [...cities],
             districts: [...districts],
             data: docs,
+            pagination: {
+              currentPage: page,
+              limit,
+              totalPages,
+            },
           };
           return res.json(
             new ApiResponse(
@@ -969,6 +1110,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -976,6 +1122,11 @@ export const getInstantApplySearchData = async (req, res) => {
       }
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -986,11 +1137,14 @@ export const getInstantApplySearchData = async (req, res) => {
     if (state && district) {
       query = { state, district };
 
-      docs = await instantApply.find(query);
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
 
       if (docs.length === 0) {
-        
-
         docs = await instantApply.find({ state });
         docs.forEach((doc) => {
           if (doc.city) cities.add(doc.city);
@@ -1003,6 +1157,11 @@ export const getInstantApplySearchData = async (req, res) => {
           cities: [...cities],
           districts: [...districts],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1017,6 +1176,11 @@ export const getInstantApplySearchData = async (req, res) => {
       responseData = {
         investmentRanges: [...investmentRanges],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1026,11 +1190,13 @@ export const getInstantApplySearchData = async (req, res) => {
     // Case 2: state + city
     if (state && city) {
       query = { state, city };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
-        
-
         docs = await instantApply.find({ state });
         docs.forEach((doc) => {
           if (doc.city) cities.add(doc.city);
@@ -1043,6 +1209,11 @@ export const getInstantApplySearchData = async (req, res) => {
           cities: [...cities],
           districts: [...districts],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1056,6 +1227,11 @@ export const getInstantApplySearchData = async (req, res) => {
       responseData = {
         investmentRanges: [...investmentRanges],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1065,8 +1241,12 @@ export const getInstantApplySearchData = async (req, res) => {
     // Case 3: state + investmentRange
     if (state && investmentRange) {
       query = { state, investmentRange };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
         docs = await instantApply.find({ state });
         docs.forEach((doc) => {
@@ -1080,6 +1260,11 @@ export const getInstantApplySearchData = async (req, res) => {
           cities: [...cities],
           districts: [...districts],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1088,6 +1273,11 @@ export const getInstantApplySearchData = async (req, res) => {
 
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1097,11 +1287,13 @@ export const getInstantApplySearchData = async (req, res) => {
     // Case 4: district + investmentRange
     if (district && investmentRange) {
       query = { district, investmentRange };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
-        
-
         docs = await instantApply.find({ district });
         docs.forEach((doc) => {
           if (doc.city) cities.add(doc.city);
@@ -1112,6 +1304,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1120,6 +1317,11 @@ export const getInstantApplySearchData = async (req, res) => {
 
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1129,11 +1331,13 @@ export const getInstantApplySearchData = async (req, res) => {
     // Case 5: district + city
     if (district && city) {
       query = { district, city };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       if (docs.length === 0) {
-        
-
         docs = await instantApply.find({ district });
         docs.forEach((doc) => {
           if (doc.city) cities.add(doc.city);
@@ -1144,6 +1348,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1157,6 +1366,11 @@ export const getInstantApplySearchData = async (req, res) => {
       responseData = {
         investmentRanges: [...investmentRanges],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1166,10 +1380,14 @@ export const getInstantApplySearchData = async (req, res) => {
     // Case 6: investmentRange + city
     if (investmentRange && city) {
       query = { investmentRange, city };
-      docs = await instantApply.find(query);
-      if (docs.length === 0) {
-        
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
 
+      if (docs.length === 0) {
         docs = await instantApply.find({ city });
         docs.forEach((doc) => {
           // if (doc.city) cities.add(doc.city);
@@ -1180,6 +1398,11 @@ export const getInstantApplySearchData = async (req, res) => {
           investmentRanges: [...investmentRanges],
           // cities: [...cities],
           data: docs,
+          pagination: {
+            currentPage: page,
+            limit,
+            totalPages,
+          },
         };
         return res.json(
           new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1188,6 +1411,11 @@ export const getInstantApplySearchData = async (req, res) => {
 
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1197,8 +1425,12 @@ export const getInstantApplySearchData = async (req, res) => {
     // Default case: single filters
     if (state) {
       query = { state };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       docs.forEach((doc) => {
         if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
         if (doc.city) cities.add(doc.city);
@@ -1210,6 +1442,11 @@ export const getInstantApplySearchData = async (req, res) => {
         districts: [...districts],
         cities: [...cities],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1218,8 +1455,12 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (district) {
       query = { district };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       docs.forEach((doc) => {
         if (doc.city) cities.add(doc.city);
         if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
@@ -1229,6 +1470,11 @@ export const getInstantApplySearchData = async (req, res) => {
         cities: [...cities],
         investmentRanges: [...investmentRanges],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1237,8 +1483,12 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (city) {
       query = { city };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       docs.forEach((doc) => {
         if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
       });
@@ -1246,6 +1496,11 @@ export const getInstantApplySearchData = async (req, res) => {
       responseData = {
         investmentRanges: [...investmentRanges],
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1254,10 +1509,19 @@ export const getInstantApplySearchData = async (req, res) => {
 
     if (investmentRange) {
       query = { investmentRange };
-      docs = await instantApply.find(query);
-
+      docs = await instantApply
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      totalPages = await instantApply.countDocuments({});
       responseData = {
         data: docs,
+        pagination: {
+          currentPage: page,
+          limit,
+          totalPages,
+        },
       };
       return res.json(
         new ApiResponse(200, responseData, "Search data fetched successfully")
@@ -1265,13 +1529,29 @@ export const getInstantApplySearchData = async (req, res) => {
     }
 
     // Default: fetch all
-    docs = await instantApply.find(query);
+    docs = await instantApply
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    totalPages = await instantApply.countDocuments({});
+
+    const stopPagination = Math.ceil(totalPages/limit) 
+    console.log("stopPagination :",stopPagination)
+
+    responseData = {
+      data: docs,
+      pagination: {
+        currentPage: page,
+        limit,
+        totalPages,
+      },
+    };
     return res.json(
-      new ApiResponse(200, { data: docs }, "Search data fetched successfully")
+      new ApiResponse(200, responseData, "Search data fetched successfully")
     );
   } catch (error) {
     console.error("Error in getInstantApplySearchData:", error);
-    return res
-      .json(new ApiResponse(500, {}, "Internal Server Error"));
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
