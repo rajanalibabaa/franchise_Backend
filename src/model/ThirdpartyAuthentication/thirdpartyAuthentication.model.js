@@ -12,10 +12,10 @@ const thirdPartyAuthSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
     profilePhoto: {
       type: String,
@@ -23,7 +23,6 @@ const thirdPartyAuthSchema = new mongoose.Schema(
     source: {
       type: String,
       enum: ["google", "facebook"],
-
     },
     mobileNumber: {
       type: String,
@@ -33,6 +32,27 @@ const thirdPartyAuthSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+    },
+    active: {
+      type: Boolean,
+      default: false,
+    },
+    lastActive: {
+      type: Date,
+    },
+    alreadyLogin: {
+      type: Boolean,
+      default: false,
+    },
+    loginPlatform: {
+      type: String,
+      enum: ["https://fb.mrfranchise.in/", "https://mrfranchise.in/"],
+    },
+    newOtp: {
+      type: String,
+    },
+    otpExpired: {
+      type: Date,
     },
   },
   {

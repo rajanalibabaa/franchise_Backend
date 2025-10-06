@@ -621,6 +621,7 @@ export const getInstantApplySearchData = async (req, res) => {
     let docs = [];
     let responseData = {};
     let totalPages = 0;
+    let stopPagination
 
     // Sets for unique filters
     const states = new Set();
@@ -1536,15 +1537,19 @@ export const getInstantApplySearchData = async (req, res) => {
       .limit(limit);
     totalPages = await instantApply.countDocuments({});
 
-    const stopPagination = Math.ceil(totalPages/limit) 
-    console.log("stopPagination :",stopPagination)
-
+    stopPagination = Math.ceil(totalPages/limit) 
+    if (page >= stopPagination) {
+      stopPagination = true;
+    } else {
+      stopPagination = false;
+    }
     responseData = {
       data: docs,
       pagination: {
         currentPage: page,
         limit,
         totalPages,
+        stopPagination
       },
     };
     return res.json(

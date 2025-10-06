@@ -1,32 +1,27 @@
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
-import {sendEmailOTP} from "../../utils/Centralized Email/centralizedEmail.js";
+import { sendEmailOTP } from "../../utils/Centralized Email/centralizedEmail.js";
 import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 import { RegisterSuperAdmin } from "../../model/Admin/superAdmin/registerSuperAdmin.js";
 
-
-// Store OTP data with timestamp
-let otpData = {
-  code: null,
-  timestamp: null,
-  emailORMobileNumber: null
-};
-
-const OTP_EXPIRATION_MINUTES = 5; 
-
-const  generateOTPforLogin = async (req, res) => {
+const generateOTPforLogin = async (req, res) => {
   try {
-    const { email, mobileNumber } = req.body;
-    // console.log("Request body:", req.body);
+    const { email, mobileNumber, platform } = req.body;
 
     if (!email && !mobileNumber) {
       return res
         .status(400)
-        .json(new ApiResponse(400, null, "Please provide either email or phone number"));
+        .json(
+          new ApiResponse(
+            400,
+            null,
+            "Please provide either email or phone number"
+          )
+        );
     }
 
     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
@@ -41,42 +36,126 @@ const  generateOTPforLogin = async (req, res) => {
         .json(new ApiResponse(400, null, "Phone number must be 10 digits"));
     }
 
-    let  emailORMobileNumber = email || mobileNumber;
-
-    const investorData = await InvsRegister.findOne({
-      $or: [{ email }, { mobileNumber }],
-    });
-
-    // console.log("Investor data:", investorData);
-
-    const brandUserData = await BrandDetails.findOne({
-      $or: [
-        ...(email ? [{ "brandDetails.email": email }] : []),
-        ...(mobileNumber ? [{ "brandDetails.mobileNumber": mobileNumber }] : []),
-      ],
-    });
-
-    // console.log("Brand user data:", brandUserData);
-
-    const thirdPartyUsers = await ThirdPartyAuth.findOne({email:email, mobileNumber:mobileNumber});
-
-    // console.log("thirdPartyUsers data:", thirdPartyUsers);
-
-    if (!investorData && !brandUserData && !thirdPartyUsers) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "You are not a registered user"));
-    }
-
-    const newOTP = Number(generateOTP().toString().trim());
+    const newOTP = generateOTP().toString().trim();
     console.log("Generated OTP:", newOTP);
 
     // Store OTP with current timestamp
-    otpData = {
-      code: newOTP,
-      timestamp: Date.now(),
-      emailORMobileNumber: emailORMobileNumber
-    };
+    const timestamp = Date.now() + 5 * 60 * 1000;
+
+    let data = null;
+
+    if (!data) {
+      data = await InvsRegister.findOne({
+        $or: [{ email }, { mobileNumber }],
+      });
+      if (data?.alreadyLogin === true && platform !== data?.loginPlatform) {
+        return res.json(
+          new ApiResponse(
+            409,
+            null,
+            `You are already logged in on ${data?.loginPlatform}. Please log out before logging in again.`
+          )
+        );
+      }
+
+      if (data) {
+        await InvsRegister.findOneAndUpdate(
+          {
+            $or: [{ email }, { mobileNumber }],
+          },
+          {
+            $set: {
+              newOtp: newOTP,
+              otpExpired: timestamp,
+            },
+          },
+          {
+            new: true,
+          }
+        );
+      }
+    }
+
+    if (!data) {
+      data = await BrandDetails.findOne({
+        $or: [
+          ...(email ? [{ "brandDetails.email": email }] : []),
+          ...(mobileNumber
+            ? [{ "brandDetails.mobileNumber": mobileNumber }]
+            : []),
+        ],
+      });
+      if (data?.alreadyLogin === true && platform !== data?.loginPlatform) {
+        return res.json(
+          new ApiResponse(
+            409,
+            null,
+            `You are already logged in on ${data.loginPlatform}. Please log out before logging in again.`
+          )
+        );
+      }
+
+      if (data) {
+        await BrandDetails.findOneAndUpdate(
+          {
+            $or: [
+              ...(email ? [{ "brandDetails.email": email }] : []),
+              ...(mobileNumber
+                ? [{ "brandDetails.mobileNumber": mobileNumber }]
+                : []),
+            ],
+          },
+          {
+            $set: {
+              newOtp: newOTP,
+              otpExpired: timestamp,
+            },
+          },
+          {
+            new: true,
+          }
+        );
+      }
+    }
+
+    if (!data) {
+      data = await ThirdPartyAuth.findOne({
+        email,
+        mobileNumber,
+      });
+
+      if (data?.alreadyLogin === true && platform !== data?.loginPlatform) {
+        return res.json(
+          new ApiResponse(
+            409,
+            null,
+            `You are already logged in on ${data.loginPlatform}. Please log out before logging in again.`
+          )
+        );
+      }
+      if (data) {
+        await ThirdPartyAuth.findOneAndUpdate(
+          {
+            $or: [{ email }, { mobileNumber }],
+          },
+          {
+            $set: {
+              newOtp: newOTP,
+              otpExpired: timestamp,
+            },
+          },
+          {
+            new: true,
+          }
+        );
+      }
+    }
+
+    if (!data) {
+      return res.json(
+        new ApiResponse(404, null, "You are not a registered user")
+      );
+    }
 
     if (email) {
       await sendEmailOTP(email, newOTP);
@@ -87,83 +166,76 @@ const  generateOTPforLogin = async (req, res) => {
     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
   } catch (error) {
     console.error("Error in generateOTPforLogin:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, null, "Internal Server Error"));
+    return res.json(new ApiResponse(500, null, "Internal Server Error"));
   }
 };
 
 const verifyLogin = async (req, res) => {
   try {
-    const { verifyOtp } = req.body;
+    const { verifyOtp, email, platform, mobileNumber } = req.body;
 
     if (!verifyOtp) {
-      return res.status(400).json(
-        new ApiResponse(400, null, "OTP required")
-      );
+      return res.json(new ApiResponse(400, null, "OTP required"));
     }
 
-    // console.log("verifyOtp:", typeof Number(verifyOtp), verifyOtp);
-    // console.log("otpData.code:", typeof otpData.code, otpData.code);
+    let investorData = null;
+    let brandUserData = null;
+    let thirdPartyUsers = null;
 
+    investorData = await InvsRegister.findOne({
+      $or: [{ email }, { mobileNumber }],
+    }).select("-createdAt -_id");
+    const timestamp = Date.now();
+
+    if (timestamp > new Date(investorData?.otpExpired).getTime()) {
+      return res.json(new ApiResponse(400, {}, "OTP Expired"));
+    }
+
+    if (!investorData) {
+      brandUserData = await BrandDetails.findOne({
+        $or: [
+          ...(email ? [{ "brandDetails.email": email }] : []),
+          ...(mobileNumber
+            ? [{ "brandDetails.mobileNumber": mobileNumber }]
+            : []),
+        ],
+      }).select("-createdAt -_id");
+      if (Date.now() > new Date(brandUserData?.otpExpired).getTime()) {
+        return res.json(new ApiResponse(400, {}, "OTP Expired"));
+      }
+    }
+
+    if (!brandUserData) {
+      thirdPartyUsers = await ThirdPartyAuth.findOne({
+        email,
+        mobileNumber,
+      }).select("-createdAt -_id");
+      if (Date.now() > new Date(thirdPartyUsers?.otpExpired).getTime()) {
+        return res.json(new ApiResponse(400, {}, "OTP Expired"));
+      }
+    }
     // Check if OTP exists
-    if (!otpData.code) {
-      return res.status(400).json(
+    if (
+      !brandUserData?.newOtp &&
+      !investorData?.newOtp &&
+      thirdPartyUsers?.newOtp
+    ) {
+      return res.json(
         new ApiResponse(400, null, "No OTP generated or OTP expired")
       );
     }
 
-    // Check if OTP is expired (5 minutes)
-    const currentTime = Date.now();
-    const otpAgeMinutes = (currentTime - otpData.timestamp) / (1000 * 60);
-    
-    if (otpAgeMinutes > OTP_EXPIRATION_MINUTES) {
-      return res.status(400).json(
-        new ApiResponse(400, null, "OTP has expired. Please generate a new one.")
+    let userData = investorData || brandUserData || thirdPartyUsers;
+
+    if (Number(userData?.newOtp) !== Number(verifyOtp)) {
+      return res.json(
+        new ApiResponse(
+          400,
+          null,
+          "Invalid OTP. Please check the code and try again."
+        )
       );
     }
-
-    if (otpData.code !== Number(verifyOtp)) {
-      return res.status(400).json(
-        new ApiResponse(400, null, "Invalid OTP")
-      );
-    }
-
-    if (!otpData.emailORMobileNumber) {
-      return res.status(400).json(
-        new ApiResponse(400, null, "Missing user identifier")
-      );
-    }
-
-    const investorData = await InvsRegister.findOne({
-      $or: [
-        { email: otpData.emailORMobileNumber },
-        { mobileNumber: otpData.emailORMobileNumber }
-      ]
-    }).select("-createdAt -_id");
-
-    const brandUserData = await BrandDetails.findOne({
-      $or: [
-        { "brandDetails.email": otpData.emailORMobileNumber },
-        { "brandDetails.mobileNumber": otpData.emailORMobileNumber }
-      ]
-    }).select("-createdAt -_id");
-
-    const thirdPartyUsers = await ThirdPartyAuth.findOne({
-      $or: [
-        {email: otpData.emailORMobileNumber},
-        {mobileNumber: otpData.emailORMobileNumber}
-      ]
-    }).select("-createdAt -_id");
-
-    if (!investorData && !brandUserData && !thirdPartyUsers) {
-      return res.status(404).json(
-        new ApiResponse(404, null, "User not found")
-      );
-    }
-
-    const userData = investorData || brandUserData || thirdPartyUsers;
-
     const payload = {
       investorUUID: investorData?.uuid || null,
       brandUserUUID: brandUserData?.uuid || null,
@@ -179,95 +251,159 @@ const verifyLogin = async (req, res) => {
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: 'Strict',
+      sameSite: "Strict",
     };
 
-    // Clear OTP after successful verification
-    otpData = {
-      code: null,
-      timestamp: null,
-      emailORMobileNumber: null
-    };
+    if (investorData) {
+      userData = await InvsRegister.findOneAndUpdate(
+        {
+          $or: [{ email }, { mobileNumber }],
+        },
+        {
+          $set: {
+            alreadyLogin: true,
+            lastActive: timestamp,
+            alreadyLogin: true,
+            loginPlatform: platform,
+            otpExpired: null,
+            newOtp: null,
+          },
+        },
+        {
+          new: true,
+        }
+      );
+    }
 
-    return res.status(200)
-      .cookie("AccessToken", AccessToken, cookieOptions)
-      .json(
-        new ApiResponse(200, {
+    if (brandUserData) {
+      userData = await BrandDetails.findOneAndUpdate(
+        {
+          $or: [
+            ...(email ? [{ "brandDetails.email": email }] : []),
+            ...(mobileNumber
+              ? [{ "brandDetails.mobileNumber": mobileNumber }]
+              : []),
+          ],
+        },
+        {
+          $set: {
+            alreadyLogin: true,
+            lastActive: timestamp,
+            alreadyLogin: true,
+            loginPlatform: platform,
+            otpExpired: null,
+            newOtp: null,
+          },
+        },
+        {
+          new: true,
+        }
+      );
+    }
+
+    if (thirdPartyUsers) {
+      userData = await ThirdPartyAuth.findOneAndUpdate(
+        {
+          $or: [{ email }, { mobileNumber }],
+        },
+        {
+          $set: {
+            alreadyLogin: true,
+            lastActive: timestamp,
+            alreadyLogin: true,
+            loginPlatform: platform,
+            otpExpired: null,
+            newOtp: null,
+          },
+        },
+        {
+          new: true,
+        }
+      );
+    }
+
+    // console.log("updated :", userData);
+
+    return res.cookie("AccessToken", AccessToken, cookieOptions).json(
+      new ApiResponse(
+        200,
+        {
           ...payload,
           AccessToken,
-          userData
-        }, "User verified and logged in")
-      );
-
+          userData,
+        },
+        "User verified and logged in"
+      )
+    );
   } catch (error) {
     console.error("Investor login error:", error);
-    return res.status(500).json(
-      new ApiResponse(500, null, "Internal Server Error")
-    );
+    return res.json(new ApiResponse(500, null, "Internal Server Error"));
   }
 };
 
-export const generateOTPforAdminLogin = async(req,res)=>{
-    const {email} = req.body
+export const generateOTPforAdminLogin = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-    if(!email){
-      return res.json(
-        new ApiResponse(404,{},'Please Enter The Email')
-      )
+    if (!email) {
+      return res.json(new ApiResponse(404, {}, "Please Enter The Email"));
     }
 
-     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-      return res
-        .json(new ApiResponse(400, null, "Invalid email format"));
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.json(new ApiResponse(400, null, "Invalid email format"));
     }
 
     const exist = await RegisterSuperAdmin.findOne({
-      adminEmail : email
-    })
+      adminEmail: email,
+    });
     // console.log("exist",exist.adminEmail);
-    
-    if(!exist){
-      res.json
-      (new ApiResponse(400,{},'Email Not Exist'))
+
+    if (!exist) {
+      res.json(new ApiResponse(400, {}, "Email Not Exist"));
     }
-  
-    const newOTP = generateOTP()
-    console.log("otp",newOTP);
+
+    const newOTP = generateOTP();
+    console.log("otp", newOTP);
     const timestamp = Date.now() + 5 * 60 * 1000;
 
-    console.log(Date.now())
+    console.log(Date.now());
     // console.log("time :",timestamp);
-    
-    
+
     const data = await RegisterSuperAdmin.findOneAndUpdate(
-      {adminEmail: exist.adminEmail},
-      {$set : {
-        otp: newOTP, 
-        otpExpired : timestamp,
-      }},
-      {new:true}
-    )
-    
+      { adminEmail: exist.adminEmail },
+      {
+        $set: {
+          otp: newOTP,
+          otpExpired: timestamp,
+        },
+      },
+      { new: true }
+    );
 
     if (!data) {
-      return res.json(new ApiResponse(500, {}, "Failed to update OTP. Please try again"));
+      return res.json(
+        new ApiResponse(500, {}, "Failed to update OTP. Please try again")
+      );
     }
 
     await sendEmailOTP(email, newOTP);
-     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
-}
+    return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
+  } catch (error) {
+    console.error("Investor login error:", error);
+    return res.json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+};
 
 export const verifyAdminLoginOTP = async (req, res) => {
   try {
-    const { verifyOTP, email } = req.body;
+    const { verifyOTP, email, platform } = req.body;
 
     if (!email) {
       return res.json(new ApiResponse(400, {}, "Please Generate OTP"));
     }
 
     const exists = await RegisterSuperAdmin.findOne({ adminEmail: email });
-  
-    
+
     if (!exists) {
       return res.json(new ApiResponse(404, {}, "Admin not found"));
     }
@@ -282,7 +418,11 @@ export const verifyAdminLoginOTP = async (req, res) => {
 
     if (verifyOTP !== exists.otp) {
       return res.json(
-        new ApiResponse(400, {}, "Wrong OTP, please check and enter correct OTP")
+        new ApiResponse(
+          400,
+          {},
+          "Wrong OTP, please check and enter correct OTP"
+        )
       );
     }
 
@@ -300,18 +440,23 @@ export const verifyAdminLoginOTP = async (req, res) => {
 
     const adminData = await RegisterSuperAdmin.findOneAndUpdate(
       { adminEmail: email },
-      { $set: 
-        { 
-          otp: null, otpExpired: null
-        } 
-      }, 
+      {
+        $set: {
+          otp: null,
+          otpExpired: null,
+        },
+      },
       { new: true }
     ).select(" -otp -otpExpired -_id ");
 
     res.cookie("adminAccessToken", adminAccessToken, cookieOptions);
 
     return res.json(
-      new ApiResponse(200, { adminAccessToken, adminData }, "Verification successful")
+      new ApiResponse(
+        200,
+        { adminAccessToken, adminData },
+        "Verification successful"
+      )
     );
   } catch (error) {
     console.error("Error verifying OTP:", error);
@@ -319,7 +464,4 @@ export const verifyAdminLoginOTP = async (req, res) => {
   }
 };
 
-export {
-  generateOTPforLogin,
-  verifyLogin,
-};
+export { generateOTPforLogin, verifyLogin };
