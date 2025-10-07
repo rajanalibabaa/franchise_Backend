@@ -50,19 +50,18 @@ router.use(AdminDashBoardClientRouter);
 // video advertise
 router.use(videoAdvertiseRoute);
 
-// router.use('/v1/brand/register',BrandRegisterRoute)
+
 
 //logout routers
 router.use(logoutRouter);
 
 router.use(fbPostsRouter);
 
-//login routers
-// router.use('/v1/login', Login)
+
 
 router.use(sendOtpRouter);
 
-// frondend home page routes
+
 
 router.use(frontendHomePageBrandsRouter);
 
