@@ -10,6 +10,7 @@ import mongoose, { Aggregate } from "mongoose";
 import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
+import { leadsCreateFunction } from "../Leads/leadsCreateFunction.js";
 
 export const instaApplyBrandFormController = async (req, res) => {
   try {
@@ -28,7 +29,7 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyId,
     } = req.body;
 
-    console.log("req.body :", req.body);
+    // console.log("req.body :", req.body);
 
     // Use aggregation to fetch brand data from all three collections
     const brandAggregate = await BrandDetails.aggregate([
@@ -82,7 +83,7 @@ export const instaApplyBrandFormController = async (req, res) => {
       },
     ]);
 
-    console.log("brandAggregate :", brandAggregate);
+    // console.log("brandAggregate :", brandAggregate);
 
     if (!brandAggregate || brandAggregate.length === 0) {
       return res.json(new ApiResponse(404, null, "Brand not found"));
@@ -106,49 +107,53 @@ export const instaApplyBrandFormController = async (req, res) => {
       }
     }
 
+    const leadsres = await leadsCreateFunction(req?.body,exists,applyBy,applyById)
+    // console.log("leadsres :",leadsres)
+    res.json(leadsres)
+
     const { main, sub, child } =
       exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
-    console.log("main, sub, child :", main, sub, child);
+    // console.log("main, sub, child :", main, sub, child);
 
-    const newSubmission = new instantApply({
-      uuid: uuid(),
-      fullName,
-      email,
-      mobileNumber,
-      Categories:
-        exists.franchiseDetails?.franchiseDetails?.brandCategories || {},
-      state,
-      district,
-      city,
-      investmentRange,
-      planToInvest,
-      readyToInvest,
-      brandId,
-      brandName,
-      brandEmail: exists.brandDetails?.email,
-      brandLogo: exists.uploads?.uploads?.brandLogo?.[0],
-      apply: {
-        applyBy,
-        applyId: applyById,
-      },
-    });
+    // const newSubmission = new instantApply({
+    //   uuid: uuid(),
+    //   fullName,
+    //   email,
+    //   mobileNumber,
+    //   Categories:
+    //     exists.franchiseDetails?.franchiseDetails?.brandCategories.main || {},
+    //   state,
+    //   district,
+    //   city,
+    //   investmentRange,
+    //   planToInvest,
+    //   readyToInvest,
+    //   brandId,
+    //   brandName,
+    //   brandEmail: exists.brandDetails?.email,
+    //   brandLogo: exists.uploads?.uploads?.brandLogo?.[0],
+    //   apply: {
+    //     applyBy,
+    //     applyId: applyById,
+    //   },
+    // });
 
-    await newSubmission.save();
-    console.log("newSubmission :", newSubmission);
+    // await newSubmission.save();
+    // console.log("newSubmission :", newSubmission);
 
-    if (!newSubmission) {
-      return res.json(
-        new ApiResponse(
-          500,
-          null,
-          "Something went wrong while newSubmission saving in database"
-        )
-      );
-    }
+    // if (!newSubmission) {
+    //   return res.json(
+    //     new ApiResponse(
+    //       500,
+    //       null,
+    //       "Something went wrong while newSubmission saving in database"
+    //     )
+    //   );
+    // }
 
-    res.json(
-      new ApiResponse(200, newSubmission, "Application submitted successfully")
-    );
+    // res.json(
+    //   new ApiResponse(200, newSubmission, "Application submitted successfully")
+    // );
 
     await instantApplyLocationMatch(
       fullName,
