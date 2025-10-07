@@ -106,6 +106,7 @@ const io = new SocketIOServer(httpServer, {
       "https://fb.mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
+      "https://admin.mrfranchise.in"
     ],
     credentials: true,
   },
