@@ -394,7 +394,7 @@ export const generateOTPforAdminLogin = async (req, res) => {
   }
 };
 
-export const verifyAdminLoginOTP = async (req, res) => {
+export const verifyAdminLoginOTP = async (req, res) => { 
   try {
     const { verifyOTP, email, platform } = req.body;
 
