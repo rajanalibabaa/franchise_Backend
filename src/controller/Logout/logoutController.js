@@ -1,3 +1,6 @@
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
+import { InvsRegister } from "../../model/Investor/invsRegister.js";
+import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
 const logOut = async (req, res) => {
@@ -27,10 +30,52 @@ const logOut = async (req, res) => {
       .json(new ApiResponse(200, null, "Admin logged out successfully."));
   } else if (req?.investorUser && req.investorUser.uuid === uuid) {
     matchedUser = req.investorUser;
+    await InvsRegister.findOneAndUpdate(
+      {
+        uuid
+      },
+      {
+        $set : {
+          active: false,
+          alreadyLogin: false
+        }
+      },
+      {
+        new: true
+      }
+    )
   } else if (req?.brandUser && req.brandUser.uuid === uuid) {
     matchedUser = req.brandUser;
+    await BrandDetails.findOneAndUpdate(
+      {
+        uuid
+      },
+      {
+        $set : {
+          active: false,
+          alreadyLogin: false
+        }
+      },
+      {
+        new: true
+      }
+    )
   } else if (req?.thirdPartyUser && req.thirdPartyUser.uuid === uuid) {
     matchedUser = req.thirdPartyUser;
+    await ThirdPartyAuth.findOneAndUpdate(
+      {
+        uuid
+      },
+      {
+        $set : {
+          active: false,
+          alreadyLogin: false
+        }
+      },
+      {
+        new: true
+      }
+    )
   }
 
   // console.log("Matched user:", matchedUser);

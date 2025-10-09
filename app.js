@@ -27,7 +27,9 @@ import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js
 import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/newIncomingBrandRoutes.js";
 import { overAllPlatformRoutes } from "./src/Routes/BrandRoutes/overAllPlatformRoutes.js";
 import { superAdminRouter } from "./src/Routes/AdminRoutes/superAdminRoutes/superAdminRoutes.js";
+import socailPost from "./src/utils/socialmediapost/SocialRouter.js"
 import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
+import { mahalRouter } from "./src/Routes/Mahal/mahal.router.js";
 
 const router = express.Router();
 
@@ -98,6 +100,14 @@ router.use(shortListRouter);
 
 router.use(newIncomingBrandRouter)
 router.use(userRouter)
+
+
+router.use(socailPost)
+
+
+//Mahal project
+router.use(mahalRouter)
+
 
 function getRoutes(router, basePath = "") {
   const routes = [];

@@ -173,7 +173,7 @@ export const getAllViewBrandByID = async (req, res) => {
       const viewedData = await ViewedBrandsByInvestor.findOne({
         InvestorUserId: investor._id,
       });
-
+ 
       if (!viewedData?.viewedByInvestors?.length) {
         return res.json(
           new ApiResponse(200, [], "You haven't viewed any brands yet")
@@ -187,7 +187,7 @@ export const getAllViewBrandByID = async (req, res) => {
       const viewedData = await ViewedBrandsByBrands.findOne({
         brandUserID: brand._id,
       });
-
+ 
       if (!viewedData?.viewedByBrands?.length) {
         return res.json(
           new ApiResponse(200, [], "You haven't viewed any brands yet")
@@ -316,7 +316,7 @@ export const getAllViewBrandByID = async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
-
+ 
     return res.json(
       new ApiResponse(
         200,
@@ -339,7 +339,6 @@ export const getAllViewBrandByID = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
 export const deleteViewBrandByID = async (req, res) => {
   try {
     const { id } = req.params;

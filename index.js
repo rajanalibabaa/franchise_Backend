@@ -20,6 +20,8 @@ import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
+import {postToAllPlatforms} from "./src/utils/socialmediapost/socialmediapost.js";
+
 
 dotenv.config(); // ✅ Load env FIRST
 
@@ -47,8 +49,10 @@ const allowedOrigins = [
   "https://fb.mrfranchise.in",
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://admin.mrfranchise.in"
+  "https://admin.mrfranchise.in",
 
+  "http://localhost:3000",
+  "https://www.thirumalthirumagal.com/"
 ];
 
 app.use(
@@ -108,7 +112,9 @@ const io = new SocketIOServer(httpServer, {
       "https://fb.mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://admin.mrfranchise.in"
+      "https://admin.mrfranchise.in",
+      "http://localhost:3000",
+      "https://www.thirumalthirumagal.com/"
     ],
     credentials: true,
   },
@@ -130,6 +136,31 @@ const startServer = async () => {
 
     app.use("/api", allRouters);
     app.use("/api/v1/upload", s3Uploads);
+
+
+    // ✅ This is for webhook verification
+app.get("/api/webhooks", (req, res) => {
+  const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
+
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified ✅");
+    res.status(200).send(challenge); // must return challenge
+  } else {
+    res.sendStatus(403);
+  }
+});
+
+// ✅ This is for receiving webhook events (messages, comments, etc.)
+app.post("/api/webhooks", (req, res) => {
+  console.log("Incoming webhook event:", req.body);
+  res.sendStatus(200);
+});
+
+
 
     // Error handler
     app.use(errorHandler);
