@@ -167,9 +167,7 @@ export const getAllViewBrandByID = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-
-    console.log("like and shortlist ");
-
+    // ✅ Collect viewed brand IDs
     let brandIds = [];
     if (investor && investor._id) {
       const viewedData = await ViewedBrandsByInvestor.findOne({

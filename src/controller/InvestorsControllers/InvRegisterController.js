@@ -148,12 +148,8 @@ export const getAllInvestors = async (req, res) => {
 export const getInvestorByUUID = async (req, res) => {
   try {
 
-    // console.log("getInvestorByUUID",req.investorUser.uuid)
     const { uuid } = req.params;
-
-    // console.log(uuid)
-
-    if (req.investorUser?.uuid !== uuid) {
+    if (req.investorUser?.uuid !== uuid && !req.admin) {
       return res.json(
         new ApiResponse(
           403,
@@ -163,7 +159,7 @@ export const getInvestorByUUID = async (req, res) => {
       )
     }
 
-    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid }).select("-__v -_id -createdAt -updatedAt -oldData");
+    const investor = await InvsRegister.findOne({ uuid: req.investorUser?.uuid || uuid }).select("-__v -_id -createdAt -updatedAt -oldData");
 
 
     if (!investor) {
@@ -576,6 +572,7 @@ export const deleteInvestorProfileImage = async (req, res) => {
     );
   }
 };
+
 
 export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;

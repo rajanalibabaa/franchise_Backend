@@ -8,15 +8,15 @@ const PreferenceSchema = new mongoose.Schema({
       main: { type: String },
       sub: { type: String },
       child: { type: String },
-      _id: false
-    }
+      _id: false,
+    },
   ],
   investmentRange: {
     type: String,
-    required: true
+    required: true,
   },
   investmentAmount: {
-    type: String
+    type: String,
   },
   locationType: {
     type: String,
@@ -24,7 +24,7 @@ const PreferenceSchema = new mongoose.Schema({
     // required: true
   },
   preferredCountry: {
-    type: String
+    type: String,
   },
   preferredState: {
     type: String,
@@ -39,32 +39,35 @@ const PreferenceSchema = new mongoose.Schema({
     {
       propertyType: {
         type: String,
-        trim: true
+        trim: true,
       },
       propertySize: {
         type: String,
         required: function () {
           return this.propertyType === "Own Property";
-        }
+        },
       },
-      propertyCountry: { type: String ,
-        required: function () {
-          return this.propertyType === "Own Property" ;
-        }
-      },
-      propertyState: { type: String,
+      propertyCountry: {
+        type: String,
         required: function () {
           return this.propertyType === "Own Property";
-        }
-       },
-      propertyCity: { type: String ,
+        },
+      },
+      propertyState: {
+        type: String,
         required: function () {
           return this.propertyType === "Own Property";
-        }
+        },
       },
-      _id: false
-    }
-  ]
+      propertyCity: {
+        type: String,
+        required: function () {
+          return this.propertyType === "Own Property";
+        },
+      },
+      _id: false,
+    },
+  ],
 });
 
 // Investor Registration Schema
@@ -84,11 +87,17 @@ const invsRegisterSchema = new mongoose.Schema(
     mobileNumber: {
       type: String,
       required: true,
-      match: [/^\+91\d{10}$/, "Please enter a valid mobile number with country code"]
+      match: [
+        /^\+91\d{10}$/,
+        "Please enter a valid mobile number with country code",
+      ],
     },
     whatsappNumber: {
       type: String,
-      match: [/^\+91\d{10}$/, "Please enter a valid WhatsApp number with country code"]
+      match: [
+        /^\+91\d{10}$/,
+        "Please enter a valid WhatsApp number with country code",
+      ],
     },
     address: String,
     pincode: String,
@@ -105,8 +114,8 @@ const invsRegisterSchema = new mongoose.Schema(
         "Freelancer/ Consultant",
         "Homemaker",
         "Investor",
-        "Other"
-      ]
+        "Other",
+      ],
     },
     specifyOccupation: {
       type: String,
@@ -118,16 +127,16 @@ const invsRegisterSchema = new mongoose.Schema(
     preferences: [PreferenceSchema],
     uuid: {
       type: String,
-      unique: true
+      unique: true,
     },
     profileImage: {
-      type: String
+      type: String,
     },
     inveterID: {
-      type: String
+      type: String,
     },
     refreshToken: {
-      type: String
+      type: String,
     },
     oldData: [
       {
@@ -145,9 +154,30 @@ const invsRegisterSchema = new mongoose.Schema(
         preferences: [PreferenceSchema],
         createdAt: String,
         profileImage: String,
-        _id: false
-      }
-    ]
+        _id: false,
+      },
+    ],
+    active: {
+      type: Boolean,
+      default: false,
+    },
+    lastActive: {
+      type: Date,
+    },
+    alreadyLogin: {
+      type: Boolean,
+      default: false,
+    },
+    loginPlatform: {
+      type: String,
+      enum: ["https://fb.mrfranchise.in/", "https://mrfranchise.in/"],
+    },
+    newOtp: {
+      type: String,
+    },
+    otpExpired: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -159,11 +189,11 @@ invsRegisterSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
-      email: this.email
+      email: this.email,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     }
   );
 };
@@ -171,8 +201,13 @@ invsRegisterSchema.methods.generateAccessToken = function () {
 // Refresh Token Method
 invsRegisterSchema.methods.generateRefreshToken = async function () {
   try {
-    if (!process.env.REFRESH_TOKEN_SECRET || !process.env.REFRESH_TOKEN_EXPIRY) {
-      throw new Error("Missing REFRESH_TOKEN_SECRET or REFRESH_TOKEN_EXPIRY in environment variables.");
+    if (
+      !process.env.REFRESH_TOKEN_SECRET ||
+      !process.env.REFRESH_TOKEN_EXPIRY
+    ) {
+      throw new Error(
+        "Missing REFRESH_TOKEN_SECRET or REFRESH_TOKEN_EXPIRY in environment variables."
+      );
     }
 
     const refreshToken = jwt.sign(

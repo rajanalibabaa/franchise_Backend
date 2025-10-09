@@ -24,6 +24,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       city,
       investmentRange,
       modelType,
+      areaRequired,
     } = req.query || {};
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
@@ -57,6 +58,12 @@ export const getAllBrandsAndFilter = async (req, res) => {
         },
         {
           "franchiseDetails.franchiseDetails.brandCategories.child": {
+            $regex: serchterm,
+            $options: "i",
+          },
+        },
+        {
+          "franchiseDetails.franchiseDetails.fico.areaRequired": {
             $regex: serchterm,
             $options: "i",
           },
@@ -97,6 +104,12 @@ export const getAllBrandsAndFilter = async (req, res) => {
     if (investmentRange) {
       match["franchiseDetails.franchiseDetails.fico"] = {
         $elemMatch: { investmentRange: investmentRange },
+      };
+    }
+    // areaRequired range filter (for array of objects)
+    if (areaRequired) {
+      match["franchiseDetails.franchiseDetails.fico"] = {
+        $elemMatch: { areaRequired: areaRequired },
       };
     }
     // Model type filter
@@ -362,11 +375,11 @@ export const getAllBrandsAndFilter = async (req, res) => {
 
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state } = req.query;
-
+ 
   console.log(req.query);
-
+ 
   console.log(main);
-
+ 
   try {
     if ((sub && main) || sub) {
       const childcatData = await BrandFranchiseDetails.aggregate([
@@ -400,7 +413,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           $sort: { child: 1 },
         },
       ]);
-
+ 
       // console.log("Child categories data:", childcatData);
       const childcatNames = childcatData.map((item) => item.child);
       return res.json(
@@ -451,13 +464,13 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
       ]);
-
+ 
       const districtNames = districtsData.map((item) => item.district);
       return res.json(
         new ApiResponse(200, districtNames, "Districts fetched successfully")
       );
     }
-
+ 
     // Handle district filter - return cities for the district
     if (district) {
       const citiesData = await BrandExpansionLocationData.aggregate([
@@ -502,13 +515,13 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
       ]);
-
+ 
       const cityNames = citiesData.map((item) => item.city);
       return res.json(
         new ApiResponse(200, cityNames, "Cities fetched successfully")
       );
     }
-
+ 
     if (main) {
       const subcatData = await BrandFranchiseDetails.aggregate([
         {
@@ -536,6 +549,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
             maincat: "$franchiseDetails.brandCategories.main",
             childcat: "$franchiseDetails.brandCategories.child",
             investmentRange: "$franchiseDetails.fico.investmentRange",
+            areaRequired: "$franchiseDetails.fico.areaRequired",
             franchiseModel: "$franchiseDetails.fico.franchiseModel",
             states:
               "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state",
@@ -566,6 +580,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
         {
+          $unwind: {
+            path: "$areaRequired",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $match: {
             subcat: { $exists: true, $ne: null, $ne: "" },
             childcat: { $exists: true, $ne: null, $ne: "" },
@@ -578,6 +598,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
             subcat: { $addToSet: "$subcat" },
             childcat: { $addToSet: "$childcat" },
             investmentRange: { $addToSet: "$investmentRange" },
+            areaRequired: { $addToSet: "$areaRequired" },
             franchiseModel: { $addToSet: "$franchiseModel" },
             maincat: { $addToSet: "$maincat" },
             states: { $addToSet: "$states" }, // now flat unique list
@@ -589,13 +610,14 @@ export const getAllBrandFiltersdata = async (req, res) => {
             subcat: 1,
             childcat: 1,
             investmentRange: 1,
+            areaRequired: 1,
             franchiseModel: 1,
             states: 1,
             // maincat : 1
           },
         },
       ]);
-
+ 
       const result = subcatData[0] || {
         subcat: [],
         childcat: [],
@@ -604,12 +626,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
         states: [],
         maincat: [],
       };
-
+ 
       return res.json(
         new ApiResponse(200, result, "Categories fetched successfully")
       );
     }
-
+ 
     // Main filter aggregation for all data
     const filters = await BrandFranchiseDetails.aggregate([
       {
@@ -633,6 +655,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           subcat: "$franchiseDetails.brandCategories.sub",
           // childcat: "$franchiseDetails.brandCategories.child",
           investmentRange: "$franchiseDetails.fico.investmentRange",
+          areaRequired: "$franchiseDetails.fico.areaRequired",
           franchiseModel: "$franchiseDetails.fico.franchiseModel",
           states:
             "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state",
@@ -648,6 +671,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           // childcat: { $addToSet: "$childcat" },
           investmentRange: { $addToSet: "$investmentRange" },
           franchiseModel: { $addToSet: "$franchiseModel" },
+          areaRequired: { $addToSet: "$areaRequired" },
           states: { $addToSet: "$states" },
           // districts: { $addToSet: "$districts" },
           // cities: { $addToSet: "$cities" },
@@ -662,14 +686,15 @@ export const getAllBrandFiltersdata = async (req, res) => {
           investmentRange: 1,
           franchiseModel: 1,
           states: 1,
+          areaRequired: 1,
           // districts: 1,
           // cities: 1,
         },
       },
     ]);
-
+ 
     //  console.log("Brand filters data:", filters);
-
+ 
     // Flatten arrays of arrays and remove duplicates
     const processField = (field) => {
       if (!field) return [];
@@ -683,20 +708,21 @@ export const getAllBrandFiltersdata = async (req, res) => {
         ),
       ];
     };
-
+ 
     const result = filters.length > 0 ? filters[0] : {};
-
+ 
     const processedFilters = {
       maincat: processField(result.maincat),
       // subcat: processField(result.subcat),
       // childcat: processField(result.childcat),
       investmentRange: processField(result.investmentRange),
+      areaRequired: processField(result.areaRequired),
       franchiseModel: processField(result.franchiseModel),
       states: processField(result.states).sort(),
       // districts: processField(result.districts).sort(),
       // cities: processField(result.cities).sort(),
     };
-
+ 
     return res.json(
       new ApiResponse(
         200,
@@ -715,6 +741,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
     );
   }
 };
+ 
 
 //   console.log(main);
 //   try {

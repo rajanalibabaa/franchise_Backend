@@ -28,6 +28,8 @@ import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAcces
 import { overAllPlatformRoutes } from "./src/Routes/BrandRoutes/overAllPlatformRoutes.js";
 import { superAdminRouter } from "./src/Routes/AdminRoutes/superAdminRoutes/superAdminRoutes.js";
 import socailPost from "./src/utils/socialmediapost/SocialRouter.js"
+import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
+
 const router = express.Router();
 
 router.use(thirdPartyAuthRouter);
@@ -97,6 +99,7 @@ router.use(shortListRouter);
 //Admin New Incoming Brands Routes
 
 router.use(newIncomingBrandRouter)
+router.use(userRouter)
 
 
 router.use(socailPost)
