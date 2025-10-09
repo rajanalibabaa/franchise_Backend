@@ -22,7 +22,7 @@ const MahalSchema = new mongoose.Schema(
         endDate: {
             type : String,
         },
-        startDate: {
+        startTime: {
             type : String,
         },
         endTime: {
