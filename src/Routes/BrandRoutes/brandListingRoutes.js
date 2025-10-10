@@ -25,7 +25,7 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 
 const router = express.Router();
  
-``
+
 router.post(
   "/v1/brandlisting/createBrandListing",
   upload.fields([
@@ -57,7 +57,7 @@ router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
 //   "/v1/brandlisting/getFoodAndBeverageCategory",
 //   getFoodAndBeverageCategory
 // );
-router.get("/v1/brandlisting/getBrandListingByUUID/:id",getBrandListingByUUID);
+// router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
 // router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
 router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
 

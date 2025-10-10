@@ -21,6 +21,9 @@ import mongoose from "mongoose";
     },
     otpExpired : {
         type: Date
+    },
+    userNewVerifyToken: {
+      type: String,
     }
  })
 

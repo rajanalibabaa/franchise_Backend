@@ -43,20 +43,18 @@ const BrandDetailsSchema = new mongoose.Schema(
     lastActive: {
       type: Date,
     },
-    alreadyLogin: {
-      type: Boolean,
-      default: false,
-    },
+
     loginPlatform: {
       type: String,
-      enum: ["https://fb.mrfranchise.in/", "https://mrfranchise.in/"],
     },
     newOtp: {
       type: String,
     },
     otpExpired: {
       type: Date,
-      
+    },
+    userNewVerifyToken: {
+      type: String,
     },
   },
   {

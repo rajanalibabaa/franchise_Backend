@@ -37,7 +37,7 @@ const logOut = async (req, res) => {
       {
         $set : {
           active: false,
-          alreadyLogin: false
+          userNewVerifyToken : ""
         }
       },
       {
@@ -53,7 +53,7 @@ const logOut = async (req, res) => {
       {
         $set : {
           active: false,
-          alreadyLogin: false
+          userNewVerifyToken : ""
         }
       },
       {
@@ -69,7 +69,7 @@ const logOut = async (req, res) => {
       {
         $set : {
           active: false,
-          alreadyLogin: false
+          userNewVerifyToken : ""
         }
       },
       {
