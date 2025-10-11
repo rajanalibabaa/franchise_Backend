@@ -59,18 +59,18 @@ router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
 // );
 // router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
 // router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
-router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
+// router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
 
-router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
-router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
-router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)
-router.get('/v1/brandlisting/getTopCafes',getTopCafes)
-router.get('/v1/brandlisting/getTopDesertAndBakery',getTopDesertAndBakery)
-router.get('/v1/brandlisting/getTopTrucksAndKiosks',getTopTrucksAndKiosks)
-router.get('/v1/brandlisting/getTopRestaurants',getTopRestaurants)
-router.get('/v1/brandlisting/getBrandsByChildCategory',getBrandsByCategory)
+// router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
+// router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
+// router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)
+// router.get('/v1/brandlisting/getTopCafes',getTopCafes)
+// router.get('/v1/brandlisting/getTopDesertAndBakery',getTopDesertAndBakery)
+// router.get('/v1/brandlisting/getTopTrucksAndKiosks',getTopTrucksAndKiosks)
+// router.get('/v1/brandlisting/getTopRestaurants',getTopRestaurants)
+// router.get('/v1/brandlisting/getBrandsByChildCategory',getBrandsByCategory)
 router.patch(
-  "/v1/brandlisting/updateBrandListingByUUID/:id",
+  "/v1/brandlisting/updateBrandListingByUUID/:id",verifyJWT,
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },
@@ -85,7 +85,7 @@ router.patch(
   updateBrandListingByUUID
 );
 router.patch(
-  "/v1/brandlisting/updateBrandImageById/:id",
+  "/v1/brandlisting/updateBrandImageById/:id",verifyJWT,
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },

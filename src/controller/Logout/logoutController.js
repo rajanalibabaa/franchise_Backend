@@ -91,4 +91,10 @@ const logOut = async (req, res) => {
   return res.json(new ApiResponse(200, null, "User logged out successfully."));
 };
 
-export { logOut };
+const autoLogOut = async (req,res) => {
+  return res.json(
+    new ApiResponse(200,null,"It looks like you're logged in on device or browser.")
+  )
+}
+
+export { logOut ,autoLogOut};
