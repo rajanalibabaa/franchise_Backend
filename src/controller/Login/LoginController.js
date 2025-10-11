@@ -56,7 +56,7 @@ const generateOTPforLogin = async (req, res) => {
       if (data?.active === true && logingAnyway !== true) {
         return res.json(
           new ApiResponse(
-            409, 
+            309, 
             null,
             `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
           )
@@ -95,7 +95,7 @@ const generateOTPforLogin = async (req, res) => {
         // console.log("Generated OTP:", 222222);
         return res.json(
           new ApiResponse(
-            409,
+            309,
             null,
             `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
           )
@@ -134,7 +134,7 @@ const generateOTPforLogin = async (req, res) => {
       if (data?.active === true && logingAnyway !== true) {
         return res.json(
           new ApiResponse(
-            409,
+            309,
             null,
             `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
           )
@@ -180,6 +180,7 @@ const generateOTPforLogin = async (req, res) => {
 const verifyLogin = async (req, res) => {
   try {
     const { verifyOtp, email, platform, mobileNumber } = req.body;
+    console.log(req.body)
 
     if (!verifyOtp) {
       return res.json(new ApiResponse(400, null, "OTP required"));

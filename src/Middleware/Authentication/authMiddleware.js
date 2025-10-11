@@ -66,7 +66,7 @@ export const verifyJWT = async (req,res,next) => {
         if (token !== brandUser?.userNewVerifyToken && token !== investorUser?.userNewVerifyToken && token !== thirdPartyUser?.userNewVerifyToken &&token !== admin?.userNewVerifyToken ) {
           return res.json(
                 new ApiResponse(
-                    401, 
+                    409, 
                     null,
                     "token Expired please login"
                 )
