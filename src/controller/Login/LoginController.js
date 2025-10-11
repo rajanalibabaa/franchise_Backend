@@ -11,6 +11,9 @@ import { RegisterSuperAdmin } from "../../model/Admin/superAdmin/registerSuperAd
 const generateOTPforLogin = async (req, res) => {
   try {
     const { email, mobileNumber, platform } = req.body;
+    const logingAnyway = req.body.logingAnyway 
+
+    
 
     if (!email && !mobileNumber) {
       return res
@@ -48,12 +51,14 @@ const generateOTPforLogin = async (req, res) => {
       data = await InvsRegister.findOne({
         $or: [{ email }, { mobileNumber }],
       });
-      if (data?.alreadyLogin === true && platform !== data?.loginPlatform) {
+      
+      
+      if (data?.active === true && logingAnyway !== true) {
         return res.json(
           new ApiResponse(
-            409,
+            409, 
             null,
-            `You are already logged in on ${data?.loginPlatform}. Please log out before logging in again.`
+            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
           )
         );
       }
@@ -85,12 +90,14 @@ const generateOTPforLogin = async (req, res) => {
             : []),
         ],
       });
-      if (data?.alreadyLogin === true && platform !== data?.loginPlatform) {
+      console.log("logingAnyway OTP:", logingAnyway === true);
+      if (data?.active === true && logingAnyway !== true) {
+        // console.log("Generated OTP:", 222222);
         return res.json(
           new ApiResponse(
             409,
             null,
-            `You are already logged in on ${data.loginPlatform}. Please log out before logging in again.`
+            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
           )
         );
       }
@@ -124,12 +131,12 @@ const generateOTPforLogin = async (req, res) => {
         mobileNumber,
       });
 
-      if (data?.alreadyLogin === true && platform !== data?.loginPlatform) {
+      if (data?.active === true && logingAnyway !== true) {
         return res.json(
           new ApiResponse(
             409,
             null,
-            `You are already logged in on ${data.loginPlatform}. Please log out before logging in again.`
+            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
           )
         );
       }
@@ -261,12 +268,12 @@ const verifyLogin = async (req, res) => {
         },
         {
           $set: {
-            alreadyLogin: true,
+            active: true,
             lastActive: timestamp,
-            alreadyLogin: true,
             loginPlatform: platform,
             otpExpired: null,
             newOtp: null,
+            userNewVerifyToken:AccessToken
           },
         },
         {
@@ -287,12 +294,12 @@ const verifyLogin = async (req, res) => {
         },
         {
           $set: {
-            alreadyLogin: true,
+            active: true,
             lastActive: timestamp,
-            alreadyLogin: true,
             loginPlatform: platform,
             otpExpired: null,
             newOtp: null,
+            userNewVerifyToken:AccessToken
           },
         },
         {
@@ -308,12 +315,12 @@ const verifyLogin = async (req, res) => {
         },
         {
           $set: {
-            alreadyLogin: true,
+            active: true,
             lastActive: timestamp,
-            alreadyLogin: true,
             loginPlatform: platform,
             otpExpired: null,
             newOtp: null,
+            userNewVerifyToken:AccessToken
           },
         },
         {
@@ -444,6 +451,7 @@ export const verifyAdminLoginOTP = async (req, res) => {
         $set: {
           otp: null,
           otpExpired: null,
+          userNewVerifyToken: adminAccessToken,
         },
       },
       { new: true }

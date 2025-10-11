@@ -60,7 +60,18 @@ export const verifyJWT = async (req,res,next) => {
         } else {
           return res.json(new ApiResponse(401, null, "User type not recognized"));    
         }
+
+        // console.log("brand token",brandUser)
     
+        if (token !== brandUser?.userNewVerifyToken && token !== investorUser?.userNewVerifyToken && token !== thirdPartyUser?.userNewVerifyToken &&token !== admin?.userNewVerifyToken ) {
+          return res.json(
+                new ApiResponse(
+                    401, 
+                    null,
+                    "token Expired please login"
+                )
+            )
+        }
     
         req.brandUser = brandUser
         req.investorUser = investorUser
