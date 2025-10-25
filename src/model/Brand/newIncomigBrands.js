@@ -71,6 +71,14 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
       TechnologyIntegration:[String],
       SustainabilityAndEthics:[String],
       BusinessOperation:[String],
+      pause:{
+        type:Boolean,
+        default:false
+      },
+      payment:{
+        type:Boolean,
+        default:false
+      },
     },
 
     franchiseDetails: {
