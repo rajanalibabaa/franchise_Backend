@@ -70,7 +70,7 @@ router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
 // router.get('/v1/brandlisting/getTopRestaurants',getTopRestaurants)
 // router.get('/v1/brandlisting/getBrandsByChildCategory',getBrandsByCategory)
 router.patch(
-  "/v1/brandlisting/updateBrandListingByUUID/:id",verifyJWT,
+  "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },
@@ -85,7 +85,7 @@ router.patch(
   updateBrandListingByUUID
 );
 router.patch(
-  "/v1/brandlisting/updateBrandImageById/:id",verifyJWT,
+  "/v1/brandlisting/updateBrandImageById/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },
