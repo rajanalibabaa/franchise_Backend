@@ -33,23 +33,37 @@ const FranchiseDetailsSchema = new mongoose.Schema(
     },
     franchiseDetails:{
       aidFinancing: String,
-    brandCategories: {
-      main: String,
-      sub: String,
-      groupId: String,
-      child: String
-    },
-    brandDescription: String,
-    companyOwnedOutlets: String,
-    consultationOrAssistance: String,
-    establishedYear: String,
-    franchiseDevelopment: String,
-    franchiseOutlets: String,
-    franchiseSinceYear: String,
-    totalOutlets: String,
-    fico: [FicoSchema],
-    trainingSupport: [String],
-    uniqueSellingPoints: [String],}
+      brandCategories: {
+        main: String,
+        sub: String,
+        groupId: String,
+        child: String
+      },
+      brandDescription: String,
+      companyOwnedOutlets: String,
+      consultationOrAssistance: String,
+      establishedYear: String,
+      franchiseDevelopment: String,
+      franchiseOutlets: String,
+      franchiseSinceYear: String,
+      totalOutlets: String,
+      fico: [FicoSchema],
+      trainingSupport: [String],
+      uniqueSellingPoints: [String],
+      franchiseTags:{
+        PrimaryClassifications:[String],
+        ProductServiceTypes:[String],
+        TargetAudience:[String],
+        ServiceModel:[String],
+        PricingValue:[String],
+        AmbienceExperience:[String],
+        FeaturesAmenities:[String],
+        TechnologyIntegration:[String],
+        SustainabilityEthics:[String],
+        BusinessOperations:[String],
+    }
+  },
+    
       
   },
   {

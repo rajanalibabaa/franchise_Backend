@@ -35,16 +35,6 @@ const BrandDetailsSchema = new mongoose.Schema(
       linkedin: String,
       gstNumber: String,
       pancardNumber: String,
-      PrimaryClassification:[String],
-      ProductServiceType:[String],
-      TargetAudience:[String],
-      ServiceModel:[String],
-      PricingAndValue:[String],
-      AmbienceAndExperience:[String],
-      FeaturesAndAmenities:[String],
-      TechnologyIntegration:[String],
-      SustainabilityAndEthics:[String],
-      BusinessOperation:[String],
       pause:{
         type:Boolean,
         default:false

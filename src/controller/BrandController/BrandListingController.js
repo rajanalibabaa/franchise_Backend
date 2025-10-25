@@ -109,15 +109,15 @@ console.log("Incoming data:", brandDetails.brandName);
       );
     }
 
-    const exists = await BrandDetails.findOne({
-      "brandDetails.brandName": brandDetails.brandName
-    })
+    // const exists = await BrandDetails.findOne({
+    //   "brandDetails.brandName": brandDetails.brandName
+    // })
 
-    if (exists) {
-      return res.json(
-        new ApiResponse(400, {}, "Brand already exists")
-      );
-    }
+    // if (exists) {
+    //   return res.json(
+    //     new ApiResponse(400, {}, "Brand already exists")
+    //   );
+    // }
 
     const normalizeDistrictData = (districtObj, fallbackName) => {
       if (!districtObj.district && fallbackName) districtObj.district = fallbackName;
@@ -810,7 +810,8 @@ export const getTopLeadingFranchise = async (req, res) => {
     return res.json(
     new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
   }
- }
+}
+
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;

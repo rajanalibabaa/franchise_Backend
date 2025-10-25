@@ -61,16 +61,7 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
       linkedin: String,
       gstNumber: String,
       pancardNumber: String,
-      PrimaryClassification:[String],
-      ProductServiceType:[String],
-      TargetAudience:[String],
-      ServiceModel:[String],
-      PricingAndValue:[String],
-      AmbienceAndExperience:[String],
-      FeaturesAndAmenities:[String],
-      TechnologyIntegration:[String],
-      SustainabilityAndEthics:[String],
-      BusinessOperation:[String],
+      
       pause:{
         type:Boolean,
         default:false
@@ -99,7 +90,19 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
       totalOutlets: String,
       fico: [FicoSchema], // ✅ Correctly defined array of FICO objects
       trainingSupport: [String], // ✅ Fixed: now accepts arrays of strings
-      uniqueSellingPoints: [String]
+      uniqueSellingPoints: [String],
+      franchiseTags:{
+        PrimaryClassifications:[String],
+        ProductServiceTypes:[String],
+        TargetAudience:[String],
+        ServiceModel:[String],
+        PricingValue:[String],
+        AmbienceExperience:[String],
+        FeaturesAmenities:[String],
+        TechnologyIntegration:[String],
+        SustainabilityEthics:[String],
+        BusinessOperations:[String],
+      }
     },
 
     expansionLocationData: {
