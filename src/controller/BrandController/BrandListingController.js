@@ -68,6 +68,7 @@ console.log("brand :",brand)
 
     return {likedBrands,shortListedBrands}
 }
+
 const createBrandListing = async (req, res) => {
   try {  
     const { admin } = req.body;
@@ -814,6 +815,8 @@ const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log("id :",id)
+
     // ---------- Safe Parse Helper ----------
     const safeParse = (data) => {
       if (!data) return null;
@@ -850,8 +853,10 @@ const updateBrandListingByUUID = async (req, res) => {
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
 
+    console.log("ParseBrandDetails:",ParseBrandDetails)
+
     // ---------- BrandDetails ----------
-    if (ParseBrandDetails) {
+    if (ParseBrandDetails) { 
       const brandDetailsFields = [
         "fullName",
         "email",
@@ -884,6 +889,32 @@ const updateBrandListingByUUID = async (req, res) => {
           updates.$set[`brandDetails.${field}`] = ParseBrandDetails[field];
         }
       }
+
+    const arrayFields = [
+        "PrimaryClassification",
+        "ProductServiceType",
+        "TargetAudience",
+        "ServiceModel",
+        "PricingAndValue",
+        "AmbienceAndExperience",
+        "FeaturesAndAmenities",
+        "TechnologyIntegration",
+        "SustainabilityAndEthics",
+        "BusinessOperation"
+      ];
+
+      for (const field of arrayFields) {
+
+        console.log
+        if (ParseBrandDetails[field] !== undefined) {
+          const value = ParseBrandDetails[field];
+          // normalize to array
+          updates.$set[`brandDetails.${field}`] = Array.isArray(value)
+            ? value
+            : [value];
+        }
+      }
+    
     }
 
     // ---------- FranchiseDetails ----------
