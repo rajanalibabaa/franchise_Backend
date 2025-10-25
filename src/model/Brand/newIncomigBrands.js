@@ -93,7 +93,7 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
       uniqueSellingPoints: [String],
       franchiseTags:{
         PrimaryClassifications:[String],
-        ProductServiceTypes:[String],
+        productServiceTypes:[String],
         TargetAudience:[String],
         ServiceModel:[String],
         PricingValue:[String],

@@ -279,6 +279,8 @@ console.log("Incoming data:", brandDetails.brandName);
         awards
       }
     })
+    console.log("franchisedetails",franchiseDetails);
+    
     return res.json(
       new ApiResponse(201,brandData, "Brand listing created successfully")
     );
@@ -855,6 +857,8 @@ const updateBrandListingByUUID = async (req, res) => {
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
 
     console.log("ParseBrandDetails:",ParseBrandDetails)
+    console.log("parseFranchiseDetails",ParseFranchiseDetails);
+    
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) { 
@@ -1033,6 +1037,7 @@ const updateBrandListingByUUID = async (req, res) => {
           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
         expensionLocationData: expensionLocationData || null,
       };
+console.log("resposnse data",responseData);
 
       return res
         .status(200)
