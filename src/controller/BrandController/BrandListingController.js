@@ -815,6 +815,7 @@ export const getTopLeadingFranchise = async (req, res) => {
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
+    
 
     console.log("id :",id)
 
@@ -891,30 +892,7 @@ const updateBrandListingByUUID = async (req, res) => {
         }
       }
 
-    const arrayFields = [
-        "PrimaryClassification",
-        "ProductServiceType",
-        "TargetAudience",
-        "ServiceModel",
-        "PricingAndValue",
-        "AmbienceAndExperience",
-        "FeaturesAndAmenities",
-        "TechnologyIntegration",
-        "SustainabilityAndEthics",
-        "BusinessOperation"
-      ];
-
-      for (const field of arrayFields) {
-
-        console.log
-        if (ParseBrandDetails[field] !== undefined) {
-          const value = ParseBrandDetails[field];
-          // normalize to array
-          updates.$set[`brandDetails.${field}`] = Array.isArray(value)
-            ? value
-            : [value];
-        }
-      }
+    
     
     }
 
@@ -988,6 +966,55 @@ const updateBrandListingByUUID = async (req, res) => {
           });
         });
       }
+
+      // const arrayFields = [
+      //   "PrimaryClassification",
+      //   "ProductServiceType",
+      //   "TargetAudience",
+      //   "ServiceModel",
+      //   "PricingAndValue",
+      //   "AmbienceAndExperience",
+      //   "FeaturesAndAmenities",
+      //   "TechnologyIntegration",
+      //   "SustainabilityAndEthics",
+      //   "BusinessOperation"
+      // ];
+
+      // console.log("ParseFranchiseDetails?.franchiseTags:",ParseFranchiseDetails?.franchiseTags)
+
+      // if (ParseFranchiseDetails?.franchiseTags) {
+      //     for (const field of arrayFields) {
+      //       const value = ParseFranchiseDetails.franchiseTags[field];
+      //       if (value !== undefined && value !== null) {
+      //         updates.$set[`franchiseDetails.franchiseTags.${field}`] =
+      //           Array.isArray(value) ? value : [value];
+      //       }
+      //     }
+      //   }
+
+      if (ParseFranchiseDetails?.franchiseTags) {
+        const franchiseTagsFields = {
+          PrimaryClassifications: "PrimaryClassifications",
+          ProductServiceTypes: "ProductServiceTypes",
+          TargetAudience: "TargetAudience",
+          ServiceModel: "ServiceModel",
+          PricingValue: "PricingValue",
+          AmbienceExperience: "AmbienceExperience",
+          FeaturesAmenities: "FeaturesAmenities",
+          TechnologyIntegration: "TechnologyIntegration",
+          SustainabilityEthics: "SustainabilityEthics",
+          BusinessOperations: "BusinessOperations"
+        };
+
+        for (const [key, field] of Object.entries(franchiseTagsFields)) {
+          const value = ParseFranchiseDetails.franchiseTags[key];
+          if (value !== undefined && value !== null) {
+            updates.$set[`franchiseDetails.franchiseTags.${field}`] =
+              Array.isArray(value) ? value : [value];
+          }   
+        }
+      }
+
     }
 
     // ---------- Check if updates exist ----------
