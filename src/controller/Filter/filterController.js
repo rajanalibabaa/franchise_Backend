@@ -374,7 +374,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
 };
 
 export const getAllBrandFiltersdata = async (req, res) => {
-  const { main, sub, district, state } = req.query;
+  const { main, sub, district, state,areaRequired } = req.query;
  
   console.log(req.query);
  
@@ -740,8 +740,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       )
     );
   }
-};
- 
+}; 
 
 //   console.log(main);
 //   try {

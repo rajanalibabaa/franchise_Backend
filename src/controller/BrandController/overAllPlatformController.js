@@ -1,24 +1,8 @@
 import mongoose from "mongoose";
-import BrandListing from "../../model/Brand/brandListingPage.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
-import {
-  deleteFileFromR2,
-  generateSignedUrl,
-  uploadFileToR2,
-} from "../../utils/Uploads/s3Uploader.js";
-// import { InvsRegister } from "../../model/Investor/invsRegister.js";
-import generateCustomId from "../../helpers/brandIdGenerater.js";
-import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
-import { BrandExpansionLocationData } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
-import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
-import uuid from "../../utils/uuid.js";
-import { InvsRegister } from "../../model/Investor/invsRegister.js";
-import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
-import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import { console } from "inspector";
-import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import {likeandshortlist} from "../../controller/BrandController/BrandListingController.js"
  
  

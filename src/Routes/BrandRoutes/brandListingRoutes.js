@@ -44,7 +44,7 @@ router.post(
 
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id", getBrandListingByUUID);
-router.get("/v1/brandlisting/getBrandById/:id", verifyJWT, getBrandById);
+router.get("/v1/brandlisting/getBrandById/:id",  getBrandById);
 router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
 router.get("/v1/brandlisting/getTopBeverageFranchise", getTopBeverageFranchise);
 router.get("/v1/brandlisting/getTopLeadingFranchise", getTopLeadingFranchise);
@@ -85,7 +85,7 @@ router.patch(
   updateBrandListingByUUID
 );
 router.patch(
-  "/v1/brandlisting/updateBrandImageById/:id",verifyJWT,
+  "/v1/brandlisting/updateBrandImageById/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },
@@ -99,10 +99,9 @@ router.patch(
   ]),
   updateBrandImageById
 );
-router.delete(
-  "/v1/brandlisting/deleteBrandListingByUUID/:uuid",
-  deleteBrandListingByUUID
-);
+// Add both possibilities to be safe
+router.delete('/deleteBrandListingByUUID/:uuid', deleteBrandListingByUUID);
+// router.delete('/deleteBrandListingByUUID/:id', deleteBrandListingByUUID); // Fallback
 
 //brand Apply form for franchise ROutes
 

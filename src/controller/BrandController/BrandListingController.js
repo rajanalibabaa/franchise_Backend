@@ -1719,20 +1719,63 @@ export const updateBrandImageById = async (req, res) => {
   }
 };
 
-const deleteBrandListingByUUID = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await BrandListing.findByIdAndDelete(id);
-    if (!deleted) return res.json({ error: "Brand not found" });
+export const deleteBrandListingByUUID = async (req, res) => {
+    try {
+        // Get the UUID from params
+        const { uuid } = req.params;
+        console.log("Deletion request received for UUID:", uuid);
+        
+        if (!uuid) {
+            return res.status(400).json(
+                new ApiResponse(400, null, "UUID parameter is required")
+            );
+        }
 
-    return res
-      .json(new ApiResponse(200, {}, "✅ Brand deleted successfully"));
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "Failed to delete brand", details: error.message });
-  }
+        // Delete documents from all related collections
+        const [brandDetails, brandFranchiseDetails, brandExpansionLocationData, brandUploads] = await Promise.all([
+            BrandDetails.findOneAndDelete({ uuid }),
+            BrandFranchiseDetails.findOneAndDelete({ brandOwnerId: uuid }),
+            BrandExpansionLocationData.findOneAndDelete({ brandOwnerId: uuid }),
+            BrandUploads.findOneAndDelete({ brandOwnerId: uuid })
+        ]);
+
+        // Log deletion results
+        console.log("Delete results:", {
+            brandDetails: brandDetails ? "found and deleted" : "not found",
+            brandFranchiseDetails: brandFranchiseDetails ? "found and deleted" : "not found",
+            brandExpansionLocationData: brandExpansionLocationData ? "found and deleted" : "not found",
+            brandUploads: brandUploads ? "found and deleted" : "not found"
+        });
+
+        // Check if at least one document was found and deleted
+        if (!brandDetails && !brandFranchiseDetails && !brandExpansionLocationData && !brandUploads) {
+            console.log("No documents found with UUID:", uuid);
+            return res.status(404).json(
+                new ApiResponse(404, null, "No brand found with the given ID")
+            );
+        }
+
+        // Return success response with deleted documents
+        return res.json(
+            new ApiResponse(200, {
+                brand: brandDetails,
+                franchise: brandFranchiseDetails,
+                locations: brandExpansionLocationData,
+                uploads: brandUploads
+            }, "Brand listing deleted successfully")
+        );
+
+    } catch (error) {
+        console.error("Delete operation failed:", error);
+        return res.status(500).json(
+            new ApiResponse(500, null, `Internal Server Error: ${error.message}`)
+        );
+    }
 };
+
+
+
+
 
 export const db = async (req, res) => {
   try {
@@ -2522,11 +2565,11 @@ export const getBrandById = async (req, res) => {
   const { id } = req.params;
 
   const brand = req.brandUser;
-  if (id !== brand?.uuid) {
-    return res.json(
-      new ApiResponse(401,null,"Unathorize request")
-    )
-  }
+  // if (id !== brand?.uuid) {
+  //   return res.json(
+  //     new ApiResponse(401,null,"Unathorize request")
+  //   )
+  // }
 
   try {
     
@@ -2705,5 +2748,5 @@ export {
   getAllBrands,
   getBrandListingByUUID,
   updateBrandListingByUUID,
-  deleteBrandListingByUUID,
+  // deleteBrandListingByUUID,
 };
