@@ -61,6 +61,12 @@ const NewIncomingBrandsSchema = new mongoose.Schema(
       linkedin: String,
       gstNumber: String,
       pancardNumber: String,
+      PrimaryClassification:[string],
+      ProductServiceType:[string],
+      PrimaryClassification:[string],
+      PrimaryClassification:[string],
+      PrimaryClassification:[string],
+      PrimaryClassification:[string],
         
       
     },
