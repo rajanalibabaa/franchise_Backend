@@ -6,8 +6,6 @@ export const toggleBrandPausePlay = async (req, res) => {
   try {
     const {id} = req.params
 
-    console.log("id",id)
-
     const exists = await BrandDetails.findOne({uuid:id})
 
     if (!exists) {
