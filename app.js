@@ -30,6 +30,7 @@ import { superAdminRouter } from "./src/Routes/AdminRoutes/superAdminRoutes/supe
 import socailPost from "./src/utils/socialmediapost/SocialRouter.js"
 import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
 import { mahalRouter } from "./src/Routes/Mahal/mahal.router.js";
+import { brandpauseplayRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/brandpauseplayRouter.js";
 
 const router = express.Router();
 
@@ -107,6 +108,9 @@ router.use(socailPost)
 
 //Mahal project
 router.use(mahalRouter)
+
+//brandpauseplayRouter
+router.use(brandpauseplayRouter)
 
 
 function getRoutes(router, basePath = "") {

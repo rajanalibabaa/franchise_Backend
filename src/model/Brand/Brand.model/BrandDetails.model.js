@@ -39,6 +39,10 @@ const BrandDetailsSchema = new mongoose.Schema(
         type:Boolean,
         default:false
       },
+      isBrandPause:{
+        type:Boolean,
+        default:false
+      },
       payment:{
         type:Boolean,
         default:false
