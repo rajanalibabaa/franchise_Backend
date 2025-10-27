@@ -299,13 +299,14 @@ const getAllBrands = async (req, res) => {
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
-
-    console.log("======id===== :",id)
-    console.log("=====page====== :",page)
-
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const aggregationPipeline = [
+      {
+        $match: {
+          "brandDetails.isBrandPause": { $ne: true } 
+        }
+      },
       {
         $lookup: {
           from: "brandfranchisedetails",
@@ -338,11 +339,12 @@ const getAllBrands = async (req, res) => {
       {
         $project: {
           _id: 0,
-          brandID: "$brandID",
+          brandID: 1,
           uuid: 1,
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
+          isBrandPause: "$brandDetails.isBrandPause",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
@@ -366,7 +368,7 @@ const getAllBrands = async (req, res) => {
             }
           },
           franchiseVideos: {
-             $cond: {
+            $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
               then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
               else: null
@@ -375,39 +377,49 @@ const getAllBrands = async (req, res) => {
         }
       },
       { $skip: skip },
-      { $limit: limit },
-      
+      { $limit: limit }
     ];
 
-    const [brandsData, totalCount] = await Promise.all([
+    const [brandsData, totalCountResult] = await Promise.all([
       BrandDetails.aggregate(aggregationPipeline),
-      BrandDetails.countDocuments()
+      BrandDetails.aggregate([
+        {
+          $match: { "brandDetails.isBrandPause": { $ne: true } } 
+        },
+        {
+          $count: "totalCount"
+        }
+      ])
     ]);
 
+    const totalCount = totalCountResult[0]?.totalCount || 0;
+
     if (!brandsData || brandsData.length === 0) {
-      return res.json(new ApiResponse(404, null, "No brands found"));
+      return res.json(new ApiResponse(404, null, "No active brands found"));
     }
 
-    const brands = shuffleArray(brandsData)
-    
+    const brands = shuffleArray(brandsData);
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
 
     return res.json(
-      new ApiResponse(200, {
-        brands,
-        pagination: {
-          total: totalCount,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNext,
-          hasPrevious
-        }
-      }, "Brand data fetched successfully")
+      new ApiResponse(
+        200,
+        {
+          brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious
+          }
+        },
+        "Brand data fetched successfully"
+      )
     );
-
   } catch (error) {
     console.error("Error fetching brands:", error);
     return res.json(
@@ -551,12 +563,11 @@ export const getTopFoodFranchise = async (req, res) => {
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-
     const aggregationPipeline = [
-      { 
-        $match: { 
-          "franchiseDetails.brandCategories.sub": "Food Franchises" 
-        } 
+      {
+        $match: {
+          "franchiseDetails.brandCategories.sub": "Food Franchises"
+        }
       },
       {
         $lookup: {
@@ -566,11 +577,16 @@ export const getTopFoodFranchise = async (req, res) => {
           as: "brandInfo"
         }
       },
-      { 
-        $unwind: { 
-          path: "$brandInfo", 
-          preserveNullAndEmptyArrays: true 
-        } 
+      {
+        $unwind: {
+          path: "$brandInfo",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
       },
       {
         $lookup: {
@@ -580,19 +596,25 @@ export const getTopFoodFranchise = async (req, res) => {
           as: "uploads"
         }
       },
-      { 
-        $unwind: { 
-          path: "$uploads", 
-          preserveNullAndEmptyArrays: true 
-        } 
+      {
+        $unwind: {
+          path: "$uploads",
+          preserveNullAndEmptyArrays: true
+        }
       },
       {
         $addFields: {
           isLiked: {
-            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id))
+            ]
           },
           isShortListed: {
-            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id))
+            ]
           }
         }
       },
@@ -605,10 +627,11 @@ export const getTopFoodFranchise = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandInfo.brandDetails.brandName",
+          isBrandPause: "$brandInfo.brandDetails.isBrandPause",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },
-         fico: {
+          fico: {
             $let: {
               vars: {
                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] }
@@ -640,44 +663,72 @@ export const getTopFoodFranchise = async (req, res) => {
       { $limit: limit }
     ];
 
-    const [brandsData, totalCount] = await Promise.all([
+  
+    const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.countDocuments({ 
-        "franchiseDetails.brandCategories.sub": "Food Franchises" 
-      })
+      BrandFranchiseDetails.aggregate([
+        {
+          $lookup: {
+            from: "branddetails",
+            localField: "brandOwnerId",
+            foreignField: "uuid",
+            as: "brandInfo"
+          }
+        },
+        { $unwind: "$brandInfo" },
+        {
+          $match: {
+            "franchiseDetails.brandCategories.sub": "Food Franchises",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true }
+          }
+        },
+        { $count: "totalCount" }
+      ])
     ]);
 
-    if (!brandsData || brandsData.length === 0) {
-      return res.json(new ApiResponse(404, null, "No top food franchises found"));
-    }
-    
-     const brands = shuffleArray(brandsData)
+   
+    const totalCount = totalCountResult[0]?.totalCount || 0;
 
+    if (!brandsData || brandsData.length === 0) {
+      return res.json(
+        new ApiResponse(404, null, "No top food franchises found")
+      );
+    }
+
+    const brands = shuffleArray(brandsData);
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
 
     return res.json(
-      new ApiResponse(200, {
-        brands: brands,
-        pagination: {
-          total: totalCount,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNext,
-          hasPrevious
-        }
-      }, "Top food franchises fetched successfully")
+      new ApiResponse(
+        200,
+        {
+          brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious
+          }
+        },
+        "Top food franchises fetched successfully"
+      )
     );
-
   } catch (error) {
     console.error("Error fetching top food franchises:", error);
     return res.json(
-      new ApiResponse(500, null, `Failed to fetch top food franchises: ${error.message}`)
+      new ApiResponse(
+        500,
+        null,
+        `Failed to fetch top food franchises: ${error.message}`
+      )
     );
   }
 };
+
 
 export const getTopBeverageFranchise = async (req,res)=>{
   try {
@@ -708,6 +759,12 @@ export const getTopBeverageFranchise = async (req,res)=>{
           preserveNullAndEmptyArrays: true
         }
       },
+      {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
+      },
+
       {
         $lookup: {
           from : "branduploads",
@@ -764,12 +821,37 @@ export const getTopBeverageFranchise = async (req,res)=>{
       {$limit: limit}
     ];
 
-      const [brandsData, totalCount] = await Promise.all([
+    //   const [brandsData, totalCount] = await Promise.all([
+    //   BrandFranchiseDetails.aggregate(aggregationPipeline),
+    //   BrandFranchiseDetails.countDocuments({
+    //     "franchiseDetails.brandCategories.sub":"Beverage Franchises"
+    //   })
+    // ])
+
+      const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.countDocuments({
-        "franchiseDetails.brandCategories.sub":"Beverage Franchises"
-      })
-    ])
+      BrandFranchiseDetails.aggregate([
+        {
+          $lookup: {
+            from: "branddetails",
+            localField: "brandOwnerId",
+            foreignField: "uuid",
+            as: "brandInfo"
+          }
+        },
+        { $unwind: "$brandInfo" },
+        {
+          $match: {
+             "franchiseDetails.brandCategories.sub": "Beverage Franchises",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true }
+          }
+        },
+        { $count: "totalCount" }
+      ])
+    ]);
+
+   
+    const totalCount = totalCountResult[0]?.totalCount || 0;
 
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top beverage franchises found"));
@@ -1910,6 +1992,8 @@ export const reEntry = async (req, res) => {
   }
 };
 
+
+
 export const allId = async(req,res) => {
    const data = await BrandListing.find({})
 
@@ -1970,6 +2054,12 @@ export const getTopCafes = async (req, res) => {
       {
         $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
       },
+      {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
+      },
+
       {
         $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }
       },
@@ -2083,6 +2173,11 @@ export const getTopDesertAndBakery = async(req,res) =>{
       }
     },
     { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }, },
+    {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
+      },
     { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }, },
     {
       $addFields : {
@@ -2127,10 +2222,30 @@ export const getTopDesertAndBakery = async(req,res) =>{
   ];
 
   // Fetch paginated data & total count
-  const [brandsData, totalCount] = await Promise.all([
-    BrandFranchiseDetails.aggregate(aggregationPipeline),
-    BrandFranchiseDetails.countDocuments()
-  ]);
+        const [brandsData, totalCountResult] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.aggregate([
+        {
+          $lookup: {
+            from: "branddetails",
+            localField: "brandOwnerId",
+            foreignField: "uuid",
+            as: "brandInfo"
+          }
+        },
+        { $unwind: "$brandInfo" },
+        {
+          $match: {
+              "franchiseDetails.brandCategories.sub" : "Dessert & Bakery",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true }
+          }
+        },
+        { $count: "totalCount" }
+      ])
+    ]);
+
+   
+    const totalCount = totalCountResult[0]?.totalCount || 0;
 
   if (!brandsData || brandsData.length === 0) {
     return res.json(new ApiResponse(404, null, "No brands found"));
@@ -2192,6 +2307,11 @@ export const getTopTrucksAndKiosks = async(req,res) => {
         }
       },
       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
+      },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
@@ -2235,10 +2355,30 @@ export const getTopTrucksAndKiosks = async(req,res) => {
       { $limit: limit }
     ]
 
-    const [brandsData, totalCount] = await Promise.all([
-    BrandFranchiseDetails.aggregate(aggregationPipeline),
-    BrandFranchiseDetails.countDocuments()
-  ]);
+      const [brandsData, totalCountResult] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.aggregate([
+        {
+          $lookup: {
+            from: "branddetails",
+            localField: "brandOwnerId",
+            foreignField: "uuid",
+            as: "brandInfo"
+          }
+        },
+        { $unwind: "$brandInfo" },
+        {
+          $match: {
+             "franchiseDetails.brandCategories.sub": "Food Trucks & Kiosks Franchises",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true }
+          }
+        },
+        { $count: "totalCount" }
+      ])
+    ]);
+
+   
+    const totalCount = totalCountResult[0]?.totalCount || 0;
 
   if (!brandsData || brandsData.length === 0) {
     return res.json(new ApiResponse(404, null, "No brands found"));
@@ -2308,6 +2448,11 @@ export const getTopRestaurants = async (req,res)=>{
         $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
       },
       {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
+      },
+      {
         $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }
       },
       {
@@ -2353,10 +2498,37 @@ export const getTopRestaurants = async (req,res)=>{
     ];
 
      // Fetch paginated data & total count
-    const [brandsData, totalCount] = await Promise.all([
+         const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.countDocuments()
+      BrandFranchiseDetails.aggregate([
+        {
+          $lookup: {
+            from: "branddetails",
+            localField: "brandOwnerId",
+            foreignField: "uuid",
+            as: "brandInfo"
+          }
+        },
+        { $unwind: "$brandInfo" },
+        {
+          $match: {
+             $or: [
+      { "franchiseDetails.brandCategories.child": "QSR (Quick Service Restaurants)" },
+      { "franchiseDetails.brandCategories.child": "Multi Cuisine Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Seafood-Based Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Vegetarian-Only Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
+      { "franchiseDetails.brandCategories.child": "Health-Focused Restaurants" },
+         ],
+            "brandInfo.brandDetails.isBrandPause": { $ne: true }
+          }
+        },
+        { $count: "totalCount" }
+      ])
     ]);
+
+   
+    const totalCount = totalCountResult[0]?.totalCount || 0;
 
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No brands found"));
@@ -2488,6 +2660,11 @@ export const getBrandsByCategory = async (req, res) => {
         }
       },
       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true }
+        }
+      },
       {
         $lookup: {
           from: "branduploads",

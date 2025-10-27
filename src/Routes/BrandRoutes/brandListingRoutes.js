@@ -21,6 +21,7 @@ import {
 } from "../../controller/BrandController/BrandListingController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { updateBrandImageById } from "../../controller/BrandController/uploadImages.js";
+import { datafieldnewEntry, testgetAllBrands } from "../../controller/BrandController/anonymousFunction.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
 const router = express.Router();
@@ -107,5 +108,9 @@ router.delete('/deleteBrandListingByUUID/:uuid', deleteBrandListingByUUID);
 
 router.post("/reEntry", reEntry);
 router.get("/allId", allId);
+
+// anonymousFunction
+router.get("/datafieldnewEntry", datafieldnewEntry);
+router.get("/testgetAllBrands", testgetAllBrands);
 
 export default router;
