@@ -31,6 +31,9 @@ import socailPost from "./src/utils/socialmediapost/SocialRouter.js"
 import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
 import { mahalRouter } from "./src/Routes/Mahal/mahal.router.js";
 import { brandpauseplayRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/brandpauseplayRouter.js";
+import ManualLeadRouter from "./src/Routes/Lead/ManualLeadApplyRoutes/ManualLeadRoutes.js";
+
+
 
 const router = express.Router();
 
@@ -91,7 +94,7 @@ router.use(OtherIndustriesRouter);
 
 router.use(superAdminRouter)
 
-
+router.use(ManualLeadRouter)
 
 //shortListRouter
 router.use(shortListRouter);
