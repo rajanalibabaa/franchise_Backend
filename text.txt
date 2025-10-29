@@ -1,2 +1,523 @@
 sudo apt-get update
 sudo apt-get install ffmpeg
+
+
+export const getAllInstaApplyToBrand = async (req, res) => {
+  const { id } = req.params;
+  const BrandData = req.brandUser;
+
+  if (!id || id !== BrandData?.uuid) {
+    return res
+      .status(401)
+      .json(new ApiResponse(401, {}, "Unauthorized request"));
+  }
+
+  try {
+    const allLeads = [];
+    
+    // Search across all industry models
+    await Promise.all(
+      Object.entries(industryMapping).map(async ([industry, modelName]) => {
+        try {
+          const model = IndustryModels[modelName];
+          const leads = await model
+            .find({ brandId: BrandData.uuid })
+            .select("-_id -__v")
+            .sort({ createdAt: -1 })
+            .lean();
+          
+          // Add industry info to each lead
+          const leadsWithIndustry = leads.map(lead => ({
+            ...lead,
+            industry: industry
+          }));
+          
+          allLeads.push(...leadsWithIndustry);
+        } catch (error) {
+          console.error(`Error fetching leads from ${industry}:`, error);
+        }
+      })
+    );
+
+    // Sort all leads by createdAt
+    allLeads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Process applications to add user data
+    const applyList = await Promise.all(
+      allLeads.map(async (application) => {
+        try {
+          let data = await InvsRegister.findOne({
+            uuid: application.apply?.applyId,
+          })
+            .select("-_id -oldData")
+            .lean();
+
+          if (!data) {
+            data = await BrandListing.findOne({
+              uuid: application.apply?.applyId,
+            }).lean();
+          }
+
+          return data ? { ...application, userData: data } : application;
+        } catch (error) {
+          console.error(
+            `Error processing application ${application.uuid}:`,
+            error
+          );
+          return application;
+        }
+      })
+    );
+
+    return res.json(
+      new ApiResponse(
+        200,
+        applyList,
+        "All instant apply applications fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error in getAllInstaApplyToBrand:", error);
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(
+          500,
+          null,
+          `Error fetching leads: ${error.message}`
+        )
+      );
+  }
+};
+
+// Get leads by specific industry and brand
+export const getInstantApplyLocationLeadControllerById = async (req, res) => {
+  try {
+    const { id, industry } = req.params; // Add industry to params
+
+    if (!industry || !industryMapping[industry]) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Invalid or missing industry"));
+    }
+
+    const user = await BrandDetails.findOne({ uuid: id });
+    if (!user) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Brand not found"));
+    }
+
+    const modelName = industryMapping[industry];
+    const model = IndustryModels[modelName];
+
+    const leads = await model
+      .find({ brandId: user.uuid })
+      .select("-_id -__v")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!leads || leads.length === 0) {
+      return res
+        .status(404)
+        .json(
+          new ApiResponse(
+            404,
+            [],
+            "No leads found for this brand in the specified industry"
+          )
+        );
+    }
+
+    return res.json(
+      new ApiResponse(
+        200,
+        leads,
+        "Leads fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error in getInstantApplyLocationLeadControllerById:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal server error"));
+  }
+};
+
+// Get lead by ID and industry
+export const getInstaApplyById = async (req, res) => {
+  try {
+    const { id, industry } = req.params;
+    const user = req.investorUser || req.brandUser;
+
+    if (!user) {
+      return res
+        .status(401)
+        .json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+    if (!industry || !industryMapping[industry]) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Invalid or missing industry"));
+    }
+
+    const modelName = industryMapping[industry];
+    const model = IndustryModels[modelName];
+
+    const lead = await model
+      .findOne({
+        $or: [
+          { uuid: id },
+          { _id: id }
+        ]
+      })
+      .lean();
+
+    if (!lead) {
+      return res.json(
+        new ApiResponse(404, {}, "Lead not found")
+      );
+    }
+
+    // Fetch brand info if needed
+    const brand = await BrandListing.findOne({
+      uuid: lead.brandId,
+    }).lean();
+
+    const response = {
+      lead,
+      brand: brand || null,
+    };
+
+    return res.json(
+      new ApiResponse(200, response, "Lead fetched successfully")
+    );
+  } catch (error) {
+    console.error("Error in getInstaApplyById:", error);
+    return res.json(new ApiResponse(500, null, "Error fetching lead"));
+  }
+};
+
+// Update lead
+export const updateInstaApply = async (req, res) => {
+  try {
+    const { id, industry } = req.params;
+    const updateData = req.body;
+
+    if (!industry || !industryMapping[industry]) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Invalid or missing industry"));
+    }
+
+    const modelName = industryMapping[industry];
+    const model = IndustryModels[modelName];
+
+    const updatedLead = await model.findOneAndUpdate(
+      {
+        $or: [
+          { uuid: id },
+          { _id: id }
+        ]
+      },
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      return res.status(404).json(
+        new ApiResponse(404, null, "Lead not found")
+      );
+    }
+
+    res.status(200).json(
+      new ApiResponse(200, updatedLead, "Lead updated successfully")
+    );
+  } catch (error) {
+    console.error("Error in updateInstaApply:", error);
+    res
+      .status(500)
+      .json(new ApiResponse(500, null, `Error updating lead: ${error.message}`));
+  }
+};
+
+// Delete lead
+export const deleteInstaApply = async (req, res) => {
+  try {
+    const { id, industry } = req.params;
+
+    if (!industry || !industryMapping[industry]) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Invalid or missing industry"));
+    }
+
+    const modelName = industryMapping[industry];
+    const model = IndustryModels[modelName];
+
+    const deletedLead = await model.findOneAndDelete({
+      $or: [
+        { uuid: id },
+        { _id: id }
+      ]
+    });
+
+    if (!deletedLead) {
+      return res.status(404).json(
+        new ApiResponse(404, null, "Lead not found")
+      );
+    }
+
+    res.status(200).json(
+      new ApiResponse(200, deletedLead, "Lead deleted successfully")
+    );
+  } catch (error) {
+    console.error("Error in deleteInstaApply:", error);
+    res
+      .status(500)
+      .json(new ApiResponse(500, null, `Error deleting lead: ${error.message}`));
+  }
+};
+
+// Get all leads for admin (across all industries with pagination)
+export const getAllInstantApply = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    if (id !== req.admin.uuid) {
+      return res.json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+    let allLeads = [];
+    let totalCount = 0;
+
+    // Get leads from all industry models
+    await Promise.all(
+      Object.entries(industryMapping).map(async ([industry, modelName]) => {
+        try {
+          const model = IndustryModels[modelName];
+          const leads = await model.find({}).lean();
+          const leadsWithIndustry = leads.map(lead => ({
+            ...lead,
+            industry: industry
+          }));
+          allLeads.push(...leadsWithIndustry);
+        } catch (error) {
+          console.error(`Error fetching leads from ${industry}:`, error);
+        }
+      })
+    );
+
+    // Sort by creation date
+    allLeads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    totalCount = allLeads.length;
+    
+    // Apply pagination
+    const paginatedLeads = allLeads.slice(skip, skip + limit);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          success: true,
+          data: paginatedLeads,
+          pagination: {
+            total: totalCount,
+            page,
+            pages: Math.ceil(totalCount / limit),
+            limit,
+          },
+        },
+        "Leads fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error in getAllInstantApply:", error);
+    res.status(500).json(
+      new ApiResponse(500, null, `Internal server error: ${error.message}`)
+    );
+  }
+};
+
+// Get dropdown data across all industries
+export const getInstantApplyDropDownData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId =
+      req?.admin?.uuid || req.investorUser?.uuid || req.brandUser?.uuid;
+
+    if (!userId) {
+      return res.json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+    const states = new Set();
+    const districts = new Set();
+    const cities = new Set();
+    const investmentRanges = new Set();
+    const industries = new Set();
+
+    // Collect data from all industry models
+    await Promise.all(
+      Object.entries(industryMapping).map(async ([industry, modelName]) => {
+        try {
+          const model = IndustryModels[modelName];
+          const docs = await model.find({}).lean();
+          
+          docs.forEach((doc) => {
+            if (doc.state) states.add(doc.state);
+            if (doc.district) districts.add(doc.district);
+            if (doc.city) cities.add(doc.city);
+            if (doc.investmentRange) investmentRanges.add(doc.investmentRange);
+            industries.add(industry);
+          });
+        } catch (error) {
+          console.error(`Error processing ${industry}:`, error);
+        }
+      })
+    );
+
+    const responseData = {
+      states: [...states],
+      districts: [...districts],
+      cities: [...cities],
+      investmentRanges: [...investmentRanges],
+      industries: [...industries],
+    };
+
+    return res.json(
+      new ApiResponse(200, responseData, "Dropdown data fetched successfully")
+    );
+  } catch (error) {
+    console.error("Error in getInstantApplyDropDownData:", error);
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+};
+
+// Enhanced search with industry filter
+export const getInstantApplySearchData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId =
+      req?.admin?.uuid || req?.investorUser?.uuid || req?.brandUser?.uuid;
+
+    const {
+      searchTerm,
+      state,
+      district,
+      city,
+      investmentRange,
+      industry,
+      fromDate,
+      toDate,
+    } = req.body.payload || {};
+
+    const page = req.body?.payload?.page || 1;
+    const limit = req.body?.payload?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    if (!userId) {
+      return res.json(new ApiResponse(401, {}, "Unauthorized request"));
+    }
+
+    let query = {};
+    let allResults = [];
+    let industriesToSearch = [];
+
+    // Determine which industries to search
+    if (industry && industryMapping[industry]) {
+      industriesToSearch = [{ industry, modelName: industryMapping[industry] }];
+    } else {
+      industriesToSearch = Object.entries(industryMapping).map(([ind, modelName]) => ({
+        industry: ind,
+        modelName
+      }));
+    }
+
+    // Build query based on filters
+    if (state) query.state = state;
+    if (district) query.district = district;
+    if (city) query.city = city;
+    if (investmentRange) query.investmentRange = investmentRange;
+
+    // Date range filter
+    if (fromDate || toDate) {
+      if (fromDate && toDate) {
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt = { $gte: start, $lte: end };
+      } else if (fromDate) {
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0);
+        query.createdAt = { $gte: start };
+      } else if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt = { $lte: end };
+      }
+    }
+
+    // Search term filter
+    if (searchTerm) {
+      query.$or = [
+        { brandName: { $regex: searchTerm, $options: "i" } },
+        { fullName: { $regex: searchTerm, $options: "i" } },
+        { investorEmail: { $regex: searchTerm, $options: "i" } }
+      ];
+    }
+
+    // Search across selected industries
+    await Promise.all(
+      industriesToSearch.map(async ({ industry: ind, modelName }) => {
+        try {
+          const model = IndustryModels[modelName];
+          const results = await model
+            .find(query)
+            .sort({ createdAt: -1 })
+            .lean();
+          
+          const resultsWithIndustry = results.map(result => ({
+            ...result,
+            industry: ind
+          }));
+          
+          allResults.push(...resultsWithIndustry);
+        } catch (error) {
+          console.error(`Error searching in ${ind}:`, error);
+        }
+      })
+    );
+
+    // Sort all results by creation date
+    allResults.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const totalCount = allResults.length;
+    const paginatedResults = allResults.slice(skip, skip + limit);
+
+    const stopPagination = page >= Math.ceil(totalCount / limit);
+
+    const responseData = {
+      data: paginatedResults,
+      pagination: {
+        currentPage: page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
+        stopPagination
+      },
+    };
+
+    return res.json(
+      new ApiResponse(200, responseData, "Search data fetched successfully")
+    );
+  } catch (error) {
+    console.error("Error in getInstantApplySearchData:", error);
+    return res.json(new ApiResponse(500, {}, "Internal Server Error"));
+  }
+};

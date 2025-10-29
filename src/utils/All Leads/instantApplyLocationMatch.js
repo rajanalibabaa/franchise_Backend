@@ -203,7 +203,7 @@ export const instantApplyLocationMatch = async (
       if (!match) continue;
 
       let countDoc = await BrandEmailCount.findOne({
-        brandId: brand._id,
+        brandId: brand.uuid,
         brandName: brand.brandDetails?.brandName || "",
         month: currentMonth,
         year: currentYear
@@ -211,7 +211,7 @@ export const instantApplyLocationMatch = async (
 
       if (!countDoc) {
         countDoc = await BrandEmailCount.create({
-          brandId: brand._id,
+          brandId: brand.uuid,
           brandName: brand.brandDetails?.brandName || "",
           month: currentMonth,
           year: currentYear,
@@ -258,7 +258,7 @@ export const instantApplyLocationMatch = async (
       await countDoc.save();
 
       brandsSent.push({
-        brandId: brand._id,
+        brandId: brand.uuid,
         brandName: brand.brandDetails?.brandName || "",
         brandEmail: brand.brandDetails?.email || "",
         emailSent: true,
