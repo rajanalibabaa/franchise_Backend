@@ -80,6 +80,7 @@ export const getAllPauseBrand = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
+          isBrandPause: "$brandDetails.isBrandPause",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
