@@ -576,24 +576,25 @@ export const deleteInvestorProfileImage = async (req, res) => {
 
 export const deleteInvestor = async (req, res) => {
     const { uuid } = req.params;
+console.log("delete",uuid);
 
       if (!uuid) {
         return res.status(400).json({ error: "UUID parameter is required" });
       }
   
-      if (req.investorUser?.uuid !== uuid) {
-        return res.json(
-          new ApiResponse(
-            403,
-            null,
-            "Unauthorized access to this resource"
-          )
-        )
-      }
+      // if (req.investorUser?.uuid !== uuid) {
+      //   return res.json(
+      //     new ApiResponse(
+      //       403,
+      //       null,
+      //       "Unauthorized access to this resource"
+      //     )
+      //   )
+      // }
       try {
-        const deletedInvestor = await InvsRegister.findOneAndDelete({uuid :req.investorUser?.uuid });
+        const deletedInvestor = await InvsRegister.findOneAndDelete({uuid });
         if (!deletedInvestor) {
-            return res.status(404).json({ error: "Investor not found" });
+            return res.status(404).json({ error: "Investor not found", details: "Investor not found" });
         }
     
         res.status(200).json(

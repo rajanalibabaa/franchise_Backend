@@ -12,6 +12,28 @@ import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.j
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
 import { leadsCreateFunction } from "../Leads/leadsCreateFunction.js";
 
+
+export const industryMapping = {
+  "Food & Beverages": "FoodAndBeverageLeads",
+  "Education & Training": "EducationAndTrainingLeads",
+  "Health, Beauty & Wellness": "HealthBeautyAndWellnessLeads",
+  "Retails & Fashion": "RetailAndFashionLeads",
+  "Automotive": "AutomotiveLeads",
+  "Home Services & Maintenance": "HomeServicesAndMaintenanceLeads",
+  "Real Estate & Property Services": "RealEstateAndPropertyServicesLeads",
+  "Business & Professional Services": "BusinessAndProfessionalServicesLeads",
+  "Hospitality & Travel": "HospitalityAndTravelLeads",
+  "Manufacturing & Industrial": "ManufacturingAndIndustrialLeads",
+  "Agriculture & Organic Business": "AgricultureAndOrganicBusinessLeads",
+  "E-Commerce & Technology": "ECommerceAndTechnologyLeads",
+  "Entertainment & Recreation": "EntertainmentAndRecreationLeads",
+  "Logistics & Transportation": "LogisticsAndTransportationLeads",
+  "Clean Tech & Environment": "CleanTechAndEnvironmentLeads",
+  "Social Impact & NGO": "SocialImpactAndNGOLeads",
+  "Pet Care & Other Emerging Sectors": "PetCareAndOtherEmergingSectorsLeads",
+};
+
+
 export const instaApplyBrandFormController = async (req, res) => {
   try {
     const {
@@ -183,7 +205,7 @@ export const instaApplyBrandFormController = async (req, res) => {
   }
 };
 
-// Get all
+// // Get all
 
 export const getAllInstaApplyToBrand = async (req, res) => {
   const { id } = req.params;
@@ -326,7 +348,7 @@ export const getInstantApplyLocationLeadControllerById = async (req, res) => {
     // });
     const instantApplie = await InstantApplyInvestor.aggregate([
       {
-        $match: { "brandsSent.brandId": user._id },
+        $match: { "brandsSent.brandId": user.uuid },
       },
       {
         $project: {
@@ -501,7 +523,7 @@ export const getAllLeads = async (req, res) => {
   }
 
   const leads = await InstantApplyLead.find({
-    "brandMatches.brandId": new mongoose.Types.ObjectId(BrandData._id),
+    "brandMatches.brandId": new mongoose.Types.ObjectId(BrandData.uuid),
   })
     .select("-_id -__v")
     .sort({ createdAt: -1 })
@@ -1565,3 +1587,6 @@ export const getInstantApplySearchData = async (req, res) => {
     return res.json(new ApiResponse(500, {}, "Internal Server Error"));
   }
 };
+
+
+

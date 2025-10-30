@@ -18,7 +18,7 @@ const applyByEnum = ["Investor", "Brand", "other"];
 
 const BrandSentSchema = new mongoose.Schema({
   brandId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+    type: mongoose.Schema.Types.UUID, 
     ref: "BrandListing", 
     required: true 
   },
@@ -40,6 +40,7 @@ const BrandSentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const InstantApplyInvestorSchema = new mongoose.Schema({
+  
   investorEmail: {
     type: String,
     required: true,
@@ -69,13 +70,13 @@ const InstantApplyInvestorSchema = new mongoose.Schema({
   ],
   location: {
     state: { type: String, required: true },
-    city: { type: String, required: true },
+    city: { type: String,  },
     district: { type: String, required: true }
   },
   investmentRange: {
     type: String,
     required: true,
-    enum: investmentRangeEnum
+    // enum: investmentRangeEnum
   },
   planToInvest: { type: String },
   readyToInvest: { type: String },

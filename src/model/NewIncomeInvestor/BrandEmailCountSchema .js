@@ -13,7 +13,7 @@ const PremiumOfferRecordSchema = new mongoose.Schema({
 const BrandEmailCountSchema = new mongoose.Schema(
   {
     brandId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.UUID,
       ref: "BrandListing",
       required: true,
     },
