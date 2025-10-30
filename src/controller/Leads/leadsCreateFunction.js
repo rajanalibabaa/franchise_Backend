@@ -54,7 +54,7 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
         applyId,
       },
     };
-    const modelName = industryMapping[selectedIndustry];
+    const modelName = industryMapping[selectedIndustry.trim()];
     const model = IndustryModels[modelName];
 
     const data = await model.create(fields);
@@ -74,54 +74,3 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
 };
 
 
-export const leadsgetAllFunctions = async(industry,page=1,limit =10,filters={})=>{
-  try {
-    
-if(!industry || industryMapping[industry]) {
-  return new ApiResponse(400, null, "Invalid industry name");
-}
-const modelName = industryMapping[industry];
-const model = IndustryModels[modelName];
-const skip = (page - 1) * limit;
-const query ={}
-
- // Apply filters if provided
-    if (filters.state) query.state = filters.state;
-    if (filters.district) query.district = filters.district;
-    if (filters.city) query.city = filters.city;
-    if (filters.investmentRange) query.investmentRange = filters.investmentRange;
-    if (filters.planToInvest) query.planToInvest = filters.planToInvest;
-    if (filters.readyToInvest) query.readyToInvest = filters.readyToInvest;
-    if (filters.brandId) query.brandId = filters.brandId;
-    if (filters.category) query.category = filters.category;
-    if (filters.subCategory) query.subCategory = filters.subCategory;
-// Get total count for pagination
-    const totalCount = await model.countDocuments(query);
-
-      const data = await model
-      .find(query)
-      .sort({ createdAt: -1 }) // Sort by newest first
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean(); // Use lean() for better performance
-
-       if (!data) {
-      return new ApiResponse(404, null, "No leads found");
-    }
-
-    const pagination = {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(totalCount / limit),
-      totalCount,
-      hasNextPage: page < Math.ceil(totalCount / limit),
-      hasPrevPage: page > 1,
-    };
-
-    return new ApiResponse(200, { data, pagination }, "Leads fetched successfully");
-
-  } catch (error) {
-    console.error("Error in instaApplyBrandFormController:", error);
-    return new ApiResponse(500, {}, "Internal server error");
-    
-  }
-}
