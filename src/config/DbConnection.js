@@ -14,9 +14,9 @@ const connectDatabase = async () => {
 
     // Optional: List collections for debug
     const collections = await conn.connection.db.listCollections().toArray();
-    console.log(
-      `   Collections: ${collections.map((c) => c.name).join(", ") || "none"}`
-    );
+    // console.log(
+    //   `   Collections: ${collections.map((c) => c.name).join(", ") || "none"}`
+    // );
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
     // Exit process so nodemon restarts it

@@ -18,7 +18,7 @@ export const datafieldnewEntry = async (req, res) => {
         try {
           const updated = await BrandDetails.findByIdAndUpdate(
             brand._id,
-            { $set: { "brandDetails.isBrandPause": false } },
+            { $set: { "brandDetails.payment": false } },
             { new: true }
           );
 

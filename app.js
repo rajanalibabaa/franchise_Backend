@@ -32,6 +32,7 @@ import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
 import { mahalRouter } from "./src/Routes/Mahal/mahal.router.js";
 import { brandpauseplayRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/brandpauseplayRouter.js";
 import ManualLeadRouter from "./src/Routes/Lead/ManualLeadApplyRoutes/ManualLeadRoutes.js";
+import { paymentRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/paymentRouter.js";
 
 
 
@@ -114,6 +115,10 @@ router.use(mahalRouter)
 
 //brandpauseplayRouter
 router.use(brandpauseplayRouter)
+
+//paymentRouter
+router.use(paymentRouter)
+
 
 
 function getRoutes(router, basePath = "") {
