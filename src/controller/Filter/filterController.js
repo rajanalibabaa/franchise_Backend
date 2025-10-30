@@ -604,6 +604,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
           isBrandPause: "$brandDetails.isBrandPause",
+          payment: "$brandDetails.payment",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null],
           },

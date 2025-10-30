@@ -37,7 +37,7 @@ export const toggleBrandPausePlay = async (req, res) => {
     console.error(" Outer error:", outerError);
     return res.status(500).json({ message: "Server error", error: outerError.message });
   }
-};
+};                                                         
 
 export const getAllPauseBrand = async (req, res) => {
   try {
@@ -156,4 +156,3 @@ export const getAllPauseBrand = async (req, res) => {
     );
   }
 };
-  
