@@ -1,5 +1,5 @@
 import express from "express";
-import {  instaApplyBrandFormController,getLeadsByIndustryController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
+import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { leadsFreeAndPaidStopAndStart,getLeadStatus } from "../../controller/Admin/Brand/leads.controller.js";
 import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
@@ -12,9 +12,8 @@ InstantApplyRouter.post("/v1/instantapply/postApplication", instaApplyBrandFormC
 // InstantApplyRouter.get("/v1/instantapply/getInstantApplyLocationLeadControllerById/:id",verifyJWT,getInstantApplyLocationLeadControllerById)
 
 // InstantApplyRouter.get("/v1/instantapply/getAllInstaApply/:id",verifyJWT, getAllInstaApplyToBrand)
-
 InstantApplyRouter.get("/v1/instantapply/getAllLeads/:schema",getLeadsByIndustryController)
-
+InstantApplyRouter.get("/v1/instantapply/leads/brand-all-industries/:brandId", getLeadsByBrandIdAllIndustriesController)
 // // admin
 // InstantApplyRouter.get("/v1/admin/instantapply/getAllInstantApply/:id",verifyJWT, getAllInstantApply)
 // InstantApplyRouter.get("/v1/admin/instantapply/getInstantApplyDropDownData/:id",verifyJWT, getInstantApplyDropDownData)

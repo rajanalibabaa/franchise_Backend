@@ -442,6 +442,104 @@ export const getLeadsByIndustryController = async (req, res) => {
 
 
 
+
+// Get leads by brand ID across all industry schemas
+export const getLeadsByBrandIdAllIndustriesController = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "createdAt",
+      sortOrder = "desc"
+    } = req.query;
+
+    // Validate brandId
+    if (!brandId) {
+      return res.status(400).json(
+        new ApiResponse(400, null, "Brand ID is required")
+      );
+    }
+
+    // Check if brand exists
+    const brandExists = await BrandDetails.findOne({ uuid: brandId });
+    if (!brandExists) {
+      return res.status(404).json(
+        new ApiResponse(404, null, "Brand not found")
+      );
+    }
+
+    // Get all industry models
+    const modelNames = mongoose.modelNames();
+    const industryModels = Object.values(industryMapping).filter(modelName => 
+      modelNames.includes(modelName)
+    );
+
+    let allLeads = [];
+    let totalCount = 0;
+
+    // Search across all industry models
+    for (const modelName of industryModels) {
+      const Model = mongoose.model(modelName);
+      
+      const count = await Model.countDocuments({ brandId });
+      totalCount += count;
+
+      const leads = await Model.find({ brandId })
+        .sort({ [sortBy]: sortOrder === "desc" ? -1 : 1 })
+        .lean();
+
+      allLeads = [...allLeads, ...leads];
+    }
+
+    // Sort all leads
+    allLeads.sort((a, b) => {
+      const aValue = a[sortBy];
+      const bValue = b[sortBy];
+      if (sortOrder === "desc") {
+        return bValue > aValue ? 1 : -1;
+      }
+      return aValue > bValue ? 1 : -1;
+    });
+
+    // Apply pagination manually
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const paginatedLeads = allLeads.slice(skip, skip + parseInt(limit));
+
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+    const paginationInfo = {
+      currentPage: parseInt(page),
+      totalPages,
+      totalCount,
+      hasNextPage: parseInt(page) < totalPages,
+      hasPrevPage: parseInt(page) > 1,
+      limit: parseInt(limit)
+    };
+
+    res.json(
+      new ApiResponse(
+        200,
+        {
+          brandId,
+          data: paginatedLeads,
+          pagination: paginationInfo,
+          totalIndustries: industryModels.length
+        },
+        "Leads retrieved successfully"
+      )
+    );
+
+  } catch (error) {
+    console.error("Error in getLeadsByBrandIdAllIndustriesController:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, {}, "Internal server error"));
+  }
+};
+
+
+
+
 // // Get all
 
 // export const getAllInstaApplyToBrand = async (req, res) => {

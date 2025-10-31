@@ -48,8 +48,7 @@ const fields = {
     type: String,
   },
   brandLogo: {
-    type: String,
-  },
+    type: String,  },
   apply: {
     applyBy: {
       type: String,
