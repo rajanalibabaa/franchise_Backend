@@ -54,7 +54,7 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
         applyId,
       },
     };
-    const modelName = industryMapping[selectedIndustry];
+    const modelName = industryMapping[selectedIndustry.trim()];
     const model = IndustryModels[modelName];
 
     const data = await model.create(fields);
@@ -72,3 +72,5 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
     return new ApiResponse(500, {}, "Internal server error");
   }
 };
+
+

@@ -15,7 +15,7 @@ InvestorRouter.get('/v1/investor/getInvestorByUUID/:uuid', verifyJWT,getInvestor
 
 InvestorRouter.patch('/v1/investor/updateInvestor/:uuid',upload.single("profileImage"),verifyJWT, updateInvestor);
 
-InvestorRouter.delete('/v1/investor/deleteInvestor/:uuid',verifyJWT, deleteInvestor);
+InvestorRouter.delete('/v1/investor/deleteInvestor/:uuid', deleteInvestor);
 InvestorRouter.patch('/v1/investor/deleteInvestorProfileImage/:uuid',verifyJWT, deleteInvestorProfileImage);
 
 
