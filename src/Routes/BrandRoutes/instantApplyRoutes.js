@@ -1,7 +1,7 @@
 import express from "express";
 import {  instaApplyBrandFormController,getLeadsByIndustryController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
-
+import {getInstantApplyInvestorsController} from '../../controller/BrandController/InstantApplyFreeLeadData.js'
 export const InstantApplyRouter = express.Router();
 
 InstantApplyRouter.post("/v1/instantapply/postApplication", instaApplyBrandFormController)
@@ -19,3 +19,6 @@ InstantApplyRouter.get("/v1/instantapply/getAllLeads/:schema",getLeadsByIndustry
 // InstantApplyRouter.post("/v1/admin/instantapply/getInstantApplySearchData/:id",verifyJWT, getInstantApplySearchData)
 
 
+//free Lead Get 
+
+InstantApplyRouter.get("/v1/instantapply/getFreeLeads",getInstantApplyInvestorsController)
