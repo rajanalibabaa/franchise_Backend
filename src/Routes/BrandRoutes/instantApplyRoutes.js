@@ -1,7 +1,8 @@
 import express from "express";
 import {  instaApplyBrandFormController,getLeadsByIndustryController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
-import { leadsFreeAndPaidStopAndStart } from "../../controller/Admin/Brand/leads.controller.js";
+import { leadsFreeAndPaidStopAndStart,getLeadStatus } from "../../controller/Admin/Brand/leads.controller.js";
+import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
 
 export const InstantApplyRouter = express.Router();
 
@@ -18,6 +19,12 @@ InstantApplyRouter.get("/v1/instantapply/getAllLeads/:schema",getLeadsByIndustry
 // InstantApplyRouter.get("/v1/admin/instantapply/getAllInstantApply/:id",verifyJWT, getAllInstantApply)
 // InstantApplyRouter.get("/v1/admin/instantapply/getInstantApplyDropDownData/:id",verifyJWT, getInstantApplyDropDownData)
 // InstantApplyRouter.post("/v1/admin/instantapply/getInstantApplySearchData/:id",verifyJWT, getInstantApplySearchData)
-InstantApplyRouter.post("/v1/admin/leadsFreeAndPaidStopAndStart", leadsFreeAndPaidStopAndStart)
 
 
+InstantApplyRouter.get("/v1/admin/leadsFreeAndPaidStopAndStart",getLeadStatus)
+InstantApplyRouter.put("/v1/admin/leadsFreeAndPaidStopAndStart",leadsFreeAndPaidStopAndStart)
+
+
+//free Lead Get 
+
+InstantApplyRouter.get("/v1/instantapply/getFreeLeads",getInstantApplyInvestorsController)

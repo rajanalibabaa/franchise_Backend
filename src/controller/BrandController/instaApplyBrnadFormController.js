@@ -206,22 +206,43 @@ export const instaApplyBrandFormController = async (req, res) => {
 };
 
 
+
+
+
+
 // Get leads by industry
 export const getLeadsByIndustryController = async (req, res) => {
   try {
-    const { schema } = req.params; // schema name from URL
+    const { schema } = req.params;
     const {
       page = 1,
-      limit = 10,
+      limit = 100,
       brandId,
       investorEmail,
+      fullName,
+      investorMobileNumber, // Added mobile search
       state,
       city,
+      district,
       investmentRange,
+      category,
+      industry, // Added industry filter
+      subCategory, // Added sub-category filter
       applyBy,
+      planToInvest, // Added plan to invest filter
+      readyToInvest, // Added ready to invest filter
+      enquiryVia, // Added enquiry via filter
       sortBy = "createdAt",
-      sortOrder = "desc"
+      sortOrder = "desc",
+      // Date range filters
+      startDate,
+      endDate,
+      // Search across multiple fields
+      search // Global search parameter
     } = req.query;
+
+    console.log("Received query params:", req.query);
+
     // Check if the schema/model exists in mongoose
     const modelNames = mongoose.modelNames();
 
@@ -240,12 +261,97 @@ export const getLeadsByIndustryController = async (req, res) => {
 
     // Build filter object dynamically
     const filter = {};
+    
+    // Brand filter
     if (brandId) filter.brandId = brandId;
-    if (investorEmail) filter.investorEmail = { $regex: investorEmail, $options: "i" };
-    if (state) filter.state = { $regex: state, $options: "i" };
-    if (city) filter.city = { $regex: city, $options: "i" };
-    if (investmentRange) filter.investmentRange = investmentRange;
-    if (applyBy) filter["apply.applyBy"] = applyBy;
+    
+    // Global search across multiple fields
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { investorEmail: { $regex: search, $options: "i" } },
+        { investorMobileNumber: { $regex: search, $options: "i" } },
+        { brandName: { $regex: search, $options: "i" } },
+        { state: { $regex: search, $options: "i" } },
+        { city: { $regex: search, $options: "i" } }
+      ];
+    } else {
+      // Individual field searches (only if global search is not used)
+      if (investorEmail) {
+        filter.investorEmail = { $regex: investorEmail, $options: "i" };
+      }
+      
+      if (fullName) {
+        filter.fullName = { $regex: fullName, $options: "i" };
+      }
+      
+      if (investorMobileNumber) {
+        filter.investorMobileNumber = { $regex: investorMobileNumber, $options: "i" };
+      }
+    }
+    
+    // Location filters
+    if (state) {
+      filter.state = { $regex: state, $options: "i" };
+    }
+    
+    if (city) {
+      filter.city = { $regex: city, $options: "i" };
+    }
+    
+    if (district) {
+      filter.district = { $regex: district, $options: "i" };
+    }
+    
+    // Business filters
+    if (investmentRange) {
+      filter.investmentRange = investmentRange;
+    }
+    
+    if (category) {
+      filter.category = { $regex: category, $options: "i" };
+    }
+    
+    if (industry) {
+      filter.industry = { $regex: industry, $options: "i" };
+    }
+    
+    if (subCategory) {
+      filter.subCategory = { $regex: subCategory, $options: "i" };
+    }
+    
+    if (planToInvest) {
+      filter.planToInvest = planToInvest;
+    }
+    
+    if (readyToInvest) {
+      filter.readyToInvest = readyToInvest;
+    }
+    
+    if (enquiryVia) {
+      filter.enquiryVia = enquiryVia;
+    }
+    
+    // Apply by filter
+    if (applyBy) {
+      filter["apply.applyBy"] = applyBy;
+    }
+    
+    // Date range filters
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Add one day to include the entire end date
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = endDateTime;
+      }
+    }
+
+    console.log("Applied filter:", JSON.stringify(filter, null, 2));
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -254,10 +360,10 @@ export const getLeadsByIndustryController = async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-    // Total count
+    // Total count with filters applied
     const totalCount = await Model.countDocuments(filter);
 
-    // Fetch paginated leads
+    // Fetch paginated leads with filters
     const leadsData = await Model.find(filter)
       .sort(sort)
       .skip(skip)
@@ -272,22 +378,51 @@ export const getLeadsByIndustryController = async (req, res) => {
       totalCount,
       hasNextPage: parseInt(page) < totalPages,
       hasPrevPage: parseInt(page) > 1,
-      limit: parseInt(limit)
+      limit: parseInt(limit),
+      skip,
+      hasData: leadsData.length > 0,
+      resultsOnCurrentPage: leadsData.length
     };
 
+    console.log("Pagination info:", paginationInfo);
+
+    // Handle no data case
     if (leadsData.length === 0) {
+      const hasFilters = Object.keys(filter).length > 0;
+      
       return res.json(
-        new ApiResponse(404, null, `No data found for schema: ${schema}`)
+        new ApiResponse(
+          hasFilters ? 200 : 404,
+          {
+            schema,
+            data: [],
+            pagination: paginationInfo,
+            appliedFilters: filter,
+            message: hasFilters 
+              ? "No leads found matching the applied filters" 
+              : `No data found for schema: ${schema}`
+          },
+          hasFilters 
+            ? `No ${schema} data found with current filters`
+            : `No data found for schema: ${schema}`
+        )
       );
     }
 
+    // Successful response
     res.json(
       new ApiResponse(
         200,
         {
           schema,
           data: leadsData,
-          pagination: paginationInfo
+          pagination: paginationInfo,
+          appliedFilters: filter,
+          stats: {
+            totalLeads: totalCount,
+            leadsOnPage: leadsData.length,
+            filterCount: Object.keys(filter).length
+          }
         },
         `${schema} data retrieved successfully`
       )
@@ -297,7 +432,10 @@ export const getLeadsByIndustryController = async (req, res) => {
     console.error("Error in getLeadsByIndustryController:", error);
     return res
       .status(500)
-      .json(new ApiResponse(500, {}, "Internal server error"));
+      .json(new ApiResponse(500, {
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }, "Internal server error"));
   }
 };
 
