@@ -28,7 +28,7 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
     
     return res.json(
       new ApiResponse(200, data, "Data change successfully")
-    );nn
+    );
 
   } catch (outerError) {
     console.error(" Outer error:", outerError);
