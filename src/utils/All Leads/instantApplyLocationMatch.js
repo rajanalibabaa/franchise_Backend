@@ -468,9 +468,9 @@ export const instantApplyLocationMatch = async (
             readyToInvest
           );
 
-          countDoc.emailCount += 1;
-          countDoc.emailRecords.push({ investorEmail: email, sentAt: new Date() });
-          await countDoc.save();
+          // countDoc.emailCount += 1;
+          // countDoc.emailRecords.push({ investorEmail: email, sentAt: new Date() });
+          // await countDoc.save();
 
           // brandsSent.push({
           //   brandId: brand.uuid,
