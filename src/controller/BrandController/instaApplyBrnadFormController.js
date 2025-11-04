@@ -206,10 +206,6 @@ export const instaApplyBrandFormController = async (req, res) => {
 };
 
 
-
-
-
-
 // Get leads by industry
 export const getLeadsByIndustryController = async (req, res) => {
   try {
@@ -440,9 +436,6 @@ export const getLeadsByIndustryController = async (req, res) => {
 };
 
 
-
-
-
 // Get leads by brand ID across all industry schemas
 export const getLeadsByBrandIdAllIndustriesController = async (req, res) => {
   try {
@@ -536,6 +529,132 @@ export const getLeadsByBrandIdAllIndustriesController = async (req, res) => {
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
+
+
+export const findLeadByApplyIdController = async (req, res) => {
+  try {
+    const { schemas, applyId } = req.query;
+
+    if (!schemas || !applyId) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "Missing required parameters: schemas or applyId"));
+    }
+
+    // Convert comma-separated schema names to array
+    const schemaList = schemas.split(",").map((s) => s.trim());
+    const modelNames = mongoose.modelNames();
+
+    // Filter only valid models
+    const validSchemas = schemaList.filter((schema) => modelNames.includes(schema));
+
+    if (validSchemas.length === 0) {
+      return res.status(400).json(
+        new ApiResponse(
+          400,
+          { availableSchemas: modelNames },
+          "No valid schemas found in the provided list."
+        )
+      );
+    }
+
+    console.log("Searching applyId:", applyId, "in schemas:", validSchemas);
+
+    const results = [];
+
+    // Search all schemas and collect all matching docs
+    for (const schema of validSchemas) {
+      const Model = mongoose.model(schema);
+
+      // ✅ FIX: Find *all* documents (not just one)
+      const docs = await Model.find({ "apply.applyId": applyId }).lean();
+
+      if (docs.length > 0) {
+        results.push({
+          schema,
+          count: docs.length,
+          data: docs,
+        });
+      }
+    }
+
+    // If no results found in any schema
+    if (results.length === 0) {
+      return res.json(
+        new ApiResponse(
+          404,
+          { applyId, searchedSchemas: validSchemas },
+          "No matching leads found for the given applyId in any schema"
+        )
+      );
+    }
+
+    // Success response
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          applyId,
+          totalSchemasMatched: results.length,
+          totalDocuments: results.reduce((sum, r) => sum + r.count, 0),
+          results,
+        },
+        "Leads found successfully"
+      )
+    );
+
+  } catch (error) {
+    console.error("Error in findLeadByApplyIdController:", error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, { error: error.message }, "Internal server error"));
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

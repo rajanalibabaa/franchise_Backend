@@ -489,6 +489,8 @@ const getBrandListingByUUID = async (req, res) => {
             brandName: "$brandDetails.brandName",
             tagLine: "$brandDetails.tagLine",
             brandID: "$brandID",
+            state: "$brandDetails.state",
+            city: "$brandDetails.city",
           },
           brandfranchisedetails: {
             $let: {

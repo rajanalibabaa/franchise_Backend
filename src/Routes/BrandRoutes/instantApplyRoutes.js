@@ -1,5 +1,5 @@
 import express from "express";
-import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
+import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController, findLeadByApplyIdController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { leadsFreeAndPaidStopAndStart,getLeadStatus } from "../../controller/Admin/Brand/leads.controller.js";
 import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
@@ -7,7 +7,7 @@ import { getInstantApplyInvestorsController } from "../../controller/BrandContro
 export const InstantApplyRouter = express.Router();
 
 InstantApplyRouter.post("/v1/instantapply/postApplication", instaApplyBrandFormController)
-// InstantApplyRouter.get("/v1/instantapply/getInstaApplyById/:id",verifyJWT, getInstaApplyById)
+InstantApplyRouter.get("/v1/instantapply/getInstaApplyById", findLeadByApplyIdController)
 
 // InstantApplyRouter.get("/v1/instantapply/getInstantApplyLocationLeadControllerById/:id",verifyJWT,getInstantApplyLocationLeadControllerById)
 
