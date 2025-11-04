@@ -347,6 +347,7 @@ const getAllBrands = async (req, res) => {
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
           isBrandPause: "$brandDetails.isBrandPause",
+          isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },

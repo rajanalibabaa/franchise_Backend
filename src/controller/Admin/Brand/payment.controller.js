@@ -71,7 +71,7 @@ export const getAllPaidBrand = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
-          isBrandPause: "$brandDetails.isBrandPause",
+          // isBrandPause: "$brandDetails.isBrandPause",
           payment: "$brandDetails.payment",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]

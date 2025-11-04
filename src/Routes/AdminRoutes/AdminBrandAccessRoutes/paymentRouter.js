@@ -5,4 +5,4 @@ import { getAllPaidBrand, togglePayment } from "../../../controller/Admin/Brand/
 export const paymentRouter = Router()
 
 paymentRouter.post("/v1/admin/togglePayment/:id",verifyJWT,togglePayment)
-paymentRouter.post("/v1/admin/getAllPaidBrand",verifyJWT,getAllPaidBrand)
+paymentRouter.get("/v1/admin/getAllPaidBrand",verifyJWT,getAllPaidBrand)
