@@ -40,7 +40,7 @@ const BrandSentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const InstantApplyInvestorSchema = new mongoose.Schema({
-  
+  brandName: { type: String },
   investorEmail: {
     type: String,
     required: true,
