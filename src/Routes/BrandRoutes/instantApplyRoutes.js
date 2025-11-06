@@ -1,11 +1,13 @@
 import express from "express";
-import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
+import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController, findLeadByApplyIdController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
+import { leadsFreeAndPaidStopAndStart,getLeadStatus, toggleleadPausedorPlayById, getAllFreeLeadPauseBrand } from "../../controller/Admin/Brand/leads.controller.js";
+import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
 
 export const InstantApplyRouter = express.Router();
 
 InstantApplyRouter.post("/v1/instantapply/postApplication", instaApplyBrandFormController)
-// InstantApplyRouter.get("/v1/instantapply/getInstaApplyById/:id",verifyJWT, getInstaApplyById)
+InstantApplyRouter.get("/v1/instantapply/getInstaApplyById", findLeadByApplyIdController)
 
 // InstantApplyRouter.get("/v1/instantapply/getInstantApplyLocationLeadControllerById/:id",verifyJWT,getInstantApplyLocationLeadControllerById)
 
@@ -18,3 +20,14 @@ InstantApplyRouter.get("/v1/instantapply/leads/brand-all-industries/:brandId", g
 // InstantApplyRouter.post("/v1/admin/instantapply/getInstantApplySearchData/:id",verifyJWT, getInstantApplySearchData)
 
 
+InstantApplyRouter.get("/v1/admin/leadsFreeAndPaidStopAndStart",getLeadStatus)
+InstantApplyRouter.put("/v1/admin/leadsFreeAndPaidStopAndStart",leadsFreeAndPaidStopAndStart)
+
+
+//free Lead Get 
+
+InstantApplyRouter.get("/v1/instantapply/getFreeLeads",getInstantApplyInvestorsController)
+
+
+InstantApplyRouter.post("/v1/admin/toggleleadPausedorPlayById/:id",toggleleadPausedorPlayById)
+InstantApplyRouter.get("/v1/admin/getAllFreeLeadPauseBrand",getAllFreeLeadPauseBrand)

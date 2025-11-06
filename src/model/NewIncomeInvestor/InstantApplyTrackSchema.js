@@ -5,6 +5,14 @@ const BrandBatchSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  isFreeLeadsBrandPaused: {
+    type: Boolean,
+    default: false,
+  },
+  isPaidLeadsBrandPaused: {
+    type: Boolean,
+    default: false,
+  },
   updatedAt: {
     type: Date,
     default: Date.now,

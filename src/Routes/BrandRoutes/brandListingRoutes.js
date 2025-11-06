@@ -24,6 +24,8 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 import { datafieldnewEntry, testgetAllBrands } from "../../controller/BrandController/anonymousFunction.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
+import {createPaymentPackage,getAllPaymentPackages,deletePaymentPackage,getPaymentPackageById,updatePaymentPackage} from '../../controller/BrandController/AdvertiseBrandController.js'
+
 const router = express.Router();
  
 
@@ -112,5 +114,17 @@ router.get("/allId", allId);
 // anonymousFunction
 router.get("/datafieldnewEntry", datafieldnewEntry);
 router.get("/testgetAllBrands", testgetAllBrands);
+
+
+
+
+
+// AdvertiseCreation router
+
+router.post('/v1/brandadvertise/payment',createPaymentPackage);
+router.get('/v1/brandadvertise/payment',getAllPaymentPackages);
+router.delete('/v1/brandadvertise/payment/:uuid',deletePaymentPackage);
+router.get('/v1/brandadvertise/payment',getPaymentPackageById);
+router.put('/v1/brandadvertise/payment/:uuid',updatePaymentPackage);
 
 export default router;

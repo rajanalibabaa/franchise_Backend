@@ -47,6 +47,10 @@ const BrandDetailsSchema = new mongoose.Schema(
         type:Boolean,
         default:false
       },
+      isFreeLeadPaused:{
+        type:Boolean,
+        default:false
+      },
       
     },
     active: {

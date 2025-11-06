@@ -347,6 +347,7 @@ const getAllBrands = async (req, res) => {
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
           isBrandPause: "$brandDetails.isBrandPause",
+          isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
@@ -489,6 +490,8 @@ const getBrandListingByUUID = async (req, res) => {
             brandName: "$brandDetails.brandName",
             tagLine: "$brandDetails.tagLine",
             brandID: "$brandID",
+            state: "$brandDetails.state",
+            city: "$brandDetails.city",
           },
           brandfranchisedetails: {
             $let: {

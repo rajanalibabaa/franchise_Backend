@@ -605,6 +605,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
           brandname: "$brandDetails.brandName",
           isBrandPause: "$brandDetails.isBrandPause",
           payment: "$brandDetails.payment",
+          isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null],
           },
