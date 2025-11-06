@@ -239,7 +239,7 @@ export const getLeadsByIndustryController = async (req, res) => {
 
     console.log("Received query params:", req.query);
 
-    // Check if the schema/model exists in mongoose
+    // Check if the schema/model exists in mongoose(industry)
     const modelNames = mongoose.modelNames();
 
     if (!modelNames.includes(schema)) {
@@ -328,7 +328,7 @@ export const getLeadsByIndustryController = async (req, res) => {
       filter.enquiryVia = enquiryVia;
     }
     
-    // Apply by filter
+    // Apply by filter(who applied)
     if (applyBy) {
       filter["apply.applyBy"] = applyBy;
     }

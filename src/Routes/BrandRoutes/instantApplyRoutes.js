@@ -1,9 +1,9 @@
 import express from "express";
 import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController, findLeadByApplyIdController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
-import { leadsFreeAndPaidStopAndStart,getLeadStatus, toggleleadPausedorPlayById, getAllFreeLeadPauseBrand } from "../../controller/Admin/Brand/leads.controller.js";
+import { leadsFreeAndPaidStopAndStart,getLeadStatus, toggleleadPausedorPlayById, getAllFreeLeadPauseBrand, toggleSingleLeadCount } from "../../controller/Admin/Brand/leads.controller.js";
 import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
-
+import { getBatchEmailConfig, updateBatchEmailConfig } from "../../controller/Admin/Brand/leads.controller.js";
 export const InstantApplyRouter = express.Router();
 
 InstantApplyRouter.post("/v1/instantapply/postApplication", instaApplyBrandFormController)
@@ -23,8 +23,14 @@ InstantApplyRouter.get("/v1/instantapply/leads/brand-all-industries/:brandId", g
 InstantApplyRouter.get("/v1/admin/leadsFreeAndPaidStopAndStart",getLeadStatus)
 InstantApplyRouter.put("/v1/admin/leadsFreeAndPaidStopAndStart",leadsFreeAndPaidStopAndStart)
 
+// Batch Size and Email Configuration Routes
+InstantApplyRouter.get("/v1/admin/batch-email-config", getBatchEmailConfig)
+InstantApplyRouter.post("/v1/admin/batch-email-config", updateBatchEmailConfig)
 
-//free Lead Get 
+
+//single brand lead count
+InstantApplyRouter.put("/v1/admin/toggleSingleLeadCount/:id", toggleSingleLeadCount)
+
 
 InstantApplyRouter.get("/v1/instantapply/getFreeLeads",getInstantApplyInvestorsController)
 

@@ -2,8 +2,8 @@ import BrandListing from "../../model/Brand/brandListingPage.js";
 import { sendInstantApplyLeadLocation, sendPremiumPackageOfferEmail } from "../Centralized Email/centralizedEmail.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
 import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js";
-import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema .js";
-import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema .js";
+import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
+import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 
 export const getSystemConfig = async (req, res) => {
