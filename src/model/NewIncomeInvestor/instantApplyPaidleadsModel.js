@@ -18,7 +18,7 @@ const applyByEnum = ["Investor", "Brand", "other"];
 
 const BrandSentSchema = new mongoose.Schema({
   brandId: { 
-    type: mongoose.Schema.Types.UUID, 
+    type: String, 
     ref: "BrandDetails", 
     required: true 
   },
@@ -28,7 +28,7 @@ const BrandSentSchema = new mongoose.Schema({
   },
   brandEmail: { 
     type: String, 
-    required: true 
+    // required: true 
   },
   emailSent: { 
     type: Boolean, 
@@ -39,7 +39,7 @@ const BrandSentSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-const InstantApplyInvestorSchema = new mongoose.Schema({
+const InstantApplyPaidSchema = new mongoose.Schema({
   
   investorEmail: {
     type: String,
@@ -96,4 +96,4 @@ const InstantApplyInvestorSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-export default mongoose.model("InstantApplyInvestor", InstantApplyInvestorSchema);
+export const InstantApplyPaidUserLeadsData =  mongoose.model("InstantApplyPaidUserLeadsData", InstantApplyPaidSchema);

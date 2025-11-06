@@ -7,7 +7,8 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 
 export const datafieldnewEntry = async (req, res) => {
   try {
-    const brands = await BrandDetails.find({}, "_id brandDetails.isBrandPause");
+    const brands = await BrandDetails.find({}, "_id brandDetails.isBrandPause")
+;
 
     if (!brands.length) {
       return res.status(404).json(new ApiResponse(404, [], "No brand records found"));
@@ -18,7 +19,7 @@ export const datafieldnewEntry = async (req, res) => {
         try {
           const updated = await BrandDetails.findByIdAndUpdate(
             brand._id,
-            { $set: { "brandDetails.isFreeLeadPaused": false } },
+            { $set: { "brandDetails.isBrandPause": false } },
             { new: true }
           );
 
