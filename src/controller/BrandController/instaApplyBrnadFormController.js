@@ -8,6 +8,7 @@ import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantAppl
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 import mongoose, { Aggregate } from "mongoose";
 import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
+import { EmailTrackingService } from '../../model/NewIncomeInvestor/BrandEmailCountSchema.js';
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
 import { leadsCreateFunction } from "../Leads/leadsCreateFunction.js";
@@ -113,9 +114,9 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     const exists = brandAggregate[0];
 
-    // Determine who is applying (Investor / Brand / other)
-    let applyBy = "other";
-    let applyById = "other";
+    // Determine who is applying (Investor / Brand / Other)
+    let applyBy = "Other";  // Changed from "other" to "Other" to match enum
+    let applyById = "Other";  // Changed from "other" to "Other" to match enum
 
     const isBrand = await BrandDetails.findOne({ uuid: applyId });
     if (isBrand) {
@@ -131,7 +132,6 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     const leadsres = await leadsCreateFunction(req?.body,exists,applyBy,applyById)
     // console.log("leadsres :",leadsres)
-    res.json(leadsres)
 
     const { main, sub, child } =
       exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
@@ -176,6 +176,8 @@ export const instaApplyBrandFormController = async (req, res) => {
     // res.json(
     //   new ApiResponse(200, newSubmission, "Application submitted successfully")
     // );
+ // ✅ NEW: Initialize email tracking service
+    const emailTrackingService = new EmailTrackingService();
 
     await instantApplyLocationMatch(
       fullName,
@@ -197,6 +199,9 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyById,
       exists.uploads?.uploads?.brandLogo
     );
+      // Send response after everything is processed
+res.json(leadsres);
+
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
     return res
