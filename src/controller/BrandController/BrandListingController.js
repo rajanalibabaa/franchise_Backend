@@ -85,7 +85,7 @@ console.log("Incoming data:", req.body);
       "gstCertificate",
       "interiorOutlet"
     ];
- 
+
     const safeJsonParse = (input, fallback = {}) => {
       try {
         return typeof input === "string" ? JSON.parse(input) : input || fallback;
@@ -94,31 +94,31 @@ console.log("Incoming data:", req.body);
         return fallback;
       }
     };
- 
+
     const brandDetails = safeJsonParse(req.body?.brandDetails);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
     const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
- 
- 
+
+
 console.log("Incoming data:", brandDetails.brandName);
- 
+
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
       return res.json(
         new ApiResponse(400, {}, "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing")
       );
     }
- 
+
     // const exists = await BrandDetails.findOne({
     //   "brandDetails.brandName": brandDetails.brandName
     // })
- 
+
     // if (exists) {
     //   return res.json(
     //     new ApiResponse(400, {}, "Brand already exists")
     //   );
     // }
- 
+
     const normalizeDistrictData = (districtObj, fallbackName) => {
       if (!districtObj.district && fallbackName) districtObj.district = fallbackName;
       if (!Array.isArray(districtObj.cities) || districtObj.cities.length === 0) {
@@ -126,7 +126,7 @@ console.log("Incoming data:", brandDetails.brandName);
       }
       return districtObj;
     };
- 
+
     const normalizeLocations = (locations, isInternational = false) => {
       if (!Array.isArray(locations)) return [];
       return locations.map(loc => {
@@ -138,28 +138,28 @@ console.log("Incoming data:", brandDetails.brandName);
         return loc;
       });
     };
- 
+
     // Normalize location data
     if (expansionLocationData?.expansionLocations?.domestic?.locations) {
       expansionLocationData.expansionLocations.domestic.locations =
         normalizeLocations(expansionLocationData.expansionLocations.domestic.locations);
     }
- 
+
     if (expansionLocationData?.currentOutletLocations?.domestic?.locations) {
       expansionLocationData.currentOutletLocations.domestic.locations =
         normalizeLocations(expansionLocationData.currentOutletLocations.domestic.locations);
     }
- 
+
     if (expansionLocationData?.expansionLocations?.international?.country) {
       expansionLocationData.expansionLocations.international.country =
         normalizeLocations(expansionLocationData.expansionLocations.international.country, true);
     }
- 
+
     if (expansionLocationData?.currentOutletLocations?.international?.country) {
       expansionLocationData.currentOutletLocations.international.country =
         normalizeLocations(expansionLocationData.currentOutletLocations.international.country, true);
     }
- 
+
     // Parse award descriptions
     let awardDescriptions = [];
     if (brandDetails.awardText) {
@@ -173,11 +173,11 @@ console.log("Incoming data:", brandDetails.brandName);
         }
       }
     }
- 
+
     // Generate brandID
     const groupId = franchiseDetails?.brandCategories?.groupId || null;
     const brandID = await generateCustomId(groupId);
- 
+
     // Upload files to R2
     // Upload files to R2 - videos will be converted to HLS, others direct upload
     const uploadedFiles = {};
@@ -188,8 +188,8 @@ console.log("Incoming data:", brandDetails.brandName);
             // Convert videos to HLS, others direct upload
             const isVideo = field.toLowerCase().includes("video");
             const uploadedUrl = await uploadFileToR2(
-              file.path,
-              file.mimetype,
+              file.path, 
+              file.mimetype, 
               { convertToHLS: isVideo }
             );
             console.log(`✅ Uploaded ${field}:`, uploadedUrl);
@@ -199,19 +199,19 @@ console.log("Incoming data:", brandDetails.brandName);
         uploadedFiles[field] = urls;
       }
     }
- 
+
     // Build structured awards array
     const awardDocs = uploadedFiles.awardDoc || [];
     const awards = awardDocs.map((fileUrl, index) => ({
       awardDescription: awardDescriptions[index] || "",
       awardImage: fileUrl
     }));
- 
- 
- 
+
+
+
     if(admin){
        // Create all records in parallel after getting the UUID
- 
+
     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
       BrandDetails.create({
         brandID,
@@ -241,14 +241,14 @@ console.log("Incoming data:", brandDetails.brandName);
         }
       })
     ]);
- 
+
     // Check if all records were created successfully
     if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
       return res.json(
         new ApiResponse(500, {}, "Failed to create one or more brand records")
       );
     }
- 
+
     return res.json(
       new ApiResponse(201, {
         brand: newBrand,
@@ -257,83 +257,35 @@ console.log("Incoming data:", brandDetails.brandName);
         uploads: newBrandUploads
       }, "Brand listing created successfully")
     );
- 
+
     }
    
-    const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
-      BrandDetails.create({
-        brandID,
-        uuid: id,
-        brandDetails
-      }),
-      BrandFranchiseDetails.create({
-        brandOwnerId: id,
-        franchiseDetails
-      }),
-      BrandExpansionLocationData.create({
-        brandOwnerId: id,
-        expansionLocationData
-      }),
-      BrandUploads.create({
-        brandOwnerId: id,
-        uploads: {
-          brandLogo: uploadedFiles.brandLogo || [],
-          gstCertificate: uploadedFiles.gstCertificate || [],
-          pancard: uploadedFiles.pancard || [],
-          exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-          interiorOutlet: uploadedFiles.interiorOutlet || [],
-          franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-          brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-          businessPlan: uploadedFiles.businessPlan || [],
-          awards
-        }
-      })
-    ]);
- 
-    // Check if all records were created successfully
-    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
-      return res.json(
-        new ApiResponse(500, {}, "Failed to create one or more brand records")
-      );
-    }
- 
+
+    const brandData = await NewIncomingBrands.create({
+      brandID,
+      uuid: id,
+      brandDetails,
+      franchiseDetails,
+      expansionLocationData,
+      uploads: {
+        brandLogo: uploadedFiles.brandLogo || [],
+        gstCertificate: uploadedFiles.gstCertificate || [],
+        pancard: uploadedFiles.pancard || [],
+        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+        interiorOutlet: uploadedFiles.interiorOutlet || [],
+        franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        businessPlan: uploadedFiles.businessPlan || [],
+        awards
+      }
+    })
+    console.log("franchisedetails",franchiseDetails);
+    
     return res.json(
-      new ApiResponse(201, {
-        brand: newBrand,
-        franchise: newBrandFranchiseDetails,
-        locations: newBrandExpansionLocationData,
-        uploads: newBrandUploads
-      }, "Brand listing created successfully")
+      new ApiResponse(201,brandData, "Brand listing created successfully")
     );
- 
-   
-   
- 
-    // const brandData = await NewIncomingBrands.create({
-    //   brandID,
-    //   uuid: id,
-    //   brandDetails,
-    //   franchiseDetails,
-    //   expansionLocationData,
-    //   uploads: {
-    //     brandLogo: uploadedFiles.brandLogo || [],
-    //     gstCertificate: uploadedFiles.gstCertificate || [],
-    //     pancard: uploadedFiles.pancard || [],
-    //     exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-    //     interiorOutlet: uploadedFiles.interiorOutlet || [],
-    //     franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-    //     brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-    //     businessPlan: uploadedFiles.businessPlan || [],
-    //     awards
-    //   }
-    // })
-    // console.log("franchisedetails",franchiseDetails);
-   
-    // return res.json(
-    //   new ApiResponse(201,brandData, "Brand listing created successfully")
-    // );
- 
- 
+
+
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
     return res.json(
