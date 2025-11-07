@@ -6,45 +6,54 @@ import SystemConfig from "../../../model/NewIncomeInvestor/SystemConfigSchema.js
 export const getBatchEmailConfig = async (req, res) => {
   try {
     console.log("=== GET BATCH EMAIL CONFIG STARTED ===");
-    
+
     // Check if SystemConfig model is available
     console.log("SystemConfig model:", SystemConfig);
-    
+
     const config = await SystemConfig.findOne();
     console.log("Config found:", config);
-    
+
     if (!config) {
       console.log("No config found, returning defaults");
       return res.json(
-        new ApiResponse(200, {
-          batchSize: 7,
-          maxEmailsPerMonth: 5,
-          updatedBy: "system",
-          updatedAt: new Date()
-        }, "Default batch and email configuration")
+        new ApiResponse(
+          200,
+          {
+            batchSize: 7,
+            maxEmailsPerMonth: 5,
+            updatedBy: "system",
+            updatedAt: new Date(),
+          },
+          "Default batch and email configuration"
+        )
       );
     }
 
     console.log("Returning config:", config);
     return res.json(
-      new ApiResponse(200, {
-        batchSize: config.batchSize,
-        maxEmailsPerMonth: config.maxEmailsPerMonth,
-        updatedBy: config.updatedBy,
-        updatedAt: config.updatedAt,
-        _id: config._id
-      }, "Batch and email configuration retrieved successfully")
+      new ApiResponse(
+        200,
+        {
+          batchSize: config.batchSize,
+          maxEmailsPerMonth: config.maxEmailsPerMonth,
+          updatedBy: config.updatedBy,
+          updatedAt: config.updatedAt,
+          _id: config._id,
+        },
+        "Batch and email configuration retrieved successfully"
+      )
     );
-
   } catch (error) {
     console.error("=== ERROR in getBatchEmailConfig ===");
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
     console.error("=== ERROR END ===");
-    
-    return res.status(500).json(
-      new ApiResponse(500, {}, "Server error while fetching configuration")
-    );
+
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(500, {}, "Server error while fetching configuration")
+      );
   }
 };
 // POST controller to update BATCH_SIZE and MAX_EMAILS_PER_MONTH
@@ -54,23 +63,47 @@ export const updateBatchEmailConfig = async (req, res) => {
 
     // Validation - at least one field must be provided
     if (batchSize === undefined && maxEmailsPerMonth === undefined) {
-      return res.status(400).json(
-        new ApiResponse(400, {}, "At least one field (batchSize or maxEmailsPerMonth) must be provided")
-      );
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            "At least one field (batchSize or maxEmailsPerMonth) must be provided"
+          )
+        );
     }
 
     // Validate batchSize
-    if (batchSize !== undefined && (typeof batchSize !== 'number' || batchSize < 1)) {
-      return res.status(400).json(
-        new ApiResponse(400, {}, "batchSize must be a positive number greater than 0")
-      );
+    if (
+      batchSize !== undefined &&
+      (typeof batchSize !== "number" || batchSize < 1)
+    ) {
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            "batchSize must be a positive number greater than 0"
+          )
+        );
     }
 
     // Validate maxEmailsPerMonth
-    if (maxEmailsPerMonth !== undefined && (typeof maxEmailsPerMonth !== 'number' || maxEmailsPerMonth < 1)) {
-      return res.status(400).json(
-        new ApiResponse(400, {}, "maxEmailsPerMonth must be a positive number greater than 0")
-      );
+    if (
+      maxEmailsPerMonth !== undefined &&
+      (typeof maxEmailsPerMonth !== "number" || maxEmailsPerMonth < 1)
+    ) {
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            "maxEmailsPerMonth must be a positive number greater than 0"
+          )
+        );
     }
 
     let config = await SystemConfig.findOne();
@@ -79,21 +112,27 @@ export const updateBatchEmailConfig = async (req, res) => {
       // Create new configuration if doesn't exist
       config = await SystemConfig.create({
         batchSize: batchSize !== undefined ? batchSize : 7,
-        maxEmailsPerMonth: maxEmailsPerMonth !== undefined ? maxEmailsPerMonth : 5,
-        updatedBy: updatedBy || "admin"
+        maxEmailsPerMonth:
+          maxEmailsPerMonth !== undefined ? maxEmailsPerMonth : 5,
+        updatedBy: updatedBy || "admin",
       });
-      
+
       return res.json(
-        new ApiResponse(201, config, "Batch and email configuration created successfully")
+        new ApiResponse(
+          201,
+          config,
+          "Batch and email configuration created successfully"
+        )
       );
     }
 
     // Update existing configuration
     const updateData = {};
     if (batchSize !== undefined) updateData.batchSize = batchSize;
-    if (maxEmailsPerMonth !== undefined) updateData.maxEmailsPerMonth = maxEmailsPerMonth;
+    if (maxEmailsPerMonth !== undefined)
+      updateData.maxEmailsPerMonth = maxEmailsPerMonth;
     if (updatedBy) updateData.updatedBy = updatedBy;
-    
+
     updateData.updatedAt = new Date();
 
     const updatedConfig = await SystemConfig.findOneAndUpdate(
@@ -106,21 +145,26 @@ export const updateBatchEmailConfig = async (req, res) => {
     console.log("Batch and email configuration updated:", {
       previousState: {
         batchSize: config.batchSize,
-        maxEmailsPerMonth: config.maxEmailsPerMonth
+        maxEmailsPerMonth: config.maxEmailsPerMonth,
       },
       newState: updateData,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     return res.json(
-      new ApiResponse(200, updatedConfig, "Batch and email configuration updated successfully")
+      new ApiResponse(
+        200,
+        updatedConfig,
+        "Batch and email configuration updated successfully"
+      )
     );
-
   } catch (error) {
     console.error("Error updating batch and email configuration:", error);
-    return res.status(500).json(
-      new ApiResponse(500, {}, "Server error while updating configuration")
-    );
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(500, {}, "Server error while updating configuration")
+      );
   }
 };
 
@@ -128,23 +172,23 @@ export const updateBatchEmailConfig = async (req, res) => {
 export const getBatchEmailValues = async () => {
   try {
     const config = await SystemConfig.findOne();
-    
+
     if (!config) {
       return {
         BATCH_SIZE: 7,
-        MAX_EMAILS_PER_MONTH: 5
+        MAX_EMAILS_PER_MONTH: 5,
       };
     }
 
     return {
       BATCH_SIZE: config.batchSize,
-      MAX_EMAILS_PER_MONTH: config.maxEmailsPerMonth
+      MAX_EMAILS_PER_MONTH: config.maxEmailsPerMonth,
     };
   } catch (error) {
     console.error("Error fetching batch and email values:", error);
     return {
       BATCH_SIZE: 7,
-      MAX_EMAILS_PER_MONTH: 5
+      MAX_EMAILS_PER_MONTH: 5,
     };
   }
 };
@@ -152,31 +196,36 @@ export const getBatchEmailValues = async () => {
 export const getLeadStatus = async (req, res) => {
   try {
     const brandBatch = await BrandBatch.findOne({});
-    
+
     if (!brandBatch) {
       // Return default values if no record exists
       return res.json(
-        new ApiResponse(200, {
-          isFreeLeadsBrandPaused: false,
-          isPaidLeadsBrandPaused: false
-        }, "Default lead status")
+        new ApiResponse(
+          200,
+          {
+            isFreeLeadsBrandPaused: false,
+            isPaidLeadsBrandPaused: false,
+          },
+          "Default lead status"
+        )
       );
     }
 
     return res.json(
-      new ApiResponse(200, {
-        isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused || false,
-        isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused || false,
-        _id: brandBatch._id,
-        updatedAt: brandBatch.updatedAt
-      }, "Lead status retrieved successfully")
+      new ApiResponse(
+        200,
+        {
+          isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused || false,
+          isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused || false,
+          _id: brandBatch._id,
+          updatedAt: brandBatch.updatedAt,
+        },
+        "Lead status retrieved successfully"
+      )
     );
-
   } catch (error) {
     console.error("Error fetching lead status:", error);
-    return res.status(500).json(
-      new ApiResponse(500, {}, "Server error")
-    );
+    return res.status(500).json(new ApiResponse(500, {}, "Server error"));
   }
 };
 
@@ -186,10 +235,19 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
     const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused } = req.body;
 
     // Validation
-    if (isFreeLeadsBrandPaused === undefined && isPaidLeadsBrandPaused === undefined) {
-      return res.status(400).json(
-        new ApiResponse(400, {}, "At least one field (isFreeLeadsBrandPaused or isPaidLeadsBrandPaused) must be provided")
-      );
+    if (
+      isFreeLeadsBrandPaused === undefined &&
+      isPaidLeadsBrandPaused === undefined
+    ) {
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            "At least one field (isFreeLeadsBrandPaused or isPaidLeadsBrandPaused) must be provided"
+          )
+        );
     }
 
     let brandBatch = await BrandBatch.findOne({});
@@ -198,11 +256,11 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
       // Create new record if doesn't exist
       brandBatch = new BrandBatch({
         isFreeLeadsBrandPaused: isFreeLeadsBrandPaused || false,
-        isPaidLeadsBrandPaused: isPaidLeadsBrandPaused || false
+        isPaidLeadsBrandPaused: isPaidLeadsBrandPaused || false,
       });
-      
+
       const savedData = await brandBatch.save();
-      
+
       return res.json(
         new ApiResponse(201, savedData, "Lead settings created successfully")
       );
@@ -227,61 +285,59 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
     console.log("Lead settings updated:", {
       previousState: {
         isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused,
-        isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused
+        isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused,
       },
       newState: updateData,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     return res.json(
       new ApiResponse(200, updatedData, "Lead settings updated successfully")
     );
-
   } catch (error) {
     console.error("Error updating lead settings:", error);
-    return res.status(500).json(
-      new ApiResponse(500, {}, "Server error")
-    );
+    return res.status(500).json(new ApiResponse(500, {}, "Server error"));
   }
 };
 
+export const toggleleadPausedorPlayById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  export const toggleleadPausedorPlayById = async (req,res) => {
-    try {
-        const {id} = req.params
-    
-        const exists = await BrandDetails.findOne({uuid:id})
-    
-        if (!exists) {
-            return res.json(
-            new ApiResponse(404, {}, "Brand not found")
-            );
-        }
-    
-        console.log(exists.brandDetails.isFreeLeadPaused)
-    
-        const data = await BrandDetails.findByIdAndUpdate(
-                exists._id,
-                { $set: { "brandDetails.isFreeLeadPaused": !exists?.brandDetails.isFreeLeadPaused } },
-                { new: true }
-            );
-    
-        let message
-        if (data.brandDetails.isFreeLeadPaused === true) {
-            message ="Brand lead pause successfully"
-        } else {
-            message ="Brand lead play successfully"
-        }
-        
-        return res.json(
-          new ApiResponse(200, data, message)
-        );
-    
-      } catch (outerError) {
-        console.error(" Outer error:", outerError);
-        return res.status(500).json({ message: "Server error", error: outerError.message });
-      }
+    const exists = await BrandDetails.findOne({ uuid: id });
+
+    if (!exists) {
+      return res.json(new ApiResponse(404, {}, "Brand not found"));
+    }
+
+    console.log(exists.brandDetails.isFreeLeadPaused);
+
+    const data = await BrandDetails.findByIdAndUpdate(
+      exists._id,
+      {
+        $set: {
+          "brandDetails.isFreeLeadPaused":
+            !exists?.brandDetails.isFreeLeadPaused,
+        },
+      },
+      { new: true }
+    );
+
+    let message;
+    if (data.brandDetails.isFreeLeadPaused === true) {
+      message = "Brand lead pause successfully";
+    } else {
+      message = "Brand lead play successfully";
+    }
+
+    return res.json(new ApiResponse(200, data, message));
+  } catch (outerError) {
+    console.error(" Outer error:", outerError);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: outerError.message });
   }
+};
 
 export const getAllFreeLeadPauseBrand = async (req, res) => {
   try {
@@ -293,28 +349,33 @@ export const getAllFreeLeadPauseBrand = async (req, res) => {
     const aggregationPipeline = [
       {
         $match: {
-          "brandDetails.isFreeLeadPaused": { $ne: false } 
-        }
+          "brandDetails.isFreeLeadPaused": { $ne: false },
+        },
       },
       {
         $lookup: {
           from: "brandfranchisedetails",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "franchiseDetails"
-        }
+          as: "franchiseDetails",
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
-      { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: "$franchiseDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-     
+
       { $sort: { createdAt: -1 } },
       {
         $project: {
@@ -326,52 +387,59 @@ export const getAllFreeLeadPauseBrand = async (req, res) => {
           brandname: "$brandDetails.brandName",
           isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+            $ifNull: [
+              "$franchiseDetails.franchiseDetails.brandCategories",
+              null,
+            ],
           },
           fico: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+                data: {
+                  $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0],
+                },
               },
               in: {
                 investmentRange: "$$data.investmentRange",
                 areaRequired: "$$data.areaRequired",
-                franchiseModel: "$$data.franchiseModel"
-              }
-            }
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-              else: null
-            }
+              else: null,
+            },
           },
-        }
+        },
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ];
 
     const [brandsData, totalCountResult] = await Promise.all([
       BrandDetails.aggregate(aggregationPipeline),
       BrandDetails.aggregate([
         {
-          $match: { "brandDetails.isFreeLeadPaused": { $ne: false } } 
+          $match: { "brandDetails.isFreeLeadPaused": { $ne: false } },
         },
         {
-          $count: "totalCount"
-        }
-      ])
+          $count: "totalCount",
+        },
+      ]),
     ]);
 
     const totalCount = totalCountResult[0]?.totalCount || 0;
 
     if (!brandsData || brandsData.length === 0) {
-      return res.json(new ApiResponse(404, null, "No free lead paused brands found"));
+      return res.json(
+        new ApiResponse(404, null, "No free lead paused brands found")
+      );
     }
 
-    const brands = brandsData
+    const brands = brandsData;
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
@@ -387,8 +455,8 @@ export const getAllFreeLeadPauseBrand = async (req, res) => {
             currentPage: page,
             limit,
             hasNext,
-            hasPrevious
-          }
+            hasPrevious,
+          },
         },
         "Brand data fetched successfully"
       )
@@ -399,64 +467,76 @@ export const getAllFreeLeadPauseBrand = async (req, res) => {
       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
     );
   }
-}; 
+};
 
-
-export const toggleSingleLeadCount = async (req, res) => {
+export const postSpecialLeadCount = async (req, res) => {
   try {
     const { id } = req.params;
+    const { specialFreeLeadCount, force } = req.body;
 
     const exists = await BrandDetails.findOne({ uuid: id });
 
     if (!exists) {
+      return res.json(new ApiResponse(404, {}, "Brand not found"));
+    }
+
+    if (force === true) {
+      const updatedData = await BrandDetails.findByIdAndUpdate(
+        { _id: exists._id },
+        {
+          $set: {
+            "brandDetails.specialFreeLeadCount": Number(specialFreeLeadCount),
+          }, 
+        },
+        { new: true }
+      );
+
       return res.json(
-        new ApiResponse(404, {}, "Brand not found")
+        new ApiResponse(
+          200,
+          updatedData,
+          "By force specialFreeLeadCount updated successfully"
+        )
       );
     }
 
     // Get the batch size from SystemConfig
     const config = await SystemConfig.findOne();
-    const BATCH_SIZE = config?.batchSize || 7;
-    
-    // Get current count - check both locations due to schema inconsistency
-    const currentCount = exists.brandDetails?.singleBrandLeadCount || exists.singleBrandLeadCount || BATCH_SIZE;
-    
-    console.log("Current singleBrandLeadCount:", currentCount);
-    console.log("Batch Size from config:", BATCH_SIZE);
+    const existCount = config?.maxEmailsPerMonth;
 
-    let newCount;
-    let message;
-
-    // Always increment by 1, no reset logic
-    newCount = currentCount + 1;
-    message = `Lead count incremented to ${newCount}`;
-
-    // Update in both possible locations to handle schema inconsistency
-    const updateQuery = {
-      $set: {
-        "brandDetails.singleBrandLeadCount": newCount,
-        "singleBrandLeadCount": newCount
+    if (Number(existCount) >= Number(specialFreeLeadCount)) {
+      let msg;
+      if (Number(existCount) > Number(specialFreeLeadCount)) {
+        msg = `existing free lead count ${existCount} is graterthen specialFreeLeadCount ${specialFreeLeadCount}, Please enter bigger then ${existCount}`;
       }
-    };
+      if (Number(existCount) == Number(specialFreeLeadCount)) {
+        msg = `existing free lead count ${existCount} is  equal to specialFreeLeadCount ${specialFreeLeadCount}, Please enter bigger then ${existCount}`;
+      }
+      return res.json(new ApiResponse(404, null, msg));
+    }
 
-    const data = await BrandDetails.findByIdAndUpdate(
-      exists._id,
-      updateQuery,
+    const updatedData = await BrandDetails.findByIdAndUpdate(
+      { _id: exists._id },
+      {
+        $set: {
+          "brandDetails.specialFreeLeadCount": Number(specialFreeLeadCount),
+        },
+      },
       { new: true }
     );
 
-    console.log("Updated count:", newCount);
-    console.log("Message:", message);
-
     return res.json(
-      new ApiResponse(200, data, message)
+      new ApiResponse(
+        200,
+        updatedData,
+        "specialFreeLeadCount updated successfully"
+      )
     );
-
   } catch (outerError) {
     console.error("Toggle single lead count error:", outerError);
-    return res.status(500).json({ 
-      message: "Server error", 
-      error: outerError.message 
+    return res.status(500).json({
+      message: "Server error",
+      error: outerError.message,
     });
   }
-}
+};

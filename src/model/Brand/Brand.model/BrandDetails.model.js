@@ -35,11 +35,9 @@ const BrandDetailsSchema = new mongoose.Schema(
       linkedin: String,
       gstNumber: String,
       pancardNumber: String,
-       singleBrandLeadCount: {
-  type: Number,
-  min: 1,
-  default: 7 
-},
+      specialFreeLeadCount: {
+        type: Number
+      },
       pause:{
         type:Boolean,
         default:false
