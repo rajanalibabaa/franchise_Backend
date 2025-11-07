@@ -399,7 +399,8 @@ export const getAllFreeLeadPauseBrand = async (req, res) => {
       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
     );
   }
-};
+}; 
+
 
 export const toggleSingleLeadCount = async (req, res) => {
   try {
