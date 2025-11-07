@@ -83,6 +83,7 @@ export const instantApplyLocationMatch = async (
   const config = await SystemConfig.findOne();
   const BATCH_SIZE = config?.batchSize || 7;
   const MAX_EMAILS_PER_MONTH = config?.maxEmailsPerMonth || 5;
+  
 
   // Ensure required params are present
   if (!state) {
@@ -100,7 +101,7 @@ export const instantApplyLocationMatch = async (
   }
 
   let ignoreEmail = [];
-  // Initialize the email tracking service
+  // ✅ Initialize the email tracking service
   const emailTrackingService = new EmailTrackingService();
 
   try {
@@ -239,7 +240,7 @@ export const instantApplyLocationMatch = async (
           //   month: currentMonth,
           //   year: currentYear,
           // });
-
+          //
           // if (!countDoc) {
           //   countDoc = await BrandEmailCount.create({
           //     brandId: brand.uuid,
@@ -250,13 +251,13 @@ export const instantApplyLocationMatch = async (
           //     emailRecords: [],
           //   });
           // }
-
+          //
           // if (countDoc.emailCount < MAX_EMAILS_PER_MONTH) {
           //   brandsToSend.push({ brand, countDoc });
           // }
 
-          // NEW CODE - Using email tracking service for free leads
- const { currentStats } = await emailTrackingService.getCurrentMonthStats(
+          // ✅ NEW CODE - Using email tracking service for free leads
+          const { currentStats } = await emailTrackingService.getCurrentMonthStats(
             brand.uuid, 
             brand.brandDetails?.brandName || ""
           );
@@ -310,13 +311,14 @@ export const instantApplyLocationMatch = async (
             // });
             // await countDoc.save();
 
-            // NEW CODE - Use the service to record the email
- await emailTrackingService.recordEmail(
+            // ✅ NEW CODE - Use the service to record the email
+            await emailTrackingService.recordEmail(
               brand.uuid, 
               email, 
-              false, // isPremiumOffer
+              false, // isPremiumOffer = false for free leads
               brand.brandDetails?.brandName || ""
             );
+            
             brandsSent.push({
               brandId: brand.uuid,
               brandName: brand.brandDetails?.brandName || "",
@@ -435,7 +437,8 @@ export const instantApplyLocationMatch = async (
         "Paid Leads: Total eligible brands =",
         OverAllBrandExists.length
       );
-       const brandsSent = [];
+      
+      const brandsSent = [];
 
       if (OverAllBrandExists.length > 0) {
         // console.log("Paid Leads: Total eligible brands =", OverAllBrandExists.length);
@@ -478,7 +481,7 @@ export const instantApplyLocationMatch = async (
           //   month: currentMonth,
           //   year: currentYear,
           // });
-
+          //
           // if (!countDoc) {
           //   countDoc = await BrandEmailCount.create({
           //     brandId: brand.uuid,
@@ -491,11 +494,11 @@ export const instantApplyLocationMatch = async (
           //   // console.log("countDoc :",locations)
           // }
           // // console.log("countDoc :", countDoc);
-
+          //
           // brandsToSend.push({ brand, countDoc });
 
-          // NEW CODE - Use the new email tracking service for paid leads
-  const { currentStats } = await emailTrackingService.getCurrentMonthStats(
+          // ✅ NEW CODE - Use the new email tracking service for paid leads
+          const { currentStats } = await emailTrackingService.getCurrentMonthStats(
             brand.uuid,
             brand.brandDetails?.brandName || ""
           );
@@ -526,11 +529,11 @@ export const instantApplyLocationMatch = async (
           // });
           // await countDoc.save();
 
-          // NEW CODE - Use the service to record the premium offer email
-await emailTrackingService.recordEmail(
+          // ✅ NEW CODE - Use the service to record the premium offer email
+          await emailTrackingService.recordEmail(
             brand.uuid, 
             email, 
-            true, // isPremiumOffer
+            true, // isPremiumOffer = true for paid leads
             brand.brandDetails?.brandName || ""
           );
 
@@ -542,6 +545,7 @@ await emailTrackingService.recordEmail(
             emailSentAt: new Date(),
           });
         }
+        
         await InstantApplyPaidUserLeadsData.create({
           investorEmail: email,
           investorName: fullName,
