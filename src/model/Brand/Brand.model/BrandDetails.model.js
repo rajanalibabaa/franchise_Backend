@@ -42,6 +42,10 @@ const BrandDetailsSchema = new mongoose.Schema(
         type:Boolean,
         default:false
       },
+      isApproved:{
+        type:Boolean,
+        default:false
+      },
       isBrandPause:{
         type:Boolean,
         default:false
