@@ -1,7 +1,7 @@
 import express from "express";
 import {  instaApplyBrandFormController,getLeadsByIndustryController,  getLeadsByBrandIdAllIndustriesController, findLeadByApplyIdController } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
-import { leadsFreeAndPaidStopAndStart,getLeadStatus, toggleleadPausedorPlayById, getAllFreeLeadPauseBrand, toggleSingleLeadCount } from "../../controller/Admin/Brand/leads.controller.js";
+import { leadsFreeAndPaidStopAndStart,getLeadStatus, toggleleadPausedorPlayById, getAllFreeLeadPauseBrand, postSpecialLeadCount } from "../../controller/Admin/Brand/leads.controller.js";
 import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
 import { getBatchEmailConfig, updateBatchEmailConfig } from "../../controller/Admin/Brand/leads.controller.js";
 export const InstantApplyRouter = express.Router();
@@ -29,7 +29,7 @@ InstantApplyRouter.post("/v1/admin/batch-email-config", updateBatchEmailConfig)
 
 
 //single brand lead count
-InstantApplyRouter.put("/v1/admin/toggleSingleLeadCount/:id", toggleSingleLeadCount)
+InstantApplyRouter.post("/v1/admin/postSpecialLeadCount/:id", postSpecialLeadCount)
 
 
 InstantApplyRouter.get("/v1/instantapply/getFreeLeads",getInstantApplyInvestorsController)
