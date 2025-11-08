@@ -1,15 +1,12 @@
 import BrandListing from "../../model/Brand/brandListingPage.js";
-import {
-  sendInstantApplyLeadLocation,
-  sendPremiumPackageOfferEmail,
-} from "../Centralized Email/centralizedEmail.js";
+import { sendInstantApplyLeadLocation, sendPremiumPackageOfferEmail } from "../Centralized Email/centralizedEmail.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
 import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js";
-import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
+// import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
+import { InstantApplyPaidUserLeadsData } from "../../model/NewIncomeInvestor/instantApplyPaidleadsModel.js";
 import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
-import { InstantApplyPaidUserLeadsData } from "../../model/NewIncomeInvestor/instantApplyPaidleadsModel.js";
-
+import BrandEmailCount, { EmailTrackingService } from '../../model/NewIncomeInvestor/BrandEmailCountSchema.js';
 export const getSystemConfig = async (req, res) => {
   try {
     const config = await SystemConfig.findOne();
@@ -25,8 +22,7 @@ export const updateSystemConfig = async (req, res) => {
     const config = await SystemConfig.findOne();
     if (config) {
       if (batchSize !== undefined) config.batchSize = batchSize;
-      if (maxEmailsPerMonth !== undefined)
-        config.maxEmailsPerMonth = maxEmailsPerMonth;
+      if (maxEmailsPerMonth !== undefined) config.maxEmailsPerMonth = maxEmailsPerMonth;
       if (updatedBy) config.updatedBy = updatedBy;
       config.updatedAt = new Date();
       await config.save();
@@ -87,8 +83,26 @@ export const instantApplyLocationMatch = async (
   const config = await SystemConfig.findOne();
   const BATCH_SIZE = config?.batchSize || 7;
   const MAX_EMAILS_PER_MONTH = config?.maxEmailsPerMonth || 5;
+  
+
+  // Ensure required params are present
+  if (!state) {
+    throw new Error('State is required for instantApplyLocationMatch');
+  }
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Ensure brandBatchDoc exists before accessing its properties
   let brandBatchDoc = await BrandBatch.findOne({});
+  if (!brandBatchDoc) {
+    brandBatchDoc = await BrandBatch.create({ batch: 0, isFreeLeadsBrandPaused: false, isPaidLeadsBrandPaused: false });
+  }
+
   let ignoreEmail = [];
+  // ✅ Initialize the email tracking service
+  const emailTrackingService = new EmailTrackingService();
 
   try {
     if (!brandBatchDoc.isFreeLeadsBrandPaused) {
@@ -178,9 +192,9 @@ export const instantApplyLocationMatch = async (
         // console.log(`Processing batch ${currentBatch} with ${currentSlice.length} brands`);
 
         const brandsToSend = [];
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+        // const now = new Date();
+        // const currentMonth = now.getMonth();
+        // const currentYear = now.getFullYear();
 
         for (const brand of currentSlice) {
           // console.log("Checking brand:", brand.brandDetails?.brandName);
@@ -219,26 +233,37 @@ export const instantApplyLocationMatch = async (
 
           if (!match) continue;
 
-          let countDoc = await BrandEmailCount.findOne({
-            brandId: brand.uuid,
-            brandName: brand.brandDetails?.brandName || "",
-            month: currentMonth,
-            year: currentYear,
-          });
+          // OLD CODE - COMMENTED OUT
+          // let countDoc = await BrandEmailCount.findOne({
+          //   brandId: brand.uuid,
+          //   brandName: brand.brandDetails?.brandName || "",
+          //   month: currentMonth,
+          //   year: currentYear,
+          // });
+          //
+          // if (!countDoc) {
+          //   countDoc = await BrandEmailCount.create({
+          //     brandId: brand.uuid,
+          //     brandName: brand.brandDetails?.brandName || "",
+          //     month: currentMonth,
+          //     year: currentYear,
+          //     emailCount: 0,
+          //     emailRecords: [],
+          //   });
+          // }
+          //
+          // if (countDoc.emailCount < MAX_EMAILS_PER_MONTH) {
+          //   brandsToSend.push({ brand, countDoc });
+          // }
 
-          if (!countDoc) {
-            countDoc = await BrandEmailCount.create({
-              brandId: brand.uuid,
-              brandName: brand.brandDetails?.brandName || "",
-              month: currentMonth,
-              year: currentYear,
-              emailCount: 0,
-              emailRecords: [],
-            });
-          }
+          // ✅ NEW CODE - Using email tracking service for free leads
+          const { currentStats } = await emailTrackingService.getCurrentMonthStats(
+            brand.uuid, 
+            brand.brandDetails?.brandName || ""
+          );
 
-          if (countDoc.emailCount < MAX_EMAILS_PER_MONTH) {
-            brandsToSend.push({ brand, countDoc });
+          if (currentStats.emailCount < MAX_EMAILS_PER_MONTH) {
+            brandsToSend.push({ brand, currentStats });
           }
         }
 
@@ -264,7 +289,7 @@ export const instantApplyLocationMatch = async (
         if (brandsToSend.length > 0) {
           // console.log("=======brandsToSend.length======")
 
-          for (const { brand, countDoc } of brandsToSend) {
+          for (const { brand, currentStats } of brandsToSend) {
             await sendInstantApplyLeadLocation(
               fullName,
               email,
@@ -278,13 +303,22 @@ export const instantApplyLocationMatch = async (
               readyToInvest
             );
 
-            countDoc.emailCount += 1;
-            countDoc.emailRecords.push({
-              investorEmail: email,
-              sentAt: new Date(),
-            });
-            await countDoc.save();
+            // OLD CODE - COMMENTED OUT
+            // countDoc.emailCount += 1;
+            // countDoc.emailRecords.push({
+            //   investorEmail: email,
+            //   sentAt: new Date(),
+            // });
+            // await countDoc.save();
 
+            // ✅ NEW CODE - Use the service to record the email
+            await emailTrackingService.recordEmail(
+              brand.uuid, 
+              email, 
+              false, // isPremiumOffer = false for free leads
+              brand.brandDetails?.brandName || ""
+            );
+            
             brandsSent.push({
               brandId: brand.uuid,
               brandName: brand.brandDetails?.brandName || "",
@@ -403,15 +437,16 @@ export const instantApplyLocationMatch = async (
         "Paid Leads: Total eligible brands =",
         OverAllBrandExists.length
       );
-       const brandsSent = [];
+      
+      const brandsSent = [];
 
       if (OverAllBrandExists.length > 0) {
         // console.log("Paid Leads: Total eligible brands =", OverAllBrandExists.length);
 
         const brandsToSend = [];
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+        // const now = new Date();
+        // const currentMonth = now.getMonth();
+        // const currentYear = now.getFullYear();
 
         for (const brand of OverAllBrandExists) {
           const expansionData =
@@ -439,32 +474,38 @@ export const instantApplyLocationMatch = async (
           if (!match) continue;
           // console.log(" brand.uuid :", brand.uuid);
 
-          let countDoc = await BrandEmailCount.findOne({
-            brandId: brand.uuid,
-            brandName: brand.brandDetails?.brandName || "",
-            month: currentMonth,
-            year: currentYear,
-          });
+          // OLD CODE - COMMENTED OUT
+          // let countDoc = await BrandEmailCount.findOne({
+          //   brandId: brand.uuid,
+          //   brandName: brand.brandDetails?.brandName || "",
+          //   month: currentMonth,
+          //   year: currentYear,
+          // });
+          //
+          // if (!countDoc) {
+          //   countDoc = await BrandEmailCount.create({
+          //     brandId: brand.uuid,
+          //     brandName: brand.brandDetails?.brandName || "",
+          //     month: currentMonth,
+          //     year: currentYear,
+          //     premiumOfferCount: 0,
+          //     premiumOfferRecords: [],
+          //   });
+          //   // console.log("countDoc :",locations)
+          // }
+          // // console.log("countDoc :", countDoc);
+          //
+          // brandsToSend.push({ brand, countDoc });
 
-          if (!countDoc) {
-            countDoc = await BrandEmailCount.create({
-              brandId: brand.uuid,
-              brandName: brand.brandDetails?.brandName || "",
-              month: currentMonth,
-              year: currentYear,
-              premiumOfferCount: 0,
-              premiumOfferRecords: [],
-            });
-            // console.log("countDoc :",locations)
-          }
-          // console.log("countDoc :", countDoc);
-
-          brandsToSend.push({ brand, countDoc });
+          // ✅ NEW CODE - Use the new email tracking service for paid leads
+          const { currentStats } = await emailTrackingService.getCurrentMonthStats(
+            brand.uuid,
+            brand.brandDetails?.brandName || ""
+          );
+          brandsToSend.push({ brand, currentStats });
         }
 
-       
-
-        for (const { brand, countDoc } of brandsToSend) {
+        for (const { brand, currentStats } of brandsToSend) {
           // console.log("📨 Sending paid lead email to:", brand.brandDetails?.email);
 
           await sendInstantApplyLeadLocation(
@@ -480,12 +521,21 @@ export const instantApplyLocationMatch = async (
             readyToInvest
           );
 
-          countDoc.premiumOfferCount += 1;
-          countDoc.premiumOfferRecords.push({
-            investorEmail: email,
-            sentAt: new Date(),
-          });
-          await countDoc.save();
+          // OLD CODE - COMMENTED OUT
+          // countDoc.premiumOfferCount += 1;
+          // countDoc.premiumOfferRecords.push({
+          //   investorEmail: email,
+          //   sentAt: new Date(),
+          // });
+          // await countDoc.save();
+
+          // ✅ NEW CODE - Use the service to record the premium offer email
+          await emailTrackingService.recordEmail(
+            brand.uuid, 
+            email, 
+            true, // isPremiumOffer = true for paid leads
+            brand.brandDetails?.brandName || ""
+          );
 
           brandsSent.push({
             brandId: brand.uuid,
@@ -495,6 +545,7 @@ export const instantApplyLocationMatch = async (
             emailSentAt: new Date(),
           });
         }
+        
         await InstantApplyPaidUserLeadsData.create({
           investorEmail: email,
           investorName: fullName,
@@ -515,7 +566,7 @@ export const instantApplyLocationMatch = async (
 
         // console.log(`✅ Paid leads processed: ${brandsSent.map(b => `- ${b.brandName} (${b.brandEmail})`)
         // .join("\n")}} emails sent`);
-      }else{
+      } else {
         await InstantApplyPaidUserLeadsData.create({
           investorEmail: email,
           investorName: fullName,

@@ -53,6 +53,10 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         }
       },
       {
+        "brandInfo.brandDetails.isBrandPause":{ $ne:true},
+        "brandInfo.brandDetails.isApproved":{ $ne:false},        
+      },
+      {
         $unwind: {
           path: "$brandInfo",
           preserveNullAndEmptyArrays: true

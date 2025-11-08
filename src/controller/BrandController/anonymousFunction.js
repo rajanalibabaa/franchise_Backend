@@ -7,7 +7,7 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 
 export const datafieldnewEntry = async (req, res) => {
   try {
-    const brands = await BrandDetails.find({}, "_id brandDetails.isBrandPause")
+    const brands = await BrandDetails.find({}, "_id brandDetails.isBrandPause").sort({ createdAt: -1 }).limit(10)
 ;
 
     if (!brands.length) {
@@ -19,7 +19,7 @@ export const datafieldnewEntry = async (req, res) => {
         try {
           const updated = await BrandDetails.findByIdAndUpdate(
             brand._id,
-            { $set: { "brandDetails.isBrandPause": false } },
+            { $set: { "brandDetails.isApproved": false } },
             { new: true }
           );
 
