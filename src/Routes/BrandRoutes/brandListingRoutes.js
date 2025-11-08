@@ -26,6 +26,8 @@ import { datafieldnewEntry, testgetAllBrands } from "../../controller/BrandContr
 
 import {createPaymentPackage,getAllPaymentPackages,deletePaymentPackage,getPaymentPackageById,updatePaymentPackage} from '../../controller/BrandController/AdvertiseBrandController.js'
 
+
+import {submitRequest,getAllRequests,deleteRequestByBrandUuid,getRequestByBrandId,getRequestById,updateRequestById} from "../../controller/BrandController/userRequesChanges/userRequestController.js"
 const router = express.Router();
  
 
@@ -126,5 +128,20 @@ router.get('/v1/brandadvertise/payment',getAllPaymentPackages);
 router.delete('/v1/brandadvertise/payment/:uuid',deletePaymentPackage);
 router.get('/v1/brandadvertise/payment',getPaymentPackageById);
 router.put('/v1/brandadvertise/payment/:uuid',updatePaymentPackage);
+
+
+
+// request Routes
+
+router.post ('/v1/brandlisting/userRequestNotification',submitRequest)
+router.get('/v1/brandlisting/userRequestNotification',getAllRequests)
+router.get('/v1/brandlisting/userRequestNotificationByBrandId/:brandId',getRequestByBrandId)
+router.delete('/v1/brandlisting/userRequestNotification/:uuid',deleteRequestByBrandUuid)
+
+router.get('/v1/brandlisting/userRequestNotificationByUUID/:uuid',getRequestById)
+router.patch('/v1/brandlisting/userRequestNotification/:uuid',updateRequestById)
+
+
+
 
 export default router;
