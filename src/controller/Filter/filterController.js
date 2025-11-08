@@ -401,6 +401,8 @@ export const getAllBrandsAndFilter = async (req, res) => {
       "brandDetails.isApproved": { $ne: false },
     };
 
+    // console.log("======search===== :",serchterm)
+
     // Text search (brand name / description / etc.)
     if (serchterm) {
       match.$or = [

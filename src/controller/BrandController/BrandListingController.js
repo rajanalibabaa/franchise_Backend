@@ -102,11 +102,10 @@ const createBrandListing = async (req, res) => {
 
     const brandDetails = safeJsonParse(req.body?.brandDetails);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
-    const expansionLocationData = safeJsonParse(
-      req.body?.expansionLocationData
-    );
+    const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
 
-    console.log("Incoming data:", brandDetails.brandName);
+
+console.log("Incoming data:", brandDetails.brandName);
 
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
@@ -215,9 +214,11 @@ const createBrandListing = async (req, res) => {
           req.files[field].map(async (file) => {
             // Convert videos to HLS, others direct upload
             const isVideo = field.toLowerCase().includes("video");
-            const uploadedUrl = await uploadFileToR2(file.path, file.mimetype, {
-              convertToHLS: isVideo,
-            });
+            const uploadedUrl = await uploadFileToR2(
+              file.path, 
+              file.mimetype, 
+              { convertToHLS: isVideo }
+            );
             console.log(`✅ Uploaded ${field}:`, uploadedUrl);
             return uploadedUrl;
           })
@@ -233,89 +234,24 @@ const createBrandListing = async (req, res) => {
       awardImage: fileUrl,
     }));
 
-    if (admin) {
-      // Create all records in parallel after getting the UUID
 
-      const [
-        newBrand,
-        newBrandFranchiseDetails,
-        newBrandExpansionLocationData,
-        newBrandUploads,
-      ] = await Promise.all([
-        BrandDetails.create({
-          brandID,
-          uuid: id,
-          brandDetails,
-        }),
-        BrandFranchiseDetails.create({
-          brandOwnerId: id,
-          franchiseDetails,
-        }),
-        BrandExpansionLocationData.create({
-          brandOwnerId: id,
-          expansionLocationData,
-        }),
-        BrandUploads.create({
-          brandOwnerId: id,
-          uploads: {
-            brandLogo: uploadedFiles.brandLogo || [],
-            gstCertificate: uploadedFiles.gstCertificate || [],
-            pancard: uploadedFiles.pancard || [],
-            exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-            interiorOutlet: uploadedFiles.interiorOutlet || [],
-            franchisePromotionVideo:
-              uploadedFiles.franchisePromotionVideo || [],
-            brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-            businessPlan: uploadedFiles.businessPlan || [],
-            awards,
-          },
-        }),
-      ]);
 
-      // Check if all records were created successfully
-      if (
-        !newBrand ||
-        !newBrandFranchiseDetails ||
-        !newBrandExpansionLocationData ||
-        !newBrandUploads
-      ) {
-        return res.json(
-          new ApiResponse(500, {}, "Failed to create one or more brand records")
-        );
-      }
+    if(admin){
+       // Create all records in parallel after getting the UUID
 
-      return res.json(
-        new ApiResponse(
-          201,
-          {
-            brand: newBrand,
-            franchise: newBrandFranchiseDetails,
-            locations: newBrandExpansionLocationData,
-            uploads: newBrandUploads,
-          },
-          "Brand listing created successfully"
-        )
-      );
-    }
-
-    const [
-      newBrand,
-      newBrandFranchiseDetails,
-      newBrandExpansionLocationData,
-      newBrandUploads,
-    ] = await Promise.all([
+    const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
       BrandDetails.create({
         brandID,
         uuid: id,
-        brandDetails,
+        brandDetails
       }),
       BrandFranchiseDetails.create({
         brandOwnerId: id,
-        franchiseDetails,
+        franchiseDetails
       }),
       BrandExpansionLocationData.create({
         brandOwnerId: id,
-        expansionLocationData,
+        expansionLocationData
       }),
       BrandUploads.create({
         brandOwnerId: id,
@@ -328,59 +264,55 @@ const createBrandListing = async (req, res) => {
           franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
           brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
           businessPlan: uploadedFiles.businessPlan || [],
-          awards,
-        },
-      }),
+          awards
+        }
+      })
     ]);
 
     // Check if all records were created successfully
-    if (
-      !newBrand ||
-      !newBrandFranchiseDetails ||
-      !newBrandExpansionLocationData ||
-      !newBrandUploads
-    ) {
+    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
       return res.json(
         new ApiResponse(500, {}, "Failed to create one or more brand records")
       );
     }
 
     return res.json(
-      new ApiResponse(
-        201,
-        {
-          brand: newBrand,
-          franchise: newBrandFranchiseDetails,
-          locations: newBrandExpansionLocationData,
-          uploads: newBrandUploads,
-        },
-        "Brand listing created successfully"
-      )
+      new ApiResponse(201, {
+        brand: newBrand,
+        franchise: newBrandFranchiseDetails,
+        locations: newBrandExpansionLocationData,
+        uploads: newBrandUploads
+      }, "Brand listing created successfully")
     );
 
-    // const brandData = await NewIncomingBrands.create({
-    //   brandID,
-    //   uuid: id,
-    //   brandDetails,
-    //   franchiseDetails,
-    //   expansionLocationData,
-    //   uploads: {
-    //     brandLogo: uploadedFiles.brandLogo || [],
-    //     gstCertificate: uploadedFiles.gstCertificate || [],
-    //     pancard: uploadedFiles.pancard || [],
-    //     exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-    //     interiorOutlet: uploadedFiles.interiorOutlet || [],
-    //     franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-    //     brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-    //     businessPlan: uploadedFiles.businessPlan || [],
-    //     awards
-    //   }
-    // })
-    // console.log("franchisedetails",franchiseDetails);
+    }
+   
 
-    // return res.json(
-    //   new ApiResponse(201,brandData, "Brand listing created successfully")
-    // );
+    const brandData = await NewIncomingBrands.create({
+      brandID,
+      uuid: id,
+      brandDetails,
+      franchiseDetails,
+      expansionLocationData,
+      uploads: {
+        brandLogo: uploadedFiles.brandLogo || [],
+        gstCertificate: uploadedFiles.gstCertificate || [],
+        pancard: uploadedFiles.pancard || [],
+        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+        interiorOutlet: uploadedFiles.interiorOutlet || [],
+        franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+        businessPlan: uploadedFiles.businessPlan || [],
+        awards
+      }
+    })
+    console.log("franchisedetails",franchiseDetails);
+    
+    return res.json(
+      new ApiResponse(201,brandData, "Brand listing created successfully")
+    );
+
+
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
     return res.json(
