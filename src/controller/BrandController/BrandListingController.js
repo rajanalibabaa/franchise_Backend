@@ -14,66 +14,69 @@ import { BrandExpansionLocationData } from "../../model/Brand/Brand.model/Expans
 import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
 import uuid from "../../utils/uuid.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
+import {
+  FavoriteBrandsLikedBybrand,
+  FavoriteBrandsLikedByInvestor,
+} from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import { console } from "inspector";
 import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 
-
-export const likeandshortlist = async(id) => {
-
+export const likeandshortlist = async (id) => {
   let likedBrands = [];
   let shortListedBrands = [];
   if (id) {
-      const investor = await InvsRegister.findOne({ uuid: id });
+    const investor = await InvsRegister.findOne({ uuid: id });
 
-      if (investor) {
-       
-        const investorFavorites = await FavoriteBrandsLikedByInvestor.findOne({
-          InvestorUserId: investor._id
+    if (investor) {
+      const investorFavorites = await FavoriteBrandsLikedByInvestor.findOne({
+        InvestorUserId: investor._id,
+      });
+      likedBrands =
+        investorFavorites?.favoriteBrandByInvestor.map((b) =>
+          b.brandID.toString()
+        ) || [];
+
+      const investorShortList = await ShortListed.find({
+        "ShortListedBy.investor.userId": investor._id,
+      });
+      shortListedBrands = investorShortList.map((s) =>
+        s.brandOwnerId.toString()
+      );
+    } else {
+      const brand = await BrandDetails.findOne({ uuid: id });
+      console.log("brand :", brand);
+      if (brand) {
+        const brandFavorites = await FavoriteBrandsLikedBybrand.findOne({
+          brandUserId: brand._id,
         });
-        likedBrands = investorFavorites?.favoriteBrandByInvestor.map(b => b.brandID.toString()) || [];
+        console.log("brandFavorites id :", brandFavorites);
+        likedBrands =
+          brandFavorites?.favoriteBrandBybrand.map((b) =>
+            b.brandID.toString()
+          ) || [];
 
-       
-        const investorShortList = await ShortListed.find({
-          "ShortListedBy.investor.userId": investor._id
+        const brandShortList = await ShortListed.find({
+          "ShortListedBy.brand.userId": brand._id,
         });
-        shortListedBrands = investorShortList.map(s => s.brandOwnerId.toString());
-
-        
-
-      } else {
-        
-        const brand = await BrandDetails.findOne({ uuid: id });
-console.log("brand :",brand)
-        if (brand) {
-          
-          const brandFavorites = await FavoriteBrandsLikedBybrand.findOne({
-            brandUserId: brand._id
-          });
-           console.log("brandFavorites id :",brandFavorites)
-          likedBrands = brandFavorites?.favoriteBrandBybrand.map  (b => b.brandID.toString()) || [];
-
-         
-          const brandShortList = await ShortListed.find({
-            "ShortListedBy.brand.userId": brand._id
-          });
-          shortListedBrands = brandShortList.map(s => s.brandOwnerId.toString());
-        }
+        shortListedBrands = brandShortList.map((s) =>
+          s.brandOwnerId.toString()
+        );
       }
     }
+  }
 
-    // console.log("shortListedBrands :",shortListedBrands)
+  // console.log("shortListedBrands :",shortListedBrands)
 
-    return {likedBrands,shortListedBrands}
-}
+  return { likedBrands, shortListedBrands };
+};
 
 const createBrandListing = async (req, res) => {
-  try {  
+  try {
     const { admin } = req.body;
     const id = uuid(); // Make sure this is properly imported/defined
-console.log("Incoming data:", req.body);
+    console.log("Incoming data:", req.body);
     const fileFields = [
       "awardDoc",
       "brandLogo",
@@ -83,83 +86,108 @@ console.log("Incoming data:", req.body);
       "franchisePromotionVideo",
       "brandPromotionVideo",
       "gstCertificate",
-      "interiorOutlet"
+      "interiorOutlet",
     ];
- 
+
     const safeJsonParse = (input, fallback = {}) => {
       try {
-        return typeof input === "string" ? JSON.parse(input) : input || fallback;
+        return typeof input === "string"
+          ? JSON.parse(input)
+          : input || fallback;
       } catch (err) {
         console.warn("JSON parse error:", err.message);
         return fallback;
       }
     };
- 
+
     const brandDetails = safeJsonParse(req.body?.brandDetails);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
-    const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
- 
- 
-console.log("Incoming data:", brandDetails.brandName);
- 
+    const expansionLocationData = safeJsonParse(
+      req.body?.expansionLocationData
+    );
+
+    console.log("Incoming data:", brandDetails.brandName);
+
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
       return res.json(
-        new ApiResponse(400, {}, "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing")
+        new ApiResponse(
+          400,
+          {},
+          "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing"
+        )
       );
     }
- 
+
     // const exists = await BrandDetails.findOne({
     //   "brandDetails.brandName": brandDetails.brandName
     // })
- 
+
     // if (exists) {
     //   return res.json(
     //     new ApiResponse(400, {}, "Brand already exists")
     //   );
     // }
- 
+
     const normalizeDistrictData = (districtObj, fallbackName) => {
-      if (!districtObj.district && fallbackName) districtObj.district = fallbackName;
-      if (!Array.isArray(districtObj.cities) || districtObj.cities.length === 0) {
-        districtObj.cities = [districtObj.district || fallbackName].filter(Boolean);
+      if (!districtObj.district && fallbackName)
+        districtObj.district = fallbackName;
+      if (
+        !Array.isArray(districtObj.cities) ||
+        districtObj.cities.length === 0
+      ) {
+        districtObj.cities = [districtObj.district || fallbackName].filter(
+          Boolean
+        );
       }
       return districtObj;
     };
- 
+
     const normalizeLocations = (locations, isInternational = false) => {
       if (!Array.isArray(locations)) return [];
-      return locations.map(loc => {
+      return locations.map((loc) => {
         const key = isInternational ? "states" : "state";
         const districtKey = isInternational ? "district" : "districts";
         if (Array.isArray(loc[districtKey])) {
-          loc[districtKey] = loc[districtKey].map(d => normalizeDistrictData(d, loc[key]));
+          loc[districtKey] = loc[districtKey].map((d) =>
+            normalizeDistrictData(d, loc[key])
+          );
         }
         return loc;
       });
     };
- 
+
     // Normalize location data
     if (expansionLocationData?.expansionLocations?.domestic?.locations) {
       expansionLocationData.expansionLocations.domestic.locations =
-        normalizeLocations(expansionLocationData.expansionLocations.domestic.locations);
+        normalizeLocations(
+          expansionLocationData.expansionLocations.domestic.locations
+        );
     }
- 
+
     if (expansionLocationData?.currentOutletLocations?.domestic?.locations) {
       expansionLocationData.currentOutletLocations.domestic.locations =
-        normalizeLocations(expansionLocationData.currentOutletLocations.domestic.locations);
+        normalizeLocations(
+          expansionLocationData.currentOutletLocations.domestic.locations
+        );
     }
- 
+
     if (expansionLocationData?.expansionLocations?.international?.country) {
       expansionLocationData.expansionLocations.international.country =
-        normalizeLocations(expansionLocationData.expansionLocations.international.country, true);
+        normalizeLocations(
+          expansionLocationData.expansionLocations.international.country,
+          true
+        );
     }
- 
+
     if (expansionLocationData?.currentOutletLocations?.international?.country) {
       expansionLocationData.currentOutletLocations.international.country =
-        normalizeLocations(expansionLocationData.currentOutletLocations.international.country, true);
+        normalizeLocations(
+          expansionLocationData.currentOutletLocations.international.country,
+          true
+        );
     }
- 
+
     // Parse award descriptions
     let awardDescriptions = [];
     if (brandDetails.awardText) {
@@ -173,11 +201,11 @@ console.log("Incoming data:", brandDetails.brandName);
         }
       }
     }
- 
+
     // Generate brandID
     const groupId = franchiseDetails?.brandCategories?.groupId || null;
     const brandID = await generateCustomId(groupId);
- 
+
     // Upload files to R2
     // Upload files to R2 - videos will be converted to HLS, others direct upload
     const uploadedFiles = {};
@@ -187,11 +215,9 @@ console.log("Incoming data:", brandDetails.brandName);
           req.files[field].map(async (file) => {
             // Convert videos to HLS, others direct upload
             const isVideo = field.toLowerCase().includes("video");
-            const uploadedUrl = await uploadFileToR2(
-              file.path,
-              file.mimetype,
-              { convertToHLS: isVideo }
-            );
+            const uploadedUrl = await uploadFileToR2(file.path, file.mimetype, {
+              convertToHLS: isVideo,
+            });
             console.log(`✅ Uploaded ${field}:`, uploadedUrl);
             return uploadedUrl;
           })
@@ -199,32 +225,97 @@ console.log("Incoming data:", brandDetails.brandName);
         uploadedFiles[field] = urls;
       }
     }
- 
+
     // Build structured awards array
     const awardDocs = uploadedFiles.awardDoc || [];
     const awards = awardDocs.map((fileUrl, index) => ({
       awardDescription: awardDescriptions[index] || "",
-      awardImage: fileUrl
+      awardImage: fileUrl,
     }));
- 
- 
- 
-    if(admin){
-       // Create all records in parallel after getting the UUID
- 
-    const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
+
+    if (admin) {
+      // Create all records in parallel after getting the UUID
+
+      const [
+        newBrand,
+        newBrandFranchiseDetails,
+        newBrandExpansionLocationData,
+        newBrandUploads,
+      ] = await Promise.all([
+        BrandDetails.create({
+          brandID,
+          uuid: id,
+          brandDetails,
+        }),
+        BrandFranchiseDetails.create({
+          brandOwnerId: id,
+          franchiseDetails,
+        }),
+        BrandExpansionLocationData.create({
+          brandOwnerId: id,
+          expansionLocationData,
+        }),
+        BrandUploads.create({
+          brandOwnerId: id,
+          uploads: {
+            brandLogo: uploadedFiles.brandLogo || [],
+            gstCertificate: uploadedFiles.gstCertificate || [],
+            pancard: uploadedFiles.pancard || [],
+            exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+            interiorOutlet: uploadedFiles.interiorOutlet || [],
+            franchisePromotionVideo:
+              uploadedFiles.franchisePromotionVideo || [],
+            brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+            businessPlan: uploadedFiles.businessPlan || [],
+            awards,
+          },
+        }),
+      ]);
+
+      // Check if all records were created successfully
+      if (
+        !newBrand ||
+        !newBrandFranchiseDetails ||
+        !newBrandExpansionLocationData ||
+        !newBrandUploads
+      ) {
+        return res.json(
+          new ApiResponse(500, {}, "Failed to create one or more brand records")
+        );
+      }
+
+      return res.json(
+        new ApiResponse(
+          201,
+          {
+            brand: newBrand,
+            franchise: newBrandFranchiseDetails,
+            locations: newBrandExpansionLocationData,
+            uploads: newBrandUploads,
+          },
+          "Brand listing created successfully"
+        )
+      );
+    }
+
+    const [
+      newBrand,
+      newBrandFranchiseDetails,
+      newBrandExpansionLocationData,
+      newBrandUploads,
+    ] = await Promise.all([
       BrandDetails.create({
         brandID,
         uuid: id,
-        brandDetails
+        brandDetails,
       }),
       BrandFranchiseDetails.create({
         brandOwnerId: id,
-        franchiseDetails
+        franchiseDetails,
       }),
       BrandExpansionLocationData.create({
         brandOwnerId: id,
-        expansionLocationData
+        expansionLocationData,
       }),
       BrandUploads.create({
         brandOwnerId: id,
@@ -237,78 +328,36 @@ console.log("Incoming data:", brandDetails.brandName);
           franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
           brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
           businessPlan: uploadedFiles.businessPlan || [],
-          awards
-        }
-      })
+          awards,
+        },
+      }),
     ]);
- 
+
     // Check if all records were created successfully
-    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
+    if (
+      !newBrand ||
+      !newBrandFranchiseDetails ||
+      !newBrandExpansionLocationData ||
+      !newBrandUploads
+    ) {
       return res.json(
         new ApiResponse(500, {}, "Failed to create one or more brand records")
       );
     }
- 
+
     return res.json(
-      new ApiResponse(201, {
-        brand: newBrand,
-        franchise: newBrandFranchiseDetails,
-        locations: newBrandExpansionLocationData,
-        uploads: newBrandUploads
-      }, "Brand listing created successfully")
+      new ApiResponse(
+        201,
+        {
+          brand: newBrand,
+          franchise: newBrandFranchiseDetails,
+          locations: newBrandExpansionLocationData,
+          uploads: newBrandUploads,
+        },
+        "Brand listing created successfully"
+      )
     );
- 
-    }
-   
-    const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
-      BrandDetails.create({
-        brandID,
-        uuid: id,
-        brandDetails
-      }),
-      BrandFranchiseDetails.create({
-        brandOwnerId: id,
-        franchiseDetails
-      }),
-      BrandExpansionLocationData.create({
-        brandOwnerId: id,
-        expansionLocationData
-      }),
-      BrandUploads.create({
-        brandOwnerId: id,
-        uploads: {
-          brandLogo: uploadedFiles.brandLogo || [],
-          gstCertificate: uploadedFiles.gstCertificate || [],
-          pancard: uploadedFiles.pancard || [],
-          exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-          interiorOutlet: uploadedFiles.interiorOutlet || [],
-          franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-          brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-          businessPlan: uploadedFiles.businessPlan || [],
-          awards
-        }
-      })
-    ]);
- 
-    // Check if all records were created successfully
-    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
-      return res.json(
-        new ApiResponse(500, {}, "Failed to create one or more brand records")
-      );
-    }
- 
-    return res.json(
-      new ApiResponse(201, {
-        brand: newBrand,
-        franchise: newBrandFranchiseDetails,
-        locations: newBrandExpansionLocationData,
-        uploads: newBrandUploads
-      }, "Brand listing created successfully")
-    );
- 
-   
-   
- 
+
     // const brandData = await NewIncomingBrands.create({
     //   brandID,
     //   uuid: id,
@@ -328,16 +377,18 @@ console.log("Incoming data:", brandDetails.brandName);
     //   }
     // })
     // console.log("franchisedetails",franchiseDetails);
-   
+
     // return res.json(
     //   new ApiResponse(201,brandData, "Brand listing created successfully")
     // );
- 
- 
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
     return res.json(
-      new ApiResponse(500, {}, `Failed to create brand listing: ${error.message}`)
+      new ApiResponse(
+        500,
+        {},
+        `Failed to create brand listing: ${error.message}`
+      )
     );
   }
 };
@@ -354,36 +405,48 @@ const getAllBrands = async (req, res) => {
     const aggregationPipeline = [
       {
         $match: {
-          "brandDetails.isBrandPause": { $ne: true } 
-        }
+          "brandDetails.isBrandPause": { $ne: true },
+          "brandDetails.isApproved": { $ne: true },
+        },
       },
       {
         $lookup: {
           from: "brandfranchisedetails",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "franchiseDetails"
-        }
+          as: "franchiseDetails",
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
-      { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: "$franchiseDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
           isLiked: {
-            $in: ["$_id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$_id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$_id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-          }
-        }
+            $in: [
+              "$_id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
       { $sort: { createdAt: -1 } },
       {
@@ -397,50 +460,60 @@ const getAllBrands = async (req, res) => {
           isBrandPause: "$brandDetails.isBrandPause",
           isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+            $ifNull: [
+              "$franchiseDetails.franchiseDetails.brandCategories",
+              null,
+            ],
           },
           fico: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+                data: {
+                  $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0],
+                },
               },
               in: {
                 investmentRange: "$$data.investmentRange",
                 areaRequired: "$$data.areaRequired",
-                franchiseModel: "$$data.franchiseModel"
-              }
-            }
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-              else: null
-            }
+              else: null,
+            },
           },
           franchiseVideos: {
             $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
-              else: null
-            }
-          }
-        }
+              then: {
+                $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+              },
+              else: null,
+            },
+          },
+        },
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ];
 
     const [brandsData, totalCountResult] = await Promise.all([
       BrandDetails.aggregate(aggregationPipeline),
       BrandDetails.aggregate([
         {
-          $match: { "brandDetails.isBrandPause": { $ne: true } } 
+          $match: {
+            "brandDetails.isBrandPause": { $ne: true },
+            "brandDetails.isApproved": { $ne: true },
+          },
         },
         {
-          $count: "totalCount"
-        }
-      ])
+          $count: "totalCount",
+        },
+      ]),
     ]);
 
     const totalCount = totalCountResult[0]?.totalCount || 0;
@@ -465,8 +538,8 @@ const getAllBrands = async (req, res) => {
             currentPage: page,
             limit,
             hasNext,
-            hasPrevious
-          }
+            hasPrevious,
+          },
         },
         "Brand data fetched successfully"
       )
@@ -483,49 +556,53 @@ const getBrandListingByUUID = async (req, res) => {
   const { id } = req.params;
   const userId = req.query.userId || null;
 
-
   try {
-    
     const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
     const data = await BrandDetails.aggregate([
       {
         $match: {
-          uuid: id
-        }
+          uuid: id,
+        },
       },
       {
         $lookup: {
           from: "brandfranchisedetails",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "brandfranchisedetails"
-        }
+          as: "brandfranchisedetails",
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
       {
         $lookup: {
           from: "brandexpansionlocationdatas",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "brandexpansionlocationdatas"
-        }
+          as: "brandexpansionlocationdatas",
+        },
       },
       {
         $addFields: {
           isLiked: {
-            $in: ["$_id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$_id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$_id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-          }
-        }
+            $in: [
+              "$_id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
       {
         $project: {
@@ -544,30 +621,49 @@ const getBrandListingByUUID = async (req, res) => {
           brandfranchisedetails: {
             $let: {
               vars: {
-                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] }
+                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] },
               },
               in: {
-                franchiseDetails: "$$firstFranchise.franchiseDetails"
-              }
-            }
+                franchiseDetails: "$$firstFranchise.franchiseDetails",
+              },
+            },
           },
           uploads: {
             $let: {
               vars: {
-                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
+                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
               },
               in: {
-                logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
-                franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
-                exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
-                interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
+                logo: {
+                  $ifNull: [
+                    { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
+                    null,
+                  ],
+                },
+                franchiseVideos: {
+                  $ifNull: [
+                    {
+                      $arrayElemAt: [
+                        "$$firstUpload.uploads.franchisePromotionVideo",
+                        0,
+                      ],
+                    },
+                    null,
+                  ],
+                },
+                exteriorOutlet: {
+                  $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
+                },
+                interiorOutlet: {
+                  $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
+                },
                 awards: {
                   $cond: {
                     if: {
                       $and: [
                         { $isArray: "$$firstUpload.uploads.awards" },
-                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
-                      ]
+                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
+                      ],
                     },
                     then: {
                       $map: {
@@ -575,32 +671,36 @@ const getBrandListingByUUID = async (req, res) => {
                         as: "award",
                         in: {
                           awardDescription: "$$award.awardDescription",
-                          awardImage: "$$award.awardImage"
-                        }
-                      }
+                          awardImage: "$$award.awardImage",
+                        },
+                      },
                     },
-                    else: []
-                  }
-                }
-              }
-            }
+                    else: [],
+                  },
+                },
+              },
+            },
           },
           brandexpansionlocationdatas: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
+                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
               },
               in: {
-                currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
-                expansionLocations: "$$data.expansionLocationData.expansionLocations"
-              }
-            }
+                currentOutletLocations:
+                  "$$data.expansionLocationData.currentOutletLocations",
+                expansionLocations:
+                  "$$data.expansionLocationData.expansionLocations",
+              },
+            },
           },
-        }
-      }
+        },
+      },
     ]);
 
-    return res.json(new ApiResponse(200, data, "✅ Brand fetched successfully"));
+    return res.json(
+      new ApiResponse(200, data, "✅ Brand fetched successfully")
+    );
   } catch (error) {
     console.error("getBrandListingByUUID error:", error);
     return res.json(new ApiResponse(500, null, "Failed to fetch brand"));
@@ -619,57 +719,58 @@ export const getTopFoodFranchise = async (req, res) => {
     const aggregationPipeline = [
       {
         $match: {
-          "franchiseDetails.brandCategories.sub": "Food Franchises"
-        }
+          "franchiseDetails.brandCategories.sub": "Food Franchises",
+        },
       },
       {
         $lookup: {
           from: "branddetails",
           localField: "brandOwnerId",
           foreignField: "uuid",
-          as: "brandInfo"
-        }
+          as: "brandInfo",
+        },
       },
       {
         $unwind: {
           path: "$brandInfo",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true }
-        }
+          "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: false },
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "brandOwnerId",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
       {
         $unwind: {
           path: "$uploads",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
           isLiked: {
             $in: [
               "$brandInfo._id",
-              likedBrands.map((id) => new mongoose.Types.ObjectId(id))
-            ]
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
             $in: [
               "$brandInfo._id",
-              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id))
-            ]
-          }
-        }
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
       { $sort: { createdAt: -1 } },
       {
@@ -682,41 +783,42 @@ export const getTopFoodFranchise = async (req, res) => {
           brandname: "$brandInfo.brandDetails.brandName",
           isBrandPause: "$brandInfo.brandDetails.isBrandPause",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.brandCategories", null]
+            $ifNull: ["$franchiseDetails.brandCategories", null],
           },
           fico: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] }
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
               in: {
                 investmentRange: "$$data.investmentRange",
                 areaRequired: "$$data.areaRequired",
-                franchiseModel: "$$data.franchiseModel"
-              }
-            }
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-              else: null
-            }
+              else: null,
+            },
           },
           franchiseVideos: {
             $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
-              else: null
-            }
-          }
-        }
+              then: {
+                $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+              },
+              else: null,
+            },
+          },
+        },
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ];
 
-  
     const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.aggregate([
@@ -725,21 +827,21 @@ export const getTopFoodFranchise = async (req, res) => {
             from: "branddetails",
             localField: "brandOwnerId",
             foreignField: "uuid",
-            as: "brandInfo"
-          }
+            as: "brandInfo",
+          },
         },
         { $unwind: "$brandInfo" },
         {
           $match: {
             "franchiseDetails.brandCategories.sub": "Food Franchises",
-            "brandInfo.brandDetails.isBrandPause": { $ne: true }
-          }
+            "brandInfo.brandDetails.isBrandPause": { $ne: true },
+            "brandInfo.brandDetails.isApproved": { $ne: true },
+          },
         },
-        { $count: "totalCount" }
-      ])
+        { $count: "totalCount" },
+      ]),
     ]);
 
-   
     const totalCount = totalCountResult[0]?.totalCount || 0;
 
     if (!brandsData || brandsData.length === 0) {
@@ -764,8 +866,8 @@ export const getTopFoodFranchise = async (req, res) => {
             currentPage: page,
             limit,
             hasNext,
-            hasPrevious
-          }
+            hasPrevious,
+          },
         },
         "Top food franchises fetched successfully"
       )
@@ -782,96 +884,104 @@ export const getTopFoodFranchise = async (req, res) => {
   }
 };
 
-
-export const getTopBeverageFranchise = async (req,res)=>{
+export const getTopBeverageFranchise = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
-    const { likedBrands , shortListedBrands } = await likeandshortlist(id);
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const aggregationPipeline = [
       {
-        $match:{
-          "franchiseDetails.brandCategories.sub": "Beverage Franchises"
-        }  
+        $match: {
+          "franchiseDetails.brandCategories.sub": "Beverage Franchises",
+        },
       },
       {
-        $lookup:{
+        $lookup: {
           from: "branddetails",
           localField: "brandOwnerId",
-          foreignField:"uuid",
-          as: "brandInfo"
-        }
+          foreignField: "uuid",
+          as: "brandInfo",
+        },
       },
       {
-        $unwind:{
+        $unwind: {
           path: "$brandInfo",
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true }
-        }
+          "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: true },
+        },
       },
 
       {
         $lookup: {
-          from : "branduploads",
+          from: "branduploads",
           localField: "brandOwnerId",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
       {
         $unwind: {
-          path : "$uploads",
-          preserveNullAndEmptyArrays: true
-        }
+          path: "$uploads",
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $addFields: {
           isLiked: {
-            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-          }
-        }
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
-       { $sort: { createdAt: -1 } },
+      { $sort: { createdAt: -1 } },
       {
-        $project:{
-          _id:0,
+        $project: {
+          _id: 0,
           brandID: "$brandInfo.brandID",
           uuid: "$brandOwnerId",
           isLiked: 1,
           isShortListed: 1,
-          brandname:"$brandInfo.brandDetails.brandName",
+          brandname: "$brandInfo.brandDetails.brandName",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.brandCategories", null]
+            $ifNull: ["$franchiseDetails.brandCategories", null],
           },
-          fico : {
-            $let : {
-              vars : {
-                data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
-              in : {
-                investmentRange : "$$data.investmentRange",
-                areaRequired : "$$data.areaRequired",
-                franchiseModel : "$$data.franchiseModel"
-              }
-            }
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
-          logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0]  },
-          franchiseVideos: {$arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },  
-        }
+          logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+          franchiseVideos: {
+            $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+          },
+        },
       },
-      {$skip: skip},
-      {$limit: limit}
+      { $skip: skip },
+      { $limit: limit },
     ];
 
     //   const [brandsData, totalCount] = await Promise.all([
@@ -881,7 +991,7 @@ export const getTopBeverageFranchise = async (req,res)=>{
     //   })
     // ])
 
-      const [brandsData, totalCountResult] = await Promise.all([
+    const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.aggregate([
         {
@@ -889,70 +999,81 @@ export const getTopBeverageFranchise = async (req,res)=>{
             from: "branddetails",
             localField: "brandOwnerId",
             foreignField: "uuid",
-            as: "brandInfo"
-          }
+            as: "brandInfo",
+          },
         },
         { $unwind: "$brandInfo" },
         {
           $match: {
-             "franchiseDetails.brandCategories.sub": "Beverage Franchises",
-            "brandInfo.brandDetails.isBrandPause": { $ne: true }
-          }
+            "franchiseDetails.brandCategories.sub": "Beverage Franchises",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true },
+            "brandInfo.brandDetails.isApproved": { $ne: true },
+          },
         },
-        { $count: "totalCount" }
-      ])
+        { $count: "totalCount" },
+      ]),
     ]);
 
-   
     const totalCount = totalCountResult[0]?.totalCount || 0;
 
     if (!brandsData || brandsData.length === 0) {
-      return res.json(new ApiResponse(404, null, "No top beverage franchises found"));
+      return res.json(
+        new ApiResponse(404, null, "No top beverage franchises found")
+      );
     }
-      
-     const brands = shuffleArray(brandsData)
+
+    const brands = shuffleArray(brandsData);
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
     return res.json(
-      new ApiResponse(200, {
-        brands: brands,
-        pagination: {
-          total: totalCount,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNext,
-          hasPrevious
-        }
-      }, "Top food franchises fetched successfully")
-    );
-    } catch (error) {
-    console.error("Error fetching brands:", error);
-    return res.json(
-      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
-  }
-}
-
-export const getTopLeadingFranchise = async (req, res) => {
-  try {
-    res.json(
-      new ApiResponse(200, null, "Top leading franchise data is not implemented yet")
+      new ApiResponse(
+        200,
+        {
+          brands: brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious,
+          },
+        },
+        "Top food franchises fetched successfully"
+      )
     );
   } catch (error) {
     console.error("Error fetching brands:", error);
     return res.json(
-    new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`))
+      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+    );
   }
-}
+};
+
+export const getTopLeadingFranchise = async (req, res) => {
+  try {
+    res.json(
+      new ApiResponse(
+        200,
+        null,
+        "Top leading franchise data is not implemented yet"
+      )
+    );
+  } catch (error) {
+    console.error("Error fetching brands:", error);
+    return res.json(
+      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+    );
+  }
+};
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
-    
 
-    console.log("id :",id)
+    console.log("id :", id);
 
     // ---------- Safe Parse Helper ----------
     const safeParse = (data) => {
@@ -968,8 +1089,12 @@ const updateBrandListingByUUID = async (req, res) => {
     };
 
     // ---------- Parse Expansion Location ----------
-    const addExpansionLocationData = safeParse(req.body.addExpansionLocationData) || req.body.addExpansionLocationData;
-    const removeExpansionLocationData = safeParse(req.body.removeExpansionLocationData) || req.body.removeExpansionLocationData;
+    const addExpansionLocationData =
+      safeParse(req.body.addExpansionLocationData) ||
+      req.body.addExpansionLocationData;
+    const removeExpansionLocationData =
+      safeParse(req.body.removeExpansionLocationData) ||
+      req.body.removeExpansionLocationData;
     // console.log("Add Expansion Location Data:", addExpansionLocationData);
     // console.log("Remove Expansion Location Data:", removeExpansionLocationData);
     console.log("Brand ID:", removeExpansionLocationData);
@@ -990,12 +1115,11 @@ const updateBrandListingByUUID = async (req, res) => {
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
 
-    console.log("ParseBrandDetails:",ParseBrandDetails)
-    console.log("parseFranchiseDetails",ParseFranchiseDetails);
-    
+    console.log("ParseBrandDetails:", ParseBrandDetails);
+    console.log("parseFranchiseDetails", ParseFranchiseDetails);
 
     // ---------- BrandDetails ----------
-    if (ParseBrandDetails) { 
+    if (ParseBrandDetails) {
       const brandDetailsFields = [
         "fullName",
         "email",
@@ -1028,9 +1152,6 @@ const updateBrandListingByUUID = async (req, res) => {
           updates.$set[`brandDetails.${field}`] = ParseBrandDetails[field];
         }
       }
-
-    
-    
     }
 
     // ---------- FranchiseDetails ----------
@@ -1049,7 +1170,8 @@ const updateBrandListingByUUID = async (req, res) => {
 
       for (const field of franchiseTopLevelFields) {
         if (ParseFranchiseDetails[field] !== undefined) {
-          updates.$set[`franchiseDetails.${field}`] = ParseFranchiseDetails[field];
+          updates.$set[`franchiseDetails.${field}`] =
+            ParseFranchiseDetails[field];
         }
       }
 
@@ -1140,7 +1262,7 @@ const updateBrandListingByUUID = async (req, res) => {
           FeaturesAmenities: "FeaturesAmenities",
           TechnologyIntegration: "TechnologyIntegration",
           SustainabilityEthics: "SustainabilityEthics",
-          BusinessOperations: "BusinessOperations"
+          BusinessOperations: "BusinessOperations",
         };
 
         for (const [key, field] of Object.entries(franchiseTagsFields)) {
@@ -1148,10 +1270,9 @@ const updateBrandListingByUUID = async (req, res) => {
           if (value !== undefined && value !== null) {
             updates.$set[`franchiseDetails.franchiseTags.${field}`] =
               Array.isArray(value) ? value : [value];
-          }   
+          }
         }
       }
-
     }
 
     // ---------- Check if updates exist ----------
@@ -1169,7 +1290,9 @@ const updateBrandListingByUUID = async (req, res) => {
     try {
       const updatedBrands = {};
 
-      if (Object.keys(updates.$set).some((f) => f.startsWith("brandDetails."))) {
+      if (
+        Object.keys(updates.$set).some((f) => f.startsWith("brandDetails."))
+      ) {
         updatedBrands.brandDetails = await BrandDetails.findOneAndUpdate(
           { uuid: id },
           { $set: updates.$set },
@@ -1177,12 +1300,15 @@ const updateBrandListingByUUID = async (req, res) => {
         );
       }
 
-      if (Object.keys(updates.$set).some((f) => f.startsWith("franchiseDetails."))) {
-        updatedBrands.franchiseDetails = await BrandFranchiseDetails.findOneAndUpdate(
-          { brandOwnerId: id },
-          { $set: updates.$set },
-          { new: true, runValidators: true, session }
-        );
+      if (
+        Object.keys(updates.$set).some((f) => f.startsWith("franchiseDetails."))
+      ) {
+        updatedBrands.franchiseDetails =
+          await BrandFranchiseDetails.findOneAndUpdate(
+            { brandOwnerId: id },
+            { $set: updates.$set },
+            { new: true, runValidators: true, session }
+          );
       }
 
       await session.commitTransaction();
@@ -1197,11 +1323,13 @@ const updateBrandListingByUUID = async (req, res) => {
           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
         expensionLocationData: expensionLocationData || null,
       };
-console.log("resposnse data",responseData);
+      console.log("resposnse data", responseData);
 
       return res
         .status(200)
-        .json(new ApiResponse(200, responseData, "✅ Brand updated successfully"));
+        .json(
+          new ApiResponse(200, responseData, "✅ Brand updated successfully")
+        );
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
@@ -1219,34 +1347,34 @@ console.log("resposnse data",responseData);
 const expansionLocationData = async (id, add, remove) => {
   //  return add
   const oldExpansionLocationData = await BrandExpansionLocationData.findOne({
-    brandOwnerId: id
+    brandOwnerId: id,
   });
 
   // Clone old data safely
-  let updatedLocations =
-    JSON.parse(
-      JSON.stringify(
-        oldExpansionLocationData.expansionLocationData?.currentOutletLocations?.domestic?.locations || []
-      )
-    );
-  let updatedInternationalLocations =
-    JSON.parse(
-      JSON.stringify(
-        oldExpansionLocationData.expansionLocationData?.currentOutletLocations?.international?.locations || []
-      )
-    );
-  let updatedExpansionLocations =
-    JSON.parse(
-      JSON.stringify(
-        oldExpansionLocationData.expansionLocationData?.expansionLocations?.domestic?.locations || []
-      )
-    );
-  let updatedInternationalExpansionLocations =
-    JSON.parse(
-      JSON.stringify(
-        oldExpansionLocationData.expansionLocationData?.expansionLocations?.international?.locations || []
-      )
-    );
+  let updatedLocations = JSON.parse(
+    JSON.stringify(
+      oldExpansionLocationData.expansionLocationData?.currentOutletLocations
+        ?.domestic?.locations || []
+    )
+  );
+  let updatedInternationalLocations = JSON.parse(
+    JSON.stringify(
+      oldExpansionLocationData.expansionLocationData?.currentOutletLocations
+        ?.international?.locations || []
+    )
+  );
+  let updatedExpansionLocations = JSON.parse(
+    JSON.stringify(
+      oldExpansionLocationData.expansionLocationData?.expansionLocations
+        ?.domestic?.locations || []
+    )
+  );
+  let updatedInternationalExpansionLocations = JSON.parse(
+    JSON.stringify(
+      oldExpansionLocationData.expansionLocationData?.expansionLocations
+        ?.international?.locations || []
+    )
+  );
 
   // ---------- CurrentOutletLocations ----------
   // ---------- REMOVE Logic ----------
@@ -1254,22 +1382,27 @@ const expansionLocationData = async (id, add, remove) => {
     // 1. Remove States
     if (remove.currentOutletLocations.domestic.state) {
       updatedLocations = updatedLocations.filter(
-        loc => !remove.currentOutletLocations.domestic.state.includes(loc.state)
+        (loc) =>
+          !remove.currentOutletLocations.domestic.state.includes(loc.state)
       );
     }
 
     // 2. Remove Districts
     if (remove.currentOutletLocations.domestic.districts) {
-      for (const [stateName, districts] of Object.entries(remove.currentOutletLocations.domestic.districts)) {
-        const stateEntry = updatedLocations.find(l => l.state === stateName);
+      for (const [stateName, districts] of Object.entries(
+        remove.currentOutletLocations.domestic.districts
+      )) {
+        const stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (stateEntry) {
           stateEntry.districts = (stateEntry.districts || []).filter(
-            d => !districts.includes(d.district)
+            (d) => !districts.includes(d.district)
           );
 
           // cleanup empty states
           if (stateEntry.districts.length === 0) {
-            updatedLocations = updatedLocations.filter(l => l.state !== stateName);
+            updatedLocations = updatedLocations.filter(
+              (l) => l.state !== stateName
+            );
           }
         }
       }
@@ -1277,26 +1410,36 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 3. Remove Cities
     if (remove.currentOutletLocations.domestic.city) {
-      for (const [stateName, districtsObj] of Object.entries(remove.currentOutletLocations.domestic.city)) {
-        const stateEntry = updatedLocations.find(l => l.state === stateName);
+      for (const [stateName, districtsObj] of Object.entries(
+        remove.currentOutletLocations.domestic.city
+      )) {
+        const stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (stateEntry) {
-          for (const [districtName, districtData] of Object.entries(districtsObj)) {
-            const districtEntry = stateEntry.districts?.find(d => d.district === districtName);
+          for (const [districtName, districtData] of Object.entries(
+            districtsObj
+          )) {
+            const districtEntry = stateEntry.districts?.find(
+              (d) => d.district === districtName
+            );
             if (districtEntry) {
               districtEntry.cities = (districtEntry.cities || []).filter(
-                c => !(districtData.city || []).includes(c)
+                (c) => !(districtData.city || []).includes(c)
               );
 
               // cleanup empty districts
               if (districtEntry.cities.length === 0) {
-                stateEntry.districts = stateEntry.districts.filter(d => d.district !== districtName);
+                stateEntry.districts = stateEntry.districts.filter(
+                  (d) => d.district !== districtName
+                );
               }
             }
           }
 
           // cleanup empty states
           if (!stateEntry.districts || stateEntry.districts.length === 0) {
-            updatedLocations = updatedLocations.filter(l => l.state !== stateName);
+            updatedLocations = updatedLocations.filter(
+              (l) => l.state !== stateName
+            );
           }
         }
       }
@@ -1308,29 +1451,39 @@ const expansionLocationData = async (id, add, remove) => {
     // 1. Add States
     if (add.currentOutletLocations.domestic.state) {
       for (const loc of add.currentOutletLocations.domestic.state) {
-        const locationObj = typeof loc === "string" ? { state: loc, districts: [] } : loc;
-        let stateEntry = updatedLocations.find(l => l.state === locationObj.state);
+        const locationObj =
+          typeof loc === "string" ? { state: loc, districts: [] } : loc;
+        let stateEntry = updatedLocations.find(
+          (l) => l.state === locationObj.state
+        );
         if (!stateEntry) {
-          updatedLocations.push({ ...locationObj, districts: locationObj.districts || [] });
+          updatedLocations.push({
+            ...locationObj,
+            districts: locationObj.districts || [],
+          });
         }
       }
     }
 
     // 2. Add Districts
     if (add.currentOutletLocations.domestic.districts) {
-      for (const [stateName, districts] of Object.entries(add.currentOutletLocations.domestic.districts)) {
-        let stateEntry = updatedLocations.find(l => l.state === stateName);
+      for (const [stateName, districts] of Object.entries(
+        add.currentOutletLocations.domestic.districts
+      )) {
+        let stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (!stateEntry) {
           updatedLocations.push({
             state: stateName,
-            districts: districts.map(d => ({ district: d, cities: [] }))
+            districts: districts.map((d) => ({ district: d, cities: [] })),
           });
           continue;
         }
 
         stateEntry.districts = stateEntry.districts || [];
         for (const districtName of districts) {
-          const existingDistrict = stateEntry.districts.find(d => d.district === districtName);
+          const existingDistrict = stateEntry.districts.find(
+            (d) => d.district === districtName
+          );
           if (!existingDistrict) {
             stateEntry.districts.push({ district: districtName, cities: [] });
           }
@@ -1340,14 +1493,18 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 3. Add Cities
     if (add.currentOutletLocations.domestic.city) {
-      for (const [stateName, districtsObj] of Object.entries(add.currentOutletLocations.domestic.city)) {
-        let stateEntry = updatedLocations.find(l => l.state === stateName);
+      for (const [stateName, districtsObj] of Object.entries(
+        add.currentOutletLocations.domestic.city
+      )) {
+        let stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (!stateEntry) {
           const newState = { state: stateName, districts: [] };
-          for (const [districtName, districtData] of Object.entries(districtsObj)) {
+          for (const [districtName, districtData] of Object.entries(
+            districtsObj
+          )) {
             newState.districts.push({
               district: districtName,
-              cities: Array.from(new Set(districtData.city || []))
+              cities: Array.from(new Set(districtData.city || [])),
             });
           }
           updatedLocations.push(newState);
@@ -1355,14 +1512,21 @@ const expansionLocationData = async (id, add, remove) => {
         }
 
         stateEntry.districts = stateEntry.districts || [];
-        for (const [districtName, districtData] of Object.entries(districtsObj)) {
-          let districtEntry = stateEntry.districts.find(d => d.district === districtName);
+        for (const [districtName, districtData] of Object.entries(
+          districtsObj
+        )) {
+          let districtEntry = stateEntry.districts.find(
+            (d) => d.district === districtName
+          );
           if (!districtEntry) {
             districtEntry = { district: districtName, cities: [] };
             stateEntry.districts.push(districtEntry);
           }
           districtEntry.cities = Array.from(
-            new Set([...(districtEntry.cities || []), ...(districtData.city || [])])
+            new Set([
+              ...(districtEntry.cities || []),
+              ...(districtData.city || []),
+            ])
           );
         }
       }
@@ -1375,9 +1539,10 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 1. Remove Countries
     if (remove.currentOutletLocations.international.country) {
-      for (const countryName of remove.currentOutletLocations.international.country) {
+      for (const countryName of remove.currentOutletLocations.international
+        .country) {
         updatedInternationalLocations = updatedInternationalLocations.filter(
-          l => l.country !== countryName
+          (l) => l.country !== countryName
         );
       }
     }
@@ -1388,12 +1553,12 @@ const expansionLocationData = async (id, add, remove) => {
         remove.currentOutletLocations.international.states
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
         if (!countryEntry) continue;
 
         countryEntry.states = (countryEntry.states || []).filter(
-          s => !states.includes(s.state)
+          (s) => !states.includes(s.state)
         );
       }
     }
@@ -1404,16 +1569,18 @@ const expansionLocationData = async (id, add, remove) => {
         remove.currentOutletLocations.international.city
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
         if (!countryEntry) continue;
 
         for (const [stateName, stateData] of Object.entries(statesObj)) {
-          let stateEntry = countryEntry.states?.find(s => s.state === stateName);
+          let stateEntry = countryEntry.states?.find(
+            (s) => s.state === stateName
+          );
           if (!stateEntry) continue;
 
           stateEntry.cities = (stateEntry.cities || []).filter(
-            c => !(stateData.city || []).includes(c)
+            (c) => !(stateData.city || []).includes(c)
           );
         }
       }
@@ -1430,33 +1597,36 @@ const expansionLocationData = async (id, add, remove) => {
         const locationObj =
           typeof loc === "string" ? { country: loc, states: [] } : loc;
         let countryEntry = updatedInternationalLocations.find(
-          l => l.country === locationObj.country
+          (l) => l.country === locationObj.country
         );
         if (!countryEntry) {
           updatedInternationalLocations.push({
             ...locationObj,
-            states: locationObj.states || []
+            states: locationObj.states || [],
           });
         }
       }
     }
 
     // 2. Add States (FIX: use .states instead of .state)
-      if (add.currentOutletLocations.international.states) {
-      console.log("States Entry:", add.currentOutletLocations.international.states);
+    if (add.currentOutletLocations.international.states) {
+      console.log(
+        "States Entry:",
+        add.currentOutletLocations.international.states
+      );
 
       for (const [countryName, states] of Object.entries(
         add.currentOutletLocations.international.states
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
 
         // if country not present, create it
         if (!countryEntry) {
           updatedInternationalLocations.push({
             country: countryName,
-            states: states.map(s => ({ state: s, cities: [] }))
+            states: states.map((s) => ({ state: s, cities: [] })),
           });
           continue;
         }
@@ -1464,7 +1634,9 @@ const expansionLocationData = async (id, add, remove) => {
         // merge states into existing country
         countryEntry.states = countryEntry.states || [];
         for (const stateName of states) {
-          const existingState = countryEntry.states.find(s => s.state === stateName);
+          const existingState = countryEntry.states.find(
+            (s) => s.state === stateName
+          );
           if (!existingState) {
             countryEntry.states.push({ state: stateName, cities: [] });
           }
@@ -1478,14 +1650,16 @@ const expansionLocationData = async (id, add, remove) => {
         add.currentOutletLocations.international.city
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
         if (!countryEntry) {
           const newCountry = { country: countryName, states: [] };
           for (const [stateName, stateData] of Object.entries(statesObj)) {
             newCountry.states.push({
               state: stateName,
-              cities: Array.from(new Set(stateData.city || stateData.cities || []))
+              cities: Array.from(
+                new Set(stateData.city || stateData.cities || [])
+              ),
             });
           }
           updatedInternationalLocations.push(newCountry);
@@ -1494,7 +1668,9 @@ const expansionLocationData = async (id, add, remove) => {
 
         countryEntry.states = countryEntry.states || [];
         for (const [stateName, stateData] of Object.entries(statesObj)) {
-          let stateEntry = countryEntry.states.find(s => s.state === stateName);
+          let stateEntry = countryEntry.states.find(
+            (s) => s.state === stateName
+          );
           if (!stateEntry) {
             stateEntry = { state: stateName, cities: [] };
             countryEntry.states.push(stateEntry);
@@ -1506,30 +1682,35 @@ const expansionLocationData = async (id, add, remove) => {
       }
     }
   }
-  
-   
+
   // ---------- expansionLocations ----------
   // ---------- REMOVE Domestic Logic ----------
   if (remove?.expansionLocations?.domestic) {
     // 1. Remove States
     if (remove.expansionLocations.domestic.state) {
       updatedExpansionLocations = updatedExpansionLocations.filter(
-        loc => !remove.expansionLocations.domestic.state.includes(loc.state)
+        (loc) => !remove.expansionLocations.domestic.state.includes(loc.state)
       );
     }
 
     // 2. Remove Districts
     if (remove.expansionLocations.domestic.districts) {
-      for (const [stateName, districts] of Object.entries(remove.expansionLocations.domestic.districts)) {
-        const stateEntry = updatedExpansionLocations.find(l => l.state === stateName);
+      for (const [stateName, districts] of Object.entries(
+        remove.expansionLocations.domestic.districts
+      )) {
+        const stateEntry = updatedExpansionLocations.find(
+          (l) => l.state === stateName
+        );
         if (stateEntry) {
           stateEntry.districts = (stateEntry.districts || []).filter(
-            d => !districts.includes(d.district)
+            (d) => !districts.includes(d.district)
           );
 
           // cleanup empty states
           if (stateEntry.districts.length === 0) {
-            updatedExpansionLocations = updatedExpansionLocations.filter(l => l.state !== stateName);
+            updatedExpansionLocations = updatedExpansionLocations.filter(
+              (l) => l.state !== stateName
+            );
           }
         }
       }
@@ -1537,26 +1718,38 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 3. Remove Cities
     if (remove.expansionLocations.domestic.city) {
-      for (const [stateName, districtsObj] of Object.entries(remove.expansionLocations.domestic.city)) {
-        const stateEntry = updatedExpansionLocations.find(l => l.state === stateName);
+      for (const [stateName, districtsObj] of Object.entries(
+        remove.expansionLocations.domestic.city
+      )) {
+        const stateEntry = updatedExpansionLocations.find(
+          (l) => l.state === stateName
+        );
         if (stateEntry) {
-          for (const [districtName, districtData] of Object.entries(districtsObj)) {
-            const districtEntry = stateEntry.districts?.find(d => d.district === districtName);
+          for (const [districtName, districtData] of Object.entries(
+            districtsObj
+          )) {
+            const districtEntry = stateEntry.districts?.find(
+              (d) => d.district === districtName
+            );
             if (districtEntry) {
               districtEntry.cities = (districtEntry.cities || []).filter(
-                c => !(districtData.city || []).includes(c)
+                (c) => !(districtData.city || []).includes(c)
               );
 
               // cleanup empty districts
               if (districtEntry.cities.length === 0) {
-                stateEntry.districts = stateEntry.districts.filter(d => d.district !== districtName);
+                stateEntry.districts = stateEntry.districts.filter(
+                  (d) => d.district !== districtName
+                );
               }
             }
           }
 
           // cleanup empty states
           if (!stateEntry.districts || stateEntry.districts.length === 0) {
-            updatedExpansionLocations = updatedExpansionLocations.filter(l => l.state !== stateName);
+            updatedExpansionLocations = updatedExpansionLocations.filter(
+              (l) => l.state !== stateName
+            );
           }
         }
       }
@@ -1568,29 +1761,41 @@ const expansionLocationData = async (id, add, remove) => {
     // 1. Add States
     if (add.expansionLocations.domestic.state) {
       for (const loc of add.expansionLocations.domestic.state) {
-        const locationObj = typeof loc === "string" ? { state: loc, districts: [] } : loc;
-        let stateEntry = updatedExpansionLocations.find(l => l.state === locationObj.state);
+        const locationObj =
+          typeof loc === "string" ? { state: loc, districts: [] } : loc;
+        let stateEntry = updatedExpansionLocations.find(
+          (l) => l.state === locationObj.state
+        );
         if (!stateEntry) {
-          updatedExpansionLocations.push({ ...locationObj, districts: locationObj.districts || [] });
+          updatedExpansionLocations.push({
+            ...locationObj,
+            districts: locationObj.districts || [],
+          });
         }
       }
     }
 
     // 2. Add Districts
     if (add.expansionLocations.domestic.districts) {
-      for (const [stateName, districts] of Object.entries(add.expansionLocations.domestic.districts)) {
-        let stateEntry = updatedExpansionLocations.find(l => l.state === stateName);
+      for (const [stateName, districts] of Object.entries(
+        add.expansionLocations.domestic.districts
+      )) {
+        let stateEntry = updatedExpansionLocations.find(
+          (l) => l.state === stateName
+        );
         if (!stateEntry) {
           updatedExpansionLocations.push({
             state: stateName,
-            districts: districts.map(d => ({ district: d, cities: [] }))
+            districts: districts.map((d) => ({ district: d, cities: [] })),
           });
           continue;
         }
 
         stateEntry.districts = stateEntry.districts || [];
         for (const districtName of districts) {
-          const existingDistrict = stateEntry.districts.find(d => d.district === districtName);
+          const existingDistrict = stateEntry.districts.find(
+            (d) => d.district === districtName
+          );
           if (!existingDistrict) {
             stateEntry.districts.push({ district: districtName, cities: [] });
           }
@@ -1600,14 +1805,20 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 3. Add Cities
     if (add.expansionLocations.domestic.city) {
-      for (const [stateName, districtsObj] of Object.entries(add.expansionLocations.domestic.city)) {
-        let stateEntry = updatedExpansionLocations.find(l => l.state === stateName);
+      for (const [stateName, districtsObj] of Object.entries(
+        add.expansionLocations.domestic.city
+      )) {
+        let stateEntry = updatedExpansionLocations.find(
+          (l) => l.state === stateName
+        );
         if (!stateEntry) {
           const newState = { state: stateName, districts: [] };
-          for (const [districtName, districtData] of Object.entries(districtsObj)) {
+          for (const [districtName, districtData] of Object.entries(
+            districtsObj
+          )) {
             newState.districts.push({
               district: districtName,
-              cities: Array.from(new Set(districtData.city || []))
+              cities: Array.from(new Set(districtData.city || [])),
             });
           }
           updatedExpansionLocations.push(newState);
@@ -1615,14 +1826,21 @@ const expansionLocationData = async (id, add, remove) => {
         }
 
         stateEntry.districts = stateEntry.districts || [];
-        for (const [districtName, districtData] of Object.entries(districtsObj)) {
-          let districtEntry = stateEntry.districts.find(d => d.district === districtName);
+        for (const [districtName, districtData] of Object.entries(
+          districtsObj
+        )) {
+          let districtEntry = stateEntry.districts.find(
+            (d) => d.district === districtName
+          );
           if (!districtEntry) {
             districtEntry = { district: districtName, cities: [] };
             stateEntry.districts.push(districtEntry);
           }
           districtEntry.cities = Array.from(
-            new Set([...(districtEntry.cities || []), ...(districtData.city || [])])
+            new Set([
+              ...(districtEntry.cities || []),
+              ...(districtData.city || []),
+            ])
           );
         }
       }
@@ -1635,10 +1853,12 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 1. Remove Countries
     if (remove.expansionLocations.international.country) {
-      for (const countryName of remove.expansionLocations.international.country) {
-        updatedInternationalExpansionLocations = updatedInternationalExpansionLocations.filter(
-          l => l.country !== countryName
-        );
+      for (const countryName of remove.expansionLocations.international
+        .country) {
+        updatedInternationalExpansionLocations =
+          updatedInternationalExpansionLocations.filter(
+            (l) => l.country !== countryName
+          );
       }
     }
 
@@ -1648,12 +1868,12 @@ const expansionLocationData = async (id, add, remove) => {
         remove.expansionLocations.international.states
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
         if (!countryEntry) continue;
 
         countryEntry.states = (countryEntry.states || []).filter(
-          s => !states.includes(s.state)
+          (s) => !states.includes(s.state)
         );
       }
     }
@@ -1664,16 +1884,18 @@ const expansionLocationData = async (id, add, remove) => {
         remove.expansionLocations.international.city
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
         if (!countryEntry) continue;
 
         for (const [stateName, stateData] of Object.entries(statesObj)) {
-          let stateEntry = countryEntry.states?.find(s => s.state === stateName);
+          let stateEntry = countryEntry.states?.find(
+            (s) => s.state === stateName
+          );
           if (!stateEntry) continue;
 
           stateEntry.cities = (stateEntry.cities || []).filter(
-            c => !(stateData.city || []).includes(c)
+            (c) => !(stateData.city || []).includes(c)
           );
         }
       }
@@ -1690,12 +1912,12 @@ const expansionLocationData = async (id, add, remove) => {
         const locationObj =
           typeof loc === "string" ? { country: loc, states: [] } : loc;
         let countryEntry = updatedInternationalExpansionLocations.find(
-          l => l.country === locationObj.country
+          (l) => l.country === locationObj.country
         );
         if (!countryEntry) {
           updatedInternationalExpansionLocations.push({
             ...locationObj,
-            states: locationObj.states || []
+            states: locationObj.states || [],
           });
         }
       }
@@ -1709,14 +1931,14 @@ const expansionLocationData = async (id, add, remove) => {
         add.expansionLocations.international.states
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
 
         // if country not present, create it
         if (!countryEntry) {
           updatedInternationalExpansionLocations.push({
             country: countryName,
-            states: states.map(s => ({ state: s, cities: [] }))
+            states: states.map((s) => ({ state: s, cities: [] })),
           });
           continue;
         }
@@ -1724,7 +1946,9 @@ const expansionLocationData = async (id, add, remove) => {
         // merge states into existing country
         countryEntry.states = countryEntry.states || [];
         for (const stateName of states) {
-          const existingState = countryEntry.states.find(s => s.state === stateName);
+          const existingState = countryEntry.states.find(
+            (s) => s.state === stateName
+          );
           if (!existingState) {
             countryEntry.states.push({ state: stateName, cities: [] });
           }
@@ -1738,14 +1962,16 @@ const expansionLocationData = async (id, add, remove) => {
         add.expansionLocations.international.city
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          l => l.country === countryName
+          (l) => l.country === countryName
         );
         if (!countryEntry) {
           const newCountry = { country: countryName, states: [] };
           for (const [stateName, stateData] of Object.entries(statesObj)) {
             newCountry.states.push({
               state: stateName,
-              cities: Array.from(new Set(stateData.city || stateData.cities || []))
+              cities: Array.from(
+                new Set(stateData.city || stateData.cities || [])
+              ),
             });
           }
           updatedInternationalExpansionLocations.push(newCountry);
@@ -1754,7 +1980,9 @@ const expansionLocationData = async (id, add, remove) => {
 
         countryEntry.states = countryEntry.states || [];
         for (const [stateName, stateData] of Object.entries(statesObj)) {
-          let stateEntry = countryEntry.states.find(s => s.state === stateName);
+          let stateEntry = countryEntry.states.find(
+            (s) => s.state === stateName
+          );
           if (!stateEntry) {
             stateEntry = { state: stateName, cities: [] };
             countryEntry.states.push(stateEntry);
@@ -1767,19 +1995,20 @@ const expansionLocationData = async (id, add, remove) => {
     }
   }
 
-
-
-
   // ---------- Final Update ----------
   await BrandExpansionLocationData.findOneAndUpdate(
     { brandOwnerId: id },
     {
       $set: {
-        "expansionLocationData.currentOutletLocations.domestic.locations": updatedLocations,
-        "expansionLocationData.currentOutletLocations.international.locations": updatedInternationalLocations,
-        "expansionLocationData.expansionLocations.domestic.locations": updatedExpansionLocations ,
-        "expansionLocationData.expansionLocations.international.locations": updatedInternationalExpansionLocations ,
-      }
+        "expansionLocationData.currentOutletLocations.domestic.locations":
+          updatedLocations,
+        "expansionLocationData.currentOutletLocations.international.locations":
+          updatedInternationalLocations,
+        "expansionLocationData.expansionLocations.domestic.locations":
+          updatedExpansionLocations,
+        "expansionLocationData.expansionLocations.international.locations":
+          updatedInternationalExpansionLocations,
+      },
     },
     { new: true, runValidators: true }
   );
@@ -1828,7 +2057,9 @@ export const updateBrandImageById = async (req, res) => {
     if (!oldUploads) {
       return res
         .status(404)
-        .json(new ApiResponse(404, {}, "No uploads found for this brand owner"));
+        .json(
+          new ApiResponse(404, {}, "No uploads found for this brand owner")
+        );
     }
 
     for (const field of fileFields) {
@@ -1855,9 +2086,7 @@ export const updateBrandImageById = async (req, res) => {
       const uploadedFiles = req.files?.[field];
       if (uploadedFiles && uploadedFiles.length > 0) {
         const newFileUrls = await Promise.all(
-          uploadedFiles.map((file) =>
-            uploadFileToR2(file.path, file.mimetype)
-          )
+          uploadedFiles.map((file) => uploadFileToR2(file.path, file.mimetype))
         );
 
         data = await BrandUploads.findOneAndUpdate(
@@ -1886,67 +2115,82 @@ export const updateBrandImageById = async (req, res) => {
 };
 
 export const deleteBrandListingByUUID = async (req, res) => {
-    try {
-        // Get the UUID from params
-        const { uuid } = req.params;
-        console.log("Deletion request received for UUID:", uuid);
-        
-        if (!uuid) {
-            return res.status(400).json(
-                new ApiResponse(400, null, "UUID parameter is required")
-            );
-        }
+  try {
+    // Get the UUID from params
+    const { uuid } = req.params;
+    console.log("Deletion request received for UUID:", uuid);
 
-        // Delete documents from all related collections
-        const [brandDetails, brandFranchiseDetails, brandExpansionLocationData, brandUploads] = await Promise.all([
-            BrandDetails.findOneAndDelete({ uuid }),
-            BrandFranchiseDetails.findOneAndDelete({ brandOwnerId: uuid }),
-            BrandExpansionLocationData.findOneAndDelete({ brandOwnerId: uuid }),
-            BrandUploads.findOneAndDelete({ brandOwnerId: uuid })
-        ]);
-
-        // Log deletion results
-        console.log("Delete results:", {
-            brandDetails: brandDetails ? "found and deleted" : "not found",
-            brandFranchiseDetails: brandFranchiseDetails ? "found and deleted" : "not found",
-            brandExpansionLocationData: brandExpansionLocationData ? "found and deleted" : "not found",
-            brandUploads: brandUploads ? "found and deleted" : "not found"
-        });
-
-        // Check if at least one document was found and deleted
-        if (!brandDetails && !brandFranchiseDetails && !brandExpansionLocationData && !brandUploads) {
-            console.log("No documents found with UUID:", uuid);
-            return res.status(404).json(
-                new ApiResponse(404, null, "No brand found with the given ID")
-            );
-        }
-
-        // Return success response with deleted documents
-        return res.json(
-            new ApiResponse(200, {
-                brand: brandDetails,
-                franchise: brandFranchiseDetails,
-                locations: brandExpansionLocationData,
-                uploads: brandUploads
-            }, "Brand listing deleted successfully")
-        );
-
-    } catch (error) {
-        console.error("Delete operation failed:", error);
-        return res.status(500).json(
-            new ApiResponse(500, null, `Internal Server Error: ${error.message}`)
-        );
+    if (!uuid) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "UUID parameter is required"));
     }
+
+    // Delete documents from all related collections
+    const [
+      brandDetails,
+      brandFranchiseDetails,
+      brandExpansionLocationData,
+      brandUploads,
+    ] = await Promise.all([
+      BrandDetails.findOneAndDelete({ uuid }),
+      BrandFranchiseDetails.findOneAndDelete({ brandOwnerId: uuid }),
+      BrandExpansionLocationData.findOneAndDelete({ brandOwnerId: uuid }),
+      BrandUploads.findOneAndDelete({ brandOwnerId: uuid }),
+    ]);
+
+    // Log deletion results
+    console.log("Delete results:", {
+      brandDetails: brandDetails ? "found and deleted" : "not found",
+      brandFranchiseDetails: brandFranchiseDetails
+        ? "found and deleted"
+        : "not found",
+      brandExpansionLocationData: brandExpansionLocationData
+        ? "found and deleted"
+        : "not found",
+      brandUploads: brandUploads ? "found and deleted" : "not found",
+    });
+
+    // Check if at least one document was found and deleted
+    if (
+      !brandDetails &&
+      !brandFranchiseDetails &&
+      !brandExpansionLocationData &&
+      !brandUploads
+    ) {
+      console.log("No documents found with UUID:", uuid);
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "No brand found with the given ID"));
+    }
+
+    // Return success response with deleted documents
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          brand: brandDetails,
+          franchise: brandFranchiseDetails,
+          locations: brandExpansionLocationData,
+          uploads: brandUploads,
+        },
+        "Brand listing deleted successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Delete operation failed:", error);
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(500, null, `Internal Server Error: ${error.message}`)
+      );
+  }
 };
-
-
-
-
 
 export const db = async (req, res) => {
   try {
     const data = await BrandListing.find({
-      "franchiseDetails.fico.investmentRange": "Rs.5 L - 10 L"
+      "franchiseDetails.fico.investmentRange": "Rs.5 L - 10 L",
     });
 
     // Loop over each matching document and update
@@ -1955,8 +2199,8 @@ export const db = async (req, res) => {
         item._id,
         {
           $set: {
-            "franchiseDetails.fico.0.investmentRange": "Rs. 5 L - 10 L"
-          }
+            "franchiseDetails.fico.0.investmentRange": "Rs. 5 L - 10 L",
+          },
         },
         { new: true }
       );
@@ -1993,12 +2237,17 @@ export const reEntry = async (req, res) => {
             brandName: current.brandDetails.brandName,
             reason: "Brand already exists",
           });
-          continue; 
+          continue;
         }
 
         const generateUUID = uuid();
 
-        const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
+        const [
+          newBrand,
+          newBrandFranchiseDetails,
+          newBrandExpansionLocationData,
+          newBrandUploads,
+        ] = await Promise.all([
           BrandDetails.create({
             brandID: current.brandID,
             uuid: generateUUID,
@@ -2022,7 +2271,6 @@ export const reEntry = async (req, res) => {
           brandName: current.brandDetails.brandName,
           uuid: generateUUID,
         });
-
       } catch (innerErr) {
         console.error(`Error processing index ${index}:`, innerErr.message);
         skippedEntries.push({
@@ -2034,35 +2282,35 @@ export const reEntry = async (req, res) => {
     }
 
     return res.json(
-      new ApiResponse(200, {
-        successCount: successEntries.length,
-        skippedCount: skippedEntries.length,
-        successEntries,
-        skippedEntries,
-      }, "Re-entry process completed")
+      new ApiResponse(
+        200,
+        {
+          successCount: successEntries.length,
+          skippedCount: skippedEntries.length,
+          successEntries,
+          skippedEntries,
+        },
+        "Re-entry process completed"
+      )
     );
-
   } catch (outerError) {
     console.error("Outer error:", outerError);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
+export const allId = async (req, res) => {
+  const data = await BrandListing.find({});
 
+  console.log(data);
 
-export const allId = async(req,res) => {
-   const data = await BrandListing.find({})
+  const arr = [];
+  const id = data.map((d) => {
+    arr.push(d.brandID);
+  });
 
-   console.log(data)
-
-   const arr = []
-   const id = data.map(d => {
-    
-    arr.push(d.brandID)
-   })
-
-   return res.json(new ApiResponse(200,arr,"fetch successfully"))
-}
+  return res.json(new ApiResponse(200, arr, "fetch successfully"));
+};
 
 export const getTopCafes = async (req, res) => {
   try {
@@ -2097,6 +2345,7 @@ export const getTopCafes = async (req, res) => {
       {
         $match: {
           "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: false },
         },
       },
       {
@@ -2113,10 +2362,16 @@ export const getTopCafes = async (req, res) => {
       {
         $addFields: {
           isLiked: {
-            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))],
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))],
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
         },
       },
@@ -2171,6 +2426,7 @@ export const getTopCafes = async (req, res) => {
         {
           $match: {
             "brandInfo.brandDetails.isBrandPause": { $ne: true },
+            "brandInfo.brandDetails.isApproved": { $ne: true },
           },
         },
         { $count: "totalCount" },
@@ -2212,9 +2468,7 @@ export const getTopCafes = async (req, res) => {
   }
 };
 
-
-export const getTopDesertAndBakery = async(req,res) =>{
-
+export const getTopDesertAndBakery = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
@@ -2224,210 +2478,88 @@ export const getTopDesertAndBakery = async(req,res) =>{
     // get liked & shortlisted brand IDs
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    const aggregationPipeline =  [
-    {$match : {
-      "franchiseDetails.brandCategories.sub" : "Dessert & Bakery"
-    }},
-    {
-      $lookup : {
-        from : "branddetails",
-        localField : "brandOwnerId",
-        foreignField : "uuid",
-        as : "brandInfo"
-      }
-    },
-    {
-      $lookup : {
-        from : "branduploads",
-        localField : "brandOwnerId",
-        foreignField : "brandOwnerId",
-        as : "uploads"
-      }
-    },
-    { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }, },
-    {
-        $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true }
-        }
-      },
-    { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }, },
-    {
-      $addFields : {
-        isLiked : {
-          $in : ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
-        },
-        isShortListed : {
-          $in : ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-        }
-      }
-    } , 
-    { $sort : { createdAt : -1}},
-    {
-      $project : {
-        _id : 0,
-        isLiked: 1,
-        isShortListed: 1,
-        uuid : "$brandInfo.uuid",
-        brandID : "$brandInfo.brandID",
-        brandname : "$brandInfo.brandDetails.brandName",
-        brandCategories : {
-          $ifNull : ["$franchiseDetails.brandCategories", null]
-        },
-        fico : {
-          $let : {
-            vars : {
-              data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
-            },
-            in : {
-              investmentRange : "$$data.investmentRange",
-              areaRequired : "$$data.areaRequired",
-              franchiseModel : "$$data.franchiseModel"
-            }
-          }
-        },
-        logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
-        franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
-    }
-    },
-    { $skip: skip },
-    { $limit: limit }
-  ];
-
-  // Fetch paginated data & total count
-        const [brandsData, totalCountResult] = await Promise.all([
-      BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.aggregate([
-        {
-          $lookup: {
-            from: "branddetails",
-            localField: "brandOwnerId",
-            foreignField: "uuid",
-            as: "brandInfo"
-          }
-        },
-        { $unwind: "$brandInfo" },
-        {
-          $match: {
-              "franchiseDetails.brandCategories.sub" : "Dessert & Bakery",
-            "brandInfo.brandDetails.isBrandPause": { $ne: true }
-          }
-        },
-        { $count: "totalCount" }
-      ])
-    ]);
-
-   
-    const totalCount = totalCountResult[0]?.totalCount || 0;
-
-  if (!brandsData || brandsData.length === 0) {
-    return res.json(new ApiResponse(404, null, "No brands found"));
-  }
-
-  const brands = shuffleArray(brandsData)
-
-  const totalPages = Math.ceil(totalCount / limit);
-  const hasNext = page < totalPages;
-  const hasPrevious = page > 1;
-
-  return res.json(
-    new ApiResponse(200,{brands, 
-      pagination : {
-      total : totalCount,
-      totalPages,
-      currentPage : page,
-      limit,
-      hasNext,
-      hasPrevious}},"Brand fetched successfully")
-  );
-    
-  } catch (error) {
-    console.error("Error fetching Dessert & Bakery brands::", error);
-    res.status(500).json({ message: "Server Error" });
-  }
-
-};
-
-export const getTopTrucksAndKiosks = async(req,res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 30;
-    const skip = (page - 1) * limit;
-    const id = req.query.id || null;
-
-    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-    const aggregationPipeline =[
+    const aggregationPipeline = [
       {
         $match: {
-          "franchiseDetails.brandCategories.sub": "Food Trucks & Kiosks Franchises"
-        }
+          "franchiseDetails.brandCategories.sub": "Dessert & Bakery",
+        },
       },
       {
         $lookup: {
           from: "branddetails",
           localField: "brandOwnerId",
           foreignField: "uuid",
-          as: "brandInfo"
-        }
+          as: "brandInfo",
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "brandOwnerId",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
       {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true }
-        }
+          "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: true },
+        },
       },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
           isLiked: {
-            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-          }
-        }
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
       { $sort: { createdAt: -1 } },
       {
         $project: {
-          _id : 0,
-          isLiked : 1,
-          isShortListed : 1,
-          uuid : "$brandInfo.uuid",
-          brandID : "$brandInfo.brandID",
-          brandname : "$brandInfo.brandDetails.brandName",
-          brandCategories : {
-            $ifNull : ["$franchiseDetails.brandCategories", null]
+          _id: 0,
+          isLiked: 1,
+          isShortListed: 1,
+          uuid: "$brandInfo.uuid",
+          brandID: "$brandInfo.brandID",
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null],
           },
-          fico : {
-            $let : {
-              vars : {
-                data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
-              in : {
-                investmentRange : "$$data.investmentRange",
-                areaRequired : "$$data.areaRequired",
-                franchiseModel : "$$data.franchiseModel"
-              }
-            }
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
-          logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
-          franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
-        }
+          logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+          franchiseVideos: {
+            $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+          },
+        },
       },
       { $skip: skip },
-      { $limit: limit }
-    ]
+      { $limit: limit },
+    ];
 
-      const [brandsData, totalCountResult] = await Promise.all([
+    // Fetch paginated data & total count
+    const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.aggregate([
         {
@@ -2435,50 +2567,57 @@ export const getTopTrucksAndKiosks = async(req,res) => {
             from: "branddetails",
             localField: "brandOwnerId",
             foreignField: "uuid",
-            as: "brandInfo"
-          }
+            as: "brandInfo",
+          },
         },
         { $unwind: "$brandInfo" },
         {
           $match: {
-             "franchiseDetails.brandCategories.sub": "Food Trucks & Kiosks Franchises",
-            "brandInfo.brandDetails.isBrandPause": { $ne: true }
-          }
+            "franchiseDetails.brandCategories.sub": "Dessert & Bakery",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true },
+            "brandInfo.brandDetails.isApproved": { $ne: true },
+          },
         },
-        { $count: "totalCount" }
-      ])
+        { $count: "totalCount" },
+      ]),
     ]);
 
-   
     const totalCount = totalCountResult[0]?.totalCount || 0;
 
-  if (!brandsData || brandsData.length === 0) {
-    return res.json(new ApiResponse(404, null, "No brands found"));
-  }
-  const brands = shuffleArray(brandsData)
-   
+    if (!brandsData || brandsData.length === 0) {
+      return res.json(new ApiResponse(404, null, "No brands found"));
+    }
+
+    const brands = shuffleArray(brandsData);
+
     const totalPages = Math.ceil(totalCount / limit);
-  const hasNext = page < totalPages;
-  const hasPrevious = page > 1;
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
 
-  return res.json(
-    new ApiResponse(200,{brands, 
-      pagination : {
-      total : totalCount,
-      totalPages,
-      currentPage : page,
-      limit,
-      hasNext,
-      hasPrevious}},"Brand fetched successfully")
-  );
-
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious,
+          },
+        },
+        "Brand fetched successfully"
+      )
+    );
   } catch (error) {
     console.error("Error fetching Dessert & Bakery brands::", error);
     res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
-export const getTopRestaurants = async (req,res)=>{
+export const getTopTrucksAndKiosks = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
@@ -2487,90 +2626,88 @@ export const getTopRestaurants = async (req,res)=>{
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    const aggregationPipeline  = [
+    const aggregationPipeline = [
       {
-    $match: {
-    $or: [
-      { "franchiseDetails.brandCategories.child": "QSR (Quick Service Restaurants)" },
-      { "franchiseDetails.brandCategories.child": "Multi Cuisine Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Seafood-Based Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Vegetarian-Only Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Health-Focused Restaurants" },
-         ]
-       }
+        $match: {
+          "franchiseDetails.brandCategories.sub":
+            "Food Trucks & Kiosks Franchises",
+        },
       },
       {
         $lookup: {
-          from: "branddetails", 
+          from: "branddetails",
           localField: "brandOwnerId",
           foreignField: "uuid",
-          as: "brandInfo"
-        }
+          as: "brandInfo",
+        },
       },
       {
-        $lookup:{
-          from:"branduploads",
-          localField:"brandOwnerId",
-          foreignField:"brandOwnerId",
-          as:"uploads"
-        }
+        $lookup: {
+          from: "branduploads",
+          localField: "brandOwnerId",
+          foreignField: "brandOwnerId",
+          as: "uploads",
+        },
       },
-      {
-        $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true }
-      },
+      { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
       {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true }
-        }
+          "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: true },
+        },
       },
+      { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
-        $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true }
-      },
-      {
-      $addFields: {
+        $addFields: {
           isLiked: {
-            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-          }
-        }
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
-      {$sort: { createdAt: -1}},
+      { $sort: { createdAt: -1 } },
       {
         $project: {
-          _id : 0,
+          _id: 0,
           isLiked: 1,
           isShortListed: 1,
-          uuid : "$brandInfo.uuid",
-          brandId :"$brandInfo.brandID",
-          brandname : "$brandInfo.brandDetails.brandName",
-          brandCategories : {
-            $ifNull : ["$franchiseDetails.brandCategories", null]
+          uuid: "$brandInfo.uuid",
+          brandID: "$brandInfo.brandID",
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null],
           },
-          fico : {
-            $let : {
-              vars : {
-                data : { $arrayElemAt : ["$franchiseDetails.fico", 0]}
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
-              in : {
-                investmentRange : "$$data.investmentRange",
-                areaRequired : "$$data.areaRequired",
-                franchiseModel : "$$data.franchiseModel"
-              }
-            }
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
-          logo : { $arrayElemAt : ["$uploads.uploads.brandLogo", 0]},
-        franchiseVideos :  { $arrayElemAt : ["$uploads.uploads.franchisePromotionVideo", 0]},
-        }
+          logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+          franchiseVideos: {
+            $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+          },
+        },
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ];
 
-     // Fetch paginated data & total count
-         const [brandsData, totalCountResult] = await Promise.all([
+    const [brandsData, totalCountResult] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.aggregate([
         {
@@ -2578,60 +2715,251 @@ export const getTopRestaurants = async (req,res)=>{
             from: "branddetails",
             localField: "brandOwnerId",
             foreignField: "uuid",
-            as: "brandInfo"
-          }
+            as: "brandInfo",
+          },
         },
         { $unwind: "$brandInfo" },
         {
           $match: {
-             $or: [
-      { "franchiseDetails.brandCategories.child": "QSR (Quick Service Restaurants)" },
-      { "franchiseDetails.brandCategories.child": "Multi Cuisine Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Seafood-Based Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Vegetarian-Only Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
-      { "franchiseDetails.brandCategories.child": "Health-Focused Restaurants" },
-         ],
-            "brandInfo.brandDetails.isBrandPause": { $ne: true }
-          }
+            "franchiseDetails.brandCategories.sub":
+              "Food Trucks & Kiosks Franchises",
+            "brandInfo.brandDetails.isBrandPause": { $ne: true },
+            "brandInfo.brandDetails.isApproved": { $ne: true },
+          },
         },
-        { $count: "totalCount" }
-      ])
+        { $count: "totalCount" },
+      ]),
     ]);
 
-   
+    const totalCount = totalCountResult[0]?.totalCount || 0;
+
+    if (!brandsData || brandsData.length === 0) {
+      return res.json(new ApiResponse(404, null, "No brands found"));
+    }
+    const brands = shuffleArray(brandsData);
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious,
+          },
+        },
+        "Brand fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error fetching Dessert & Bakery brands::", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const getTopRestaurants = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const skip = (page - 1) * limit;
+    const id = req.query.id || null;
+
+    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+    const aggregationPipeline = [
+      {
+        $match: {
+          $or: [
+            {
+              "franchiseDetails.brandCategories.child":
+                "QSR (Quick Service Restaurants)",
+            },
+            {
+              "franchiseDetails.brandCategories.child":
+                "Multi Cuisine Restaurants",
+            },
+            {
+              "franchiseDetails.brandCategories.child":
+                "Seafood-Based Restaurants",
+            },
+            {
+              "franchiseDetails.brandCategories.child":
+                "Vegetarian-Only Restaurants",
+            },
+            { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
+            {
+              "franchiseDetails.brandCategories.child":
+                "Health-Focused Restaurants",
+            },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "branddetails",
+          localField: "brandOwnerId",
+          foreignField: "uuid",
+          as: "brandInfo",
+        },
+      },
+      {
+        $lookup: {
+          from: "branduploads",
+          localField: "brandOwnerId",
+          foreignField: "brandOwnerId",
+          as: "uploads",
+        },
+      },
+      {
+        $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $match: {
+          "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: true },
+        },
+      },
+      {
+        $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $addFields: {
+          isLiked: {
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+          isShortListed: {
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          _id: 0,
+          isLiked: 1,
+          isShortListed: 1,
+          uuid: "$brandInfo.uuid",
+          brandId: "$brandInfo.brandID",
+          brandname: "$brandInfo.brandDetails.brandName",
+          brandCategories: {
+            $ifNull: ["$franchiseDetails.brandCategories", null],
+          },
+          fico: {
+            $let: {
+              vars: {
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
+              },
+              in: {
+                investmentRange: "$$data.investmentRange",
+                areaRequired: "$$data.areaRequired",
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
+          },
+          logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+          franchiseVideos: {
+            $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+          },
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+    ];
+
+    // Fetch paginated data & total count
+    const [brandsData, totalCountResult] = await Promise.all([
+      BrandFranchiseDetails.aggregate(aggregationPipeline),
+      BrandFranchiseDetails.aggregate([
+        {
+          $lookup: {
+            from: "branddetails",
+            localField: "brandOwnerId",
+            foreignField: "uuid",
+            as: "brandInfo",
+          },
+        },
+        { $unwind: "$brandInfo" },
+        {
+          $match: {
+            $or: [
+              {
+                "franchiseDetails.brandCategories.child":
+                  "QSR (Quick Service Restaurants)",
+              },
+              {
+                "franchiseDetails.brandCategories.child":
+                  "Multi Cuisine Restaurants",
+              },
+              {
+                "franchiseDetails.brandCategories.child":
+                  "Seafood-Based Restaurants",
+              },
+              {
+                "franchiseDetails.brandCategories.child":
+                  "Vegetarian-Only Restaurants",
+              },
+              { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
+              {
+                "franchiseDetails.brandCategories.child":
+                  "Health-Focused Restaurants",
+              },
+            ],
+            "brandInfo.brandDetails.isBrandPause": { $ne: true },
+            "brandInfo.brandDetails.isApproved": { $ne: true },
+          },
+        },
+        { $count: "totalCount" },
+      ]),
+    ]);
+
     const totalCount = totalCountResult[0]?.totalCount || 0;
 
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No brands found"));
     }
 
-    const brands = shuffleArray(brandsData)
+    const brands = shuffleArray(brandsData);
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
 
-
-    return res.json(new ApiResponse(200,{
-      brands,
-      pagination : {
-        total : totalCount,
-        totalPages,
-        currentPage : page,
-        limit,
-        hasNext,
-        hasPrevious
-      }
-    }, "Brands fetched successfully"
-  )
-);
-
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious,
+          },
+        },
+        "Brands fetched successfully"
+      )
+    );
   } catch (error) {
     console.error("Error fetching top cafes:", error);
     res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
 export const getBrandsByCategory = async (req, res) => {
   try {
@@ -2643,7 +2971,13 @@ export const getBrandsByCategory = async (req, res) => {
     const subCategory = req.query.subCategory || null;
 
     if (!childCategory && !subCategory) {
-      return res.json(new ApiResponse(400, null, "Either childCategory or subCategory is required"));
+      return res.json(
+        new ApiResponse(
+          400,
+          null,
+          "Either childCategory or subCategory is required"
+        )
+      );
     }
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
@@ -2657,22 +2991,24 @@ export const getBrandsByCategory = async (req, res) => {
       const categoryInfo = await BrandFranchiseDetails.aggregate([
         {
           $match: {
-            "franchiseDetails.brandCategories.child": childCategory
-          }
+            "franchiseDetails.brandCategories.child": childCategory,
+          },
         },
         {
           $group: {
             _id: "$franchiseDetails.brandCategories.main",
-            subCategories: { $addToSet: "$franchiseDetails.brandCategories.sub" }
-          }
+            subCategories: {
+              $addToSet: "$franchiseDetails.brandCategories.sub",
+            },
+          },
         },
         {
           $project: {
             _id: 0,
             mainCategory: "$_id",
-            subCategories: 1
-          }
-        }
+            subCategories: 1,
+          },
+        },
       ]);
 
       if (!categoryInfo || categoryInfo.length === 0) {
@@ -2683,30 +3019,31 @@ export const getBrandsByCategory = async (req, res) => {
       relatedCategories = [childCategory]; // Only filter by specific child
       matchCondition = {
         "franchiseDetails.brandCategories.main": mainCategory,
-        "franchiseDetails.brandCategories.child": childCategory
+        "franchiseDetails.brandCategories.child": childCategory,
       };
-
     } else if (subCategory) {
       // When subCategory is provided
       const categoryInfo = await BrandFranchiseDetails.aggregate([
         {
           $match: {
-            "franchiseDetails.brandCategories.sub": subCategory
-          }
+            "franchiseDetails.brandCategories.sub": subCategory,
+          },
         },
         {
           $group: {
             _id: "$franchiseDetails.brandCategories.main",
-            subCategories: { $addToSet: "$franchiseDetails.brandCategories.sub" }
-          }
+            subCategories: {
+              $addToSet: "$franchiseDetails.brandCategories.sub",
+            },
+          },
         },
         {
           $project: {
             _id: 0,
             mainCategory: "$_id",
-            subCategories: 1
-          }
-        }
+            subCategories: 1,
+          },
+        },
       ]);
 
       if (!categoryInfo || categoryInfo.length === 0) {
@@ -2717,7 +3054,7 @@ export const getBrandsByCategory = async (req, res) => {
       relatedCategories = categoryInfo[0].subCategories;
       matchCondition = {
         "franchiseDetails.brandCategories.main": mainCategory,
-        "franchiseDetails.brandCategories.sub": { $in: relatedCategories }
+        "franchiseDetails.brandCategories.sub": { $in: relatedCategories },
       };
     }
 
@@ -2728,33 +3065,40 @@ export const getBrandsByCategory = async (req, res) => {
           from: "branddetails",
           localField: "brandOwnerId",
           foreignField: "uuid",
-          as: "brandInfo"
-        }
+          as: "brandInfo",
+        },
       },
       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
       {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true }
-        }
+          "brandInfo.brandDetails.isBrandPause": { $ne: true },
+          "brandInfo.brandDetails.isApproved": { $ne: true },
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "brandOwnerId",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
           isLiked: {
-            $in: ["$brandInfo._id", likedBrands.map(id => new mongoose.Types.ObjectId(id))]
+            $in: [
+              "$brandInfo._id",
+              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
           isShortListed: {
-            $in: ["$brandInfo._id", shortListedBrands.map(id => new mongoose.Types.ObjectId(id))]
-          }
-        }
+            $in: [
+              "$brandInfo._id",
+              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+            ],
+          },
+        },
       },
       { $sort: { createdAt: -1 } },
       {
@@ -2766,47 +3110,51 @@ export const getBrandsByCategory = async (req, res) => {
           isShortListed: 1,
           brandname: "$brandInfo.brandDetails.brandName",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.brandCategories", null]
+            $ifNull: ["$franchiseDetails.brandCategories", null],
           },
           fico: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] }
+                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
               in: {
                 investmentRange: "$$data.investmentRange",
                 areaRequired: "$$data.areaRequired",
-                franchiseModel: "$$data.franchiseModel"
-              }
-            }
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-              else: null
-            }
+              else: null,
+            },
           },
           franchiseVideos: {
             $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
-              else: null
-            }
-          }
-        }
+              then: {
+                $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+              },
+              else: null,
+            },
+          },
+        },
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ];
 
     const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
-      BrandFranchiseDetails.countDocuments(matchCondition)
+      BrandFranchiseDetails.countDocuments(matchCondition),
     ]);
 
     if (!brandsData || brandsData.length === 0) {
-      return res.json(new ApiResponse(404, null, "No brands found for this category"));
+      return res.json(
+        new ApiResponse(404, null, "No brands found for this category")
+      );
     }
 
     // Remove the shuffleArray function call and just use brandsData directly
@@ -2817,24 +3165,30 @@ export const getBrandsByCategory = async (req, res) => {
     const hasPrevious = page > 1;
 
     return res.json(
-      new ApiResponse(200, {
-        mainCategory,
-        relatedCategories,
-        currentCategory: childCategory || subCategory,
-        brands,
-        pagination: {
-          total: totalCount,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNext,
-          hasPrevious
-        }
-      }, "Brands fetched successfully by category")
+      new ApiResponse(
+        200,
+        {
+          mainCategory,
+          relatedCategories,
+          currentCategory: childCategory || subCategory,
+          brands,
+          pagination: {
+            total: totalCount,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNext,
+            hasPrevious,
+          },
+        },
+        "Brands fetched successfully by category"
+      )
     );
   } catch (error) {
     console.error("Error fetching brands by category:", error);
-    return res.json(new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`));
+    return res.json(
+      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+    );
   }
 };
 
@@ -2849,73 +3203,79 @@ export const getBrandById = async (req, res) => {
   // }
 
   try {
-    
     const data = await BrandDetails.aggregate([
       {
         $match: {
-          uuid: id
-        }
+          uuid: id,
+        },
       },
       {
         $lookup: {
           from: "brandfranchisedetails",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "brandfranchisedetails"
-        }
+          as: "brandfranchisedetails",
+        },
       },
       {
-        $unwind: { path: "$brandfranchisedetails", preserveNullAndEmptyArrays: true }
+        $unwind: {
+          path: "$brandfranchisedetails",
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
       {
         $lookup: {
           from: "brandexpansionlocationdatas",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "brandexpansionlocationdatas"
-        }
+          as: "brandexpansionlocationdatas",
+        },
       },
       {
         $lookup: {
           from: "viewedtobrands",
           localField: "_id",
           foreignField: "brandUserID",
-          as: "totalViewData"
-        }
+          as: "totalViewData",
+        },
       },
       {
         $addFields: {
           totalInvestorViews: {
             $cond: [
               { $gt: [{ $size: "$totalViewData" }, 0] },
-              { $size: { $arrayElemAt: ["$totalViewData.viewedByInvestors", 0] } },
-              0
-            ]
+              {
+                $size: {
+                  $arrayElemAt: ["$totalViewData.viewedByInvestors", 0],
+                },
+              },
+              0,
+            ],
           },
           totalBrandViews: {
             $cond: [
               { $gt: [{ $size: "$totalViewData" }, 0] },
               { $size: { $arrayElemAt: ["$totalViewData.viewedByBrands", 0] } },
-              0
-            ]
-          }
-        }
+              0,
+            ],
+          },
+        },
       },
       {
-      $lookup: {
+        $lookup: {
           from: "shortlisteds",
           localField: "_id",
           foreignField: "brandOwnerId",
-          as: "shortlisteds"
-        }
+          as: "shortlisteds",
+        },
       },
       {
         $addFields: {
@@ -2923,18 +3283,18 @@ export const getBrandById = async (req, res) => {
             $cond: [
               { $isArray: "$shortlisteds" },
               { $size: "$shortlisteds" },
-              0
-            ]
-          }
-        }
+              0,
+            ],
+          },
+        },
       },
       {
         $lookup: {
           from: "favoritebrands",
           localField: "_id",
           foreignField: "brandOwnerId",
-          as: "favoritebrands"
-        }
+          as: "favoritebrands",
+        },
       },
       {
         $addFields: {
@@ -2942,39 +3302,75 @@ export const getBrandById = async (req, res) => {
             $sum: {
               $map: {
                 input: "$favoritebrands",
-                in: { $size: { $ifNull: ["$$this.favoriteBy", []] } }
-              }
-            }
-          }
-        }
+                in: { $size: { $ifNull: ["$$this.favoriteBy", []] } },
+              },
+            },
+          },
+        },
       },
       {
         $project: {
           _id: 0,
           uuid: 1,
           brandDetails: 1,
-          brandID : 1,
-          franchiseDetails : "$brandfranchisedetails.franchiseDetails",
+          brandID: 1,
+          franchiseDetails: "$brandfranchisedetails.franchiseDetails",
           uploads: {
             $let: {
               vars: {
-                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null
+                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
               },
               in: {
-                logo: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] }, null] },
-                franchiseVideos: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.franchisePromotionVideo", 0] }, null] },
-                exteriorOutlet: {$ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0]},
-                interiorOutlet: { $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0] },
-                businessPlan: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] }, null] },
-                gstCertificate:  { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0] }, null] },
-                pancard: { $ifNull: [{ $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] }, null] },
+                logo: {
+                  $ifNull: [
+                    { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
+                    null,
+                  ],
+                },
+                franchiseVideos: {
+                  $ifNull: [
+                    {
+                      $arrayElemAt: [
+                        "$$firstUpload.uploads.franchisePromotionVideo",
+                        0,
+                      ],
+                    },
+                    null,
+                  ],
+                },
+                exteriorOutlet: {
+                  $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
+                },
+                interiorOutlet: {
+                  $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
+                },
+                businessPlan: {
+                  $ifNull: [
+                    { $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] },
+                    null,
+                  ],
+                },
+                gstCertificate: {
+                  $ifNull: [
+                    {
+                      $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0],
+                    },
+                    null,
+                  ],
+                },
+                pancard: {
+                  $ifNull: [
+                    { $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] },
+                    null,
+                  ],
+                },
                 awards: {
                   $cond: {
                     if: {
                       $and: [
                         { $isArray: "$$firstUpload.uploads.awards" },
-                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] }
-                      ]
+                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
+                      ],
                     },
                     then: {
                       $map: {
@@ -2982,38 +3378,43 @@ export const getBrandById = async (req, res) => {
                         as: "award",
                         in: {
                           awardDescription: "$$award.awardDescription",
-                          awardImage: "$$award.awardImage"
-                        }
-                      }
+                          awardImage: "$$award.awardImage",
+                        },
+                      },
                     },
-                    else: []
-                  }
-                }
-              }
-            }
+                    else: [],
+                  },
+                },
+              },
+            },
           },
           expansionlocationdata: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] }
+                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
               },
               in: {
-                currentOutletLocations: "$$data.expansionLocationData.currentOutletLocations",
-                expansionLocations: "$$data.expansionLocationData.expansionLocations",
-                isInternationalExpansion: "$$data.expansionLocationData.isInternationalExpansion"
-              }
-            }
+                currentOutletLocations:
+                  "$$data.expansionLocationData.currentOutletLocations",
+                expansionLocations:
+                  "$$data.expansionLocationData.expansionLocations",
+                isInternationalExpansion:
+                  "$$data.expansionLocationData.isInternationalExpansion",
+              },
+            },
           },
           totalViewCount: {
-            $add: ["$totalInvestorViews", "$totalBrandViews"]
+            $add: ["$totalInvestorViews", "$totalBrandViews"],
           },
-          totalSortlistCount : 1,
-          totalLikedCount : 1,
-        }
-      }
+          totalSortlistCount: 1,
+          totalLikedCount: 1,
+        },
+      },
     ]);
 
-    return res.json(new ApiResponse(200, data[0], "✅ Brand fetched successfully"));
+    return res.json(
+      new ApiResponse(200, data[0], "✅ Brand fetched successfully")
+    );
   } catch (error) {
     console.error("getBrandListingByUUID error:", error);
     return res.json(new ApiResponse(500, null, "Failed to fetch brand"));
