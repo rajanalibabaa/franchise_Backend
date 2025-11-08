@@ -399,7 +399,10 @@ export const getAllBrandsAndFilter = async (req, res) => {
     
     const match = {
       "brandDetails.isBrandPause": { $ne: true },
+      "brandDetails.isApproved": { $ne: false },
     };
+
+    // console.log("======search===== :",serchterm)
 
     // Text search (brand name / description / etc.)
     if (serchterm) {
