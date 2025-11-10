@@ -1,11 +1,10 @@
-  import { log } from "console";
+import { log } from "console";
 import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandExpansionLocationData } from "../../../model/Brand/Brand.model/ExpansionLocation.model.js";
 import { BrandFranchiseDetails } from "../../../model/Brand/Brand.model/FranchiseDetails.model.js";
 import { BrandUploads } from "../../../model/Brand/Brand.model/Uploads.model.js";
 import NewIncomingBrands from "../../../model/Brand/newIncomigBrands.js";
 import { ApiResponse } from "../../../utils/ApiResponse/ApiResponse.js";
-
 
 // export const getNewIncomingBrands = async (req, res) => {
 //   try {
@@ -84,32 +83,37 @@ export const getNewIncomingBrands = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
- 
+
     // const { likedBrands, shortListedBrands } = await likeandshortlist(id);
- 
+
     const aggregationPipeline = [
       {
         $match: {
-          "brandDetails.isApproved": { $ne: true }
-        }
+          "brandDetails.isApproved": { $ne: true },
+        },
       },
       {
         $lookup: {
           from: "brandfranchisedetails",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "franchiseDetails"
-        }
+          as: "franchiseDetails",
+        },
       },
       {
         $lookup: {
           from: "branduploads",
           localField: "uuid",
           foreignField: "brandOwnerId",
-          as: "uploads"
-        }
+          as: "uploads",
+        },
       },
-      { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: "$franchiseDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       // {
       //   $addFields: {
@@ -132,63 +136,70 @@ export const getNewIncomingBrands = async (req, res) => {
           brandname: "$brandDetails.brandName",
           isApproved: "$brandDetails.isApproved",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
+            $ifNull: [
+              "$franchiseDetails.franchiseDetails.brandCategories",
+              null,
+            ],
           },
           fico: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0] }
+                data: {
+                  $arrayElemAt: ["$franchiseDetails.franchiseDetails.fico", 0],
+                },
               },
               in: {
                 investmentRange: "$$data.investmentRange",
                 areaRequired: "$$data.areaRequired",
-                franchiseModel: "$$data.franchiseModel"
-              }
-            }
+                franchiseModel: "$$data.franchiseModel",
+              },
+            },
           },
           logo: {
             $cond: {
               if: { $isArray: "$uploads.uploads.brandLogo" },
               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-              else: null
-            }
+              else: null,
+            },
           },
           franchiseVideos: {
             $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
-              else: null
-            }
-          }
-        }
+              then: {
+                $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+              },
+              else: null,
+            },
+          },
+        },
       },
       { $skip: skip },
-      { $limit: limit }
+      { $limit: limit },
     ];
- 
+
     const [brandsData, totalCountResult] = await Promise.all([
       BrandDetails.aggregate(aggregationPipeline),
       BrandDetails.aggregate([
         {
-          $match: { "brandDetails.isBrandPause": { $ne: true } }
+          $match: { "brandDetails.isApproved": { $ne: true } },
         },
         {
-          $count: "totalCount"
-        }
-      ])
+          $count: "totalCount",
+        },
+      ]),
     ]);
- 
+
     const totalCount = totalCountResult[0]?.totalCount || 0;
- 
+
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No unapproved brand found"));
     }
- 
-    const brands = brandsData
+
+    const brands = brandsData;
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
- 
+
     return res.json(
       new ApiResponse(
         200,
@@ -200,8 +211,8 @@ export const getNewIncomingBrands = async (req, res) => {
             currentPage: page,
             limit,
             hasNext,
-            hasPrevious
-          }
+            hasPrevious,
+          },
         },
         "Brand data fetched successfully"
       )
@@ -217,19 +228,17 @@ export const getNewIncomingBrands = async (req, res) => {
 export const getNewIncomingBrandById = async (req, res) => {
   try {
     const { id } = req.params;
-    const brand = await NewIncomingBrands.findOne({uuid: id});
+    const brand = await NewIncomingBrands.findOne({ uuid: id });
     if (!brand) {
       return res.json(
-        new ApiResponse(304,null , "No brand found with the given ID")
-      )
+        new ApiResponse(304, null, "No brand found with the given ID")
+      );
     }
-    return res.json(
-      new ApiResponse(200, brand, "Brand fetched successfully")
-    )
+    return res.json(new ApiResponse(200, brand, "Brand fetched successfully"));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
 
 // export const brandApprove = async (req, res) => {
 //     try {
@@ -269,7 +278,7 @@ export const getNewIncomingBrandById = async (req, res) => {
 //                 uploads : brand.uploads
 //               })
 //             ]);
-        
+
 //             // Check if all records were created successfully
 //             if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
 //               return res.json(
@@ -288,7 +297,7 @@ export const getNewIncomingBrandById = async (req, res) => {
 //                 }
 
 //             }
-        
+
 //             return res.json(
 //               new ApiResponse(201, {
 //                 brand: newBrand,
@@ -306,109 +315,110 @@ export const getNewIncomingBrandById = async (req, res) => {
 // }
 
 export const brandApprove = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
+    const existingBrand = await BrandDetails.find({ uuid: id });
 
-
-        const existingBrand = await BrandDetails.findOne({ brandID: brand.brandID });
-
-        if (!existingBrand) {
-            return res.json(
-                new ApiResponse(404, null, "Brand not found")
-            )
-        }
-        const updated = await BrandDetails.findByIdAndUpdate(
-            brand._id,
-            { $set: { "brandDetails.isApproved": true } },
-            { new: true }
-          );
-
-        return res.json(
-      new ApiResponse(200, updated, "Brand Aproved successfully")
-    ); 
-
-        
-    } catch (error) {
-        return res.json(
-            new ApiResponse(500, null, "Internal Server Error")
-        )
+    if (!existingBrand) {
+      return res.json(new ApiResponse(404, null, "Brand not found"));
     }
-}
+
+    const updated = await BrandDetails.findOneAndUpdate(
+      { uuid: id },
+      { $set: { "brandDetails.isApproved": true } },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.json(new ApiResponse(404, null, "Brand not found"));
+    }
+
+    // console.log("updated :",updated)
+    return res.json(
+      new ApiResponse(200, updated, "Brand approved successfully")
+    );
+  } catch (error) {
+    return res.json(
+      new ApiResponse(500, null, `Internal Server Error: ${error.message}`)
+    );
+  }
+};
 
 export const deleteBrandById = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
-              BrandDetails.findOneAndDelete({
-                uuid: id,
-              }),
-              BrandFranchiseDetails.findOneAndDelete({
-                brandOwnerId: id
-              }),
-              BrandExpansionLocationData.findOneAndDelete({
-                brandOwnerId: id
-              }),
-              BrandUploads.findOneAndDelete({
-                brandOwnerId: id
-              })
-            ]);
+    const [
+      newBrand,
+      newBrandFranchiseDetails,
+      newBrandExpansionLocationData,
+      newBrandUploads,
+    ] = await Promise.all([
+      BrandDetails.findOneAndDelete({
+        uuid: id,
+      }),
+      BrandFranchiseDetails.findOneAndDelete({
+        brandOwnerId: id,
+      }),
+      BrandExpansionLocationData.findOneAndDelete({
+        brandOwnerId: id,
+      }),
+      BrandUploads.findOneAndDelete({
+        brandOwnerId: id,
+      }),
+    ]);
 
-        const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete(
-          {
-            uuid:id
-          }
-        )  
+    const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete({
+      uuid: id,
+    });
 
-        if ((!newBrand && !newBrandFranchiseDetails && !newBrandExpansionLocationData && !newBrandUploads) || !deletenewIncomingBrand) {
-            return res.json(
-                new ApiResponse(404, null, "No brand found with the given ID")
-            )
-        }
-
-        
-        return res.json(
-            new ApiResponse(200, {
-                brand: newBrand,
-                franchise: newBrandFranchiseDetails,
-                locations: newBrandExpansionLocationData,
-                uploads: newBrandUploads
-              }, "Brand listing deleted successfully")
-        )
-
-    } catch (error) {
-        return res.json(
-            new ApiResponse(500, null, "Internal Server Error")
-        )
+    if (
+      (!newBrand &&
+        !newBrandFranchiseDetails &&
+        !newBrandExpansionLocationData &&
+        !newBrandUploads) ||
+      !deletenewIncomingBrand
+    ) {
+      return res.json(
+        new ApiResponse(404, null, "No brand found with the given ID")
+      );
     }
-}
+
+    return res.json(
+      new ApiResponse(
+        200,
+        {
+          brand: newBrand,
+          franchise: newBrandFranchiseDetails,
+          locations: newBrandExpansionLocationData,
+          uploads: newBrandUploads,
+        },
+        "Brand listing deleted successfully"
+      )
+    );
+  } catch (error) {
+    return res.json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+};
 
 export const deleteNewIncomingBrandById = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        
+    const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete({
+      uuid: id,
+    });
 
-        const deletenewIncomingBrand = await NewIncomingBrands.findOneAndDelete(
-          {
-            uuid:id
-          }
-        )  
-
-        if (!deletenewIncomingBrand) {
-            return res.json(
-                new ApiResponse(404, null, "No brand found with the given ID")
-            )
-        }
-
-        
-        return res.json(
-            new ApiResponse(200, null, "Brand listing deleted successfully")
-        )
-
-    } catch (error) {
-        return res.json(
-            new ApiResponse(500, null, "Internal Server Error")
-        )
+    if (!deletenewIncomingBrand) {
+      return res.json(
+        new ApiResponse(404, null, "No brand found with the given ID")
+      );
     }
-}
+
+    return res.json(
+      new ApiResponse(200, null, "Brand listing deleted successfully")
+    );
+  } catch (error) {
+    return res.json(new ApiResponse(500, null, "Internal Server Error"));
+  }
+};

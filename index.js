@@ -20,6 +20,7 @@ import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
+import {registerNotificationSocket} from './src/socket/notificationSocket.js'
 import {postToAllPlatforms} from "./src/utils/socialmediapost/socialmediapost.js";
 
 
@@ -122,6 +123,8 @@ const io = new SocketIOServer(httpServer, {
 
 // ✅ Socket.IO connection
 io.on("connection", (socket) => mainSocket(socket, io));
+registerNotificationSocket(io);
+app.set("io", io);
 
 // ✅ Start server
 const startServer = async () => {                                                               
