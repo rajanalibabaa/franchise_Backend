@@ -8,7 +8,7 @@ import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantAppl
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 import mongoose, { Aggregate } from "mongoose";
 import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
-import { EmailTrackingService } from '../../model/NewIncomeInvestor/BrandEmailCountSchema.js';
+// import { EmailTrackingService } from '../../model/NewIncomeInvestor/BrandEmailCountSchema.js';r
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
 import { leadsCreateFunction } from "../Leads/leadsCreateFunction.js";
@@ -177,7 +177,7 @@ export const instaApplyBrandFormController = async (req, res) => {
     //   new ApiResponse(200, newSubmission, "Application submitted successfully")
     // );
  // ✅ NEW: Initialize email tracking service
-    const emailTrackingService = new EmailTrackingService();
+    // const emailTrackingService = new EmailTrackingService();
 
     await instantApplyLocationMatch(
       fullName,

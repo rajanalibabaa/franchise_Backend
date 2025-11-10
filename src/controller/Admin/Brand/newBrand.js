@@ -422,3 +422,4 @@ export const deleteNewIncomingBrandById = async (req, res) => {
     return res.json(new ApiResponse(500, null, "Internal Server Error"));
   }
 };
+
