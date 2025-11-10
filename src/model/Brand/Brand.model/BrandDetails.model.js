@@ -36,29 +36,72 @@ const BrandDetailsSchema = new mongoose.Schema(
       gstNumber: String,
       pancardNumber: String,
       specialFreeLeadCount: {
-        type: Number
+        type: Number,
       },
-      pause:{
-        type:Boolean,
-        default:false
+      pause: {
+        type: Boolean,
+        default: false,
       },
-      isApproved:{
-        type:Boolean,
-        default:false
+      isApproved: {
+        type: Boolean,
+        default: false,
       },
-      isBrandPause:{
-        type:Boolean,
-        default:false
+      isBrandPause: {
+        type: Boolean,
+        default: false,
       },
-      payment:{
-        type:Boolean,
-        default:false
+      payment: {
+        type: Boolean,
+        default: false,
       },
-      isFreeLeadPaused:{
-        type:Boolean,
-        default:false
+      isFreeLeadPaused: {
+        type: Boolean,
+        default: false,
       },
-      
+      paymentPackage: {
+        packageType: {
+          type: String,
+          required: true,
+          default:"free"
+        },
+        totalAmount: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        totalMonths: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        perMonthLead: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        totalLeads: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        isActive: {
+          type: Boolean,
+          default:false
+        },
+        packageUpdatedTime: { type: Date, default: Date.now },
+      },
+      listingPackages: {
+        periodMonths: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        amount: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+      },
     },
     active: {
       type: Boolean,
@@ -80,7 +123,6 @@ const BrandDetailsSchema = new mongoose.Schema(
     userNewVerifyToken: {
       type: String,
     },
- 
   },
   {
     timestamps: true,
