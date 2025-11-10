@@ -113,9 +113,9 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     const exists = brandAggregate[0];
 
-    // Determine who is applying (Investor / Brand / other)
-    let applyBy = "other";
-    let applyById = "other";
+    // Determine who is applying (Investor / Brand / Other)
+    let applyBy = "Other";  // Changed from "other" to "Other" to match enum
+    let applyById = "Other";  // Changed from "other" to "Other" to match enum
 
     const isBrand = await BrandDetails.findOne({ uuid: applyId });
     if (isBrand) {
@@ -129,10 +129,8 @@ export const instaApplyBrandFormController = async (req, res) => {
       }
     }
 
-    const leadsres = await leadsCreateFunction(req?.body,exists,applyBy,applyById)
-    // console.log("leadsres :",leadsres)
-    res.json(leadsres)
-
+    const leadsres = await leadsCreateFunction(req?.body,exists,applyBy,applyById);
+    
     const { main, sub, child } =
       exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
     // console.log("main, sub, child :", main, sub, child);
@@ -197,12 +195,17 @@ export const instaApplyBrandFormController = async (req, res) => {
       applyById,
       exists.uploads?.uploads?.brandLogo
     );
-     res.json(leadsres);
+
+    // Send final response
+    return res.json(leadsres);
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, {}, "Internal server error"));
+    // Only send response if headers haven't been sent yet
+    if (!res.headersSent) {
+      return res
+        .status(500)
+        .json(new ApiResponse(500, {}, "Internal server error"));
+    }
   }
 };
 
