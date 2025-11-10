@@ -433,9 +433,8 @@ const brandEmailCountSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     // 🟢 Free Leads (current month only)
-    FreeEmailCount: {
+    freeEmailCount: {
       type: Number,
       default: 0,
     },
@@ -443,9 +442,8 @@ const brandEmailCountSchema = new mongoose.Schema(
       type: [monthlyRecordSchema],
       default: [],
     },
-
     // 🟠 Paid Leads (current month only)
-    PaidEmailCount: {
+    paidEmailCount: {
       type: Number,
       default: 0,
     },

@@ -177,7 +177,7 @@ export const instaApplyBrandFormController = async (req, res) => {
     //   new ApiResponse(200, newSubmission, "Application submitted successfully")
     // );
  // ✅ NEW: Initialize email tracking service
-    const emailTrackingService = new EmailTrackingService();
+    // const emailTrackingService = new EmailTrackingService();
 
     await instantApplyLocationMatch(
       fullName,
