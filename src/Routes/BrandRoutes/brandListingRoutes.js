@@ -8,13 +8,13 @@ import {
   getBrandListingByUUID,
   reEntry,
   updateBrandListingByUUID,
-  getTopFoodFranchise,
-  getTopBeverageFranchise,
-  getTopLeadingFranchise,
-  getTopCafes,
-  getTopDesertAndBakery,
-  getTopTrucksAndKiosks,
-  getTopRestaurants,
+  // getTopFoodFranchise,
+  // getTopBeverageFranchise,
+  // getTopLeadingFranchise,
+  // getTopCafes,
+  // getTopDesertAndBakery,
+  // getTopTrucksAndKiosks,
+  // getTopRestaurants,
   getBrandsByCategory,
   getBrandById,
   // getFoodAndBeverageCategory,
@@ -48,13 +48,13 @@ router.post(
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id", getBrandListingByUUID);
 router.get("/v1/brandlisting/getBrandById/:id",  getBrandById);
-router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
-router.get("/v1/brandlisting/getTopBeverageFranchise", getTopBeverageFranchise);
-router.get("/v1/brandlisting/getTopLeadingFranchise", getTopLeadingFranchise);
-router.get("/v1/brandlisting/getTopCafes", getTopCafes);
-router.get("/v1/brandlisting/getTopDesertAndBakery", getTopDesertAndBakery);
-router.get("/v1/brandlisting/getTopTrucksAndKiosks", getTopTrucksAndKiosks);
-router.get("/v1/brandlisting/getTopRestaurants", getTopRestaurants);
+// router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
+// router.get("/v1/brandlisting/getTopBeverageFranchise", getTopBeverageFranchise);
+// router.get("/v1/brandlisting/getTopLeadingFranchise", getTopLeadingFranchise);
+// router.get("/v1/brandlisting/getTopCafes", getTopCafes);
+// router.get("/v1/brandlisting/getTopDesertAndBakery", getTopDesertAndBakery);
+// router.get("/v1/brandlisting/getTopTrucksAndKiosks", getTopTrucksAndKiosks);
+// router.get("/v1/brandlisting/getTopRestaurants", getTopRestaurants);
 router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
 // router.get(
 //   "/v1/brandlisting/getFoodAndBeverageCategory",
@@ -114,10 +114,6 @@ router.get("/allId", allId);
 // anonymousFunction
 router.get("/datafieldnewEntry", datafieldnewEntry);
 router.get("/testgetAllBrands", testgetAllBrands);
-
-
-
-
 
 // AdvertiseCreation router
 

@@ -167,7 +167,6 @@ export const updateBatchEmailConfig = async (req, res) => {
       );
   }
 };
-
 // Utility function to get config values (for use in your existing instantApplyLocationMatch function)
 export const getBatchEmailValues = async () => {
   try {
@@ -228,7 +227,6 @@ export const getLeadStatus = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, "Server error"));
   }
 };
-
 // Enhanced version of your existing controller
 export const leadsFreeAndPaidStopAndStart = async (req, res) => {
   try {
