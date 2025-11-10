@@ -17,8 +17,8 @@ import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { FavoriteBrandsLikedBybrand, FavoriteBrandsLikedByInvestor } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
-import { console } from "inspector";
 import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
+import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
 
 export const likeandshortlist = async(id) => {
@@ -73,7 +73,7 @@ const createBrandListing = async (req, res) => {
   try {  
     const { admin } = req.body;
     const id = uuid(); // Make sure this is properly imported/defined
-console.log("Incoming data:", req.body);
+// console.log("Incoming data:", req.body);
     const fileFields = [
       "awardDoc",
       "brandLogo",
@@ -100,7 +100,24 @@ console.log("Incoming data:", req.body);
     const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
 
 
-console.log("Incoming data:", brandDetails.brandName);
+
+if (brandDetails.paymentPackage) {
+        const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
+        const selectedPackage = brandDetails.paymentPackage; 
+
+        for (const key in PaymentPackagesData) {
+          if (key === selectedPackage) {
+            const matchedPackage = { ...PaymentPackagesData[key],  packageType: key,isActive: true,packageUpdatedTime: new Date()};
+
+            console.log("Matched Package:", matchedPackage);
+            brandDetails.paymentPackage = matchedPackage
+
+          }
+        }
+      }
+
+// console.log("updated data:", brandDetails);
+
 
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
@@ -733,7 +750,7 @@ export const getTopFoodFranchise = async (req, res) => {
     );
   }
 };
-
+  
 
 export const getTopBeverageFranchise = async (req,res)=>{
   try {
@@ -904,7 +921,7 @@ const updateBrandListingByUUID = async (req, res) => {
     const { id } = req.params;
     
 
-    console.log("id :",id)
+    // console.log("id :",id)
 
     // ---------- Safe Parse Helper ----------
     const safeParse = (data) => {
@@ -924,7 +941,7 @@ const updateBrandListingByUUID = async (req, res) => {
     const removeExpansionLocationData = safeParse(req.body.removeExpansionLocationData) || req.body.removeExpansionLocationData;
     // console.log("Add Expansion Location Data:", addExpansionLocationData);
     // console.log("Remove Expansion Location Data:", removeExpansionLocationData);
-    console.log("Brand ID:", removeExpansionLocationData);
+    // console.log("Brand ID:", removeExpansionLocationData);
 
     let expensionLocationData = null;
     if (id && (addExpansionLocationData || removeExpansionLocationData)) {
@@ -942,8 +959,8 @@ const updateBrandListingByUUID = async (req, res) => {
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
 
-    console.log("ParseBrandDetails:",ParseBrandDetails)
-    console.log("parseFranchiseDetails",ParseFranchiseDetails);
+    // console.log("ParseBrandDetails:",ParseBrandDetails)
+    // console.log("parseFranchiseDetails",ParseFranchiseDetails);
     
 
     // ---------- BrandDetails ----------
@@ -980,9 +997,29 @@ const updateBrandListingByUUID = async (req, res) => {
           updates.$set[`brandDetails.${field}`] = ParseBrandDetails[field];
         }
       }
+      
+      if (ParseBrandDetails.paymentPackage) {
+        const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
+        const selectedPackage = ParseBrandDetails.paymentPackage; 
 
+        for (const key in PaymentPackagesData) {
+          if (key === selectedPackage) {
+            const matchedPackage = { ...PaymentPackagesData[key],  packageType: key,isActive: true,packageUpdatedTime: new Date()};
+
+            console.log("Matched Package:", key, matchedPackage);
+
+            updates.$set[`brandDetails.paymentPackage`] = matchedPackage;
+
+          }
+        }
+      }
     
-    
+      if (ParseBrandDetails.listingPackages) {
+        const selectedPackage = ParseBrandDetails.listingPackages; 
+
+        updates.$set[`brandDetails.listingPackages.periodMonths`] = selectedPackage?.periodMonths || selectedPackage?.period;
+        updates.$set[`brandDetails.listingPackages.amount`] = selectedPackage?.amount || selectedPackage?.amount;
+      }
     }
 
     // ---------- FranchiseDetails ----------
@@ -1107,12 +1144,12 @@ const updateBrandListingByUUID = async (req, res) => {
     }
 
     // ---------- Check if updates exist ----------
-    if (Object.keys(updates.$set).length === 0 && !expensionLocationData) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid updates provided",
-      });
-    }
+    // if (Object.keys(updates.$set).length === 0 && !expensionLocationData) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "No valid updates provided",
+    //   });
+    // }
 
     // ---------- Run Transaction ----------
     const session = await mongoose.startSession();
@@ -1149,7 +1186,7 @@ const updateBrandListingByUUID = async (req, res) => {
           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
         expensionLocationData: expensionLocationData || null,
       };
-console.log("resposnse data",responseData);
+// console.log("resposnse data",responseData);
 
       return res
         .status(200)
