@@ -10,6 +10,9 @@ import { InstantApplyPaidUserLeadsData } from "../../model/NewIncomeInvestor/ins
 import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
+import { paidLeadHelperFunction } from "./instantApplyPaidLeads.js";
+
+
 
 export const instantApplyLocationMatch = async (
   fullName,
@@ -31,46 +34,46 @@ export const instantApplyLocationMatch = async (
   applyId,
   brandLogo
 ) => {
-  console.log("Starting instantApplyLocationMatch with parameters:", {
-    fullName,
-    email,
-    mobileNumber,
-    brandName,
-    brandId,
-    brandEmail,
-    mainCategory,
-    subCategory,
-    childCategory,
-    state,
-    district,
-    city,
-    investmentRange,
-    planToInvest,
-    readyToInvest,
-    applyBy,
-    applyId,
-    brandLogo,
-  });
-  console.log(
-    "data",
-    email,
-    mobileNumber,
-    brandName,
-    brandId,
-    brandEmail,
-    mainCategory,
-    subCategory,
-    childCategory,
-    state,
-    district,
-    city,
-    investmentRange,
-    planToInvest,
-    readyToInvest,
-    applyBy,
-    applyId,
-    brandLogo
-  );
+  // console.log("Starting instantApplyLocationMatch with parameters:", {
+  //   fullName,
+  //   email,
+  //   mobileNumber,
+  //   brandName,
+  //   brandId,
+  //   brandEmail,
+  //   mainCategory,
+  //   subCategory,
+  //   childCategory,
+  //   state,
+  //   district,
+  //   city,
+  //   investmentRange,
+  //   planToInvest,
+  //   readyToInvest,
+  //   applyBy,
+  //   applyId,
+  //   brandLogo,
+  // });
+  // console.log(
+  //   "data",
+  //   email,
+  //   mobileNumber,
+  //   brandName,
+  //   brandId,
+  //   brandEmail,
+  //   mainCategory,
+  //   subCategory,
+  //   childCategory,
+  //   state,
+  //   district,
+  //   city,
+  //   investmentRange,
+  //   planToInvest,
+  //   readyToInvest,
+  //   applyBy,
+  //   applyId,
+  //   brandLogo
+  // );
 
   const config = await SystemConfig.findOne();
   const BATCH_SIZE = config?.batchSize || 7;
@@ -645,6 +648,15 @@ export const instantApplyLocationMatch = async (
         });
       }
     }
+    const catogory = {
+      mainCategory,subCategory
+    }
+    const location = {
+      state,
+      district,
+      city,
+    }
+    paidLeadHelperFunction(investmentRange,catogory,location)
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
     throw error;
