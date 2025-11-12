@@ -13,6 +13,23 @@ const BrandBatchSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isPaidCategoryInvestmentrangeLocationLeadsPaused: {
+    type: Boolean,
+    default: false,
+  },
+  isPaidCategoryInvestmentrangePaused: {
+    type: Boolean,
+    default: false,
+  },
+  isPaidCategoryLocationPaused: {
+    type: Boolean,
+    default: false,
+  },
+  isPaidLocationInvestmentRangeLeadsPaused: {
+    type: Boolean,
+    default: false,
+  },
+  
   updatedAt: {
     type: Date,
     default: Date.now,

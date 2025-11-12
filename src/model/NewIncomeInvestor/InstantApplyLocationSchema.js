@@ -18,7 +18,7 @@ const applyByEnum = ["Investor", "Brand", "other"];
 
 const BrandSentSchema = new mongoose.Schema({
   brandId: { 
-    type: mongoose.Schema.Types.UUID, 
+    type: String, 
     ref: "BrandDetails", 
     required: true 
   },
@@ -36,6 +36,10 @@ const BrandSentSchema = new mongoose.Schema({
   },
   emailSentAt: { 
     type: Date 
+  },
+  paidBrand:{
+    type: Number,
+    default: false
   }
 }, { _id: false });
 

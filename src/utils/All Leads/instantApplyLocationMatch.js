@@ -12,8 +12,6 @@ import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { paidLeadHelperFunction } from "./instantApplyPaidLeads.js";
 
-
-
 export const instantApplyLocationMatch = async (
   fullName,
   email,
@@ -345,7 +343,6 @@ export const instantApplyLocationMatch = async (
               emailSent: true,
               emailSentAt: new Date(),
             });
-           
           }
 
           // Update to next batch for next run
@@ -386,7 +383,7 @@ export const instantApplyLocationMatch = async (
         //   totalBrands: OverAllBrandExists.length,
         // };
       }
-    } 
+    }
 
     if (!brandBatchDoc.isPaidLeadsBrandPaused) {
       const aggregationPipeline = [
@@ -494,7 +491,7 @@ export const instantApplyLocationMatch = async (
           // console.log(" brand.uuid :", brand.uuid);
 
           // OLD CODE - COMMENTED OUT
-           const monthYear = new Date().toLocaleString("default", {
+          const monthYear = new Date().toLocaleString("default", {
             month: "short",
             year: "numeric",
           });
@@ -648,15 +645,99 @@ export const instantApplyLocationMatch = async (
         });
       }
     }
-    const catogory = {
-      mainCategory,subCategory
-    }
-    const location = {
+    let catogory = {
+      mainCategory,
+      subCategory,
+      childCategory,
+    };
+    let location = {
       state,
       district,
       city,
+    };
+    const investerData = {
+      fullName,
+      email,
+      mobileNumber,
+      planToInvest,
+      readyToInvest,
+      applyBy,
+      applyId,
+      location,
+      catogory,
+      investmentRange,
+    };
+
+    let brandsSent = [];
+    if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
+      const result = await paidLeadHelperFunction(
+        investmentRange,
+        catogory,
+        location,
+        investerData,
+        "CategoryInvestmentrangeLocation"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
     }
-    paidLeadHelperFunction(investmentRange,catogory,location)
+    if (!brandBatchDoc.isPaidCategoryLocationPaused) {
+      const result = await paidLeadHelperFunction(
+        false,
+        catogory,
+        location,
+        investerData,
+        "CategoryLocation"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused) {
+      const result = await paidLeadHelperFunction(
+        false,
+        catogory,
+        false,
+        investerData,
+        "CategoryInvestmentrange"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused) {
+      const result = await paidLeadHelperFunction(
+        investmentRange,
+        false,
+        location,
+        investerData,
+        "LocationInvestmentRange"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    console.log("===brandsSent.push(result)=== :", brandsSent);
+
+    const ddd = await InstantApplyInvestor.create({
+      investorEmail: email,
+      investorName: fullName,
+      investorPhone: mobileNumber,
+      category: [
+        { main: mainCategory, sub: subCategory, child: childCategory },
+      ],
+      location: { state, city, district },
+      investmentRange,
+      planToInvest,
+      readyToInvest,
+      apply: {
+        applyBy: applyBy || "other",
+        applyId: applyId || "other",
+      },
+      brandsSent: brandsSent[0],
+    });
+        console.log("===ddd=== :", ddd);
+
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
     throw error;

@@ -35,7 +35,15 @@ const categoryLocationMatchSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    
+    currentMonthMatch: {
+      month:{
+        type: Number,
+      },
+      match:{
+        type: Number,
+        default: 0,
+      },
+    },
     categoryLocationMatch: {
       type: Number,
       default: 0,

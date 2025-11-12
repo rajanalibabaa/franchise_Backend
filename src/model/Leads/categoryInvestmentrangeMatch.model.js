@@ -35,7 +35,15 @@ const categoryInvestmentrangeMatchSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    
+    currentMonthMatch: {
+      month:{
+        type: Number,
+      },
+      match:{
+        type: Number,
+        default: 0,
+      },
+    },
     categoryInvestmentrangeMatch: {
       type: Number,
       default: 0,

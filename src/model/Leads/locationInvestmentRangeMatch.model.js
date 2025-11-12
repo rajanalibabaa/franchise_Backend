@@ -35,7 +35,15 @@ const locationInvestmentRangeMatchSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    
+    currentMonthMatch: {
+      month:{
+        type: Number,
+      },
+      match:{
+        type: Number,
+        default: 0,
+      },
+    },
     locationInvestmentRangeMatch: {
       type: Number,
       default: 0,

@@ -230,24 +230,9 @@ export const getLeadStatus = async (req, res) => {
 // Enhanced version of your existing controller
 export const leadsFreeAndPaidStopAndStart = async (req, res) => {
   try {
-    const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused } = req.body;
+    const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused, isPaidCategoryInvestmentrangeLocationLeadsPaused, isPaidCategoryInvestmentrangePaused, isPaidCategoryLocationPaused, isPaidLocationInvestmentRangeLeadsPaused} = req.body;
 
-    // Validation
-    if (
-      isFreeLeadsBrandPaused === undefined &&
-      isPaidLeadsBrandPaused === undefined
-    ) {
-      return res
-        .status(400)
-        .json(
-          new ApiResponse(
-            400,
-            {},
-            "At least one field (isFreeLeadsBrandPaused or isPaidLeadsBrandPaused) must be provided"
-          )
-        );
-    }
-
+    
     let brandBatch = await BrandBatch.findOne({});
 
     if (!brandBatch) {
@@ -272,6 +257,18 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
     if (isPaidLeadsBrandPaused !== undefined) {
       updateData.isPaidLeadsBrandPaused = isPaidLeadsBrandPaused;
     }
+    if (isPaidCategoryInvestmentrangeLocationLeadsPaused !== undefined) {
+      updateData.isPaidCategoryInvestmentrangeLocationLeadsPaused = isPaidCategoryInvestmentrangeLocationLeadsPaused;
+    }
+    if (isPaidCategoryInvestmentrangePaused !== undefined) {
+      updateData.isPaidCategoryInvestmentrangePaused = isPaidCategoryInvestmentrangePaused;
+    }
+    if (isPaidCategoryLocationPaused !== undefined) {
+      updateData.isPaidCategoryLocationPaused = isPaidCategoryLocationPaused;
+    }
+    if (isPaidLocationInvestmentRangeLeadsPaused !== undefined) {
+      updateData.isPaidLocationInvestmentRangeLeadsPaused = isPaidLocationInvestmentRangeLeadsPaused;
+    }
 
     const updatedData = await BrandBatch.findByIdAndUpdate(
       brandBatch._id,
@@ -284,6 +281,10 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
       previousState: {
         isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused,
         isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused,
+        isPaidCategoryInvestmentrangeLocationLeadsPaused: brandBatch.isPaidCategoryInvestmentrangeLocationLeadsPaused,
+        isPaidCategoryInvestmentrangePaused: brandBatch.isPaidCategoryInvestmentrangePaused,
+        isPaidCategoryLocationPaused: brandBatch.isPaidCategoryLocationPaused,
+        isPaidLocationInvestmentRangeLeadsPaused: brandBatch.isPaidLocationInvestmentRangeLeadsPaused,
       },
       newState: updateData,
       updatedAt: new Date().toISOString(),
