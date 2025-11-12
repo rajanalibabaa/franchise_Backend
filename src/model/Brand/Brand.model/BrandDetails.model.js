@@ -66,22 +66,22 @@ const BrandDetailsSchema = new mongoose.Schema(
         },
         totalAmount: {
           type: Number,
-          required: true,
+          // required: true,
           min: 0,
         },
         totalMonths: {
           type: Number,
-          required: true,
+          // required: true,
           min: 1,
         },
         perMonthLead: {
           type: Number,
-          required: true,
+          // required: true,
           min: 0,
         },
         totalLeads: {
           type: Number,
-          required: true,
+          // required: true,
           min: 0,
         },
         isActive: {

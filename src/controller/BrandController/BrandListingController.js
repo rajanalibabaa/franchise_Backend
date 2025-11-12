@@ -20,7 +20,6 @@ import {
 } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
-import { console } from "inspector";
 import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
@@ -104,7 +103,7 @@ console.log("Incoming data:", req.body);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
     const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
 
-
+  console.log("Parsed brandDetails:", brandDetails);
 
 if (brandDetails.paymentPackage) {
         const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
