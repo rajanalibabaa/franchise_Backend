@@ -93,12 +93,10 @@ const BrandDetailsSchema = new mongoose.Schema(
       listingPackages: {
         periodMonths: {
           type: Number,
-          required: true,
           min: 1,
         },
         amount: {
           type: Number,
-          required: true,
           min: 0,
         },
       },

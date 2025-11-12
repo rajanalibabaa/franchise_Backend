@@ -305,28 +305,50 @@ if (brandDetails.paymentPackage) {
     }
    
 
-    const brandData = await NewIncomingBrands.create({
-      brandID,
-      uuid: id,
-      brandDetails,
-      franchiseDetails,
-      expansionLocationData,
-      uploads: {
-        brandLogo: uploadedFiles.brandLogo || [],
-        gstCertificate: uploadedFiles.gstCertificate || [],
-        pancard: uploadedFiles.pancard || [],
-        exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-        interiorOutlet: uploadedFiles.interiorOutlet || [],
-        franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-        brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-        businessPlan: uploadedFiles.businessPlan || [],
-        awards
-      }
-    })
-    console.log("franchisedetails",franchiseDetails);
-    
+     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
+      BrandDetails.create({
+        brandID,
+        uuid: id,
+        brandDetails
+      }),
+      BrandFranchiseDetails.create({
+        brandOwnerId: id,
+        franchiseDetails
+      }),
+      BrandExpansionLocationData.create({
+        brandOwnerId: id,
+        expansionLocationData
+      }),
+      BrandUploads.create({
+        brandOwnerId: id,
+        uploads: {
+          brandLogo: uploadedFiles.brandLogo || [],
+          gstCertificate: uploadedFiles.gstCertificate || [],
+          pancard: uploadedFiles.pancard || [],
+          exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+          interiorOutlet: uploadedFiles.interiorOutlet || [],
+          franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
+          brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+          businessPlan: uploadedFiles.businessPlan || [],
+          awards
+        }
+      })
+    ]);
+
+    // Check if all records were created successfully
+    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
+      return res.json(
+        new ApiResponse(500, {}, "Failed to create one or more brand records")
+      );
+    }
+
     return res.json(
-      new ApiResponse(201,brandData, "Brand listing created successfully")
+      new ApiResponse(201, {
+        brand: newBrand,
+        franchise: newBrandFranchiseDetails,
+        locations: newBrandExpansionLocationData,
+        uploads: newBrandUploads
+      }, "Brand listing created successfully")
     );
 
 

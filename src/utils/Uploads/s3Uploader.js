@@ -249,6 +249,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import mime from 'mime-types';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import ffmpegStatic from 'ffmpeg-static';
 
 dotenv.config();
 
@@ -335,7 +336,7 @@ export const uploadFileToS3 = async (filePath, mimetype = null) => {
 
 function runFFmpeg(args) {
   return new Promise((resolve, reject) => {
-    const ffmpegBin = process.env.FFMPEG_PATH || "ffmpeg";
+    const ffmpegBin = ffmpegStatic || process.env.FFMPEG_PATH || "ffmpeg";
     const p = spawn(ffmpegBin, args, { windowsHide: true });
 
     let stderr = "";
