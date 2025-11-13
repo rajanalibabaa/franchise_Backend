@@ -38,7 +38,7 @@ const BrandSentSchema = new mongoose.Schema({
     type: Date 
   },
   paidBrand:{
-    type: Number,
+    type: Boolean,
     default: false
   }
 }, { _id: false });

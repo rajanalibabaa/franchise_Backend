@@ -552,7 +552,7 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:true
+          paidBrand:Boolean(true)
         });
       }
       if (!brandBatchDoc.isPaidCategoryLocationPaused && "CategoryLocation" === check) {
@@ -567,7 +567,7 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:true
+          paidBrand:Boolean(true)
         });
       }
       if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused && "CategoryInvestmentrange" === check) {
@@ -582,7 +582,7 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:true
+          paidBrand:Boolean(true)
         });
       }
       if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused && "LocationInvestmentRange" === check) {
@@ -597,7 +597,7 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:true
+          paidBrand:Boolean(true)
         });
       }
     }

@@ -97,7 +97,7 @@ export const instantApplyLocationMatch = async (
   }
 
   let ignoreEmail = [];
-
+  let brandsSent = [];
   try {
     if (!brandBatchDoc.isFreeLeadsBrandPaused) {
       const aggregationPipeline = [
@@ -311,7 +311,7 @@ export const instantApplyLocationMatch = async (
           // };
         }
 
-        const brandsSent = [];
+        // const brandsSent = [];
 
         if (brandsToSend.length > 0) {
           for (const { brand, currentStats } of brandsToSend) {
@@ -353,23 +353,23 @@ export const instantApplyLocationMatch = async (
           brandBatchDoc.updatedAt = new Date();
           await brandBatchDoc.save();
 
-          await InstantApplyInvestor.create({
-            investorEmail: email,
-            investorName: fullName,
-            investorPhone: mobileNumber,
-            category: [
-              { main: mainCategory, sub: subCategory, child: childCategory },
-            ],
-            location: { state, city, district },
-            investmentRange,
-            planToInvest,
-            readyToInvest,
-            apply: {
-              applyBy: applyBy || "other",
-              applyId: applyId || "other",
-            },
-            brandsSent: brandsSent,
-          });
+          // await InstantApplyInvestor.create({
+          //   investorEmail: email,
+          //   investorName: fullName,
+          //   investorPhone: mobileNumber,
+          //   category: [
+          //     { main: mainCategory, sub: subCategory, child: childCategory },
+          //   ],
+          //   location: { state, city, district },
+          //   investmentRange,
+          //   planToInvest,
+          //   readyToInvest,
+          //   apply: {
+          //     applyBy: applyBy || "other",
+          //     applyId: applyId || "other",
+          //   },
+          //   brandsSent: brandsSent,
+          // });
         }
         // return {
         //   success: true,
@@ -668,7 +668,7 @@ export const instantApplyLocationMatch = async (
       investmentRange,
     };
 
-    let brandsSent = [];
+
     if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
       const result = await paidLeadHelperFunction(
         investmentRange,
