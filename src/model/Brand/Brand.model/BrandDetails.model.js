@@ -64,6 +64,7 @@ const BrandDetailsSchema = new mongoose.Schema(
           required: true,
           default:"free"
         },
+        
         totalAmount: {
           type: Number,
           // required: true,
