@@ -1,12 +1,5 @@
-import BrandListing from "../../model/Brand/brandListingPage.js";
-import {
-  sendInstantApplyLeadLocation,
-  sendPremiumPackageOfferEmail,
-} from "../Centralized Email/centralizedEmail.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
 import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js";
-// import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
-import { InstantApplyPaidUserLeadsData } from "../../model/NewIncomeInvestor/instantApplyPaidleadsModel.js";
 import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
@@ -83,8 +76,6 @@ export const instantApplyLocationMatch = async (
   }
 
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
 
   // Ensure brandBatchDoc exists before accessing its properties
   let brandBatchDoc = await BrandBatch.findOne({});

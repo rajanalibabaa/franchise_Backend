@@ -57,19 +57,19 @@ const CategoryInvestmentrangeLocationMatchFunction = async (
   }
   // console.log("brandDoc :", brandDoc);
 
-  await paidLeadInstantApplyEmail(
-    investorData?.fullName,
-    investorData.email,
-    investorData.mobileNumber,
-    brand.brandDetails.email,
-    brand.brandDetails.companyName,
-    investorData.category,
-    investorData.location,
-    investorData.investmentRange,
-    investorData.planToInvest,
-    investorData.readyToInvest,
-    "instantApply_LeadLocation_template"
-  )
+  // await paidLeadInstantApplyEmail(
+  //   investorData?.fullName,
+  //   investorData.email,
+  //   investorData.mobileNumber,
+  //   brand.brandDetails.email,
+  //   brand.brandDetails.companyName,
+  //   investorData.category,
+  //   investorData.location,
+  //   investorData.investmentRange,
+  //   investorData.planToInvest,
+  //   investorData.readyToInvest,
+  //   "instantApply_LeadLocation_template"
+  // )
 
   brandDoc = await CategoryInvestmentrangeLocationMatch.findByIdAndUpdate(
     brandDoc._id,
@@ -105,7 +105,7 @@ const CategoryInvestmentrangeMatchFunction = async (
   brand,
   investorData
 ) => {
-  // console.log("brand :",brand);
+  console.log("brand :",brand.brandDetails.paymentPackage);
 
   const currentDate = new Date();
   const date = currentDate.getDate();
@@ -393,6 +393,8 @@ export const paidLeadHelperFunction = async (
   investorData,
   check
 ) => {
+  
+  let brandBatchDoc = await BrandBatch.findOne({});
 
   const aggregationPipeline = [
     {
@@ -464,7 +466,7 @@ export const paidLeadHelperFunction = async (
     });
   }
 
-  if (location?.state && location?.district) {
+  if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
     aggregationPipeline.push({
       $match: {
         "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
@@ -505,8 +507,6 @@ export const paidLeadHelperFunction = async (
 
   const OverAllBrandExists = await BrandDetails.aggregate(aggregationPipeline);
   console.log("Paid Leads: Total eligible brands =", OverAllBrandExists.length);
-
-  let brandBatchDoc = await BrandBatch.findOne({});
 
   let brandsSent = [];
 

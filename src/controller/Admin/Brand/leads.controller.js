@@ -227,7 +227,7 @@ export const getLeadStatus = async (req, res) => {
 // Enhanced version of your existing controller
 export const leadsFreeAndPaidStopAndStart = async (req, res) => {
   try {
-    const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused, isPaidCategoryInvestmentrangeLocationLeadsPaused, isPaidCategoryInvestmentrangePaused, isPaidCategoryLocationPaused, isPaidLocationInvestmentRangeLeadsPaused} = req.body;
+    const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused, isPaidCategoryInvestmentrangeLocationLeadsPaused, isPaidCategoryInvestmentrangePaused, isPaidCategoryLocationPaused, isPaidLocationInvestmentRangeLeadsPaused, isDistrictMatchPaused} = req.body;
 
     
     let brandBatch = await BrandBatch.findOne({});
@@ -266,26 +266,15 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
     if (isPaidLocationInvestmentRangeLeadsPaused !== undefined) {
       updateData.isPaidLocationInvestmentRangeLeadsPaused = isPaidLocationInvestmentRangeLeadsPaused;
     }
+    if (isDistrictMatchPaused !== undefined) {
+      updateData.isDistrictMatchPaused = isDistrictMatchPaused;
+    }
 
     const updatedData = await BrandBatch.findByIdAndUpdate(
       brandBatch._id,
       { $set: updateData },
       { new: true }
     );
-
-    // Log the changes for audit
-    console.log("Lead settings updated:", {
-      previousState: {
-        isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused,
-        isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused,
-        isPaidCategoryInvestmentrangeLocationLeadsPaused: brandBatch.isPaidCategoryInvestmentrangeLocationLeadsPaused,
-        isPaidCategoryInvestmentrangePaused: brandBatch.isPaidCategoryInvestmentrangePaused,
-        isPaidCategoryLocationPaused: brandBatch.isPaidCategoryLocationPaused,
-        isPaidLocationInvestmentRangeLeadsPaused: brandBatch.isPaidLocationInvestmentRangeLeadsPaused,
-      },
-      newState: updateData,
-      updatedAt: new Date().toISOString(),
-    });
 
     return res.json(
       new ApiResponse(200, updatedData, "Lead settings updated successfully")

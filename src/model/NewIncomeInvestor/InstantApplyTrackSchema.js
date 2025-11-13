@@ -29,6 +29,10 @@ const BrandBatchSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isDistrictMatchPaused: {
+    type: Boolean,
+    default: false,
+  },
   
   updatedAt: {
     type: Date,
