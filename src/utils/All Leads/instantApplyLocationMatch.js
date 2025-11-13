@@ -96,9 +96,8 @@ export const instantApplyLocationMatch = async (
     });
   }
 
-  let ignoreEmail = [];
-  let brandsSent = [];
   try {
+    let brandsSent = [];
     if (!brandBatchDoc.isFreeLeadsBrandPaused) {
       const aggregationPipeline = [
         {
@@ -186,9 +185,6 @@ export const instantApplyLocationMatch = async (
         // console.log(`Processing batch ${currentBatch} with ${currentSlice.length} brands`);
 
         const brandsToSend = [];
-        // const now = new Date();
-        // const currentMonth = now.getMonth();
-        // const currentYear = now.getFullYear();
 
         for (const brand of currentSlice) {
           // console.log("Checking brand:", brand.brandDetails?.brandName);
@@ -304,37 +300,23 @@ export const instantApplyLocationMatch = async (
           brandBatchDoc.batch = currentBatch;
           await brandBatchDoc.save();
 
-          // return {
-          //   success: false,
-          //   message: "No matched brands found in current batch",
-          //   batch: currentBatch
-          // };
         }
 
-        // const brandsSent = [];
 
         if (brandsToSend.length > 0) {
           for (const { brand, currentStats } of brandsToSend) {
-            await sendInstantApplyLeadLocation(
-              fullName,
-              email,
-              mobileNumber,
-              brand.brandDetails?.email || "",
-              brand.brandDetails?.brandName || "",
-              `${mainCategory},${subCategory},${childCategory}`,
-              `${state},${district},${city}`,
-              investmentRange,
-              planToInvest,
-              readyToInvest
-            );
-
-            // OLD CODE - COMMENTED OUT
-            // countDoc.emailCount += 1;
-            // countDoc.emailRecords.push({
-            //   investorEmail: email,
-            //   sentAt: new Date(),
-            // });
-            // await countDoc.save();
+            // await sendInstantApplyLeadLocation(
+            //   fullName,
+            //   email,
+            //   mobileNumber,
+            //   brand.brandDetails?.email || "",
+            //   brand.brandDetails?.brandName || "",
+            //   `${mainCategory},${subCategory},${childCategory}`,
+            //   `${state},${district},${city}`,
+            //   investmentRange,
+            //   planToInvest,
+            //   readyToInvest
+            // );
 
             brandsSent.push({
               brandId: brand.uuid,
@@ -342,6 +324,7 @@ export const instantApplyLocationMatch = async (
               brandEmail: brand.brandDetails?.email || "",
               emailSent: true,
               emailSentAt: new Date(),
+              leadMatchBy:"location"
             });
           }
 
@@ -353,296 +336,7 @@ export const instantApplyLocationMatch = async (
           brandBatchDoc.updatedAt = new Date();
           await brandBatchDoc.save();
 
-          // await InstantApplyInvestor.create({
-          //   investorEmail: email,
-          //   investorName: fullName,
-          //   investorPhone: mobileNumber,
-          //   category: [
-          //     { main: mainCategory, sub: subCategory, child: childCategory },
-          //   ],
-          //   location: { state, city, district },
-          //   investmentRange,
-          //   planToInvest,
-          //   readyToInvest,
-          //   apply: {
-          //     applyBy: applyBy || "other",
-          //     applyId: applyId || "other",
-          //   },
-          //   brandsSent: brandsSent,
-          // });
         }
-        // return {
-        //   success: true,
-        //   message: "Instant apply processed successfully",
-        //   brandsSent: brandsSent.map(b => ({
-        //     brandId: b.brandId,
-        //     brandName: b.brandName,
-        //     status: 'email_sent'
-        //   })),
-        //   batch: currentBatch,
-        //   totalBrands: OverAllBrandExists.length,
-        // };
-      }
-    }
-
-    if (!brandBatchDoc.isPaidLeadsBrandPaused) {
-      const aggregationPipeline = [
-        {
-          $match: {
-            "brandDetails.isBrandPause": { $ne: true },
-            "brandDetails.email": { $nin: ignoreEmail },
-            "brandDetails.payment": true,
-          },
-        },
-        {
-          $lookup: {
-            from: "brandfranchisedetails",
-            localField: "uuid",
-            foreignField: "brandOwnerId",
-            as: "franchiseDetails",
-          },
-        },
-        {
-          $lookup: {
-            from: "branduploads",
-            localField: "uuid",
-            foreignField: "brandOwnerId",
-            as: "uploads",
-          },
-        },
-        {
-          $lookup: {
-            from: "brandexpansionlocationdatas",
-            localField: "uuid",
-            foreignField: "brandOwnerId",
-            as: "expansionLocationDatas",
-          },
-        },
-        {
-          $unwind: {
-            path: "$franchiseDetails",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-        {
-          $unwind: {
-            path: "$expansionLocationDatas",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            uuid: 1,
-            brandID: 1,
-            brandDetails: 1,
-            franchiseDetails: 1,
-            uploads: 1,
-            expansionLocationDatas: 1,
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        },
-      ];
-
-      const OverAllBrandExists = await BrandDetails.aggregate(
-        aggregationPipeline
-      );
-      console.log(
-        "Paid Leads: Total eligible brands =",
-        OverAllBrandExists.length
-      );
-
-      const brandsSent = [];
-
-      if (OverAllBrandExists.length > 0) {
-        // console.log("Paid Leads: Total eligible brands =", OverAllBrandExists.length);
-
-        const brandsToSend = [];
-        // const now = new Date();
-        // const currentMonth = now.getMonth();
-        // const currentYear = now.getFullYear();
-
-        for (const brand of OverAllBrandExists) {
-          const expansionData =
-            brand.expansionLocationDatas?.expansionLocationData;
-          const domesticLocations = expansionData?.expansionLocations?.domestic;
-
-          let locations = [];
-          if (Array.isArray(domesticLocations?.locations)) {
-            locations = domesticLocations.locations
-              .map((loc) => (typeof loc === "string" ? loc : loc?.state))
-              .filter(Boolean);
-          } else if (domesticLocations?.locations?.state) {
-            locations = Array.isArray(domesticLocations.locations.state)
-              ? domesticLocations.locations.state
-              : [domesticLocations.locations.state];
-          }
-
-          if (locations.length === 0) continue;
-
-          const normalizedState = state.toLowerCase();
-          const match = locations.some(
-            (loc) => loc && loc.toString().toLowerCase() === normalizedState
-          );
-
-          if (!match) continue;
-          // console.log(" brand.uuid :", brand.uuid);
-
-          // OLD CODE - COMMENTED OUT
-          const monthYear = new Date().toLocaleString("default", {
-            month: "short",
-            year: "numeric",
-          });
-
-          let brandDoc = await BrandEmailCount.findOne({
-            brandId: brand.uuid,
-            brandName: brand.brandDetails?.brandName || "",
-          });
-
-          if (!brandDoc) {
-            brandDoc = await BrandEmailCount.create({
-              brandId: brand.uuid,
-              brandName: brand.brandDetails?.brandName || "",
-              paidEmailCount: 0,
-              paidEmailRecords: [],
-            });
-          }
-
-          let monthRecord = brandDoc.paidEmailRecords.find(
-            (r) => r.monthYear === monthYear
-          );
-
-          console.log(monthRecord, "monthRecord");
-          if (!monthRecord) {
-            monthRecord = {
-              monthYear,
-              count: 0,
-              records: [],
-            };
-            brandDoc.paidEmailRecords.push(monthRecord);
-          }
-
-          // ✅ Now safely push investor record
-          const investorData = {
-            investorId: applyId || "",
-            investorName: fullName,
-            investorEmail: email,
-            investorMobile: mobileNumber,
-            sentAt: now,
-          };
-
-          // ⚠️ Mongoose doesn’t auto-track deep nested array mutation sometimes,
-          // so we reassign after mutation to ensure change tracking.
-          const monthIndex = brandDoc.paidEmailRecords.findIndex(
-            (r) => r.monthYear === monthYear
-          );
-          brandDoc.paidEmailRecords[monthIndex].records.push(investorData);
-          brandDoc.paidEmailRecords[monthIndex].count += 1;
-          // ✅ Increment total count
-          brandDoc.paidEmailCount += 1;
-
-          // 🚀 Force mongoose to detect nested change
-          brandDoc.markModified("paidEmailRecords");
-
-          // 💾 Finally save
-          await brandDoc.save();
-
-          console.log(
-            "✅ Investor record stored successfully for",
-            brandDoc.brandName
-          );
-          brandsToSend.push({ brand, brandDoc });
-
-          // ✅ NEW CODE - Use the new email tracking service for paid leads
-          const { currentStats } =
-            await emailTrackingService.getCurrentMonthStats(
-              brand.uuid,
-              brand.brandDetails?.brandName || ""
-            );
-          brandsToSend.push({ brand, currentStats });
-        }
-
-        for (const { brand, currentStats } of brandsToSend) {
-          // console.log("📨 Sending paid lead email to:", brand.brandDetails?.email);
-
-          await sendInstantApplyLeadLocation(
-            fullName,
-            email,
-            mobileNumber,
-            brand.brandDetails?.email || "",
-            brand.brandDetails?.brandName || "",
-            `${mainCategory},${subCategory},${childCategory}`,
-            `${state},${district},${city}`,
-            investmentRange,
-            planToInvest,
-            readyToInvest
-          );
-
-          // OLD CODE - COMMENTED OUT
-          // countDoc.premiumOfferCount += 1;
-          // countDoc.premiumOfferRecords.push({
-          //   investorEmail: email,
-          //   sentAt: new Date(),
-          // });
-          // await countDoc.save();
-
-          // ✅ NEW CODE - Use the service to record the premium offer email
-          await emailTrackingService.recordEmail(
-            brand.uuid,
-            email,
-            true, // isPremiumOffer = true for paid leads
-            brand.brandDetails?.brandName || ""
-          );
-
-          brandsSent.push({
-            brandId: brand.uuid,
-            brandName: brand.brandDetails?.brandName || "",
-            brandEmail: brand.brandDetails?.email || "",
-            emailSent: true,
-            emailSentAt: new Date(),
-          });
-        }
-
-        await InstantApplyPaidUserLeadsData.create({
-          investorEmail: email,
-          investorName: fullName,
-          investorPhone: mobileNumber,
-          category: [
-            { main: mainCategory, sub: subCategory, child: childCategory },
-          ],
-          location: { state, city, district },
-          investmentRange,
-          planToInvest,
-          readyToInvest,
-          apply: {
-            applyBy: applyBy || "other",
-            applyId: applyId || "other",
-          },
-          brandsSent: brandsSent,
-        });
-
-        // console.log(`✅ Paid leads processed: ${brandsSent.map(b => `- ${b.brandName} (${b.brandEmail})`)
-        // .join("\n")}} emails sent`);
-      } else {
-        await InstantApplyPaidUserLeadsData.create({
-          investorEmail: email,
-          investorName: fullName,
-          investorPhone: mobileNumber,
-          category: [
-            { main: mainCategory, sub: subCategory, child: childCategory },
-          ],
-          location: { state, city, district },
-          investmentRange,
-          planToInvest,
-          readyToInvest,
-          apply: {
-            applyBy: applyBy || "other",
-            applyId: applyId || "other",
-          },
-          brandsSent: brandsSent,
-        });
       }
     }
     let catogory = {
@@ -667,8 +361,7 @@ export const instantApplyLocationMatch = async (
       catogory,
       investmentRange,
     };
-
-
+    
     if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
       const result = await paidLeadHelperFunction(
         investmentRange,
@@ -678,7 +371,8 @@ export const instantApplyLocationMatch = async (
         "CategoryInvestmentrangeLocation"
       );
       if (result.length > 0) {
-        brandsSent.push(result);
+       result.map(d => brandsSent.push(d));
+        
       }
     }
     if (!brandBatchDoc.isPaidCategoryLocationPaused) {
@@ -690,7 +384,7 @@ export const instantApplyLocationMatch = async (
         "CategoryLocation"
       );
       if (result.length > 0) {
-        brandsSent.push(result);
+       result.map(d => brandsSent.push(d));
       }
     }
     if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused) {
@@ -702,7 +396,7 @@ export const instantApplyLocationMatch = async (
         "CategoryInvestmentrange"
       );
       if (result.length > 0) {
-        brandsSent.push(result);
+       result.map(d => brandsSent.push(d));
       }
     }
     if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused) {
@@ -714,12 +408,10 @@ export const instantApplyLocationMatch = async (
         "LocationInvestmentRange"
       );
       if (result.length > 0) {
-        brandsSent.push(result);
+       result.map(d => brandsSent.push(d));
       }
     }
-    console.log("===brandsSent.push(result)=== :", brandsSent);
-
-    const ddd = await InstantApplyInvestor.create({
+    await InstantApplyInvestor.create({
       investorEmail: email,
       investorName: fullName,
       investorPhone: mobileNumber,
@@ -734,9 +426,8 @@ export const instantApplyLocationMatch = async (
         applyBy: applyBy || "other",
         applyId: applyId || "other",
       },
-      brandsSent: brandsSent[0],
+      brandsSent: brandsSent,
     });
-    
 
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);

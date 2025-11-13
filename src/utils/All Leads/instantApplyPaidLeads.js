@@ -1,11 +1,7 @@
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
-import { InstantApplyPaidUserLeadsData } from "../../model/NewIncomeInvestor/instantApplyPaidleadsModel.js";
-
 import { CategoryInvestmentrangeLocationMatch } from "../../model/Leads/categoryInvestmentrangeLocationMatch.model.js";
 import { paidLeadInstantApplyEmail } from "../Centralized Email/centralizedEmail.js";
 import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js";
-
-import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js"
 import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
 import { LocationInvestmentRangeMatch } from "../../model/Leads/locationInvestmentRangeMatch.model.js";
@@ -137,7 +133,7 @@ const CategoryInvestmentrangeMatchFunction = async (
           "currentMonthMatch.match": 0,
         },
         $push: {
-          categoryInvestmentrangeLocationMatchRecords: {
+          categoryInvestmentrangeMatchRecords: {
             $each: [
               {
                 monthYear: monthYear,
@@ -155,30 +151,30 @@ const CategoryInvestmentrangeMatchFunction = async (
     );
   }
 
-  await paidLeadInstantApplyEmail(
-    investorData?.fullName,
-    investorData.email,
-    investorData.mobileNumber,
-    brand.brandDetails.email,
-    brand.brandDetails.companyName,
-    investorData.category,
-    investorData.location,
-    investorData.investmentRange,
-    investorData.planToInvest,
-    investorData.readyToInvest,
-    "instantApply_LeadLocation_template"
-  )
+  // await paidLeadInstantApplyEmail(
+  //   investorData?.fullName,
+  //   investorData.email,
+  //   investorData.mobileNumber,
+  //   brand.brandDetails.email,
+  //   brand.brandDetails.companyName,
+  //   investorData.category,
+  //   investorData.location,
+  //   investorData.investmentRange,
+  //   investorData.planToInvest,
+  //   investorData.readyToInvest,
+  //   "instantApply_LeadLocation_template"
+  // )
 
   brandDoc = await CategoryInvestmentrangeMatch.findByIdAndUpdate(
     brandDoc._id,
     {
       $inc: {
         "currentMonthMatch.match": 1,
-        "categoryInvestmentrangeLocationMatchRecords.0.count": 1,
-        categoryInvestmentrangeLocationMatch: 1,
+        "categoryInvestmentrangeMatchRecords.0.count": 1,
+        categoryInvestmentrangeMatch: 1,
       },
       $push: {
-        "categoryInvestmentrangeLocationMatchRecords.0.records": {
+        "categoryInvestmentrangeMatchRecords.0.records": {
           $each: [
             {
               investorId: investorData?.applyId,
@@ -231,7 +227,7 @@ const CategoryLocationMatchFunction = async (
           "currentMonthMatch.match": 0,
         },
         $push: {
-          categoryInvestmentrangeLocationMatchRecords: {
+          categoryLocationMatchRecords: {
             $each: [
               {
                 monthYear: monthYear,
@@ -250,30 +246,30 @@ const CategoryLocationMatchFunction = async (
   }
   // console.log("brandDoc :", brandDoc);
 
-  await paidLeadInstantApplyEmail(
-    investorData?.fullName,
-    investorData.email,
-    investorData.mobileNumber,
-    brand.brandDetails.email,
-    brand.brandDetails.companyName,
-    investorData.category,
-    investorData.location,
-    investorData.investmentRange,
-    investorData.planToInvest,
-    investorData.readyToInvest,
-    "instantApply_LeadLocation_template"
-  )
+  // await paidLeadInstantApplyEmail(
+  //   investorData?.fullName,
+  //   investorData.email,
+  //   investorData.mobileNumber,
+  //   brand.brandDetails.email,
+  //   brand.brandDetails.companyName,
+  //   investorData.category,
+  //   investorData.location,
+  //   investorData.investmentRange,
+  //   investorData.planToInvest,
+  //   investorData.readyToInvest,
+  //   "instantApply_LeadLocation_template"
+  // )
 
   brandDoc = await CategoryLocationMatch.findByIdAndUpdate(
     brandDoc._id,
     {
       $inc: {
         "currentMonthMatch.match": 1,
-        "categoryInvestmentrangeLocationMatchRecords.0.count": 1,
-        categoryInvestmentrangeLocationMatch: 1,
+        "categoryLocationMatchRecords.0.count": 1,
+        categoryLocationMatch: 1,
       },
       $push: {
-        "categoryInvestmentrangeLocationMatchRecords.0.records": {
+        "categoryLocationMatchRecords.0.records": {
           $each: [
             {
               investorId: investorData?.applyId,
@@ -326,7 +322,7 @@ const LocationInvestmentRangeMatchFunction = async (
           "currentMonthMatch.match": 0,
         },
         $push: {
-          categoryInvestmentrangeLocationMatchRecords: {
+          locationInvestmentRangeMatchRecords: {
             $each: [
               {
                 monthYear: monthYear,
@@ -345,30 +341,30 @@ const LocationInvestmentRangeMatchFunction = async (
   }
   // console.log("brandDoc :", brandDoc);
 
-  await paidLeadInstantApplyEmail(
-    investorData?.fullName,
-    investorData.email,
-    investorData.mobileNumber,
-    brand.brandDetails.email,
-    brand.brandDetails.companyName,
-    investorData.category,
-    investorData.location,
-    investorData.investmentRange,
-    investorData.planToInvest,
-    investorData.readyToInvest,
-    "instantApply_LeadLocation_template"
-  )
+  // await paidLeadInstantApplyEmail(
+  //   investorData?.fullName,
+  //   investorData.email,
+  //   investorData.mobileNumber,
+  //   brand.brandDetails.email,
+  //   brand.brandDetails.companyName,
+  //   investorData.category,
+  //   investorData.location,
+  //   investorData.investmentRange,
+  //   investorData.planToInvest,
+  //   investorData.readyToInvest,
+  //   "instantApply_LeadLocation_template"
+  // )
 
   brandDoc = await LocationInvestmentRangeMatch.findByIdAndUpdate(
     brandDoc._id,
     {
       $inc: {
         "currentMonthMatch.match": 1,
-        "categoryInvestmentrangeLocationMatchRecords.0.count": 1,
-        categoryInvestmentrangeLocationMatch: 1,
+        "locationInvestmentRangeMatchRecords.0.count": 1,
+        locationInvestmentRangeMatch: 1,
       },
       $push: {
-        "categoryInvestmentrangeLocationMatchRecords.0.records": {
+        "locationInvestmentRangeMatchRecords.0.records": {
           $each: [
             {
               investorId: investorData?.applyId,
@@ -467,29 +463,6 @@ export const paidLeadHelperFunction = async (
       },
     });
   }
-    // if (location) {
-    //   const andConditions = [];
-
-    //   if (location?.state) {
-    //     andConditions.push({
-    //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
-    //         location.state,
-    //     });
-    //   }
-
-    //   if (location?.district) {
-    //     andConditions.push({
-    //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.districts.district":
-    //         location.district,
-    //     });
-    //   }
-
-    //   if (andConditions.length > 0) {
-    //     aggregationPipeline.push({
-    //       $match: { $and: andConditions },
-    //     });
-    //   }
-    // }
 
   if (location?.state && location?.district) {
     aggregationPipeline.push({
@@ -552,7 +525,8 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:Boolean(true)
+          paidBrand:Boolean(true),
+          leadMatchBy:"Category_Investmentrange_LocationMatch"
         });
       }
       if (!brandBatchDoc.isPaidCategoryLocationPaused && "CategoryLocation" === check) {
@@ -567,7 +541,9 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:Boolean(true)
+          paidBrand:Boolean(true),
+          leadMatchBy:"Category_LocationMatch"
+
         });
       }
       if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused && "CategoryInvestmentrange" === check) {
@@ -582,7 +558,9 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:Boolean(true)
+          paidBrand:Boolean(true),
+          leadMatchBy:"Category_Investmentrange"
+
         });
       }
       if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused && "LocationInvestmentRange" === check) {
@@ -597,33 +575,11 @@ export const paidLeadHelperFunction = async (
           brandEmail: brand.brandDetails?.email || "",
           emailSent: true,
           emailSentAt: new Date(),
-          paidBrand:Boolean(true)
+          paidBrand:Boolean(true),
+          leadMatchBy:"Location_Investmentrange"
         });
       }
     }
   }
-  
-  // const data = await InstantApplyInvestor.create({
-  //   investorEmail: investorData.email,
-  //   investorName: investorData?.fullName,
-  //   investorPhone: investorData?.mobileNumber,
-  //   category: [
-  //     { main: category?.mainCategory, sub: category?.subCategory, child: category?.childCategory },
-  //   ],
-  //   location: { state :investorData.location?.state, city: investorData.location.city, district:investorData.location.district },
-  //   investmentRange, 
-  //   planToInvest: investorData?.planToInvest,
-  //   readyToInvest: investorData?.readyToInvest,
-  //   apply: {
-  //     applyBy: investorData?.applyBy || "other",
-  //     applyId: investorData?.applyId || "other",
-  //   },
-  //   brandsSent: brandsSent,
-  // });
-
-  // console.log("===data=== :",data);
-  // brandsSent = []
-
-  
   return brandsSent
 };

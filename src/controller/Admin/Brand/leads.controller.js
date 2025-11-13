@@ -214,10 +214,7 @@ export const getLeadStatus = async (req, res) => {
       new ApiResponse(
         200,
         {
-          isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused || false,
-          isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused || false,
-          _id: brandBatch._id,
-          updatedAt: brandBatch.updatedAt,
+          brandBatch
         },
         "Lead status retrieved successfully"
       )
