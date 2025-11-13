@@ -736,7 +736,7 @@ export const instantApplyLocationMatch = async (
       },
       brandsSent: brandsSent[0],
     });
-        console.log("===ddd=== :", ddd);
+    
 
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
