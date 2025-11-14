@@ -17,7 +17,7 @@ const monthlyRecordSchema = new mongoose.Schema(
   {
     monthYear: { type: String, required: true }, 
     count: { type: Number, default: 0 },
-    records: [emailRecordSchema],
+    leadsRecords: [emailRecordSchema],
   },
   { _id: false }
 );
@@ -35,22 +35,27 @@ const categoryInvestmentrangeMatchSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    currentMonthMatch: {
-      month:{
-        type: Number,
-      },
-      match:{
-        type: Number,
-        default: 0,
-      },
-    },
-    categoryInvestmentrangeMatch: {
-      type: Number,
-      default: 0,
-    },
+    
     categoryInvestmentrangeMatchRecords: {
-      type: [monthlyRecordSchema],
-      default: [],
+      type: [
+        {
+          packageType: {
+            type: String
+          },
+          packageStartDate: {
+            type: String
+          },
+          packageEndDate: {
+            type: String
+          },
+          leadCount: {
+            type: Number,
+            default: 0,
+          },
+          records :[monthlyRecordSchema]
+        },
+        { _id: false }
+      ],
     },
   },
   { timestamps: true }

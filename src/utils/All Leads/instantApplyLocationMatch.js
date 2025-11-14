@@ -359,7 +359,8 @@ export const instantApplyLocationMatch = async (
         catogory,
         location,
         investerData,
-        "CategoryInvestmentrangeLocation"
+        "CategoryInvestmentrangeLocation",
+        true
       );
       if (result.length > 0) {
        result.map(d => brandsSent.push(d));
@@ -372,7 +373,8 @@ export const instantApplyLocationMatch = async (
         catogory,
         location,
         investerData,
-        "CategoryLocation"
+        "CategoryLocation",
+        true
       );
       if (result.length > 0) {
        result.map(d => brandsSent.push(d));
@@ -384,7 +386,8 @@ export const instantApplyLocationMatch = async (
         catogory,
         false,
         investerData,
-        "CategoryInvestmentrange"
+        "CategoryInvestmentrange",
+        true
       );
       if (result.length > 0) {
        result.map(d => brandsSent.push(d));
@@ -396,7 +399,8 @@ export const instantApplyLocationMatch = async (
         false,
         location,
         investerData,
-        "LocationInvestmentRange"
+        "LocationInvestmentRange",
+        true
       );
       if (result.length > 0) {
        result.map(d => brandsSent.push(d));
