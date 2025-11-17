@@ -15,7 +15,8 @@ const emailRecordSchema = new mongoose.Schema(
 
 const monthlyRecordSchema = new mongoose.Schema(
   {
-    monthYear: { type: String, required: true }, 
+    range: { type: String, required: true }, 
+    monthNumber: { type: Number, required: true }, 
     count: { type: Number, default: 0 },
     leadsRecords: [emailRecordSchema],
   },
