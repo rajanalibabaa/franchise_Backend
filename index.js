@@ -46,6 +46,8 @@ app.use(helmet());
 //   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
 //   optionsSuccessStatus: 200,
 // }));
+
+
 const allowedOrigins = [
   "https://fb.mrfranchise.in",
   "http://localhost:5173",
