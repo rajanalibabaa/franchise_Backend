@@ -10,6 +10,7 @@ import { InstantApplyPaidUserLeadsData } from "../../model/NewIncomeInvestor/ins
 import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
+import { paidLeadHelperFunction } from "./instantApplyPaidLeads.js";
 
 export const instantApplyLocationMatch = async (
   fullName,
@@ -31,46 +32,46 @@ export const instantApplyLocationMatch = async (
   applyId,
   brandLogo
 ) => {
-  console.log("Starting instantApplyLocationMatch with parameters:", {
-    fullName,
-    email,
-    mobileNumber,
-    brandName,
-    brandId,
-    brandEmail,
-    mainCategory,
-    subCategory,
-    childCategory,
-    state,
-    district,
-    city,
-    investmentRange,
-    planToInvest,
-    readyToInvest,
-    applyBy,
-    applyId,
-    brandLogo,
-  });
-  console.log(
-    "data",
-    email,
-    mobileNumber,
-    brandName,
-    brandId,
-    brandEmail,
-    mainCategory,
-    subCategory,
-    childCategory,
-    state,
-    district,
-    city,
-    investmentRange,
-    planToInvest,
-    readyToInvest,
-    applyBy,
-    applyId,
-    brandLogo
-  );
+  // console.log("Starting instantApplyLocationMatch with parameters:", {
+  //   fullName,
+  //   email,
+  //   mobileNumber,
+  //   brandName,
+  //   brandId,
+  //   brandEmail,
+  //   mainCategory,
+  //   subCategory,
+  //   childCategory,
+  //   state,
+  //   district,
+  //   city,
+  //   investmentRange,
+  //   planToInvest,
+  //   readyToInvest,
+  //   applyBy,
+  //   applyId,
+  //   brandLogo,
+  // });
+  // console.log(
+  //   "data",
+  //   email,
+  //   mobileNumber,
+  //   brandName,
+  //   brandId,
+  //   brandEmail,
+  //   mainCategory,
+  //   subCategory,
+  //   childCategory,
+  //   state,
+  //   district,
+  //   city,
+  //   investmentRange,
+  //   planToInvest,
+  //   readyToInvest,
+  //   applyBy,
+  //   applyId,
+  //   brandLogo
+  // );
 
   const config = await SystemConfig.findOne();
   const BATCH_SIZE = config?.batchSize || 7;
@@ -96,7 +97,7 @@ export const instantApplyLocationMatch = async (
   }
 
   let ignoreEmail = [];
-
+  let brandsSent = [];
   try {
     if (!brandBatchDoc.isFreeLeadsBrandPaused) {
       const aggregationPipeline = [
@@ -310,7 +311,7 @@ export const instantApplyLocationMatch = async (
           // };
         }
 
-        const brandsSent = [];
+        // const brandsSent = [];
 
         if (brandsToSend.length > 0) {
           for (const { brand, currentStats } of brandsToSend) {
@@ -342,7 +343,6 @@ export const instantApplyLocationMatch = async (
               emailSent: true,
               emailSentAt: new Date(),
             });
-           
           }
 
           // Update to next batch for next run
@@ -353,23 +353,23 @@ export const instantApplyLocationMatch = async (
           brandBatchDoc.updatedAt = new Date();
           await brandBatchDoc.save();
 
-          await InstantApplyInvestor.create({
-            investorEmail: email,
-            investorName: fullName,
-            investorPhone: mobileNumber,
-            category: [
-              { main: mainCategory, sub: subCategory, child: childCategory },
-            ],
-            location: { state, city, district },
-            investmentRange,
-            planToInvest,
-            readyToInvest,
-            apply: {
-              applyBy: applyBy || "other",
-              applyId: applyId || "other",
-            },
-            brandsSent: brandsSent,
-          });
+          // await InstantApplyInvestor.create({
+          //   investorEmail: email,
+          //   investorName: fullName,
+          //   investorPhone: mobileNumber,
+          //   category: [
+          //     { main: mainCategory, sub: subCategory, child: childCategory },
+          //   ],
+          //   location: { state, city, district },
+          //   investmentRange,
+          //   planToInvest,
+          //   readyToInvest,
+          //   apply: {
+          //     applyBy: applyBy || "other",
+          //     applyId: applyId || "other",
+          //   },
+          //   brandsSent: brandsSent,
+          // });
         }
         // return {
         //   success: true,
@@ -383,7 +383,7 @@ export const instantApplyLocationMatch = async (
         //   totalBrands: OverAllBrandExists.length,
         // };
       }
-    } 
+    }
 
     if (!brandBatchDoc.isPaidLeadsBrandPaused) {
       const aggregationPipeline = [
@@ -491,7 +491,7 @@ export const instantApplyLocationMatch = async (
           // console.log(" brand.uuid :", brand.uuid);
 
           // OLD CODE - COMMENTED OUT
-           const monthYear = new Date().toLocaleString("default", {
+          const monthYear = new Date().toLocaleString("default", {
             month: "short",
             year: "numeric",
           });
@@ -645,6 +645,99 @@ export const instantApplyLocationMatch = async (
         });
       }
     }
+    let catogory = {
+      mainCategory,
+      subCategory,
+      childCategory,
+    };
+    let location = {
+      state,
+      district,
+      city,
+    };
+    const investerData = {
+      fullName,
+      email,
+      mobileNumber,
+      planToInvest,
+      readyToInvest,
+      applyBy,
+      applyId,
+      location,
+      catogory,
+      investmentRange,
+    };
+
+
+    if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
+      const result = await paidLeadHelperFunction(
+        investmentRange,
+        catogory,
+        location,
+        investerData,
+        "CategoryInvestmentrangeLocation"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    if (!brandBatchDoc.isPaidCategoryLocationPaused) {
+      const result = await paidLeadHelperFunction(
+        false,
+        catogory,
+        location,
+        investerData,
+        "CategoryLocation"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused) {
+      const result = await paidLeadHelperFunction(
+        false,
+        catogory,
+        false,
+        investerData,
+        "CategoryInvestmentrange"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused) {
+      const result = await paidLeadHelperFunction(
+        investmentRange,
+        false,
+        location,
+        investerData,
+        "LocationInvestmentRange"
+      );
+      if (result.length > 0) {
+        brandsSent.push(result);
+      }
+    }
+    console.log("===brandsSent.push(result)=== :", brandsSent);
+
+    const ddd = await InstantApplyInvestor.create({
+      investorEmail: email,
+      investorName: fullName,
+      investorPhone: mobileNumber,
+      category: [
+        { main: mainCategory, sub: subCategory, child: childCategory },
+      ],
+      location: { state, city, district },
+      investmentRange,
+      planToInvest,
+      readyToInvest,
+      apply: {
+        applyBy: applyBy || "other",
+        applyId: applyId || "other",
+      },
+      brandsSent: brandsSent[0],
+    });
+    
+
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
     throw error;

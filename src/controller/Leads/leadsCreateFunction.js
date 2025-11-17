@@ -23,7 +23,7 @@ export const industryMapping = {
 };
 
 export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
-console.log('leads creation',body);
+// console.log('leads creation',body);
 
 
   try {

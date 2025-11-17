@@ -127,6 +127,40 @@ export const sendInstantApplyLeadLocation = async (
 };
 
 
+export const paidLeadInstantApplyEmail = async (
+  fullName,
+  email,
+  mobileNumber,
+  brandEmail,
+  brandCompanyName,
+  categories,
+  location,
+  investmentRange,
+  planToInvest,
+  readyToInvest,
+  emailTemplate
+) => {
+  const subject = "You Have A Good News, New Instant Applier Details Here..! ";
+  const emailTemplateName = emailTemplate 
+  console.log("emailTemplateName :",emailTemplateName)
+  const emailData = {
+    brandCompanyName: brandCompanyName,
+    name: fullName,
+    email: email,
+    mobileNumber: mobileNumber,
+    categories: categories,
+    location: location,
+    investmentRange: investmentRange,
+    emailSubject: subject,
+    planToInvest: planToInvest,
+    readyToInvest: readyToInvest,
+  };
+
+
+  // Call the sendEmail function
+  await sendEmail(brandEmail, subject, emailTemplateName, emailData);
+};
+
 export const sendPremiumPackageOfferEmail = async (
   fullName,
   email,
