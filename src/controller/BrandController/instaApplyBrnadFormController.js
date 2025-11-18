@@ -132,7 +132,7 @@ export const instaApplyBrandFormController = async (req, res) => {
 
     const leadsres = await leadsCreateFunction(req?.body,exists,applyBy,applyById)
     // console.log("leadsres :",leadsres)
-
+res.json(leadsres);
     const { main, sub, child } =
       exists.franchiseDetails?.franchiseDetails?.brandCategories || {};
     // console.log("main, sub, child :", main, sub, child);
@@ -200,7 +200,7 @@ export const instaApplyBrandFormController = async (req, res) => {
       exists.uploads?.uploads?.brandLogo
     );
       // Send response after everything is processed
-res.json(leadsres);
+
 
   } catch (error) {
     console.error("Error in instaApplyBrandFormController:", error);

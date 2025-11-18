@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-
 const emailRecordSchema = new mongoose.Schema(
   {
     investorId: { type: String },
@@ -12,16 +11,15 @@ const emailRecordSchema = new mongoose.Schema(
   { _id: false }
 );
 
-
 const monthlyRecordSchema = new mongoose.Schema(
   {
-    monthYear: { type: String, required: true }, 
+    range: { type: String, required: true }, 
+    monthNumber: { type: Number, required: true }, 
     count: { type: Number, default: 0 },
     records: [emailRecordSchema],
   },
   { _id: false }
 );
-
 
 const categoryInvestmentrangeLocationMatchSchema = new mongoose.Schema(
   {
@@ -35,25 +33,33 @@ const categoryInvestmentrangeLocationMatchSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    currentMonthMatch: {
-      month:{
-        type: Number,
-      },
-      match:{
-        type: Number,
-        default: 0,
-      },
-    },
-    categoryInvestmentrangeLocationMatch: {
-      type: Number,
-      default: 0,
-    },
+    
     categoryInvestmentrangeLocationMatchRecords: {
-      type: [monthlyRecordSchema],
-      default: [],
+      type: [
+        {
+          packageType: {
+            type: String,
+          },
+          packageStartDate: {
+            type: String,
+          },
+          packageEndDate: {
+            type: String,
+          },
+          leadCount: {
+            type: Number,
+            default: 0,
+          },
+          records: [monthlyRecordSchema],
+        },
+        { _id: false }
+      ],
     },
   },
   { timestamps: true }
 );
 
-export const CategoryInvestmentrangeLocationMatch =  mongoose.model("CategoryInvestmentrangeLocationMatch", categoryInvestmentrangeLocationMatchSchema);
+export const CategoryInvestmentrangeLocationMatch = mongoose.model(
+  "CategoryInvestmentrangeLocationMatch",
+  categoryInvestmentrangeLocationMatchSchema
+);

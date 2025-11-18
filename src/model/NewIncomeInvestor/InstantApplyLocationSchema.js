@@ -30,6 +30,10 @@ const BrandSentSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  leadMatchBy: { 
+    type: String, 
+    required: true 
+  },
   emailSent: { 
     type: Boolean, 
     default: false 
@@ -38,7 +42,7 @@ const BrandSentSchema = new mongoose.Schema({
     type: Date 
   },
   paidBrand:{
-    type: Number,
+    type: Boolean,
     default: false
   }
 }, { _id: false });
