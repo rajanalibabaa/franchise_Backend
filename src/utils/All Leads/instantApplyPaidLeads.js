@@ -432,8 +432,8 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   let totalLeadsendcount = 0;
   let lastupdatedData = null;
 
-  brand.categoryInvestmentrangeMatchData.forEach((r) => {
-    const records = r.categoryInvestmentrangeMatchRecords;
+  brand.categorylocationMatchData.forEach((r) => {
+    const records = r.categorylocationMatchRecords;
     const lastRecord = records[records.length - 1];
 
     if (lastRecord) {
@@ -483,15 +483,15 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
     filterdata[0].endDate
   )}`;
 
-  let brandDoc = await CategoryInvestmentrangeMatch.findOne({
+  let brandDoc = await CategoryLocationMatch.findOne({
     brandId: brand.uuid,
   });
 
   if (!brandDoc) {
-    brandDoc = await CategoryInvestmentrangeMatch.create({
+    brandDoc = await CategoryLocationMatch.create({
       brandId: brand.uuid,
       brandName: brand.brandDetails?.brandName,
-      categoryInvestmentrangeMatchRecords: [
+      categorylocationMatchRecords: [
         {
           packageType: paymentPackage.packageType,
           packageStartDate: format(packageStartDate),
@@ -524,11 +524,11 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
     lastupdatedData?.packageStartDate
   ) {
     console.log("true");
-    await CategoryInvestmentrangeMatch.updateOne(
+    await CategoryLocationMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          categoryInvestmentrangeMatchRecords: {
+          categorylocationMatchRecords: {
             packageType: paymentPackage.packageType,
             packageStartDate: format(packageStartDate),
             packageEndDate: format(packageEndDate),
@@ -558,8 +558,8 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   }
 
   const recordsArr =
-    brand.categoryInvestmentrangeMatchData[0]
-      .categoryInvestmentrangeMatchRecords;
+    brand.categorylocationMatchData[0]
+      .categorylocationMatchRecords;
   const lastIndex = recordsArr.length - 1;
 
   console.log("===recordsArr=== :", recordsArr);
@@ -577,11 +577,11 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
 
     const innerLastIndex = lastRecord.records.length - 1;
 
-    await CategoryInvestmentrangeMatch.updateOne(
+    await CategoryLocationMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
+          [`categorylocationMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
             {
               investorId: investorData?.applyId,
               investorName: investorData?.fullName,
@@ -591,8 +591,8 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
             },
         },
         $inc: {
-          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
-          [`categoryInvestmentrangeMatchRecords.${lastIndex}.leadCount`]: 1,
+          [`categorylocationMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
+          [`categorylocationMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
@@ -603,11 +603,11 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   ) {
     console.log("New month detected. Creating new month record...");
 
-    await CategoryInvestmentrangeMatch.updateOne(
+    await CategoryLocationMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records`]: {
+          [`categorylocationMatchRecords.${lastIndex}.records`]: {
             range: formattedRange,
             monthNumber: filterdata[0]?.monthNumber || 1,
             count: 1,
@@ -624,7 +624,7 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
         },
 
         $inc: {
-          [`categoryInvestmentrangeMatchRecords.${lastIndex}.leadCount`]: 1,
+          [`categorylocationMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
@@ -805,7 +805,7 @@ const LocationInvestmentRangeMatchFunction = async (brand, investorData) => {
   return;
 };
 
-export const paidLeadHelperFunction = async (
+export const paidLeadHelperFunction = async ( 
   investmentRange,
   category,
   location,
@@ -866,50 +866,50 @@ export const paidLeadHelperFunction = async (
     },
   ];
 
-  if (investmentRange) {
-    aggregationPipeline.push({
-      $match: {
-        "franchiseDetails.franchiseDetails.fico.0.investmentRange":
-          investmentRange,
-      },
-    });
-  }
+  // if (investmentRange) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "franchiseDetails.franchiseDetails.fico.0.investmentRange":
+  //         investmentRange,
+  //     },
+  //   });
+  // }
 
-  if (category) {
-    aggregationPipeline.push({
-      $match: {
-        "franchiseDetails.franchiseDetails.brandCategories.main":
-          category.mainCategory,
-        "franchiseDetails.franchiseDetails.brandCategories.sub":
-          category.subCategory,
-      },
-    });
-  }
+  // if (category) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "franchiseDetails.franchiseDetails.brandCategories.main":
+  //         category.mainCategory,
+  //       "franchiseDetails.franchiseDetails.brandCategories.sub":
+  //         category.subCategory,
+  //     },
+  //   });
+  // }
 
-  if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
-    aggregationPipeline.push({
-      $match: {
-        "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
-          {
-            $elemMatch: {
-              state: location.state,
-              districts: {
-                $elemMatch: {
-                  district: location.district,
-                },
-              },
-            },
-          },
-      },
-    });
-  } else if (location?.state) {
-    aggregationPipeline.push({
-      $match: {
-        "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
-          location.state,
-      },
-    });
-  }
+  // if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
+  //         {
+  //           $elemMatch: {
+  //             state: location.state,
+  //             districts: {
+  //               $elemMatch: {
+  //                 district: location.district,
+  //               },
+  //             },
+  //           },
+  //         },
+  //     },
+  //   });
+  // } else if (location?.state) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
+  //         location.state,
+  //     },
+  //   });
+  // }
   if (matchType === "twoMatchTypes") {
     aggregationPipeline.push(
       {
