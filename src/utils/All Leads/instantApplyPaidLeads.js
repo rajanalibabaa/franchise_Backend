@@ -6,21 +6,73 @@ import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestme
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
 import { LocationInvestmentRangeMatch } from "../../model/Leads/locationInvestmentRangeMatch.model.js";
 
-const format = (d) => {
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  const seconds = String(d.getSeconds()).padStart(2, "0");
+export const format = (d) => {
+  const day = String(d?.getDate()).padStart(2, "0");
+  const month = String(d?.getMonth() + 1).padStart(2, "0");
+  const year = d?.getFullYear();
+  const hours = String(d?.getHours()).padStart(2, "0");
+  const minutes = String(d?.getMinutes()).padStart(2, "0");
+  const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 
+const twoMatchTypesleadcount = async (brand) => {
+  let totalLeadsendcount = 0;
+  await brand?.categorylocationMatchData?.forEach((r) => {
+    const records = r?.categoryLocationMatchRecords;
+    const lastRecord = records[records?.length - 1];
+
+    if (lastRecord) {
+      if (
+        String(lastRecord?.packageStartDate) ===
+        String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
+      ) {
+        console.log("**** LAST RECORD categorylocationMatchData ****", lastRecord?.leadCount, "****");
+
+        totalLeadsendcount += lastRecord?.leadCount;
+      }
+    }
+  });
+  await brand?.categoryInvestmentrangeMatchData?.forEach((r) => {
+    const records = r.categoryInvestmentrangeMatchRecords;
+    const lastRecord = records[records?.length - 1];
+
+    if (lastRecord) {
+      if (
+        String(lastRecord?.packageStartDate) ===
+        String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
+      ) {
+        console.log("**** LAST RECORD categoryInvestmentrangeMatchData ****", lastRecord?.leadCount, "****");
+
+        totalLeadsendcount += lastRecord?.leadCount;
+      }
+    }
+  });
+  await brand?.LocationInvestmentRangeMatchData?.forEach((r) => {
+    const records = r.locationInvestmentRangeMatchRecords;
+    const lastRecord = records[records.length - 1];
+
+    if (lastRecord) {
+      if (
+        String(lastRecord?.packageStartDate) ===
+        String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
+      ) {
+        console.log("**** LAST RECORD locationInvestmentRangeMatchRecords ****", lastRecord?.leadCount, "****");
+
+        totalLeadsendcount += lastRecord?.leadCount;
+      }
+    }
+  });
+
+  console.log("==== twoMatchTypesleadcount ==== :",totalLeadsendcount);
+  return totalLeadsendcount
+};
 
 const CategoryInvestmentrangeLocationMatchFunction = async (
   brand,
   investorData
 ) => {
+  const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
 
   if (!paymentPackage?.packageUpdatedTime) {
@@ -28,22 +80,50 @@ const CategoryInvestmentrangeLocationMatchFunction = async (
     return;
   }
 
-  const currentDate = new Date();
-  const packageStart = new Date(paymentPackage.packageUpdatedTime);
-  const totalMonths = paymentPackage.totalMonths || 1;
+  // console.log("brand :", brand);
+  // console.log("brand :", brand.categoryinvestmentrangelocationMatchData);
+  const packageStartDate = paymentPackage?.packageUpdatedTime;
+  const totalMonths = paymentPackage?.totalMonths || 1;
+  const packageEndDate = new Date(packageStartDate);
+  packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-  // Build package end date
-  const packageEnd = new Date(packageStart);
-  packageEnd.setMonth(packageEnd.getMonth() + totalMonths);
+  console.log("packageStartDate :", packageStartDate);
+  console.log("packageStartDate :", format(packageStartDate));
 
-  // Build monthly ranges
+  let totalLeadsendcount = 0;
+  let lastupdatedData = null;
+
+  brand?.categoryinvestmentrangelocationMatchData?.forEach((r) => {
+    const records = r?.categoryInvestmentrangeLocationMatchRecords;
+    const lastRecord = records[records?.length - 1];
+
+    if (lastRecord) {
+      console.log("**** LAST RECORD ****", lastRecord, "****");
+      if (
+        String(lastRecord?.packageStartDate) ===
+        String(format(packageStartDate))
+      ) {
+        totalLeadsendcount += lastRecord?.leadCount;
+      }
+
+      lastupdatedData = lastRecord;
+    }
+  });
+
+  console.log("totalLeadsendcount :", totalLeadsendcount);
+
+  if (totalLeadsendcount >= paymentPackage?.totalLeads) {
+    return;
+  }
+
   const monthRanges = [];
-  let cursor = new Date(packageStart);
 
   for (let i = 0; i < totalMonths; i++) {
-    const mStart = new Date(cursor);
-    const mEnd = new Date(cursor);
-    mEnd.setMonth(mEnd.getMonth() + 1);
+    const mStart = new Date(packageStartDate);
+    mStart.setMonth(mStart.getMonth() + i);
+
+    const mEnd = new Date(packageStartDate);
+    mEnd.setMonth(mEnd.getMonth() + i + 1);
 
     monthRanges.push({
       monthNumber: i + 1,
@@ -51,25 +131,13 @@ const CategoryInvestmentrangeLocationMatchFunction = async (
       endDate: mEnd,
       isActive: currentDate >= mStart && currentDate < mEnd,
     });
-
-    cursor = new Date(mEnd);
   }
 
-  const active = monthRanges.find((m) => m.isActive);
-  if (!active) return;
-
-  const format = (d) =>
-    `${String(d.getDate()).padStart(2, "0")}-${String(
-      d.getMonth() + 1
-    ).padStart(2, "0")}-${d.getFullYear()}`;
-
-  const formattedRange = `${format(active.startDate)} → ${format(
-    active.endDate
+  const filterdata = monthRanges?.filter((i) => i.isActive === true);
+  const formattedRange = `${format(filterdata[0]?.startDate)} -> ${format(
+    filterdata[0]?.endDate
   )}`;
 
-  // -------------------------------------------------
-  // 1️⃣ FIND OR CREATE BRAND DOC
-  // -------------------------------------------------
   let brandDoc = await CategoryInvestmentrangeLocationMatch.findOne({
     brandId: brand.uuid,
   });
@@ -78,49 +146,62 @@ const CategoryInvestmentrangeLocationMatchFunction = async (
     brandDoc = await CategoryInvestmentrangeLocationMatch.create({
       brandId: brand.uuid,
       brandName: brand.brandDetails?.brandName,
-
       categoryInvestmentrangeLocationMatchRecords: [
         {
           packageType: paymentPackage.packageType,
-          packageStartDate: format(packageStart),
-          packageEndDate: format(packageEnd),
-          leadCount: 0,
+          packageStartDate: format(packageStartDate),
+          packageEndDate: format(packageEndDate),
+          leadCount: 1,
           records: [
             {
-              monthYear: formattedRange,
-              count: 0,
-              leadsRecords: [],
+              range: formattedRange,
+              monthNumber: filterdata[0]?.monthNumber || 1,
+              count: 1,
+              leadsRecords: [
+                {
+                  investorId: investorData?.applyId,
+                  investorName: investorData?.fullName,
+                  investorEmail: investorData?.email,
+                  investorMobile: investorData?.mobileNumber,
+                  sentAt: new Date(),
+                },
+              ],
             },
           ],
         },
       ],
     });
-
-    console.log("🟢 Created new CategoryInvestmentrangeLocationMatch brandDoc");
+    return;
   }
 
-  // -------------------------------------------------
-  // 2️⃣ NEW PACKAGE DETECTED → PUSH NEW BLOCK
-  // -------------------------------------------------
-  const firstPkg = brandDoc.categoryInvestmentrangeLocationMatchRecords[0];
-
-  if (firstPkg && firstPkg.packageStartDate !== format(packageStart)) {
-    console.log("🟠 New package detected → pushing new package");
-
+  if (
+    format(paymentPackage?.packageUpdatedTime) >
+    lastupdatedData?.packageStartDate
+  ) {
+    console.log("true");
     await CategoryInvestmentrangeLocationMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
           categoryInvestmentrangeLocationMatchRecords: {
             packageType: paymentPackage.packageType,
-            packageStartDate: format(packageStart),
-            packageEndDate: format(packageEnd),
-            leadCount: 0,
+            packageStartDate: format(packageStartDate),
+            packageEndDate: format(packageEndDate),
+            leadCount: 1,
             records: [
               {
-                monthYear: formattedRange,
-                count: 0,
-                leadsRecords: [],
+                range: formattedRange,
+                monthNumber: filterdata[0]?.monthNumber || 1,
+                count: 1,
+                leadsRecords: [
+                  {
+                    investorId: investorData?.applyId,
+                    investorName: investorData?.fullName,
+                    investorEmail: investorData?.email,
+                    investorMobile: investorData?.mobileNumber,
+                    sentAt: new Date(),
+                  },
+                ],
               },
             ],
           },
@@ -128,78 +209,93 @@ const CategoryInvestmentrangeLocationMatchFunction = async (
       }
     );
 
-    brandDoc = await CategoryInvestmentrangeLocationMatch.findById(
-      brandDoc._id
-    );
+    return;
   }
 
-  // -------------------------------------------------
-  // 3️⃣ FIND CURRENT PACKAGE INDEX
-  // -------------------------------------------------
-  const pkgIndex =
-    brandDoc.categoryInvestmentrangeLocationMatchRecords.findIndex(
-      (r) =>
-        r.packageStartDate === format(packageStart) &&
-        r.packageEndDate === format(packageEnd)
-    );
+  const recordsArr =
+    brand.categoryinvestmentrangelocationMatchData[0]
+      ?.categoryInvestmentrangeLocationMatchRecords ||
+    brand.categoryinvestmentrangelocationMatchData
+      ?.categoryInvestmentrangeLocationMatchRecords ||
+    [];
+  const lastIndex = recordsArr?.length - 1;
 
-  const updatePath = `categoryInvestmentrangeLocationMatchRecords.${pkgIndex}.records`;
+  // console.log("===recordsArr=== :", recordsArr);
+  // console.log("===lastIndex=== :", lastIndex);
+  const lastRecord = recordsArr[lastIndex];
+  // console.log("===lastRecord=== :", lastRecord);
 
-  // -------------------------------------------------
-  // 4️⃣ ENSURE MONTH ENTRY EXISTS
-  // -------------------------------------------------
-  const monthIndex = brandDoc.categoryInvestmentrangeLocationMatchRecords[
-    pkgIndex
-  ].records.findIndex((r) => r.monthYear === formattedRange);
+  const innerLastIndex = lastRecord?.records?.length - 1;
+  const innerLastRecord = lastRecord?.records?.[innerLastIndex];
 
-  if (monthIndex === -1) {
+  if (
+    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
+  ) {
+    console.log("Month matched. Updating leads...");
+
+    const innerLastIndex = lastRecord?.records?.length - 1;
+
     await CategoryInvestmentrangeLocationMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [updatePath]: {
-            monthYear: formattedRange,
-            count: 0,
-            leadsRecords: [],
-          },
+          [`categoryInvestmentrangeLocationMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
+            {
+              investorId: investorData?.applyId,
+              investorName: investorData?.fullName,
+              investorEmail: investorData?.email,
+              investorMobile: investorData?.mobileNumber,
+              sentAt: new Date(),
+            },
+        },
+        $inc: {
+          [`categoryInvestmentrangeLocationMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
+          [`categoryInvestmentrangeLocationMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
-  }
 
-  // -------------------------------------------------
-  // 5️⃣ PUSH LEAD ENTRY + INCREMENT COUNTS
-  // -------------------------------------------------
-  await CategoryInvestmentrangeLocationMatch.updateOne(
-    {
-      _id: brandDoc._id,
-      [`${updatePath}.monthYear`]: formattedRange,
-    },
-    {
-      $inc: {
-        [`${updatePath}.$.count`]: 1,
-        [`categoryInvestmentrangeLocationMatchRecords.${pkgIndex}.leadCount`]: 1,
-      },
-      $push: {
-        [`${updatePath}.$.leadsRecords`]: {
-          investorId: investorData?.applyId,
-          investorName: investorData?.fullName,
-          investorEmail: investorData?.email,
-          investorMobile: investorData?.mobileNumber,
-          sentAt: new Date(),
+    return;
+  } else if (
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+  ) {
+    console.log("New month detected. Creating new month record...");
+
+    await CategoryInvestmentrangeLocationMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          [`categoryInvestmentrangeLocationMatchRecords.${lastIndex}.records`]:
+            {
+              range: formattedRange,
+              monthNumber: filterdata[0]?.monthNumber || 1,
+              count: 1,
+              leadsRecords: [
+                {
+                  investorId: investorData?.applyId,
+                  investorName: investorData?.fullName,
+                  investorEmail: investorData?.email,
+                  investorMobile: investorData?.mobileNumber,
+                  sentAt: new Date(),
+                },
+              ],
+            },
         },
-      },
-    }
-  );
 
-  console.log("🔥 CategoryInvestmentrangeLocationMatch updated");
-  return;
+        $inc: {
+          [`categoryInvestmentrangeLocationMatchRecords.${lastIndex}.leadCount`]: 1,
+        },
+      }
+    );
+
+    return;
+  }
 };
 
 const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
   const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
-  console.log("paymentPackage :", paymentPackage);
+  // console.log("paymentPackage :", paymentPackage);
 
   if (!paymentPackage?.packageUpdatedTime) {
     console.log("⚠️ No packageUpdatedTime found");
@@ -211,21 +307,22 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-  let totalLeadsendcount = 0;
+ 
   let lastupdatedData = null;
 
-  brand.categorylocationMatchData.forEach((r) => {
-    const records = r.categorylocationMatchDataRecords;
+  let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+
+  brand.categoryInvestmentrangeMatchData.forEach((r) => {
+    const records = r.categoryInvestmentrangeMatchRecords;
     const lastRecord = records[records.length - 1];
 
     if (lastRecord) {
-      console.log("**** LAST RECORD ****", lastRecord?.leadCount, "****");
-      totalLeadsendcount += lastRecord?.leadCount;
       lastupdatedData = lastRecord;
     }
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
+    console.log("===expired===")
     return;
   }
   // console.log("==== :",totalLeadsendcount)
@@ -265,15 +362,15 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
     filterdata[0].endDate
   )}`;
 
-  let brandDoc = await CategoryLocationMatch.findOne({
+  let brandDoc = await CategoryInvestmentrangeMatch.findOne({
     brandId: brand.uuid,
   });
 
   if (!brandDoc) {
-    brandDoc = await CategoryLocationMatch.create({
+    brandDoc = await CategoryInvestmentrangeMatch.create({
       brandId: brand.uuid,
       brandName: brand.brandDetails?.brandName,
-      categorylocationMatchDataRecords: [
+      categoryInvestmentrangeMatchRecords: [
         {
           packageType: paymentPackage.packageType,
           packageStartDate: format(packageStartDate),
@@ -306,11 +403,11 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
     lastupdatedData?.packageStartDate
   ) {
     console.log("true");
-    await CategoryLocationMatch.updateOne(
+    await CategoryInvestmentrangeMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          categorylocationMatchDataRecords: {
+          categoryInvestmentrangeMatchRecords: {
             packageType: paymentPackage.packageType,
             packageStartDate: format(packageStartDate),
             packageEndDate: format(packageEndDate),
@@ -340,29 +437,29 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
   }
 
   const recordsArr =
-    brand?.categorylocationMatchData[0]?.categorylocationMatchDataRecords;
+    brand?.categoryInvestmentrangeMatchData[0]?.categoryInvestmentrangeMatchRecords;
   const lastIndex = recordsArr.length - 1;
 
-  console.log("===recordsArr=== :", recordsArr);
-  console.log("===lastIndex=== :", lastIndex);
+  // console.log("===recordsArr=== :", recordsArr);
+  // console.log("===lastIndex=== :", lastIndex);
   const lastRecord = recordsArr[lastIndex];
-  console.log("===lastRecord=== :", lastRecord);
+  // console.log("===lastRecord=== :", lastRecord);
 
   const innerLastIndex = lastRecord.records.length - 1;
   const innerLastRecord = lastRecord.records[innerLastIndex];
 
   if (
-    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
   ) {
-    console.log("Month matched. Updating leads...");
+    // console.log("Month matched. Updating leads...");
 
     const innerLastIndex = lastRecord.records.length - 1;
 
-    await CategoryLocationMatch.updateOne(
+    await CategoryInvestmentrangeMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [`categorylocationMatchDataRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
             {
               investorId: investorData?.applyId,
               investorName: investorData?.fullName,
@@ -372,23 +469,23 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
             },
         },
         $inc: {
-          [`categorylocationMatchDataRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
-          [`categorylocationMatchDataRecords.${lastIndex}.leadCount`]: 1,
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
 
     return;
   } else if (
-    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
   ) {
     console.log("New month detected. Creating new month record...");
 
-    await CategoryLocationMatch.updateOne(
+    await CategoryInvestmentrangeMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [`categorylocationMatchDataRecords.${lastIndex}.records`]: {
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records`]: {
             range: formattedRange,
             monthNumber: filterdata[0]?.monthNumber || 1,
             count: 1,
@@ -405,7 +502,7 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
         },
 
         $inc: {
-          [`categorylocationMatchDataRecords.${lastIndex}.leadCount`]: 1,
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
@@ -417,7 +514,7 @@ const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
 const CategoryLocationMatchFunction = async (brand, investorData) => {
   const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
-  console.log("paymentPackage :", paymentPackage);
+  // console.log("paymentPackage :", paymentPackage);
 
   if (!paymentPackage?.packageUpdatedTime) {
     console.log("⚠️ No packageUpdatedTime found");
@@ -429,26 +526,28 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-  let totalLeadsendcount = 0;
+   let totalLeadsendcount = await twoMatchTypesleadcount(brand)
   let lastupdatedData = null;
 
-  brand.categorylocationMatchData.forEach((r) => {
-    const records = r.categorylocationMatchRecords;
-    const lastRecord = records[records.length - 1];
+  brand?.categorylocationMatchData?.forEach((r) => {
+    const records = r?.categoryLocationMatchRecords;
+    const lastRecord = records[records?.length - 1];
 
     if (lastRecord) {
-      console.log("**** LAST RECORD ****", lastRecord?.leadCount, "****");
-      totalLeadsendcount += lastRecord?.leadCount;
       lastupdatedData = lastRecord;
     }
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
+    console.log("===expired===")
     return;
   }
   // console.log("==== :",totalLeadsendcount)
-  // console.log("==lastupdatedData== :",lastupdatedData)
-  // console.log("==format(paymentPackage.packageUpdatedTime)== :",format(paymentPackage?.packageUpdatedTime))
+  // console.log("==lastupdatedData== :", lastupdatedData);
+  // console.log(
+  //   "==format(paymentPackage.packageUpdatedTime)== :",
+  //   format(paymentPackage?.packageUpdatedTime)
+  // );
   // console.log("==packageStartDate== :",packageStartDate)
 
   // console.log("==packageStartDate== :",packageStartDate)
@@ -491,7 +590,7 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
     brandDoc = await CategoryLocationMatch.create({
       brandId: brand.uuid,
       brandName: brand.brandDetails?.brandName,
-      categorylocationMatchRecords: [
+      categoryLocationMatchRecords: [
         {
           packageType: paymentPackage.packageType,
           packageStartDate: format(packageStartDate),
@@ -528,7 +627,212 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
       { _id: brandDoc._id },
       {
         $push: {
-          categorylocationMatchRecords: {
+          categoryLocationMatchRecords: {
+            packageType: paymentPackage.packageType,
+            packageStartDate: format(packageStartDate),
+            packageEndDate: format(packageEndDate),
+            leadCount: 1,
+            records: [
+              {
+                range: formattedRange,
+                monthNumber: filterdata[0]?.monthNumber || 1,
+                count: 1,
+                leadsRecords: [
+                  {
+                    investorId: investorData?.applyId,
+                    investorName: investorData?.fullName,
+                    investorEmail: investorData?.email,
+                    investorMobile: investorData?.mobileNumber,
+                    sentAt: new Date(),
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      }
+    );
+
+    return;
+  }
+
+  // console.log("brand.categoryLocationMatchData[0] :", brand);
+
+  const recordsArr =
+    brand.categorylocationMatchData[0]?.categoryLocationMatchRecords ||
+    brand.categoryLocationMatchData?.categoryLocationMatchRecords ||
+    [];
+  const lastIndex = recordsArr?.length - 1;
+
+  // console.log("===recordsArr=== :", recordsArr);
+  // console.log("===lastIndex=== :", lastIndex);
+  const lastRecord = recordsArr[lastIndex];
+  // console.log("===lastRecord=== :", lastRecord);
+
+  const innerLastIndex = lastRecord?.records?.length - 1;
+  const innerLastRecord = lastRecord?.records?.[innerLastIndex];
+
+  if (
+    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
+  ) {
+    // console.log("Month matched. Updating leads...");
+
+    const innerLastIndex = lastRecord?.records?.length - 1;
+
+    await CategoryLocationMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          [`categoryLocationMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
+            {
+              investorId: investorData?.applyId,
+              investorName: investorData?.fullName,
+              investorEmail: investorData?.email,
+              investorMobile: investorData?.mobileNumber,
+              sentAt: new Date(),
+            },
+        },
+        $inc: {
+          [`categoryLocationMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
+          [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
+        },
+      }
+    );
+
+    return;
+  } else if (
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+  ) {
+    console.log("New month detected. Creating new month record...");
+
+    await CategoryLocationMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          [`categoryLocationMatchRecords.${lastIndex}.records`]: {
+            range: formattedRange,
+            monthNumber: filterdata[0]?.monthNumber || 1,
+            count: 1,
+            leadsRecords: [
+              {
+                investorId: investorData?.applyId,
+                investorName: investorData?.fullName,
+                investorEmail: investorData?.email,
+                investorMobile: investorData?.mobileNumber,
+                sentAt: new Date(),
+              },
+            ],
+          },
+        },
+
+        $inc: {
+          [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
+        },
+      }
+    );
+
+    return;
+  }
+};
+
+const LocationInvestmentRangeMatchFunction = async (brand, investorData) => {
+  const currentDate = new Date();
+  const paymentPackage = brand.brandDetails?.paymentPackage;
+
+  if (!paymentPackage?.packageUpdatedTime) {
+    console.log("⚠️ No packageUpdatedTime found");
+    return;
+  }
+
+  const packageStartDate = paymentPackage?.packageUpdatedTime;
+  const totalMonths = paymentPackage?.totalMonths || 1;
+  const packageEndDate = new Date(packageStartDate);
+  packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
+
+  let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+  let lastupdatedData = null;
+
+  brand?.LocationInvestmentRangeMatchData?.forEach((r) => {
+    const records = r?.locationInvestmentRangeMatchRecords;
+    const lastRecord = records[records?.length - 1];
+
+    if (lastRecord) {
+      lastupdatedData = lastRecord;
+    }
+  });
+
+  if (totalLeadsendcount >= paymentPackage?.totalLeads) {
+    console.log("===expired===")
+    return;
+  }
+  const monthRanges = [];
+
+  for (let i = 0; i < totalMonths; i++) {
+    const mStart = new Date(packageStartDate);
+    mStart.setMonth(mStart.getMonth() + i);
+
+    const mEnd = new Date(packageStartDate);
+    mEnd.setMonth(mEnd.getMonth() + i + 1);
+
+    monthRanges.push({
+      monthNumber: i + 1,
+      startDate: mStart,
+      endDate: mEnd,
+      isActive: currentDate >= mStart && currentDate < mEnd,
+    });
+  }
+
+  const filterdata = monthRanges.filter((i) => i.isActive === true);
+  const formattedRange = `${format(filterdata[0].startDate)} -> ${format(
+    filterdata[0].endDate
+  )}`;
+
+  let brandDoc = await LocationInvestmentRangeMatch.findOne({
+    brandId: brand.uuid,
+  });
+
+  if (!brandDoc) {
+    brandDoc = await LocationInvestmentRangeMatch.create({
+      brandId: brand.uuid,
+      brandName: brand.brandDetails?.brandName,
+      locationInvestmentRangeMatchRecords: [
+        {
+          packageType: paymentPackage.packageType,
+          packageStartDate: format(packageStartDate),
+          packageEndDate: format(packageEndDate),
+          leadCount: 1,
+          records: [
+            {
+              range: formattedRange,
+              monthNumber: filterdata[0]?.monthNumber || 1,
+              count: 1,
+              leadsRecords: [
+                {
+                  investorId: investorData?.applyId,
+                  investorName: investorData?.fullName,
+                  investorEmail: investorData?.email,
+                  investorMobile: investorData?.mobileNumber,
+                  sentAt: new Date(),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    return;
+  }
+
+  if (
+    format(paymentPackage?.packageUpdatedTime) >
+    lastupdatedData?.packageStartDate
+  ) {
+    console.log("true");
+    await LocationInvestmentRangeMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          locationInvestmentRangeMatchRecords: {
             packageType: paymentPackage.packageType,
             packageStartDate: format(packageStartDate),
             packageEndDate: format(packageEndDate),
@@ -558,30 +862,33 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   }
 
   const recordsArr =
-    brand.categorylocationMatchData[0]
-      .categorylocationMatchRecords;
-  const lastIndex = recordsArr.length - 1;
+    brand.LocationInvestmentRangeMatchData[0]
+      ?.locationInvestmentRangeMatchRecords ||
+    brand.LocationInvestmentRangeMatchData
+      ?.locationInvestmentRangeMatchRecords ||
+    [];
+  const lastIndex = recordsArr?.length - 1;
 
-  console.log("===recordsArr=== :", recordsArr);
-  console.log("===lastIndex=== :", lastIndex);
+  // console.log("===recordsArr=== :", recordsArr);
+  // console.log("===lastIndex=== :", lastIndex);
   const lastRecord = recordsArr[lastIndex];
-  console.log("===lastRecord=== :", lastRecord);
+  // console.log("===lastRecord=== :", lastRecord);
 
-  const innerLastIndex = lastRecord.records.length - 1;
-  const innerLastRecord = lastRecord.records[innerLastIndex];
+  const innerLastIndex = lastRecord?.records?.length - 1;
+  const innerLastRecord = lastRecord?.records?.[innerLastIndex];
 
   if (
     Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
   ) {
-    console.log("Month matched. Updating leads...");
+    // console.log("Month matched. Updating leads...");
 
-    const innerLastIndex = lastRecord.records.length - 1;
+    const innerLastIndex = lastRecord?.records?.length - 1;
 
-    await CategoryLocationMatch.updateOne(
+    await LocationInvestmentRangeMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [`categorylocationMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
+          [`locationInvestmentRangeMatchRecords.${lastIndex}.records.${innerLastIndex}.leadsRecords`]:
             {
               investorId: investorData?.applyId,
               investorName: investorData?.fullName,
@@ -591,8 +898,8 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
             },
         },
         $inc: {
-          [`categorylocationMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
-          [`categorylocationMatchRecords.${lastIndex}.leadCount`]: 1,
+          [`locationInvestmentRangeMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
+          [`locationInvestmentRangeMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
@@ -601,13 +908,13 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   } else if (
     Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
   ) {
-    console.log("New month detected. Creating new month record...");
+    // console.log("New month detected. Creating new month record...");
 
-    await CategoryLocationMatch.updateOne(
+    await LocationInvestmentRangeMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
-          [`categorylocationMatchRecords.${lastIndex}.records`]: {
+          [`locationInvestmentRangeMatchRecords.${lastIndex}.records`]: {
             range: formattedRange,
             monthNumber: filterdata[0]?.monthNumber || 1,
             count: 1,
@@ -624,7 +931,7 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
         },
 
         $inc: {
-          [`categorylocationMatchRecords.${lastIndex}.leadCount`]: 1,
+          [`locationInvestmentRangeMatchRecords.${lastIndex}.leadCount`]: 1,
         },
       }
     );
@@ -633,179 +940,7 @@ const CategoryLocationMatchFunction = async (brand, investorData) => {
   }
 };
 
-
-const LocationInvestmentRangeMatchFunction = async (brand, investorData) => {
-  const paymentPackage = brand.brandDetails?.paymentPackage;
-  if (!paymentPackage?.packageUpdatedTime) {
-    console.log("⚠️ No packageUpdatedTime found");
-    return;
-  }
-
-  const currentDate = new Date();
-  const packageStart = new Date(paymentPackage.packageUpdatedTime);
-  const totalMonths = paymentPackage.totalMonths || 1;
-
-  // Build package end date
-  const packageEnd = new Date(packageStart);
-  packageEnd.setMonth(packageEnd.getMonth() + totalMonths);
-
-  // ---- Build monthly ranges (same as other 2 functions) ----
-  const monthRanges = [];
-  let cursor = new Date(packageStart);
-
-  for (let i = 0; i < totalMonths; i++) {
-    const mStart = new Date(cursor);
-    const mEnd = new Date(cursor);
-    mEnd.setMonth(mEnd.getMonth() + 1);
-
-    monthRanges.push({
-      monthNumber: i + 1,
-      startDate: mStart,
-      endDate: mEnd,
-      isActive: currentDate >= mStart && currentDate < mEnd,
-    });
-
-    cursor = new Date(mEnd);
-  }
-
-  const active = monthRanges.find((m) => m.isActive);
-  if (!active) return;
-
-  const format = (d) =>
-    `${String(d.getDate()).padStart(2, "0")}-${String(
-      d.getMonth() + 1
-    ).padStart(2, "0")}-${d.getFullYear()}`;
-
-  const formattedRange = `${format(active.startDate)} → ${format(
-    active.endDate
-  )}`;
-
-  // -------------------------------------------------
-  // 1️⃣ FIND OR CREATE BRAND DOC
-  // -------------------------------------------------
-  let brandDoc = await LocationInvestmentRangeMatch.findOne({
-    brandId: brand.uuid,
-  });
-
-  if (!brandDoc) {
-    brandDoc = await LocationInvestmentRangeMatch.create({
-      brandId: brand.uuid,
-      brandName: brand.brandDetails?.brandName,
-      locationInvestmentRangeMatchRecords: [
-        {
-          packageType: paymentPackage.packageType,
-          packageStartDate: format(packageStart),
-          packageEndDate: format(packageEnd),
-          leadCount: 0,
-          records: [
-            {
-              monthYear: formattedRange,
-              count: 0,
-              leadsRecords: [],
-            },
-          ],
-        },
-      ],
-    });
-
-    console.log("🟢 Created new LocationInvestmentRangeMatch brandDoc");
-  }
-
-  // -------------------------------------------------
-  // 2️⃣ NEW PACKAGE DETECTED? → PUSH NEW PACKAGE BLOCK
-  // -------------------------------------------------
-  const firstPkg = brandDoc.locationInvestmentRangeMatchRecords[0];
-
-  if (firstPkg && firstPkg.packageStartDate !== format(packageStart)) {
-    console.log("🟠 New package detected → pushing new package");
-
-    await LocationInvestmentRangeMatch.updateOne(
-      { _id: brandDoc._id },
-      {
-        $push: {
-          locationInvestmentRangeMatchRecords: {
-            packageType: paymentPackage.packageType,
-            packageStartDate: format(packageStart),
-            packageEndDate: format(packageEnd),
-            leadCount: 0,
-            records: [
-              {
-                monthYear: formattedRange,
-                count: 0,
-                leadsRecords: [],
-              },
-            ],
-          },
-        },
-      }
-    );
-
-    brandDoc = await LocationInvestmentRangeMatch.findById(brandDoc._id);
-  }
-
-  // -------------------------------------------------
-  // 3️⃣ FIND CURRENT PACKAGE INDEX
-  // -------------------------------------------------
-  const pkgIndex = brandDoc.locationInvestmentRangeMatchRecords.findIndex(
-    (r) =>
-      r.packageStartDate === format(packageStart) &&
-      r.packageEndDate === format(packageEnd)
-  );
-
-  const updatePath = `locationInvestmentRangeMatchRecords.${pkgIndex}.records`;
-
-  // -------------------------------------------------
-  // 4️⃣ ENSURE CURRENT MONTH ENTRY EXISTS
-  // -------------------------------------------------
-  const monthIndex = brandDoc.locationInvestmentRangeMatchRecords[
-    pkgIndex
-  ].records.findIndex((r) => r.monthYear === formattedRange);
-
-  if (monthIndex === -1) {
-    await LocationInvestmentRangeMatch.updateOne(
-      { _id: brandDoc._id },
-      {
-        $push: {
-          [updatePath]: {
-            monthYear: formattedRange,
-            count: 0,
-            leadsRecords: [],
-          },
-        },
-      }
-    );
-  }
-
-  // -------------------------------------------------
-  // 5️⃣ PUSH LEAD ENTRY + INCREMENT COUNTS
-  // -------------------------------------------------
-  await LocationInvestmentRangeMatch.updateOne(
-    {
-      _id: brandDoc._id,
-      [`${updatePath}.monthYear`]: formattedRange,
-    },
-    {
-      $inc: {
-        [`${updatePath}.$.count`]: 1,
-        [`locationInvestmentRangeMatchRecords.${pkgIndex}.leadCount`]: 1,
-      },
-      $push: {
-        [`${updatePath}.$.leadsRecords`]: {
-          investorId: investorData?.applyId,
-          investorName: investorData?.fullName,
-          investorEmail: investorData?.email,
-          investorMobile: investorData?.mobileNumber,
-          sentAt: new Date(),
-        },
-      },
-    }
-  );
-
-  console.log("🔥 LocationInvestmentRangeMatch updated");
-  return;
-};
-
-export const paidLeadHelperFunction = async ( 
+export const paidLeadHelperFunction = async (
   investmentRange,
   category,
   location,
@@ -866,50 +1001,50 @@ export const paidLeadHelperFunction = async (
     },
   ];
 
-  // if (investmentRange) {
-  //   aggregationPipeline.push({
-  //     $match: {
-  //       "franchiseDetails.franchiseDetails.fico.0.investmentRange":
-  //         investmentRange,
-  //     },
-  //   });
-  // }
+  if (investmentRange) {
+    aggregationPipeline.push({
+      $match: {
+        "franchiseDetails.franchiseDetails.fico.0.investmentRange":
+          investmentRange,
+      },
+    });
+  }
 
-  // if (category) {
-  //   aggregationPipeline.push({
-  //     $match: {
-  //       "franchiseDetails.franchiseDetails.brandCategories.main":
-  //         category.mainCategory,
-  //       "franchiseDetails.franchiseDetails.brandCategories.sub":
-  //         category.subCategory,
-  //     },
-  //   });
-  // }
+  if (category) {
+    aggregationPipeline.push({
+      $match: {
+        "franchiseDetails.franchiseDetails.brandCategories.main":
+          category.mainCategory,
+        "franchiseDetails.franchiseDetails.brandCategories.sub":
+          category.subCategory,
+      },
+    });
+  }
 
-  // if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
-  //   aggregationPipeline.push({
-  //     $match: {
-  //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
-  //         {
-  //           $elemMatch: {
-  //             state: location.state,
-  //             districts: {
-  //               $elemMatch: {
-  //                 district: location.district,
-  //               },
-  //             },
-  //           },
-  //         },
-  //     },
-  //   });
-  // } else if (location?.state) {
-  //   aggregationPipeline.push({
-  //     $match: {
-  //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
-  //         location.state,
-  //     },
-  //   });
-  // }
+  if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
+    aggregationPipeline.push({
+      $match: {
+        "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
+          {
+            $elemMatch: {
+              state: location.state,
+              districts: {
+                $elemMatch: {
+                  district: location.district,
+                },
+              },
+            },
+          },
+      },
+    });
+  } else if (location?.state) {
+    aggregationPipeline.push({
+      $match: {
+        "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
+          location.state,
+      },
+    });
+  }
   if (matchType === "twoMatchTypes") {
     aggregationPipeline.push(
       {
@@ -935,20 +1070,18 @@ export const paidLeadHelperFunction = async (
           foreignField: "brandId",
           as: "LocationInvestmentRangeMatchData",
         },
-      },
+      }
     );
   }
   if (matchType === "threeMatchTypes") {
-    aggregationPipeline.push(
-      {
-        $lookup: {
-          from: "categoryinvestmentrangelocationmatches",
-          localField: "uuid",
-          foreignField: "brandId",
-          as: "categoryinvestmentrangelocationMatchData",
-        },
-      }
-    );
+    aggregationPipeline.push({
+      $lookup: {
+        from: "categoryinvestmentrangelocationmatches",
+        localField: "uuid",
+        foreignField: "brandId",
+        as: "categoryinvestmentrangelocationMatchData",
+      },
+    });
   }
 
   const projectStage = {
@@ -995,7 +1128,7 @@ export const paidLeadHelperFunction = async (
           emailSent: true,
           emailSentAt: new Date(),
           paidBrand: Boolean(true),
-          leadMatchBy: "Category_Investmentrange_LocationMatch",
+          leadMatchBy: ["Category_Investmentrange_LocationMatch"],
         });
       }
       if (
@@ -1011,7 +1144,7 @@ export const paidLeadHelperFunction = async (
           emailSent: true,
           emailSentAt: new Date(),
           paidBrand: Boolean(true),
-          leadMatchBy: "Category_LocationMatch",
+          leadMatchBy: ["Category_LocationMatch"],
         });
       }
       if (
@@ -1027,7 +1160,7 @@ export const paidLeadHelperFunction = async (
           emailSent: true,
           emailSentAt: new Date(),
           paidBrand: Boolean(true),
-          leadMatchBy: "Category_Investmentrange",
+          leadMatchBy: ["Category_Investmentrange"],
         });
       }
       if (
@@ -1043,7 +1176,7 @@ export const paidLeadHelperFunction = async (
           emailSent: true,
           emailSentAt: new Date(),
           paidBrand: Boolean(true),
-          leadMatchBy: "Location_Investmentrange",
+          leadMatchBy: ["Location_Investmentrange"],
         });
       }
     }

@@ -290,9 +290,7 @@ export const instantApplyLocationMatch = async (
             Math.ceil(OverAllBrandExists.length / BATCH_SIZE);
           brandBatchDoc.batch = currentBatch;
           await brandBatchDoc.save();
-
         }
-
 
         if (brandsToSend.length > 0) {
           for (const { brand, currentStats } of brandsToSend) {
@@ -315,7 +313,7 @@ export const instantApplyLocationMatch = async (
               brandEmail: brand.brandDetails?.email || "",
               emailSent: true,
               emailSentAt: new Date(),
-              leadMatchBy:"location"
+              leadMatchBy: ["location"],
             });
           }
 
@@ -326,7 +324,6 @@ export const instantApplyLocationMatch = async (
           brandBatchDoc.batch = nextBatch;
           brandBatchDoc.updatedAt = new Date();
           await brandBatchDoc.save();
-
         }
       }
     }
@@ -352,7 +349,7 @@ export const instantApplyLocationMatch = async (
       catogory,
       investmentRange,
     };
-    
+
     if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
       const result = await paidLeadHelperFunction(
         investmentRange,
@@ -362,9 +359,26 @@ export const instantApplyLocationMatch = async (
         "CategoryInvestmentrangeLocation",
         "threeMatchTypes"
       );
+
+      // console.log("threeMatchTypes result:", result);
       if (result.length > 0) {
-       result.map(d => brandsSent.push(d));
-        
+        result.forEach((d) => {
+          const existingIndex = brandsSent.findIndex(
+            (i) => i.brandId === d.brandId
+          );
+
+          if (existingIndex === -1) {
+            brandsSent.push(d);
+          } else {
+            const existing = brandsSent[existingIndex];
+
+            d.leadMatchBy.forEach((type) => {
+              if (!existing.leadMatchBy.includes(type)) {
+                existing.leadMatchBy.push(type);
+              }
+            });
+          }
+        });
       }
     }
     if (!brandBatchDoc.isPaidCategoryLocationPaused) {
@@ -376,8 +390,25 @@ export const instantApplyLocationMatch = async (
         "CategoryLocation",
         "twoMatchTypes"
       );
+      // console.log("twoMatchTypes result:", result);
       if (result.length > 0) {
-       result.map(d => brandsSent.push(d));
+        result.forEach((d) => {
+          const existingIndex = brandsSent.findIndex(
+            (i) => i.brandId === d.brandId
+          );
+
+          if (existingIndex === -1) {
+            brandsSent.push(d);
+          } else {
+            const existing = brandsSent[existingIndex];
+
+            d.leadMatchBy.forEach((type) => {
+              if (!existing.leadMatchBy.includes(type)) {
+                existing.leadMatchBy.push(type);
+              }
+            });
+          }
+        });
       }
     }
     if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused) {
@@ -389,8 +420,25 @@ export const instantApplyLocationMatch = async (
         "CategoryInvestmentrange",
         "twoMatchTypes"
       );
+      // console.log("twoMatchTypes result:", result);
       if (result.length > 0) {
-       result.map(d => brandsSent.push(d));
+        result.forEach((d) => {
+          const existingIndex = brandsSent.findIndex(
+            (i) => i.brandId === d.brandId
+          );
+
+          if (existingIndex === -1) {
+            brandsSent.push(d);
+          } else {
+            const existing = brandsSent[existingIndex];
+
+            d.leadMatchBy.forEach((type) => {
+              if (!existing.leadMatchBy.includes(type)) {
+                existing.leadMatchBy.push(type);
+              }
+            });
+          }
+        });
       }
     }
     if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused) {
@@ -402,8 +450,25 @@ export const instantApplyLocationMatch = async (
         "LocationInvestmentRange",
         "twoMatchTypes"
       );
+      // console.log("twoMatchTypes result:", result);
       if (result.length > 0) {
-       result.map(d => brandsSent.push(d));
+        result.forEach((d) => {
+          const existingIndex = brandsSent.findIndex(
+            (i) => i.brandId === d.brandId
+          );
+
+          if (existingIndex === -1) {
+            brandsSent.push(d);
+          } else {
+            const existing = brandsSent[existingIndex];
+
+            d.leadMatchBy.forEach((type) => {
+              if (!existing.leadMatchBy.includes(type)) {
+                existing.leadMatchBy.push(type);
+              }
+            });
+          }
+        });
       }
     }
     await InstantApplyInvestor.create({
@@ -423,7 +488,6 @@ export const instantApplyLocationMatch = async (
       },
       brandsSent: brandsSent,
     });
-
   } catch (error) {
     console.error("Error in instantApplyLocationMatch:", error);
     throw error;
