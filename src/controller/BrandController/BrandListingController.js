@@ -587,6 +587,8 @@ const getBrandListingByUUID = async (req, res) => {
             brandID: "$brandID",
             state: "$brandDetails.state",
             city: "$brandDetails.city",
+            paymentPackage:"$brandDetails.paymentPackage",
+            listingPackages:"$brandDetails.listingPackages",
           },
           brandfranchisedetails: {
             $let: {
@@ -682,7 +684,6 @@ const getBrandListingByUUID = async (req, res) => {
     );
   }
 };
-
 
 // export const getTopBeverageFranchise = async (req,res)=>{
 //   try {
@@ -3007,7 +3008,6 @@ export const getBrandById = async (req, res) => {
   //     new ApiResponse(401,null,"Unathorize request")
   //   )
   // }
-
   try {
     const data = await BrandDetails.aggregate([
       {
