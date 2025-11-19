@@ -352,35 +352,35 @@ export const instantApplyLocationMatch = async (
     };
 
     if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
-      const result = await paidLeadHelperFunction(
-        investmentRange,
-        category,
-        location,
-        investerData,
-        "CategoryInvestmentrangeLocation",
-        "threeMatchTypes"
-      );
+      // const result = await paidLeadHelperFunction(
+      //   investmentRange,
+      //   category,
+      //   location,
+      //   investerData,
+      //   "CategoryInvestmentrangeLocation",
+      //   "threeMatchTypes"
+      // );
 
-      // console.log("threeMatchTypes result:", result);
-      if (result.length > 0) {
-        result.forEach((d) => {
-          const existingIndex = brandsSent.findIndex(
-            (i) => i.brandId === d.brandId
-          );
+      // // console.log("threeMatchTypes result:", result);
+      // if (result.length > 0) {
+      //   result.forEach((d) => {
+      //     const existingIndex = brandsSent.findIndex(
+      //       (i) => i.brandId === d.brandId
+      //     );
 
-          if (existingIndex === -1) {
-            brandsSent.push(d);
-          } else {
-            const existing = brandsSent[existingIndex];
+      //     if (existingIndex === -1) {
+      //       brandsSent.push(d);
+      //     } else {
+      //       const existing = brandsSent[existingIndex];
 
-            d.leadMatchBy.forEach((type) => {
-              if (!existing.leadMatchBy.includes(type)) {
-                existing.leadMatchBy.push(type);
-              }
-            });
-          }
-        });
-      }
+      //       d.leadMatchBy.forEach((type) => {
+      //         if (!existing.leadMatchBy.includes(type)) {
+      //           existing.leadMatchBy.push(type);
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
     }
     if (!brandBatchDoc.isPaidCategoryLocationPaused) {
       const result = await paidLeadHelperFunction(
@@ -443,34 +443,34 @@ export const instantApplyLocationMatch = async (
       }
     }
     if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused) {
-      const result = await paidLeadHelperFunction(
-        investmentRange,
-        false,
-        location,
-        investerData,
-        "LocationInvestmentRange",
-        "twoMatchTypes"
-      );
-      // console.log("twoMatchTypes result:", result);
-      if (result.length > 0) {
-        result.forEach((d) => {
-          const existingIndex = brandsSent.findIndex(
-            (i) => i.brandId === d.brandId
-          );
+      // const result = await paidLeadHelperFunction(
+      //   investmentRange,
+      //   false,
+      //   location,
+      //   investerData,
+      //   "LocationInvestmentRange",
+      //   "twoMatchTypes"
+      // );
+      // // console.log("twoMatchTypes result:", result);
+      // if (result.length > 0) {
+      //   result.forEach((d) => {
+      //     const existingIndex = brandsSent.findIndex(
+      //       (i) => i.brandId === d.brandId
+      //     );
 
-          if (existingIndex === -1) {
-            brandsSent.push(d);
-          } else {
-            const existing = brandsSent[existingIndex];
+      //     if (existingIndex === -1) {
+      //       brandsSent.push(d);
+      //     } else {
+      //       const existing = brandsSent[existingIndex];
 
-            d.leadMatchBy.forEach((type) => {
-              if (!existing.leadMatchBy.includes(type)) {
-                existing.leadMatchBy.push(type);
-              }
-            });
-          }
-        });
-      }
+      //       d.leadMatchBy.forEach((type) => {
+      //         if (!existing.leadMatchBy.includes(type)) {
+      //           existing.leadMatchBy.push(type);
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
     }
     await InstantApplyInvestor.create({
       investorEmail: email,

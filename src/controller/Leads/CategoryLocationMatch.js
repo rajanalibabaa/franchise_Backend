@@ -18,7 +18,12 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-   let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+   const {totalLeadsendcount ,exists } = await twoMatchTypesleadcount(brand,investorData);
+
+  if (exists) {
+    console.log("======stop=======")
+    return
+  }
   let lastupdatedData = null;
 
   brand?.categorylocationMatchData?.forEach((r) => {
@@ -78,18 +83,18 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     brandId: brand.uuid,
   });
 
- await sendInstantApplyLeadLocation(
-    investorData?.fullName,
-    investorData?.email,
-    investorData?.mobileNumber,
-    brand.brandDetails?.email,
-    brand.brandDetails?.companyName,
-    investorData?.category,
-    investorData?.location,
-    investorData?.investmentRange,
-    investorData?.planToInvest,
-    investorData?.readyToInvest
-  );
+//  await sendInstantApplyLeadLocation(
+//     investorData?.fullName,
+//     investorData?.email,
+//     investorData?.mobileNumber,
+//     brand.brandDetails?.email,
+//     brand.brandDetails?.companyName,
+//     investorData?.category,
+//     investorData?.location,
+//     investorData?.investmentRange,
+//     investorData?.planToInvest,
+//     investorData?.readyToInvest
+//   );
 
   if (!brandDoc) {
     brandDoc = await CategoryLocationMatch.create({
