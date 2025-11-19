@@ -43,7 +43,7 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
 
             console.log("Investor ID categorylocationMatchData =>", lead.investorId);
 
-            if (lead.investorId === investorData?.applyId) {
+            if (lead.investorId === investorData?.applyId || lead.investorEmail === investorData?.email) {
               exists = true;
               console.log("======categorylocationMatchData stop=======");
               return;
@@ -83,7 +83,7 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
 
             console.log("Investor ID categoryInvestmentrangeMatchData=>", lead.investorId);
 
-            if (lead.investorId === investorData?.applyId) {
+            if (lead.investorId === investorData?.applyId || lead.investorEmail === investorData?.email) {
               exists = true;
               console.log("======categoryInvestmentrangeMatchData stop=======");
               return;
