@@ -1,6 +1,7 @@
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
 import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
 export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const currentDate = new Date();
@@ -76,6 +77,19 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   let brandDoc = await CategoryLocationMatch.findOne({
     brandId: brand.uuid,
   });
+
+ await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
 
   if (!brandDoc) {
     brandDoc = await CategoryLocationMatch.create({

@@ -4,6 +4,7 @@ import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { paidLeadHelperFunction } from "./instantApplyPaidLeads.js";
+import { sendInstantApplyLeadLocation } from "../Centralized Email/centralizedEmail.js";
 
 export const instantApplyLocationMatch = async (
   fullName,
@@ -294,18 +295,18 @@ export const instantApplyLocationMatch = async (
 
         if (brandsToSend.length > 0) {
           for (const { brand, currentStats } of brandsToSend) {
-            // await sendInstantApplyLeadLocation(
-            //   fullName,
-            //   email,
-            //   mobileNumber,
-            //   brand.brandDetails?.email || "",
-            //   brand.brandDetails?.brandName || "",
-            //   `${mainCategory},${subCategory},${childCategory}`,
-            //   `${state},${district},${city}`,
-            //   investmentRange,
-            //   planToInvest,
-            //   readyToInvest
-            // );
+            await sendInstantApplyLeadLocation(
+              fullName,
+              email,
+              mobileNumber,
+              brand.brandDetails?.email || "",
+              brand.brandDetails?.brandName || "",
+              `${mainCategory},${subCategory},${childCategory}`,
+              `${state},${district},${city}`,
+              investmentRange,
+              planToInvest,
+              readyToInvest
+            );
 
             brandsSent.push({
               brandId: brand.uuid,
@@ -327,7 +328,7 @@ export const instantApplyLocationMatch = async (
         }
       }
     }
-    let catogory = {
+    let category = {
       mainCategory,
       subCategory,
       childCategory,
@@ -346,14 +347,14 @@ export const instantApplyLocationMatch = async (
       applyBy,
       applyId,
       location,
-      catogory,
+      category,
       investmentRange,
     };
 
     if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
       const result = await paidLeadHelperFunction(
         investmentRange,
-        catogory,
+        category,
         location,
         investerData,
         "CategoryInvestmentrangeLocation",
@@ -384,7 +385,7 @@ export const instantApplyLocationMatch = async (
     if (!brandBatchDoc.isPaidCategoryLocationPaused) {
       const result = await paidLeadHelperFunction(
         false,
-        catogory,
+        category,
         location,
         investerData,
         "CategoryLocation",
@@ -414,7 +415,7 @@ export const instantApplyLocationMatch = async (
     if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused) {
       const result = await paidLeadHelperFunction(
         false,
-        catogory,
+        category,
         false,
         investerData,
         "CategoryInvestmentrange",

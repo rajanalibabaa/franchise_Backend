@@ -1,8 +1,12 @@
 import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
 import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
-export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
+export const CategoryInvestmentrangeMatchFunction = async (
+  brand,
+  investorData
+) => {
   const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
   // console.log("paymentPackage :", paymentPackage);
@@ -17,10 +21,9 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
- 
   let lastupdatedData = null;
 
-  let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+  let totalLeadsendcount = await twoMatchTypesleadcount(brand);
 
   brand.categoryInvestmentrangeMatchData.forEach((r) => {
     const records = r.categoryInvestmentrangeMatchRecords;
@@ -32,7 +35,7 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
-    console.log("===expired===")
+    console.log("===expired===");
     return;
   }
   // console.log("==== :",totalLeadsendcount)
@@ -75,6 +78,19 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   let brandDoc = await CategoryInvestmentrangeMatch.findOne({
     brandId: brand.uuid,
   });
+
+  await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
 
   if (!brandDoc) {
     brandDoc = await CategoryInvestmentrangeMatch.create({
@@ -147,7 +163,8 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   }
 
   const recordsArr =
-    brand?.categoryInvestmentrangeMatchData[0]?.categoryInvestmentrangeMatchRecords;
+    brand?.categoryInvestmentrangeMatchData[0]
+      ?.categoryInvestmentrangeMatchRecords;
   const lastIndex = recordsArr.length - 1;
 
   // console.log("===recordsArr=== :", recordsArr);
