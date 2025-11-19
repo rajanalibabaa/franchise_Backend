@@ -1,11 +1,10 @@
-
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { CategoryInvestmentrangeLocationMatch } from "../../model/Leads/categoryInvestmentrangeLocationMatch.model.js";
 import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
 import { LocationInvestmentRangeMatch } from "../../model/Leads/locationInvestmentRangeMatch.model.js";
-
-
+import  PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
+        
 export const format = (d) => {
   const day = String(d?.getDate()).padStart(2, "0");
   const month = String(d?.getMonth() + 1).padStart(2, "0");
@@ -14,11 +13,12 @@ export const format = (d) => {
   const minutes = String(d?.getMinutes()).padStart(2, "0");
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-};
+}; 
 
 export const leadPackageUpdate = async (req, res) => {
   try {
     const brandId = req.params.id;
+    const upgradePacakgeType = "free"
 
     // Get brand details
     const brands = await BrandDetails.find({ uuid: brandId });
@@ -33,65 +33,105 @@ export const leadPackageUpdate = async (req, res) => {
 
     const brand = brands[0]; // Get first element from array
     const packageUpdatedTimes = brand.brandDetails.paymentPackage.packageUpdatedTime;
-    const packageUpdatedTime =  format(new Date(packageUpdatedTimes));
-   
-    if (!packageUpdatedTime) {
+    const packageStartDate = new Date(packageUpdatedTimes); // Keep as Date object
+    const packageStartTime = format(packageStartDate); // Format for display
+    
+    const totalMonths = brand.brandDetails.paymentPackage?.totalMonths || 0;
+    
+    // Calculate package end date
+    const packageEndDate = new Date(packageStartDate);
+    packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
+    const packageEndTime = format(packageEndDate);
+
+    console.log("Package Start Time:", packageStartTime);
+
+    if (!packageStartTime) {
       return res.status(400).json({
-        success: false,
+        success: false,   
         message: "packageUpdatedTime not found in brandDetails.paymentPackage",
       });
     }
 
     // Get lead counts from all 4 match collections
-    const locCatInvCount = await getLeadCount(
-      CategoryInvestmentrangeLocationMatch,
-      "categoryInvestmentrangeLocationMatchRecords",
-      brandId,
-      packageUpdatedTime
-    );
+    // const locCatInvCount = await getLeadCount(
+    //   CategoryInvestmentrangeLocationMatch,
+    //   "categoryInvestmentrangeLocationMatchRecords",
+    //   brandId,
+    //   packageStartTime
+    // );
 
     const catInvCount = await getLeadCount(
       CategoryInvestmentrangeMatch,
       "categoryInvestmentrangeMatchRecords",
       brandId,
-      packageUpdatedTime
+      packageStartTime
     );
 
     const catLocCount = await getLeadCount(
-      CategoryLocationMatch,
+      CategoryLocationMatch,  
       "categoryLocationMatchRecords",
       brandId,
-      packageUpdatedTime
+      packageStartTime
     );
 
-    const locInvCount = await getLeadCount(
-      LocationInvestmentRangeMatch,
-      "locationInvestmentRangeMatchRecords",
-      brandId,
-      packageUpdatedTime
-    );
+    // const locInvCount = await getLeadCount(
+    //   LocationInvestmentRangeMatch,
+    //   "locationInvestmentRangeMatchRecords",
+    //   brandId,
+    //   packageStartTime
+    // );
 
 
-    const totalLeadCount = locCatInvCount + catInvCount + catLocCount + locInvCount;
+    const totalLeadCount =  catInvCount.leadCount + catLocCount.leadCount ;
 
+    const PackageLeadCount = brand.brandDetails.paymentPackage.totalLeads;
+
+
+    const balanceLeads = totalLeadCount - PackageLeadCount;
+
+       console.log("balanceLeads :",balanceLeads);
+
+
+    if (upgradePacakgeType) {
+            const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
+            const selectedPackage = upgradePacakgeType; 
+            let newUpgradePackage = null
     
+            for (const key in PaymentPackagesData) {
+              if (key === selectedPackage) {
+                 newUpgradePackage = { ...PaymentPackagesData[key],  packageType: key,isActive: true,packageUpdatedTime: new Date()}    
+              }
+            }
+            console.log("newUpgradePackage :",newUpgradePackage);
+            
 
+            newUpgradePackage = { ...newUpgradePackage, totalLeads: newUpgradePackage.totalLeads + balanceLeads,isActive:false };
+                   
+console.log("=== newUpgradePackage ===:",brand.brandDetails.paymentPackage );
+              brand.brandDetails.paymentPackage = newUpgradePackage;
+            //  await brand.save();
+ console.log("=== newUpgradePackageLast===:",brand.brandDetails.paymentPackage );
+          } 
 
-  const existingPackageTotalLead = brand.brandDetails.paymentPackage.packageUpdatedTime;
 
     return res.status(200).json({
       success: true,
-      message: "Lead count fetched successfully",
+      message: "New package upgrade successfully ",
       data: {
         brandId,
-        packageUpdatedTime,
+        packageDates: {
+          packageStartTime,
+          packageEndTime,
+          totalMonths,
+        },
         counts: {
-          categoryInvestmentrangeLocationMatch: locCatInvCount,
+          // categoryInvestmentrangeLocationMatch: locCatInvCount,
           categoryInvestmentrangeMatch: catInvCount,
           categoryLocationMatch: catLocCount,
-          locationInvestmentRangeMatch: locInvCount,
+          // locationInvestmentRangeMatch: locInvCount,
         },
         totalLeadCount,
+        balanceLeads,
       },
     });
 
@@ -106,7 +146,7 @@ export const leadPackageUpdate = async (req, res) => {
 };
 
 
-async function getLeadCount(model, foreignFieldName, brandId, packageUpdatedTime) {
+async function getLeadCount(model, foreignFieldName, brandId, packageStartTime) {
   const doc = await model.findOne({ brandId });
 
 //   console.log(doc, "doc");
@@ -120,18 +160,20 @@ async function getLeadCount(model, foreignFieldName, brandId, packageUpdatedTime
   const lastIndex = doc[foreignFieldName].length - 1;
   const lastRecord = doc[foreignFieldName][lastIndex];
 
-  console.log(lastRecord, "lastRecord");
+  // console.log(lastRecord, "lastRecord");
 
   const pkgStart = lastRecord.packageStartDate
-  const pkgUpdated = packageUpdatedTime
+  const pkgUpdated = packageStartTime
 
-  console.log(pkgStart, "pkgStart");
-  console.log(pkgUpdated, "pkgUpdated");
+  // console.log(pkgStart, "pkgStart");
+  // console.log(pkgUpdated, "pkgUpdated");
 
   // If packageUpdatedTime does NOT match → skip
   if (pkgStart !== pkgUpdated) {
     return { found: false, leadCount: 0 };
   }
 
-  return { found: true, leadCount: lastRecord.leadCount ?? 0 };
+  return { found: true, leadCount: lastRecord.leadCount ?? 0 };   
 }
+
+
