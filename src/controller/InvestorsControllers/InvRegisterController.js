@@ -2,7 +2,7 @@ import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
 import mongoose from "mongoose";
-import { newIncomerInvestorController } from "../../utils/All Leads/investerRegisterLeads.js";
+import { newIncomerInvestorController } from "../../utils/AllLeads/investerRegisterLeads.js";
 import { json } from "express";
 import { deleteFileFromR2, uploadFileToR2 } from "../../utils/Uploads/s3Uploader.js";
 
