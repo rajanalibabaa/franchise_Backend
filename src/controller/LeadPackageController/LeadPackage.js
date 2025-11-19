@@ -1,0 +1,137 @@
+
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
+import { CategoryInvestmentrangeLocationMatch } from "../../model/Leads/categoryInvestmentrangeLocationMatch.model.js";
+import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
+import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
+import { LocationInvestmentRangeMatch } from "../../model/Leads/locationInvestmentRangeMatch.model.js";
+
+
+export const format = (d) => {
+  const day = String(d?.getDate()).padStart(2, "0");
+  const month = String(d?.getMonth() + 1).padStart(2, "0");
+  const year = d?.getFullYear();
+  const hours = String(d?.getHours()).padStart(2, "0");
+  const minutes = String(d?.getMinutes()).padStart(2, "0");
+  const seconds = String(d?.getSeconds()).padStart(2, "0");
+  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+};
+
+export const leadPackageUpdate = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+
+    // Get brand details
+    const brands = await BrandDetails.find({ uuid: brandId });
+  
+
+    if (!brands || brands.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand not found",
+      });
+    }
+
+    const brand = brands[0]; // Get first element from array
+    const packageUpdatedTimes = brand.brandDetails.paymentPackage.packageUpdatedTime;
+    const packageUpdatedTime =  format(new Date(packageUpdatedTimes));
+   
+    if (!packageUpdatedTime) {
+      return res.status(400).json({
+        success: false,
+        message: "packageUpdatedTime not found in brandDetails.paymentPackage",
+      });
+    }
+
+    // Get lead counts from all 4 match collections
+    const locCatInvCount = await getLeadCount(
+      CategoryInvestmentrangeLocationMatch,
+      "categoryInvestmentrangeLocationMatchRecords",
+      brandId,
+      packageUpdatedTime
+    );
+
+    const catInvCount = await getLeadCount(
+      CategoryInvestmentrangeMatch,
+      "categoryInvestmentrangeMatchRecords",
+      brandId,
+      packageUpdatedTime
+    );
+
+    const catLocCount = await getLeadCount(
+      CategoryLocationMatch,
+      "categoryLocationMatchRecords",
+      brandId,
+      packageUpdatedTime
+    );
+
+    const locInvCount = await getLeadCount(
+      LocationInvestmentRangeMatch,
+      "locationInvestmentRangeMatchRecords",
+      brandId,
+      packageUpdatedTime
+    );
+
+
+    const totalLeadCount = locCatInvCount + catInvCount + catLocCount + locInvCount;
+
+    
+
+
+  const existingPackageTotalLead = brand.brandDetails.paymentPackage.packageUpdatedTime;
+
+    return res.status(200).json({
+      success: true,
+      message: "Lead count fetched successfully",
+      data: {
+        brandId,
+        packageUpdatedTime,
+        counts: {
+          categoryInvestmentrangeLocationMatch: locCatInvCount,
+          categoryInvestmentrangeMatch: catInvCount,
+          categoryLocationMatch: catLocCount,
+          locationInvestmentRangeMatch: locInvCount,
+        },
+        totalLeadCount,
+      },
+    });
+
+  } catch (error) {
+    console.error("Error: ", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
+async function getLeadCount(model, foreignFieldName, brandId, packageUpdatedTime) {
+  const doc = await model.findOne({ brandId });
+
+//   console.log(doc, "doc");
+
+  // If no brand found inside this schema → skip
+  if (!doc || !doc[foreignFieldName] || doc[foreignFieldName].length === 0) {
+    return { found: false, leadCount: 0 };
+  }
+
+  // Get last index record
+  const lastIndex = doc[foreignFieldName].length - 1;
+  const lastRecord = doc[foreignFieldName][lastIndex];
+
+  console.log(lastRecord, "lastRecord");
+
+  const pkgStart = lastRecord.packageStartDate
+  const pkgUpdated = packageUpdatedTime
+
+  console.log(pkgStart, "pkgStart");
+  console.log(pkgUpdated, "pkgUpdated");
+
+  // If packageUpdatedTime does NOT match → skip
+  if (pkgStart !== pkgUpdated) {
+    return { found: false, leadCount: 0 };
+  }
+
+  return { found: true, leadCount: lastRecord.leadCount ?? 0 };
+}

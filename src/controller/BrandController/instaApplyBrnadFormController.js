@@ -4,10 +4,10 @@ import { sendInstantApplyEmail } from "../../utils/Centralized Email/centralized
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-import { instantApplyPerfectAndPartial } from "../../utils/All Leads/instantApplyPerfectAndPartial.js";
+import { instantApplyPerfectAndPartial } from "../../utils/AllLeads/instantApplyPerfectAndPartial.js";
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 import mongoose, { Aggregate } from "mongoose";
-import { instantApplyLocationMatch } from "../../utils/All Leads/instantApplyLocationMatch.js";
+import { instantApplyLocationMatch } from "../../utils/AllLeads/instantApplyLocationMatch.js";
 // import { EmailTrackingService } from '../../model/NewIncomeInvestor/BrandEmailCountSchema.js';r
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
