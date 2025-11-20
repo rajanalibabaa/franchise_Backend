@@ -83,18 +83,18 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     brandId: brand.uuid,
   });
 
-//  await sendInstantApplyLeadLocation(
-//     investorData?.fullName,
-//     investorData?.email,
-//     investorData?.mobileNumber,
-//     brand.brandDetails?.email,
-//     brand.brandDetails?.companyName,
-//     investorData?.category,
-//     investorData?.location,
-//     investorData?.investmentRange,
-//     investorData?.planToInvest,
-//     investorData?.readyToInvest
-//   );
+ await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
 
   if (!brandDoc) {
     brandDoc = await CategoryLocationMatch.create({
@@ -183,7 +183,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const innerLastRecord = lastRecord?.records?.[innerLastIndex];
 
   if (
-    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber) || (paymentPackage?.totalMonths + 1) === Number(innerLastRecord?.monthNumber)
   ) {
     // console.log("Month matched. Updating leads...");
 
@@ -211,7 +211,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
 
     return;
   } else if (
-    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) && paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
   ) {
     console.log("New month detected. Creating new month record...");
 
@@ -242,5 +242,31 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     );
 
     return;
+  } else {
+    await CategoryLocationMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          [`categoryLocationMatchRecords.${lastIndex}.records`]: {
+            range: format(currentDate),
+            monthNumber: paymentPackage?.totalMonths + 1 || 1,
+            count: 1,
+            leadsRecords: [
+              {
+                investorId: investorData?.applyId,
+                investorName: investorData?.fullName,
+                investorEmail: investorData?.email,
+                investorMobile: investorData?.mobileNumber,
+                sentAt: new Date(),
+              },
+            ],
+          },
+        },
+
+        $inc: {
+          [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
+        },
+      }
+    );
   }
 };

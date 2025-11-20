@@ -25,7 +25,7 @@ export const CategoryInvestmentrangeMatchFunction = async (
 
   const {totalLeadsendcount ,exists } = await twoMatchTypesleadcount(brand,investorData);
 
-  console.log("===exists===",exists)
+  // console.log("===exists===",exists)
   if (exists === true) {
     console.log("======stop=======")
     return
@@ -84,18 +84,18 @@ export const CategoryInvestmentrangeMatchFunction = async (
     brandId: brand.uuid,
   });
 
-  // await sendInstantApplyLeadLocation(
-  //   investorData?.fullName,
-  //   investorData?.email,
-  //   investorData?.mobileNumber,
-  //   brand.brandDetails?.email,
-  //   brand.brandDetails?.companyName,
-  //   investorData?.category,
-  //   investorData?.location,
-  //   investorData?.investmentRange,
-  //   investorData?.planToInvest,
-  //   investorData?.readyToInvest
-  // );
+  await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
 
   if (!brandDoc) {
     brandDoc = await CategoryInvestmentrangeMatch.create({
@@ -181,7 +181,7 @@ export const CategoryInvestmentrangeMatchFunction = async (
   const innerLastRecord = lastRecord.records[innerLastIndex];
 
   if (
-    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber) || (paymentPackage?.totalMonths + 1) === Number(innerLastRecord?.monthNumber)
   ) {
     // console.log("Month matched. Updating leads...");
 
@@ -209,8 +209,8 @@ export const CategoryInvestmentrangeMatchFunction = async (
 
     return;
   } else if (
-    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber) &&
-    paymentPackage?.totalMonths >= Number(filterdata[0]?.monthNumber)
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) &&
+    paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
   ) {
     console.log("New month detected. Creating new month record...");
 
@@ -242,12 +242,13 @@ export const CategoryInvestmentrangeMatchFunction = async (
 
     return;
   } else {
+    console.log("=================bending===================")
     await CategoryInvestmentrangeMatch.updateOne(
       { _id: brandDoc._id },
       {
         $push: {
           [`categoryInvestmentrangeMatchRecords.${lastIndex}.records`]: {
-            range: formattedRange,
+            range: format(currentDate),
             monthNumber: Number(paymentPackage?.totalMonths) + 1 ,
             count: 1,
             leadsRecords: [
