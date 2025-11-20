@@ -23,9 +23,9 @@ export const format = (d) => {
 export const twoMatchTypesleadcount = async (brand, investorData) => {
   let totalLeadsendcount = 0;
   let exists = false;
-  
+
   await brand?.categorylocationMatchData?.forEach((r) => {
-    if (exists) return; 
+    if (exists) return;
     const records = r?.categoryLocationMatchRecords;
     const lastRecord = records[records?.length - 1];
 
@@ -34,16 +34,18 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
         String(lastRecord?.packageStartDate) ===
         String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
       ) {
-
         lastRecord.records.forEach((monthRec) => {
-          if (exists) return; 
+          if (exists) return;
 
           monthRec.leadsRecords.forEach((lead) => {
             if (exists) return;
 
-            console.log("Investor ID categorylocationMatchData =>", lead.investorId);
+            // console.log("Investor ID categorylocationMatchData =>", lead.investorId);
 
-            if (lead.investorId === investorData?.applyId || lead.investorEmail === investorData?.email) {
+            if (
+              lead.investorId === investorData?.applyId ||
+              lead.investorEmail === investorData?.email
+            ) {
               exists = true;
               console.log("======categorylocationMatchData stop=======");
               return;
@@ -64,7 +66,7 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
   }
 
   await brand?.categoryInvestmentrangeMatchData?.forEach((r) => {
-    if (exists) return; 
+    if (exists) return;
 
     const records = r.categoryInvestmentrangeMatchRecords;
     const lastRecord = records[records?.length - 1];
@@ -74,16 +76,21 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
         String(lastRecord?.packageStartDate) ===
         String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
       ) {
-
         lastRecord.records.forEach((monthRec) => {
-          if (exists) return; 
+          if (exists) return;
 
           monthRec.leadsRecords.forEach((lead) => {
             if (exists) return;
 
-            console.log("Investor ID categoryInvestmentrangeMatchData=>", lead.investorId);
+            console.log(
+              "Investor ID categoryInvestmentrangeMatchData=>",
+              lead.investorId
+            );
 
-            if (lead.investorId === investorData?.applyId || lead.investorEmail === investorData?.email) {
+            if (
+              lead.investorId === investorData?.applyId ||
+              lead.investorEmail === investorData?.email
+            ) {
               exists = true;
               console.log("======categoryInvestmentrangeMatchData stop=======");
               return;
@@ -106,6 +113,26 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
   return { totalLeadsendcount, exists };
 };
 
+export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
+  const percentage =
+    ((totalLeadsendcount + 1) / brand?.brandDetails?.paymentPackage?.totalLeads) * 100;
+
+  const p = await BrandDetails.findByIdAndUpdate(
+     brand._id,
+    {
+      $set: {
+        "brandDetails.paymentPackage.sentLeadsPercentage": `${Math.floor(
+          percentage
+        )} %`,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  console.log("===p===", p.brandDetails.paymentPackage);
+};
 
 export const paidLeadHelperFunction = async (
   investmentRange,

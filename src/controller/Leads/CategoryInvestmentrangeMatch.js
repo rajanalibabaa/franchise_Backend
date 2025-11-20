@@ -1,5 +1,6 @@
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
-import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import { format, generateSentLeadsPercentage } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
@@ -25,7 +26,7 @@ export const CategoryInvestmentrangeMatchFunction = async (
 
   const {totalLeadsendcount ,exists } = await twoMatchTypesleadcount(brand,investorData);
 
-  // console.log("===exists===",exists)
+
   if (exists === true) {
     console.log("======stop=======")
     return
@@ -96,6 +97,8 @@ export const CategoryInvestmentrangeMatchFunction = async (
     investorData?.planToInvest,
     investorData?.readyToInvest
   );
+
+  await generateSentLeadsPercentage(brand,totalLeadsendcount)
 
   if (!brandDoc) {
     brandDoc = await CategoryInvestmentrangeMatch.create({

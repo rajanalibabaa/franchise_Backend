@@ -91,6 +91,10 @@ const BrandDetailsSchema = new mongoose.Schema(
           default:false
         },
         packageUpdatedTime: { type: Date, default: Date.now },
+        sentLeadsPercentage: {
+          type: String,
+          default:"0%"
+        }
       },
       listingPackages: {
         periodMonths: {
