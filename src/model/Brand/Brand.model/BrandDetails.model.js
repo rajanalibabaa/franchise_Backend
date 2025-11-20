@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const BrandDetailsSchema = new mongoose.Schema(
+
   {
     uuid: {
       type: String,
