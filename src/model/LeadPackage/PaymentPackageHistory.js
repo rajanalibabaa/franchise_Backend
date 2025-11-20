@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const PaymentPackageHistorySchema = new mongoose.Schema({
     
     uuid: {
@@ -36,10 +38,10 @@ const PaymentPackageHistorySchema = new mongoose.Schema({
         type: Boolean,
         default: false,
       },
-      packageStartTime: { type: Date, default: Date.now },
-      packageEndTime: { type: Date, default: Date.now },
+      packageStartTime: { type: String }, 
+        packageEndTime: { type: String },
       timestamp: { type: Date, default: Date.now }
-    }],
+    }]
   },
 
 );

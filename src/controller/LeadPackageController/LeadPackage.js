@@ -4,6 +4,8 @@ import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestme
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
 import { LocationInvestmentRangeMatch } from "../../model/Leads/locationInvestmentRangeMatch.model.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
+import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
+import { PaymentPackageHistory } from "../../model/LeadPackage/PaymentPackageHistory.js";
 
 export const format = (d) => {
   const day = String(d?.getDate()).padStart(2, "0");
@@ -14,11 +16,51 @@ export const format = (d) => {
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
+async function saveOldPackageToHistory(brand, packageEndTime) {
+  if (!brand?.brandDetails?.paymentPackage) return;
+
+  const oldPkg = brand.brandDetails.paymentPackage;
+
+  const newHistoryEntry = {
+    packageType: oldPkg.packageType,
+    totalAmount: oldPkg.totalAmount,
+    totalMonths: oldPkg.totalMonths,
+    perMonthLead: oldPkg.perMonthLead,
+    totalLeads: oldPkg.totalLeads,
+    isActive: oldPkg.isActive,
+    packageStartTime: oldPkg.packageUpdatedTime,
+    packageEndTime: packageEndTime,
+    timestamp: new Date(),
+  };
+
+  // Check if history for uuid exists
+  const existing = await PaymentPackageHistory.findOne({ uuid: brand.uuid });
+
+  if (existing) {
+    await PaymentPackageHistory.updateOne(
+      { uuid: brand.uuid },
+      {
+        $push: {
+          paymentPackage: newHistoryEntry,
+        },
+      }
+    );
+
+    return; // done
+  }
+
+  await PaymentPackageHistory.create({
+    uuid: brand.uuid,
+    brandName: brand.brandDetails.brandName,
+    paymentPackage: [newHistoryEntry],
+  });
+}
+
 
 export const leadPackageUpdate = async (req, res) => {
   try {
     const brandId = req.params.id;
-    const upgradePacakgeType = "free";
+    const upgradePacakgeType = "gold";
 
     // Get brand details
     const brands = await BrandDetails.find({ uuid: brandId });
@@ -43,7 +85,7 @@ export const leadPackageUpdate = async (req, res) => {
     packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
     const packageEndTime = format(packageEndDate);
 
-    console.log("Package Start Time:", packageStartTime);
+    console.log("Package Start Time:", packageEndTime);
 
     if (!packageStartTime) {
       return res.status(400).json({
@@ -74,7 +116,7 @@ export const leadPackageUpdate = async (req, res) => {
       packageStartTime
     );
 
-    // const locInvCount = await getLeadCount(  
+    // const locInvCount = await getLeadCount(
     //   LocationInvestmentRangeMatch,
     //   "locationInvestmentRangeMatchRecords",
     //   brandId,
@@ -85,9 +127,10 @@ export const leadPackageUpdate = async (req, res) => {
 
     const PackageLeadCount = brand.brandDetails.paymentPackage.totalLeads;
 
-    const balanceLeads = totalLeadCount - PackageLeadCount;
+    const balanceLeads = PackageLeadCount - totalLeadCount;
 
     console.log("balanceLeads :", balanceLeads);
+    await saveOldPackageToHistory(brand, packageEndTime);
 
     if (upgradePacakgeType) {
       const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
@@ -117,7 +160,12 @@ export const leadPackageUpdate = async (req, res) => {
         brand.brandDetails.paymentPackage
       );
       brand.brandDetails.paymentPackage = newUpgradePackage;
-      //  await brand.save();
+      const g = await brand.save();
+      if (!g) {
+        console.log("Error saving brand details", g);
+        return res.json(new ApiResponse(500, g, "Error saving brand details"));
+      }
+      console.log();
       console.log(
         "=== newUpgradePackageLast===:",
         brand.brandDetails.paymentPackage
@@ -162,7 +210,7 @@ async function getLeadCount(
 ) {
   const doc = await model.findOne({ brandId });
 
-
+  //   console.log(doc, "doc");
 
   // If no brand found inside this schema → skip
   if (!doc || !doc[foreignFieldName] || doc[foreignFieldName].length === 0) {
@@ -173,12 +221,13 @@ async function getLeadCount(
   const lastIndex = doc[foreignFieldName].length - 1;
   const lastRecord = doc[foreignFieldName][lastIndex];
 
-
+  // console.log(lastRecord, "lastRecord");
 
   const pkgStart = lastRecord.packageStartDate;
   const pkgUpdated = packageStartTime;
 
-
+  // console.log(pkgStart, "pkgStart");
+  // console.log(pkgUpdated, "pkgUpdated");
 
   // If packageUpdatedTime does NOT match → skip
   if (pkgStart !== pkgUpdated) {
