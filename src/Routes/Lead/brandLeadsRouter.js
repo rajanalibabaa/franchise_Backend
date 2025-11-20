@@ -2,8 +2,7 @@ import express from "express";
 import {getLeadsBybrandId} from "../../controller/Leads/leadsControllers.js";
 
 
-const brandleadsRouter=express.Router();
+export const brandleadsRouter = express.Router();
 
-brandleadsRouter.get("/getleadsbybrandid/:brandId",getLeadsBybrandId);
+brandleadsRouter.get("/v1/getleadsbybrandid/:id",getLeadsBybrandId);
 
-export default brandleadsRouter;

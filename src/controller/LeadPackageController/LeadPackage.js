@@ -223,7 +223,7 @@ async function getLeadCount(
 
   // console.log(lastRecord, "lastRecord");
 
-  const pkgStart = lastRecord.packageStartDate;
+  const pkgStart = lastRecord.packageStartDate;æ
   const pkgUpdated = packageStartTime;
 
   // console.log(pkgStart, "pkgStart");

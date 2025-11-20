@@ -1,5 +1,8 @@
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
-import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import {
+  format,
+  generateSentLeadsPercentage,
+} from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
@@ -18,11 +21,14 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-   const {totalLeadsendcount ,exists } = await twoMatchTypesleadcount(brand,investorData);
+  const { totalLeadsendcount, exists } = await twoMatchTypesleadcount(
+    brand,
+    investorData
+  );
 
   if (exists) {
-    console.log("======stop=======")
-    return
+    console.log("======stop=======");
+    return;
   }
   let lastupdatedData = null;
 
@@ -36,7 +42,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
-    console.log("===expired===")
+    console.log("===expired===");
     return;
   }
   // console.log("==== :",totalLeadsendcount)
@@ -83,7 +89,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     brandId: brand.uuid,
   });
 
- await sendInstantApplyLeadLocation(
+  await sendInstantApplyLeadLocation(
     investorData?.fullName,
     investorData?.email,
     investorData?.mobileNumber,
@@ -95,6 +101,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     investorData?.planToInvest,
     investorData?.readyToInvest
   );
+  await generateSentLeadsPercentage(brand,totalLeadsendcount)
 
   if (!brandDoc) {
     brandDoc = await CategoryLocationMatch.create({
@@ -183,7 +190,9 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const innerLastRecord = lastRecord?.records?.[innerLastIndex];
 
   if (
-    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber) || (paymentPackage?.totalMonths + 1) === Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) ===
+      Number(innerLastRecord?.monthNumber) ||
+    paymentPackage?.totalMonths + 1 === Number(innerLastRecord?.monthNumber)
   ) {
     // console.log("Month matched. Updating leads...");
 
@@ -211,7 +220,8 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
 
     return;
   } else if (
-    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) && paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) &&
+    paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
   ) {
     console.log("New month detected. Creating new month record...");
 
