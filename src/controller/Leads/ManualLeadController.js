@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import ManualLead from '../../model/NewIncomeInvestor/ManualleadSchema.js';
 import { InvsRegister } from '../../model/Investor/invsRegister.js';
+import { handleNewleads } from '../../utils/AllLeads/handleNewleads.js';
 class ManualLeadController {
   // ✅ Create a new manual lead
   async createLead(req, res) {
@@ -22,6 +23,10 @@ class ManualLeadController {
       tags,
       priority
     } = req.body;
+
+    console.log("===bulk data=== :",req.body)
+
+    const generateuuid = uuidv4()
 
     // Validation
     if (!fullName || !email || !mobileNumber || !state || !investmentRange || !planToInvest || !readyToInvest) {
@@ -50,23 +55,6 @@ class ManualLeadController {
       ]
     });
 
-    if (existingLead) {
-      return res.status(409).json({
-        success: false,
-        statuscode: 409,
-        message: 'Lead with this email or mobile number already exists',
-        data: {
-          existingLead: {
-            uuid: existingLead.uuid,
-            email: existingLead.email,
-            mobileNumber: existingLead.mobileNumber,
-            createdAt: existingLead.createdAt
-          }
-        }
-      });
-    }
-
-    // Check if investor already exists
     const existingInvestor = await InvsRegister.findOne({
       $or: [
         { email: email.toLowerCase() },
@@ -76,15 +64,18 @@ class ManualLeadController {
 
     // Start transaction for data consistency
     const session = await ManualLead.startSession();
+    // console.log("session :",session)
     session.startTransaction();
 
     try {
-      // Create Manual Lead
+      let savedLead = existingLead
+      if (!existingLead) {
+        // Create Manual Lead
       const newLead = new ManualLead({
-        uuid: uuidv4(),
+        uuid: generateuuid,
         fullName: fullName.trim(),
-        email: email.toLowerCase().trim(),
-        mobileNumber: mobileNumber.trim(),
+        email: email.toLowerCase()?.trim(),
+        mobileNumber: String(mobileNumber).trim(),
         state: state.trim(),
         district: district?.trim() || '',
         city: city?.trim() || '',
@@ -103,14 +94,15 @@ class ManualLeadController {
         priority: priority || 'medium'
       });
 
-      const savedLead = await newLead.save({ session });
+       savedLead = await newLead.save({ session });
+      }
 
-      let savedInvestor = null;
+      let savedInvestor = existingInvestor;
 
       // Create Investor Registration only if doesn't exist
       if (!existingInvestor) {
         // Format mobile number to match schema validation (+91xxxxxxxxxx)
-        let formattedMobile = mobileNumber.trim();
+        let formattedMobile =String(mobileNumber).trim();
         if (!formattedMobile.startsWith('+91')) {
           // Remove any existing country code and add +91
           formattedMobile = formattedMobile
@@ -121,20 +113,23 @@ class ManualLeadController {
           firstName: fullName.trim(),
           email: email.toLowerCase().trim(),
           mobileNumber: formattedMobile,
-          uuid: uuidv4(),
+          uuid: generateuuid,
           inveterID: `INV_Admin_Creations_${Date.now()}`, // Generate investor ID
           active: false, // Set as inactive since it's a manual entry
           preferences: [] // Empty preferences array
         });
 
         savedInvestor = await newInvestor.save({ session });
+        await session.commitTransaction();
+      session.endSession();
+       
       }
 
-      // Commit transaction
-      await session.commitTransaction();
-      session.endSession();
 
-      res.status(201).json({
+      // Commit transaction
+      
+
+       res.status(201).json({
         success: true,
         statuscode: 201,
         message: 'Manual lead created successfully',
@@ -151,6 +146,26 @@ class ManualLeadController {
           investorExists: !!existingInvestor
         }
       });
+
+      await handleNewleads(
+        savedInvestor?.firstName,
+        savedInvestor?.email,
+        savedInvestor?.mobileNumber,
+        categories[0].main,
+        categories[0].sub,
+        categories[0].child,
+        state,
+        district,
+        city,
+        investmentRange,
+        planToInvest,
+        readyToInvest,
+        "admin",
+        savedInvestor?.uuid,
+
+      )
+
+      return
 
     } catch (transactionError) {
       // Abort transaction on error

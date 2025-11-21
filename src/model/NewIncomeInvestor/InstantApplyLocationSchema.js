@@ -14,7 +14,7 @@ const investmentRangeEnum = [
   "Rs.5Cr-above",
 ];
 
-const applyByEnum = ["Investor", "Brand", "other"];
+const applyByEnum = ["Investor", "Brand", "other", "admin"];
 
 const BrandSentSchema = new mongoose.Schema(
   {

@@ -75,7 +75,7 @@ const createBrandListing = async (req, res) => {
   try {
     const { admin } = req.body;
     const id = uuid(); // Make sure this is properly imported/defined
-console.log("Incoming data:", req.body);
+    console.log("Incoming data:", req.body);
     const fileFields = [
       "awardDoc",
       "brandLogo",
@@ -101,27 +101,32 @@ console.log("Incoming data:", req.body);
 
     const brandDetails = safeJsonParse(req.body?.brandDetails);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
-    const expansionLocationData = safeJsonParse(req.body?.expansionLocationData);
+    const expansionLocationData = safeJsonParse(
+      req.body?.expansionLocationData
+    );
 
-  console.log("Parsed brandDetails:", brandDetails);
+    console.log("Parsed brandDetails:", brandDetails);
 
-if (brandDetails.paymentPackage) {
-        const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
-        const selectedPackage = brandDetails.paymentPackage; 
+    if (brandDetails.paymentPackage) {
+      const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
+      const selectedPackage = brandDetails.paymentPackage;
 
-        for (const key in PaymentPackagesData) {
-          if (key === selectedPackage) {
-            const matchedPackage = { ...PaymentPackagesData[key],  packageType: key,isActive: true,packageUpdatedTime: new Date()};
+      for (const key in PaymentPackagesData) {
+        if (key === selectedPackage) {
+          const matchedPackage = {
+            ...PaymentPackagesData[key],
+            packageType: key,
+            isActive: true,
+            packageUpdatedTime: new Date(),
+          };
 
-            console.log("Matched Package:", matchedPackage);
-            brandDetails.paymentPackage = matchedPackage
-
-          }
+          console.log("Matched Package:", matchedPackage);
+          brandDetails.paymentPackage = matchedPackage;
         }
       }
+    }
 
-// console.log("updated data:", brandDetails);
-
+    // console.log("updated data:", brandDetails);
 
     // Validate required fields
     if (!brandDetails || !franchiseDetails || !expansionLocationData) {
@@ -230,11 +235,9 @@ if (brandDetails.paymentPackage) {
           req.files[field].map(async (file) => {
             // Convert videos to HLS, others direct upload
             const isVideo = field.toLowerCase().includes("video");
-            const uploadedUrl = await uploadFileToR2(
-              file.path, 
-              file.mimetype, 
-              { convertToHLS: isVideo }
-            );
+            const uploadedUrl = await uploadFileToR2(file.path, file.mimetype, {
+              convertToHLS: isVideo,
+            });
             console.log(`✅ Uploaded ${field}:`, uploadedUrl);
             return uploadedUrl;
           })
@@ -250,24 +253,89 @@ if (brandDetails.paymentPackage) {
       awardImage: fileUrl,
     }));
 
+    if (admin) {
+      // Create all records in parallel after getting the UUID
 
+      const [
+        newBrand,
+        newBrandFranchiseDetails,
+        newBrandExpansionLocationData,
+        newBrandUploads,
+      ] = await Promise.all([
+        BrandDetails.create({
+          brandID,
+          uuid: id,
+          brandDetails,
+        }),
+        BrandFranchiseDetails.create({
+          brandOwnerId: id,
+          franchiseDetails,
+        }),
+        BrandExpansionLocationData.create({
+          brandOwnerId: id,
+          expansionLocationData,
+        }),
+        BrandUploads.create({
+          brandOwnerId: id,
+          uploads: {
+            brandLogo: uploadedFiles.brandLogo || [],
+            gstCertificate: uploadedFiles.gstCertificate || [],
+            pancard: uploadedFiles.pancard || [],
+            exteriorOutlet: uploadedFiles.exteriorOutlet || [],
+            interiorOutlet: uploadedFiles.interiorOutlet || [],
+            franchisePromotionVideo:
+              uploadedFiles.franchisePromotionVideo || [],
+            brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
+            businessPlan: uploadedFiles.businessPlan || [],
+            awards,
+          },
+        }),
+      ]);
 
-    if(admin){
-       // Create all records in parallel after getting the UUID
+      // Check if all records were created successfully
+      if (
+        !newBrand ||
+        !newBrandFranchiseDetails ||
+        !newBrandExpansionLocationData ||
+        !newBrandUploads
+      ) {
+        return res.json(
+          new ApiResponse(500, {}, "Failed to create one or more brand records")
+        );
+      }
 
-    const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
+      return res.json(
+        new ApiResponse(
+          201,
+          {
+            brand: newBrand,
+            franchise: newBrandFranchiseDetails,
+            locations: newBrandExpansionLocationData,
+            uploads: newBrandUploads,
+          },
+          "Brand listing created successfully"
+        )
+      );
+    }
+
+    const [
+      newBrand,
+      newBrandFranchiseDetails,
+      newBrandExpansionLocationData,
+      newBrandUploads,
+    ] = await Promise.all([
       BrandDetails.create({
         brandID,
         uuid: id,
-        brandDetails
+        brandDetails,
       }),
       BrandFranchiseDetails.create({
         brandOwnerId: id,
-        franchiseDetails
+        franchiseDetails,
       }),
       BrandExpansionLocationData.create({
         brandOwnerId: id,
-        expansionLocationData
+        expansionLocationData,
       }),
       BrandUploads.create({
         brandOwnerId: id,
@@ -280,77 +348,35 @@ if (brandDetails.paymentPackage) {
           franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
           brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
           businessPlan: uploadedFiles.businessPlan || [],
-          awards
-        }
-      })
+          awards,
+        },
+      }),
     ]);
 
     // Check if all records were created successfully
-    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
+    if (
+      !newBrand ||
+      !newBrandFranchiseDetails ||
+      !newBrandExpansionLocationData ||
+      !newBrandUploads
+    ) {
       return res.json(
         new ApiResponse(500, {}, "Failed to create one or more brand records")
       );
     }
 
     return res.json(
-      new ApiResponse(201, {
-        brand: newBrand,
-        franchise: newBrandFranchiseDetails,
-        locations: newBrandExpansionLocationData,
-        uploads: newBrandUploads
-      }, "Brand listing created successfully")
+      new ApiResponse(
+        201,
+        {
+          brand: newBrand,
+          franchise: newBrandFranchiseDetails,
+          locations: newBrandExpansionLocationData,
+          uploads: newBrandUploads,
+        },
+        "Brand listing created successfully"
+      )
     );
-
-    }
-   
-
-     const [newBrand, newBrandFranchiseDetails, newBrandExpansionLocationData, newBrandUploads] = await Promise.all([
-      BrandDetails.create({
-        brandID,
-        uuid: id,
-        brandDetails
-      }),
-      BrandFranchiseDetails.create({
-        brandOwnerId: id,
-        franchiseDetails
-      }),
-      BrandExpansionLocationData.create({
-        brandOwnerId: id,
-        expansionLocationData
-      }),
-      BrandUploads.create({
-        brandOwnerId: id,
-        uploads: {
-          brandLogo: uploadedFiles.brandLogo || [],
-          gstCertificate: uploadedFiles.gstCertificate || [],
-          pancard: uploadedFiles.pancard || [],
-          exteriorOutlet: uploadedFiles.exteriorOutlet || [],
-          interiorOutlet: uploadedFiles.interiorOutlet || [],
-          franchisePromotionVideo: uploadedFiles.franchisePromotionVideo || [],
-          brandPromotionVideo: uploadedFiles.brandPromotionVideo || [],
-          businessPlan: uploadedFiles.businessPlan || [],
-          awards
-        }
-      })
-    ]);
-
-    // Check if all records were created successfully
-    if (!newBrand || !newBrandFranchiseDetails || !newBrandExpansionLocationData || !newBrandUploads) {
-      return res.json(
-        new ApiResponse(500, {}, "Failed to create one or more brand records")
-      );
-    }
-
-    return res.json(
-      new ApiResponse(201, {
-        brand: newBrand,
-        franchise: newBrandFranchiseDetails,
-        locations: newBrandExpansionLocationData,
-        uploads: newBrandUploads
-      }, "Brand listing created successfully")
-    );
-
-
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
     return res.json(
@@ -525,10 +551,11 @@ const getAllBrands = async (req, res) => {
 const getBrandListingByUUID = async (req, res) => {
   const { id } = req.params;
   const userId = req.query.userId || null;
+  const paymentHistory = req.query.paymentHistory || null;
 
   try {
     const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
-    const data = await BrandDetails.aggregate([
+    const aggregationPipeline = [
       {
         $match: {
           uuid: id,
@@ -574,101 +601,122 @@ const getBrandListingByUUID = async (req, res) => {
           },
         },
       },
-      {
-        $project: {
-          _id: 0,
-          uuid: 1,
-          isLiked: 1,
-          isShortListed: 1,
-          brandDetails: {
-            companyName: "$brandDetails.companyName",
-            brandName: "$brandDetails.brandName",
-            tagLine: "$brandDetails.tagLine",
-            brandID: "$brandID",
-            state: "$brandDetails.state",
-            city: "$brandDetails.city",
-            paymentPackage:"$brandDetails.paymentPackage",
-            listingPackages:"$brandDetails.listingPackages",
+    ];
+
+    let projectStage = {
+      _id: 0,
+      uuid: 1,
+      isLiked: 1,
+      isShortListed: 1,
+      brandDetails: {
+        companyName: "$brandDetails.companyName",
+        brandName: "$brandDetails.brandName",
+        tagLine: "$brandDetails.tagLine",
+        brandID: "$brandID",
+        state: "$brandDetails.state",
+        city: "$brandDetails.city",
+        paymentPackage: "$brandDetails.paymentPackage",
+        listingPackages: "$brandDetails.listingPackages",
+      },
+      brandfranchisedetails: {
+        $let: {
+          vars: {
+            firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] },
           },
-          brandfranchisedetails: {
-            $let: {
-              vars: {
-                firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] },
-              },
-              in: {
-                franchiseDetails: "$$firstFranchise.franchiseDetails",
-              },
+          in: {
+            franchiseDetails: "$$firstFranchise.franchiseDetails",
+          },
+        },
+      },
+      uploads: {
+        $let: {
+          vars: {
+            firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
+          },
+          in: {
+            logo: {
+              $ifNull: [
+                { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
+                null,
+              ],
             },
-          },
-          uploads: {
-            $let: {
-              vars: {
-                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
-              },
-              in: {
-                logo: {
-                  $ifNull: [
-                    { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
-                    null,
+            franchiseVideos: {
+              $ifNull: [
+                {
+                  $arrayElemAt: [
+                    "$$firstUpload.uploads.franchisePromotionVideo",
+                    0,
                   ],
                 },
-                franchiseVideos: {
-                  $ifNull: [
-                    {
-                      $arrayElemAt: [
-                        "$$firstUpload.uploads.franchisePromotionVideo",
-                        0,
-                      ],
-                    },
-                    null,
+                null,
+              ],
+            },
+            exteriorOutlet: {
+              $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
+            },
+            interiorOutlet: {
+              $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
+            },
+            awards: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $isArray: "$$firstUpload.uploads.awards" },
+                    { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
                   ],
                 },
-                exteriorOutlet: {
-                  $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
-                },
-                interiorOutlet: {
-                  $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
-                },
-                awards: {
-                  $cond: {
-                    if: {
-                      $and: [
-                        { $isArray: "$$firstUpload.uploads.awards" },
-                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
-                      ],
+                then: {
+                  $map: {
+                    input: "$$firstUpload.uploads.awards",
+                    as: "award",
+                    in: {
+                      awardDescription: "$$award.awardDescription",
+                      awardImage: "$$award.awardImage",
                     },
-                    then: {
-                      $map: {
-                        input: "$$firstUpload.uploads.awards",
-                        as: "award",
-                        in: {
-                          awardDescription: "$$award.awardDescription",
-                          awardImage: "$$award.awardImage",
-                        },
-                      },
-                    },
-                    else: [],
                   },
                 },
-              },
-            },
-          },
-          brandexpansionlocationdatas: {
-            $let: {
-              vars: {
-                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
-              },
-              in: {
-                currentOutletLocations:
-                  "$$data.expansionLocationData.currentOutletLocations",
-                expansionLocations:
-                  "$$data.expansionLocationData.expansionLocations",
+                else: [],
               },
             },
           },
         },
       },
-    ]);
+      brandexpansionlocationdatas: {
+        $let: {
+          vars: {
+            data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
+          },
+          in: {
+            currentOutletLocations:
+              "$$data.expansionLocationData.currentOutletLocations",
+            expansionLocations:
+              "$$data.expansionLocationData.expansionLocations",
+          },
+        },
+      },
+    };
+    aggregationPipeline.push({ $project: projectStage });
+
+    if (paymentHistory === "true") {
+      aggregationPipeline.push(
+        {
+        $lookup: {
+          from: "paymentpackagehistories",
+          localField: "uuid",
+          foreignField: "uuid",
+          as: "oldPackageHistory",
+        },
+      },
+      {
+        $unwind: {
+          path: "$oldPackageHistory",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+      projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
+    }
+    const data = await BrandDetails.aggregate(aggregationPipeline);
 
     return res.json(
       new ApiResponse(200, data, "✅ Brand fetched successfully")
@@ -685,197 +733,11 @@ const getBrandListingByUUID = async (req, res) => {
   }
 };
 
-// export const getTopBeverageFranchise = async (req,res)=>{
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     const aggregationPipeline = [
-//       {
-//         $match: {
-//           "franchiseDetails.brandCategories.sub": "Beverage Franchises",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$brandInfo",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: true },
-//         },
-//       },
-
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$uploads",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           brandID: "$brandInfo.brandID",
-//           uuid: "$brandOwnerId",
-//           isLiked: 1,
-//           isShortListed: 1,
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//           franchiseVideos: {
-//             $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     //   const [brandsData, totalCount] = await Promise.all([
-//     //   BrandFranchiseDetails.aggregate(aggregationPipeline),
-//     //   BrandFranchiseDetails.countDocuments({
-//     //     "franchiseDetails.brandCategories.sub":"Beverage Franchises"
-//     //   })
-//     // ])
-
-//     const [brandsData, totalCountResult] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.aggregate([
-//         {
-//           $lookup: {
-//             from: "branddetails",
-//             localField: "brandOwnerId",
-//             foreignField: "uuid",
-//             as: "brandInfo",
-//           },
-//         },
-//         { $unwind: "$brandInfo" },
-//         {
-//           $match: {
-//             "franchiseDetails.brandCategories.sub": "Beverage Franchises",
-//             "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//             "brandInfo.brandDetails.isApproved": { $ne: true },
-//           },
-//         },
-//         { $count: "totalCount" },
-//       ]),
-//     ]);
-
-//     const totalCount = totalCountResult[0]?.totalCount || 0;
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(
-//         new ApiResponse(404, null, "No top beverage franchises found")
-//       );
-//     }
-
-//     const brands = shuffleArray(brandsData);
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           brands: brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Top food franchises fetched successfully"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching brands:", error);
-//     return res.json(
-//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
-//     );
-//   }
-// };
-
-// export const getTopLeadingFranchise = async (req, res) => {
-//   try {
-//     res.json(
-//       new ApiResponse(
-//         200,
-//         null,
-//         "Top leading franchise data is not implemented yet"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching brands:", error);
-//     return res.json(
-//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
-//     );
-//   }
-// };
-
 const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
-    
 
-    console.log("id :",id)
+    console.log("id :", id);
 
     // ---------- Safe Parse Helper ----------
     const safeParse = (data) => {
@@ -917,9 +779,8 @@ const updateBrandListingByUUID = async (req, res) => {
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
 
-    console.log("ParseBrandDetails:",ParseBrandDetails)
-    console.log("parseFranchiseDetails",ParseFranchiseDetails);
-    
+    console.log("ParseBrandDetails:", ParseBrandDetails);
+    console.log("parseFranchiseDetails", ParseFranchiseDetails);
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
@@ -955,9 +816,6 @@ const updateBrandListingByUUID = async (req, res) => {
           updates.$set[`brandDetails.${field}`] = ParseBrandDetails[field];
         }
       }
-
-    
-    
     }
 
     // ---------- FranchiseDetails ----------
@@ -1129,7 +987,7 @@ const updateBrandListingByUUID = async (req, res) => {
           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
         expensionLocationData: expensionLocationData || null,
       };
-console.log("resposnse data",responseData);
+      console.log("resposnse data", responseData);
 
       return res
         .status(200)
@@ -2118,655 +1976,6 @@ export const allId = async (req, res) => {
   return res.json(new ApiResponse(200, arr, "fetch successfully"));
 };
 
-// export const getTopCafes = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-//     const { main, sub, child } = req.query;
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     // Base match condition
-//     const baseMatch = {
-//       "franchiseDetails.brandCategories.child": "Coffee & Tea Cafes",
-//       // "franchiseDetails.brandCategories.main": main,
-//       // "franchiseDetails.brandCategories.child": child,
-//     };
-
-//     const aggregationPipeline = [
-//       { $match: baseMatch },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true },
-//       },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: false },
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       {
-//         $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true },
-//       },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           isLiked: 1,
-//           isShortListed: 1,
-//           uuid: "$brandInfo.uuid",
-//           brandId: "$brandInfo.brandID",
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//           franchiseVideos: {
-//             $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     // 👇 Fix total count with the same filters (including isBrandPause)
-//     const [brandsData, totalCountResult] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.aggregate([
-//         { $match: baseMatch },
-//         {
-//           $lookup: {
-//             from: "branddetails",
-//             localField: "brandOwnerId",
-//             foreignField: "uuid",
-//             as: "brandInfo",
-//           },
-//         },
-//         { $unwind: "$brandInfo" },
-//         {
-//           $match: {
-//             "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//             "brandInfo.brandDetails.isApproved": { $ne: true },
-//           },
-//         },
-//         { $count: "totalCount" },
-//       ]),
-//     ]);
-
-//     const totalCount = totalCountResult[0]?.totalCount || 0;
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(new ApiResponse(404, null, "No brands found"));
-//     }
-
-//     const brands = shuffleArray(brandsData);
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Brands fetched successfully"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching top cafes:", error);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// };
-
-// export const getTopDesertAndBakery = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-
-//     // get liked & shortlisted brand IDs
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     const aggregationPipeline = [
-//       {
-//         $match: {
-//           "franchiseDetails.brandCategories.sub": "Dessert & Bakery",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: true },
-//         },
-//       },
-//       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           isLiked: 1,
-//           isShortListed: 1,
-//           uuid: "$brandInfo.uuid",
-//           brandID: "$brandInfo.brandID",
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//           franchiseVideos: {
-//             $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     // Fetch paginated data & total count
-//     const [brandsData, totalCountResult] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.aggregate([
-//         {
-//           $lookup: {
-//             from: "branddetails",
-//             localField: "brandOwnerId",
-//             foreignField: "uuid",
-//             as: "brandInfo",
-//           },
-//         },
-//         { $unwind: "$brandInfo" },
-//         {
-//           $match: {
-//             "franchiseDetails.brandCategories.sub": "Dessert & Bakery",
-//             "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//             "brandInfo.brandDetails.isApproved": { $ne: true },
-//           },
-//         },
-//         { $count: "totalCount" },
-//       ]),
-//     ]);
-
-//     const totalCount = totalCountResult[0]?.totalCount || 0;
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(new ApiResponse(404, null, "No brands found"));
-//     }
-
-//     const brands = shuffleArray(brandsData);
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Brand fetched successfully"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching Dessert & Bakery brands::", error);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// };
-
-// export const getTopTrucksAndKiosks = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     const aggregationPipeline = [
-//       {
-//         $match: {
-//           "franchiseDetails.brandCategories.sub":
-//             "Food Trucks & Kiosks Franchises",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: true },
-//         },
-//       },
-//       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           isLiked: 1,
-//           isShortListed: 1,
-//           uuid: "$brandInfo.uuid",
-//           brandID: "$brandInfo.brandID",
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//           franchiseVideos: {
-//             $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     const [brandsData, totalCountResult] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.aggregate([
-//         {
-//           $lookup: {
-//             from: "branddetails",
-//             localField: "brandOwnerId",
-//             foreignField: "uuid",
-//             as: "brandInfo",
-//           },
-//         },
-//         { $unwind: "$brandInfo" },
-//         {
-//           $match: {
-//             "franchiseDetails.brandCategories.sub":
-//               "Food Trucks & Kiosks Franchises",
-//             "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//             "brandInfo.brandDetails.isApproved": { $ne: true },
-//           },
-//         },
-//         { $count: "totalCount" },
-//       ]),
-//     ]);
-
-//     const totalCount = totalCountResult[0]?.totalCount || 0;
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(new ApiResponse(404, null, "No brands found"));
-//     }
-//     const brands = shuffleArray(brandsData);
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Brand fetched successfully"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching Dessert & Bakery brands::", error);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// };
-
-// export const getTopRestaurants = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     const aggregationPipeline = [
-//       {
-//         $match: {
-//           $or: [
-//             {
-//               "franchiseDetails.brandCategories.child":
-//                 "QSR (Quick Service Restaurants)",
-//             },
-//             {
-//               "franchiseDetails.brandCategories.child":
-//                 "Multi Cuisine Restaurants",
-//             },
-//             {
-//               "franchiseDetails.brandCategories.child":
-//                 "Seafood-Based Restaurants",
-//             },
-//             {
-//               "franchiseDetails.brandCategories.child":
-//                 "Vegetarian-Only Restaurants",
-//             },
-//             { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
-//             {
-//               "franchiseDetails.brandCategories.child":
-//                 "Health-Focused Restaurants",
-//             },
-//           ],
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       {
-//         $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true },
-//       },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: true },
-//         },
-//       },
-//       {
-//         $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true },
-//       },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           isLiked: 1,
-//           isShortListed: 1,
-//           uuid: "$brandInfo.uuid",
-//           brandId: "$brandInfo.brandID",
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//           franchiseVideos: {
-//             $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     // Fetch paginated data & total count
-//     const [brandsData, totalCountResult] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.aggregate([
-//         {
-//           $lookup: {
-//             from: "branddetails",
-//             localField: "brandOwnerId",
-//             foreignField: "uuid",
-//             as: "brandInfo",
-//           },
-//         },
-//         { $unwind: "$brandInfo" },
-//         {
-//           $match: {
-//             $or: [
-//               {
-//                 "franchiseDetails.brandCategories.child":
-//                   "QSR (Quick Service Restaurants)",
-//               },
-//               {
-//                 "franchiseDetails.brandCategories.child":
-//                   "Multi Cuisine Restaurants",
-//               },
-//               {
-//                 "franchiseDetails.brandCategories.child":
-//                   "Seafood-Based Restaurants",
-//               },
-//               {
-//                 "franchiseDetails.brandCategories.child":
-//                   "Vegetarian-Only Restaurants",
-//               },
-//               { "franchiseDetails.brandCategories.child": "Vegan Restaurants" },
-//               {
-//                 "franchiseDetails.brandCategories.child":
-//                   "Health-Focused Restaurants",
-//               },
-//             ],
-//             "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//             "brandInfo.brandDetails.isApproved": { $ne: true },
-//           },
-//         },
-//         { $count: "totalCount" },
-//       ]),
-//     ]);
-
-//     const totalCount = totalCountResult[0]?.totalCount || 0;
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(new ApiResponse(404, null, "No brands found"));
-//     }
-
-//     const brands = shuffleArray(brandsData);
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Brands fetched successfully"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching top cafes:", error);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// };
-
 export const getBrandsByCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -3001,6 +2210,7 @@ export const getBrandsByCategory = async (req, res) => {
 export const getBrandById = async (req, res) => {
   const { id } = req.params;
   console.log("Brand ID requested:", id);
+  const paymentHistory = req.query.paymentHistory || null;
 
   const brand = req.brandUser;
   // if (id !== brand?.uuid) {
@@ -3009,7 +2219,7 @@ export const getBrandById = async (req, res) => {
   //   )
   // }
   try {
-    const data = await BrandDetails.aggregate([
+    const aggregationPipeline = [
       {
         $match: {
           uuid: id,
@@ -3114,109 +2324,132 @@ export const getBrandById = async (req, res) => {
           },
         },
       },
-      {
-        $project: {
-          _id: 0,
-          uuid: 1,
-          brandDetails: 1,
-          brandID: 1,
-          franchiseDetails: "$brandfranchisedetails.franchiseDetails",
-          uploads: {
-            $let: {
-              vars: {
-                firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
-              },
-              in: {
-                logo: {
-                  $ifNull: [
-                    { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
-                    null,
+    ];
+    let projectStage = {
+      _id: 0,
+      uuid: 1,
+      brandDetails: 1,
+      brandID: 1,
+      franchiseDetails: "$brandfranchisedetails.franchiseDetails",
+      uploads: {
+        $let: {
+          vars: {
+            firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
+          },
+          in: {
+            logo: {
+              $ifNull: [
+                { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
+                null,
+              ],
+            },
+            franchiseVideos: {
+              $ifNull: [
+                {
+                  $arrayElemAt: [
+                    "$$firstUpload.uploads.franchisePromotionVideo",
+                    0,
                   ],
                 },
-                franchiseVideos: {
-                  $ifNull: [
-                    {
-                      $arrayElemAt: [
-                        "$$firstUpload.uploads.franchisePromotionVideo",
-                        0,
-                      ],
+                null,
+              ],
+            },
+            exteriorOutlet: {
+              $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
+            },
+            interiorOutlet: {
+              $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
+            },
+            businessPlan: {
+              $ifNull: [
+                { $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] },
+                null,
+              ],
+            },
+            gstCertificate: {
+              $ifNull: [
+                {
+                  $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0],
+                },
+                null,
+              ],
+            },
+            pancard: {
+              $ifNull: [
+                { $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] },
+                null,
+              ],
+            },
+            awards: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $isArray: "$$firstUpload.uploads.awards" },
+                    { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
+                  ],
+                },
+                then: {
+                  $map: {
+                    input: "$$firstUpload.uploads.awards",
+                    as: "award",
+                    in: {
+                      awardDescription: "$$award.awardDescription",
+                      awardImage: "$$award.awardImage",
                     },
-                    null,
-                  ],
-                },
-                exteriorOutlet: {
-                  $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
-                },
-                interiorOutlet: {
-                  $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
-                },
-                businessPlan: {
-                  $ifNull: [
-                    { $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] },
-                    null,
-                  ],
-                },
-                gstCertificate: {
-                  $ifNull: [
-                    {
-                      $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0],
-                    },
-                    null,
-                  ],
-                },
-                pancard: {
-                  $ifNull: [
-                    { $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] },
-                    null,
-                  ],
-                },
-                awards: {
-                  $cond: {
-                    if: {
-                      $and: [
-                        { $isArray: "$$firstUpload.uploads.awards" },
-                        { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
-                      ],
-                    },
-                    then: {
-                      $map: {
-                        input: "$$firstUpload.uploads.awards",
-                        as: "award",
-                        in: {
-                          awardDescription: "$$award.awardDescription",
-                          awardImage: "$$award.awardImage",
-                        },
-                      },
-                    },
-                    else: [],
                   },
                 },
+                else: [],
               },
             },
           },
-          expansionlocationdata: {
-            $let: {
-              vars: {
-                data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
-              },
-              in: {
-                currentOutletLocations:
-                  "$$data.expansionLocationData.currentOutletLocations",
-                expansionLocations:
-                  "$$data.expansionLocationData.expansionLocations",
-                isInternationalExpansion:
-                  "$$data.expansionLocationData.isInternationalExpansion",
-              },
-            },
-          },
-          totalViewCount: {
-            $add: ["$totalInvestorViews", "$totalBrandViews"],
-          },
-          totalSortlistCount: 1,
-          totalLikedCount: 1,
         },
       },
-    ]);
+      expansionlocationdata: {
+        $let: {
+          vars: {
+            data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
+          },
+          in: {
+            currentOutletLocations:
+              "$$data.expansionLocationData.currentOutletLocations",
+            expansionLocations:
+              "$$data.expansionLocationData.expansionLocations",
+            isInternationalExpansion:
+              "$$data.expansionLocationData.isInternationalExpansion",
+          },
+        },
+      },
+      totalViewCount: {
+        $add: ["$totalInvestorViews", "$totalBrandViews"],
+      },
+      totalSortlistCount: 1,
+      totalLikedCount: 1,
+    };
+
+    if (paymentHistory === "true") {
+      aggregationPipeline.push(
+        {
+        $lookup: {
+          from: "paymentpackagehistories",
+          localField: "uuid",
+          foreignField: "uuid",
+          as: "oldPackageHistory",
+        },
+      },
+      {
+        $unwind: {
+          path: "$oldPackageHistory",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+      projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
+    }
+
+    aggregationPipeline.push({ $project: projectStage });
+    const data = await BrandDetails.aggregate(aggregationPipeline);
+
+    
 
     return res.json(
       new ApiResponse(200, data[0], "✅ Brand fetched successfully")

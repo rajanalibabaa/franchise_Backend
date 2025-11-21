@@ -167,7 +167,7 @@ export const updateBatchEmailConfig = async (req, res) => {
       );
   }
 };
-// Utility function to get config values (for use in your existing instantApplyLocationMatch function)
+// Utility function to get config values (for use in your existing handleNewleads function)
 export const getBatchEmailValues = async () => {
   try {
     const config = await SystemConfig.findOne();

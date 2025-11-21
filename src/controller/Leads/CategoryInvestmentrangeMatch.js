@@ -85,18 +85,18 @@ export const CategoryInvestmentrangeMatchFunction = async (
     brandId: brand.uuid,
   });
 
-  await sendInstantApplyLeadLocation(
-    investorData?.fullName,
-    investorData?.email,
-    investorData?.mobileNumber,
-    brand.brandDetails?.email,
-    brand.brandDetails?.companyName,
-    investorData?.category,
-    investorData?.location,
-    investorData?.investmentRange,
-    investorData?.planToInvest,
-    investorData?.readyToInvest
-  );
+  // await sendInstantApplyLeadLocation(
+  //   investorData?.fullName,
+  //   investorData?.email,
+  //   investorData?.mobileNumber,
+  //   brand.brandDetails?.email,
+  //   brand.brandDetails?.companyName,
+  //   investorData?.category,
+  //   investorData?.location,
+  //   investorData?.investmentRange,
+  //   investorData?.planToInvest,
+  //   investorData?.readyToInvest
+  // );
 
   await generateSentLeadsPercentage(brand,totalLeadsendcount)
 

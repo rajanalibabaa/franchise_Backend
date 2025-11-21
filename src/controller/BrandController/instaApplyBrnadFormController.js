@@ -7,7 +7,7 @@ import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { instantApplyPerfectAndPartial } from "../../utils/AllLeads/instantApplyPerfectAndPartial.js";
 import InstantApplyLead from "../../model/NewIncomeInvestor/instantApplyPerfectAndPartial.js";
 import mongoose, { Aggregate } from "mongoose";
-import { instantApplyLocationMatch } from "../../utils/AllLeads/instantApplyLocationMatch.js";
+import { handleNewleads } from "../../utils/AllLeads/handleNewleads.js";
 // import { EmailTrackingService } from '../../model/NewIncomeInvestor/BrandEmailCountSchema.js';r
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import InstantApplyInvestor from "../../model/NewIncomeInvestor/InstantApplyLocationSchema.js";
@@ -179,13 +179,10 @@ res.json(leadsres);
  // ✅ NEW: Initialize email tracking service
     // const emailTrackingService = new EmailTrackingService();
 
-    await instantApplyLocationMatch(
+    await handleNewleads(
       fullName,
       email,
       mobileNumber,
-      brandName,
-      brandId,
-      exists.brandDetails?.email,
       main,
       sub,
       child,
@@ -197,7 +194,6 @@ res.json(leadsres);
       readyToInvest,
       applyBy,
       applyById,
-      exists.uploads?.uploads?.brandLogo
     );
       // Send response after everything is processed
 
