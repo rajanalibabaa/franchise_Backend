@@ -16,10 +16,11 @@ export const format = (d) => {
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
-async function saveOldPackageToHistory(brand, packageEndTime) {
+async function saveOldPackageToHistory(brand, packageEndTime, packageStartTime) {
   if (!brand?.brandDetails?.paymentPackage) return;
 
   const oldPkg = brand.brandDetails.paymentPackage;
+  
 
   const newHistoryEntry = {
     packageType: oldPkg.packageType,
@@ -27,10 +28,11 @@ async function saveOldPackageToHistory(brand, packageEndTime) {
     totalMonths: oldPkg.totalMonths,
     perMonthLead: oldPkg.perMonthLead,
     totalLeads: oldPkg.totalLeads,
-    isActive: oldPkg.isActive,
-    packageStartTime: oldPkg.packageUpdatedTime,
+    isActive: !oldPkg.isActive,
+    packageStartTime: packageStartTime,
     packageEndTime: packageEndTime,
-    timestamp: new Date(),
+    sentLeadsPercentage: oldPkg.sentLeadsPercentage,
+    timestamp: format(new Date()),
   };
 
   // Check if history for uuid exists
@@ -55,7 +57,6 @@ async function saveOldPackageToHistory(brand, packageEndTime) {
     paymentPackage: [newHistoryEntry],
   });
 }
-
 
 export const leadPackageUpdate = async (req, res) => {
   try {
@@ -130,7 +131,7 @@ export const leadPackageUpdate = async (req, res) => {
     const balanceLeads = PackageLeadCount - totalLeadCount;
 
     console.log("balanceLeads :", balanceLeads);
-    await saveOldPackageToHistory(brand, packageEndTime);
+    await saveOldPackageToHistory(brand, packageEndTime,packageStartTime);
 
     if (upgradePacakgeType) {
       const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
@@ -152,7 +153,7 @@ export const leadPackageUpdate = async (req, res) => {
       newUpgradePackage = {
         ...newUpgradePackage,
         totalLeads: newUpgradePackage.totalLeads + balanceLeads,
-        isActive: false,
+        isActive: true,
       };
 
       console.log(
@@ -223,7 +224,7 @@ async function getLeadCount(
 
   // console.log(lastRecord, "lastRecord");
 
-  const pkgStart = lastRecord.packageStartDate;æ
+  const pkgStart = lastRecord.packageStartDate;
   const pkgUpdated = packageStartTime;
 
   // console.log(pkgStart, "pkgStart");
@@ -231,8 +232,9 @@ async function getLeadCount(
 
   // If packageUpdatedTime does NOT match → skip
   if (pkgStart !== pkgUpdated) {
-    return { found: false, leadCount: 0 };
-  }
+    return { found: false, leadCount: 0 };   
+  }  
 
   return { found: true, leadCount: lastRecord.leadCount ?? 0 };
+  
 }

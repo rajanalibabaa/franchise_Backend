@@ -38,9 +38,13 @@ const PaymentPackageHistorySchema = new mongoose.Schema({
         type: Boolean,
         default: false,
       },
+      sentLeadsPercentage: {
+        type: String,
+        default: "0 %",
+      },
       packageStartTime: { type: String }, 
         packageEndTime: { type: String },
-      timestamp: { type: Date, default: Date.now }
+      timestamp: { type: String  },
     }]
   },
 
