@@ -6,13 +6,10 @@ import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.j
 import { paidLeadHelperFunction } from "./instantApplyPaidLeads.js";
 import { sendInstantApplyLeadLocation } from "../Centralized Email/centralizedEmail.js";
 
-export const instantApplyLocationMatch = async (
+export const handleNewleads = async (
   fullName,
   email,
-  mobileNumber,
-  brandName,
-  brandId,
-  brandEmail,
+  mobileNumber, 
   mainCategory,
   subCategory,
   childCategory,
@@ -24,9 +21,8 @@ export const instantApplyLocationMatch = async (
   readyToInvest,
   applyBy,
   applyId,
-  brandLogo
 ) => {
-  // console.log("Starting instantApplyLocationMatch with parameters:", {
+  // console.log("Starting handleNewleads with parameters:", {
   //   fullName,
   //   email,
   //   mobileNumber,
@@ -73,7 +69,7 @@ export const instantApplyLocationMatch = async (
 
   // Ensure required params are present
   if (!state) {
-    throw new Error("State is required for instantApplyLocationMatch");
+    throw new Error("State is required for handleNewleads");
   }
 
   const now = new Date();
@@ -490,7 +486,8 @@ export const instantApplyLocationMatch = async (
       brandsSent: brandsSent,
     });
   } catch (error) {
-    console.error("Error in instantApplyLocationMatch:", error);
+    console.error("Error in handleNewleads:", error);
     throw error;
   }
 };
+ 

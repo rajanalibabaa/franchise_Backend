@@ -82,10 +82,10 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
           monthRec.leadsRecords.forEach((lead) => {
             if (exists) return;
 
-            console.log(
-              "Investor ID categoryInvestmentrangeMatchData=>",
-              lead.investorId
-            );
+            // console.log(
+            //   "Investor ID categoryInvestmentrangeMatchData=>",
+            //   lead.investorId
+            // );
 
             if (
               lead.investorId === investorData?.applyId ||
@@ -121,8 +121,8 @@ export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
      brand._id,
     {
       $set: {
-        "brandDetails.paymentPackage.sentLeadsPercentage": `${Math.floor(
-          percentage
+        "brandDetails.paymentPackage.sentLeadsPercentage": `${(
+          percentage.toFixed(2)
         )} %`,
       },
     },
@@ -131,7 +131,7 @@ export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
     }
   );
 
-  console.log("===p===", p.brandDetails.paymentPackage);
+  // console.log("===p===", p.brandDetails.paymentPackage);
 };
 
 export const paidLeadHelperFunction = async (
