@@ -18,7 +18,7 @@ export const format = (d) => {
   const minutes = String(d?.getMinutes()).padStart(2, "0");
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-};
+}; 
 
 export const twoMatchTypesleadcount = async (brand, investorData) => {
   let totalLeadsendcount = 0;
@@ -330,8 +330,10 @@ export const paidLeadHelperFunction = async (
         "CategoryLocation" === check
       ) {
         console.log("category &&  && location");
-        await CategoryLocationMatchFunction(brand, investorData);
-        brandsSent.push({
+        const exists = await CategoryLocationMatchFunction(brand, investorData);
+        if (!exists) {
+          
+          brandsSent.push({
           brandId: brand.uuid,
           brandName: brand.brandDetails?.brandName || "",
           brandEmail: brand.brandDetails?.email || "",
@@ -340,14 +342,19 @@ export const paidLeadHelperFunction = async (
           paidBrand: Boolean(true),
           leadMatchBy: ["Category_LocationMatch"],
         });
+        
+        }
+        console.log("======stop brandsSent=======")
+        
       }
       if (
         !brandBatchDoc.isPaidCategoryInvestmentrangePaused &&
         "CategoryInvestmentrange" === check
       ) {
         console.log("category && investmentRange && ");
-        await CategoryInvestmentrangeMatchFunction(brand, investorData);
-        brandsSent.push({
+        const exists = await CategoryInvestmentrangeMatchFunction(brand, investorData);
+        if (!exists) {
+          brandsSent.push({
           brandId: brand.uuid,
           brandName: brand.brandDetails?.brandName || "",
           brandEmail: brand.brandDetails?.email || "",
@@ -355,7 +362,11 @@ export const paidLeadHelperFunction = async (
           emailSentAt: new Date(),
           paidBrand: Boolean(true),
           leadMatchBy: ["Category_Investmentrange"],
-        });
+        }); 
+        }
+                  console.log("======stop brandsSent=======")
+
+        
       }
       if (
         !brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused &&

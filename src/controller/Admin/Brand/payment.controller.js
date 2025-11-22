@@ -72,6 +72,7 @@ export const getAllPaidBrand = async (req, res) => {
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
           // isBrandPause: "$brandDetails.isBrandPause",
+          activePackage: "$brandDetails.paymentPackage",
           payment: "$brandDetails.payment",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
@@ -147,4 +148,4 @@ export const getAllPaidBrand = async (req, res) => {
       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
     );
   }
-};
+}; 
