@@ -2225,7 +2225,35 @@ export const getBrandById = async (req, res) => {
           uuid: id,
         },
       },
+      
+    ];
+    let projectStage = {}
+
+    if (paymentHistory === "true") {
+      aggregationPipeline.push(
+        {
+        $lookup: {
+          from: "paymentpackagehistories",
+          localField: "uuid",
+          foreignField: "uuid",
+          as: "oldPackageHistory",
+        },
+      },
       {
+        $unwind: {
+          path: "$oldPackageHistory",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    );
+     
+      projectStage = {
+        oldPackageHistory : "$oldPackageHistory.paymentPackage",
+        _id: 0,
+      }
+    } else {
+      aggregationPipeline.push(
+        {
         $lookup: {
           from: "brandfranchisedetails",
           localField: "uuid",
@@ -2324,8 +2352,8 @@ export const getBrandById = async (req, res) => {
           },
         },
       },
-    ];
-    let projectStage = {
+      )
+      projectStage = {
       _id: 0,
       uuid: 1,
       brandDetails: 1,
@@ -2425,31 +2453,19 @@ export const getBrandById = async (req, res) => {
       totalSortlistCount: 1,
       totalLikedCount: 1,
     };
-
-    if (paymentHistory === "true") {
-      aggregationPipeline.push(
-        {
-        $lookup: {
-          from: "paymentpackagehistories",
-          localField: "uuid",
-          foreignField: "uuid",
-          as: "oldPackageHistory",
-        },
-      },
-      {
-        $unwind: {
-          path: "$oldPackageHistory",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    );
-      projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
     }
 
     aggregationPipeline.push({ $project: projectStage });
     const data = await BrandDetails.aggregate(aggregationPipeline);
+  
 
-    
+    const length = data[0]?.oldPackageHistory?.length || 0
+
+    if ( length <= 0) {
+      return res.json(
+      new ApiResponse(200, data[0], "package history not updated yet")
+    );
+    }
 
     return res.json(
       new ApiResponse(200, data[0], "✅ Brand fetched successfully")

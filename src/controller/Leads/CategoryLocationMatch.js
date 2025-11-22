@@ -12,7 +12,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   // console.log("paymentPackage :", paymentPackage);
 
   if (!paymentPackage?.packageUpdatedTime) {
-    console.log("⚠️ No packageUpdatedTime found");
+    console.log("No packageUpdatedTime found");
     return;
   }
 
@@ -28,7 +28,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
 
   if (exists) {
     console.log("======stop=======");
-    return;
+    return exists;
   }
   let lastupdatedData = null;
 

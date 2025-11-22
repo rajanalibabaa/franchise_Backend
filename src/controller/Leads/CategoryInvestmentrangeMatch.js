@@ -13,7 +13,7 @@ export const CategoryInvestmentrangeMatchFunction = async (
   // console.log("paymentPackage :", paymentPackage);
 
   if (!paymentPackage?.packageUpdatedTime) {
-    console.log("⚠️ No packageUpdatedTime found");
+    console.log("No packageUpdatedTime found");
     return;
   }
 
@@ -29,7 +29,7 @@ export const CategoryInvestmentrangeMatchFunction = async (
 
   if (exists === true) {
     console.log("======stop=======")
-    return
+    return exists
   }
   brand.categoryInvestmentrangeMatchData.forEach((r) => {
     const records = r.categoryInvestmentrangeMatchRecords;
@@ -85,18 +85,18 @@ export const CategoryInvestmentrangeMatchFunction = async (
     brandId: brand.uuid,
   });
 
-  // await sendInstantApplyLeadLocation(
-  //   investorData?.fullName,
-  //   investorData?.email,
-  //   investorData?.mobileNumber,
-  //   brand.brandDetails?.email,
-  //   brand.brandDetails?.companyName,
-  //   investorData?.category,
-  //   investorData?.location,
-  //   investorData?.investmentRange,
-  //   investorData?.planToInvest,
-  //   investorData?.readyToInvest
-  // );
+  await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
 
   await generateSentLeadsPercentage(brand,totalLeadsendcount)
 
