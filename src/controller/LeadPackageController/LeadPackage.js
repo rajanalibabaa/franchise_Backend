@@ -16,11 +16,14 @@ export const format = (d) => {
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
-async function saveOldPackageToHistory(brand, packageEndTime, packageStartTime) {
+async function saveOldPackageToHistory(
+  brand,
+  packageEndTime,
+  packageStartTime
+) {
   if (!brand?.brandDetails?.paymentPackage) return;
 
   const oldPkg = brand.brandDetails.paymentPackage;
-  
 
   const newHistoryEntry = {
     packageType: oldPkg.packageType,
@@ -61,7 +64,7 @@ async function saveOldPackageToHistory(brand, packageEndTime, packageStartTime) 
 export const leadPackageUpdate = async (req, res) => {
   try {
     const brandId = req.params.id;
-    const upgradePacakgeType = "gold";
+    const upgradePacakgeType = "silver";
 
     // Get brand details
     const brands = await BrandDetails.find({ uuid: brandId });
@@ -131,44 +134,55 @@ export const leadPackageUpdate = async (req, res) => {
     const balanceLeads = PackageLeadCount - totalLeadCount;
 
     console.log("balanceLeads :", balanceLeads);
-    await saveOldPackageToHistory(brand, packageEndTime,packageStartTime);
+    await saveOldPackageToHistory(brand, packageEndTime, packageStartTime);
 
     if (upgradePacakgeType) {
+      // Fetch the main payment packages document
       const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
-      const selectedPackage = upgradePacakgeType;
+
+      const selectedPackageName = upgradePacakgeType;
       let newUpgradePackage = null;
 
-      for (const key in PaymentPackagesData) {
-        if (key === selectedPackage) {
-          newUpgradePackage = {
-            ...PaymentPackagesData[key],
-            packageType: key,
-            isActive: true,
-            packageUpdatedTime: new Date(),
-          };
-        }
+      // Find matching package in packages[]
+      const matched = PaymentPackagesData.packages.find(
+        (pkg) => pkg.packageName === selectedPackageName
+      );
+
+      if (matched) {
+        newUpgradePackage = {
+          ...matched,
+          packageType: matched.packageName,
+          isActive: true,
+          packageUpdatedTime: new Date(),
+        };
       }
+
       console.log("newUpgradePackage :", newUpgradePackage);
 
+      if (!newUpgradePackage) {
+        return res.json(new ApiResponse(404, {}, "Upgrade package not found"));
+      }
+
+      // Add balance leads
       newUpgradePackage = {
         ...newUpgradePackage,
         totalLeads: newUpgradePackage.totalLeads + balanceLeads,
         isActive: true,
       };
 
-      console.log(
-        "=== newUpgradePackage ===:",
-        brand.brandDetails.paymentPackage
-      );
+      console.log("=== newUpgradePackage ===:", newUpgradePackage);
+
+      // Save to brand
       brand.brandDetails.paymentPackage = newUpgradePackage;
-      const g = await brand.save();
-      if (!g) {
-        console.log("Error saving brand details", g);
-        return res.json(new ApiResponse(500, g, "Error saving brand details"));
+
+      const saved = await brand.save();
+      if (!saved) {
+        console.log("Error saving brand details");
+        return res.json(new ApiResponse(500, {}, "Error saving brand details"));
       }
-      console.log();
+
       console.log(
-        "=== newUpgradePackageLast===:",
+        "=== newUpgradePackageLast ===:",
         brand.brandDetails.paymentPackage
       );
     }
@@ -232,9 +246,8 @@ async function getLeadCount(
 
   // If packageUpdatedTime does NOT match → skip
   if (pkgStart !== pkgUpdated) {
-    return { found: false, leadCount: 0 };   
-  }  
+    return { found: false, leadCount: 0 };
+  }
 
   return { found: true, leadCount: lastRecord.leadCount ?? 0 };
-  
 }

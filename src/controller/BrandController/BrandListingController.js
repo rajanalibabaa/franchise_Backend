@@ -107,24 +107,37 @@ const createBrandListing = async (req, res) => {
 
     console.log("Parsed brandDetails:", brandDetails);
 
-    if (brandDetails.paymentPackage) {
-      const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
-      const selectedPackage = brandDetails.paymentPackage;
+   if (brandDetails.paymentPackage) {
+  // brandDetails.paymentPackage = "basic" or "premium"
 
-      for (const key in PaymentPackagesData) {
-        if (key === selectedPackage) {
-          const matchedPackage = {
-            ...PaymentPackagesData[key],
-            packageType: key,
-            isActive: true,
-            packageUpdatedTime: new Date(),
-          };
+  const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
 
-          console.log("Matched Package:", matchedPackage);
-          brandDetails.paymentPackage = matchedPackage;
-        }
-      }
-    }
+  const selectedPackageName = brandDetails.paymentPackage;
+  console.log("Selected Package:", selectedPackageName);
+
+  // Find matching package from packages[]
+  const matched = PaymentPackagesData.packages.find(
+    (pkg) => pkg.packageName === selectedPackageName
+  );
+  console.log("matched", matched);
+
+  if (matched) {
+    const matchedPackage = {
+      ...matched,
+      packageType: matched.packageName,
+      isActive: true,
+      packageUpdatedTime: new Date(),
+    };
+
+    console.log("Matched Package:", matchedPackage);
+
+    // Save FULL OBJECT into brandDetails.paymentPackage
+    brandDetails.paymentPackage = matchedPackage;
+  } else {
+    console.log("No matching package found for:", selectedPackageName);
+  }
+}
+
 
     // console.log("updated data:", brandDetails);
 
