@@ -148,6 +148,7 @@ export const paidLeadHelperFunction = async (
     {
       $match: {
         "brandDetails.isBrandPause": { $ne: true },
+        "brandDetails.isPaidBrandLeadPaused": { $ne: true },
         "brandDetails.payment": true,
       },
     },

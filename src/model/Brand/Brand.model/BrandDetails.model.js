@@ -59,6 +59,10 @@ const BrandDetailsSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      isPaidBrandLeadPaused: {
+        type: Boolean,
+        default: false,
+      },
       paymentPackage: {
         packageType: {
           type: String,
