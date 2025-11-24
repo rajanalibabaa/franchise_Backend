@@ -92,12 +92,12 @@ const BrandDetailsSchema = new mongoose.Schema(
         },
         isActive: {
           type: Boolean,
-          default:false
+          default:true
         },
         packageUpdatedTime: { type: Date, default: Date.now },
         sentLeadsPercentage: {
           type: String,
-          default:"0 %"
+          default:"0%"
         }
       },
       listingPackages: {
