@@ -19,7 +19,7 @@ export const format = (d) => {
 async function saveOldPackageToHistory(
   brand,
   packageEndTime,
-  packageStartTime
+  packageStartDate
 ) {
   if (!brand?.brandDetails?.paymentPackage) return;
 
@@ -32,7 +32,7 @@ async function saveOldPackageToHistory(
     perMonthLead: oldPkg.perMonthLead,
     totalLeads: oldPkg.totalLeads,
     isActive: !oldPkg.isActive,
-    packageStartTime: packageStartTime,
+    packageStartTime: packageStartDate,
     packageEndTime: packageEndTime,
     sentLeadsPercentage: oldPkg.sentLeadsPercentage,
     timestamp: format(new Date()),
@@ -134,7 +134,7 @@ export const leadPackageUpdate = async (req, res) => {
     const balanceLeads = PackageLeadCount - totalLeadCount;
 
     console.log("balanceLeads :", balanceLeads);
-    await saveOldPackageToHistory(brand, packageEndTime, packageStartTime);
+    await saveOldPackageToHistory(brand, packageEndTime, packageStartDate);
 
     if (upgradePacakgeType) {
       // Fetch the main payment packages document
