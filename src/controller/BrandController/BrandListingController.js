@@ -138,7 +138,6 @@ const createBrandListing = async (req, res) => {
   }
 }
 
-
     // console.log("updated data:", brandDetails);
 
     // Validate required fields
