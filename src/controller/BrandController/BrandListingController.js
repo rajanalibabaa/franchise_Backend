@@ -107,29 +107,29 @@ const createBrandListing = async (req, res) => {
 
     console.log("Parsed brandDetails:", brandDetails);
 
-   if (brandDetails.paymentPackage) {
-  // brandDetails.paymentPackage = "basic" or "premium"
+    if (brandDetails.paymentPackage) {
+      // brandDetails.paymentPackage = "basic" or "premium"
 
-  const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
+      const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
 
-  const selectedPackageName = brandDetails.paymentPackage;
-  console.log("Selected Package:", selectedPackageName);
+      const selectedPackageName = brandDetails.paymentPackage;
+      console.log("Selected Package:", selectedPackageName);
 
-  // Find matching package from packages[]
-  const matched = PaymentPackagesData.packages.find(
-    (pkg) => pkg.packageName === selectedPackageName
-  );
-  console.log("matched", matched);
+      // Find matching package from packages[]
+      const matched = PaymentPackagesData.packages.find(
+        (pkg) => pkg.packageName === selectedPackageName
+      );
+      console.log("matched", matched);
 
-  if (matched) {
-    const matchedPackage = {
-      ...matched,
-      packageType: matched.packageName,
-      isActive: true,
-      packageUpdatedTime: new Date(),
-    };
+      if (matched) {
+        const matchedPackage = {
+          ...matched,
+          packageType: matched.packageName,
+          isActive: true,
+          packageUpdatedTime: new Date(),
+        };
 
-    console.log("Matched Package:", matchedPackage);
+        console.log("Matched Package:", matchedPackage);
 
     // Save FULL OBJECT into brandDetails.paymentPackage
     brandDetails.paymentPackage = matchedPackage;
@@ -712,20 +712,20 @@ const getBrandListingByUUID = async (req, res) => {
     if (paymentHistory === "true") {
       aggregationPipeline.push(
         {
-        $lookup: {
-          from: "paymentpackagehistories",
-          localField: "uuid",
-          foreignField: "uuid",
-          as: "oldPackageHistory",
+          $lookup: {
+            from: "paymentpackagehistories",
+            localField: "uuid",
+            foreignField: "uuid",
+            as: "oldPackageHistory",
+          },
         },
-      },
-      {
-        $unwind: {
-          path: "$oldPackageHistory",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    );
+        {
+          $unwind: {
+            path: "$oldPackageHistory",
+            preserveNullAndEmptyArrays: true,
+          },
+        }
+      );
       projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
     }
     const data = await BrandDetails.aggregate(aggregationPipeline);
@@ -2237,246 +2237,253 @@ export const getBrandById = async (req, res) => {
           uuid: id,
         },
       },
-      
     ];
-    let projectStage = {}
+    let projectStage = {};
 
     if (paymentHistory === "true") {
-      aggregationPipeline.push(
-        {
-        $lookup: {
-          from: "paymentpackagehistories",
-          localField: "uuid",
-          foreignField: "uuid",
-          as: "oldPackageHistory",
-        },
+  aggregationPipeline.push(
+    {
+      $lookup: {
+        from: "paymentpackagehistories",
+        localField: "uuid",
+        foreignField: "uuid",
+        as: "oldPackageHistory",
       },
-      {
-        $unwind: {
-          path: "$oldPackageHistory",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    );
-     
-      projectStage = {
-        oldPackageHistory : "$oldPackageHistory.paymentPackage",
+    },
+    {
+      $project: {
         _id: 0,
-      }
-    } else {
+        brandDetails: 1,
+        oldPackageHistory: {
+          $reverseArray: {
+            $first: "$oldPackageHistory.paymentPackage"
+          }
+        }
+      },
+    }
+  );
+
+  projectStage = {
+    _id: 0,
+    activePackage: "$brandDetails.paymentPackage",
+    oldPackageHistory: 1,
+  };
+}
+ else {
       aggregationPipeline.push(
         {
-        $lookup: {
-          from: "brandfranchisedetails",
-          localField: "uuid",
-          foreignField: "brandOwnerId",
-          as: "brandfranchisedetails",
-        },
-      },
-      {
-        $unwind: {
-          path: "$brandfranchisedetails",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $lookup: {
-          from: "branduploads",
-          localField: "uuid",
-          foreignField: "brandOwnerId",
-          as: "uploads",
-        },
-      },
-      {
-        $lookup: {
-          from: "brandexpansionlocationdatas",
-          localField: "uuid",
-          foreignField: "brandOwnerId",
-          as: "brandexpansionlocationdatas",
-        },
-      },
-      {
-        $lookup: {
-          from: "viewedtobrands",
-          localField: "_id",
-          foreignField: "brandUserID",
-          as: "totalViewData",
-        },
-      },
-      {
-        $addFields: {
-          totalInvestorViews: {
-            $cond: [
-              { $gt: [{ $size: "$totalViewData" }, 0] },
-              {
-                $size: {
-                  $arrayElemAt: ["$totalViewData.viewedByInvestors", 0],
-                },
-              },
-              0,
-            ],
-          },
-          totalBrandViews: {
-            $cond: [
-              { $gt: [{ $size: "$totalViewData" }, 0] },
-              { $size: { $arrayElemAt: ["$totalViewData.viewedByBrands", 0] } },
-              0,
-            ],
+          $lookup: {
+            from: "brandfranchisedetails",
+            localField: "uuid",
+            foreignField: "brandOwnerId",
+            as: "brandfranchisedetails",
           },
         },
-      },
-      {
-        $lookup: {
-          from: "shortlisteds",
-          localField: "_id",
-          foreignField: "brandOwnerId",
-          as: "shortlisteds",
-        },
-      },
-      {
-        $addFields: {
-          totalSortlistCount: {
-            $cond: [
-              { $isArray: "$shortlisteds" },
-              { $size: "$shortlisteds" },
-              0,
-            ],
+        {
+          $unwind: {
+            path: "$brandfranchisedetails",
+            preserveNullAndEmptyArrays: true,
           },
         },
-      },
-      {
-        $lookup: {
-          from: "favoritebrands",
-          localField: "_id",
-          foreignField: "brandOwnerId",
-          as: "favoritebrands",
-        },
-      },
-      {
-        $addFields: {
-          totalLikedCount: {
-            $sum: {
-              $map: {
-                input: "$favoritebrands",
-                in: { $size: { $ifNull: ["$$this.favoriteBy", []] } },
-              },
-            },
+        {
+          $lookup: {
+            from: "branduploads",
+            localField: "uuid",
+            foreignField: "brandOwnerId",
+            as: "uploads",
           },
         },
-      },
-      )
-      projectStage = {
-      _id: 0,
-      uuid: 1,
-      brandDetails: 1,
-      brandID: 1,
-      franchiseDetails: "$brandfranchisedetails.franchiseDetails",
-      uploads: {
-        $let: {
-          vars: {
-            firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
+        {
+          $lookup: {
+            from: "brandexpansionlocationdatas",
+            localField: "uuid",
+            foreignField: "brandOwnerId",
+            as: "brandexpansionlocationdatas",
           },
-          in: {
-            logo: {
-              $ifNull: [
-                { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
-                null,
-              ],
-            },
-            franchiseVideos: {
-              $ifNull: [
+        },
+        {
+          $lookup: {
+            from: "viewedtobrands",
+            localField: "_id",
+            foreignField: "brandUserID",
+            as: "totalViewData",
+          },
+        },
+        {
+          $addFields: {
+            totalInvestorViews: {
+              $cond: [
+                { $gt: [{ $size: "$totalViewData" }, 0] },
                 {
-                  $arrayElemAt: [
-                    "$$firstUpload.uploads.franchisePromotionVideo",
-                    0,
-                  ],
-                },
-                null,
-              ],
-            },
-            exteriorOutlet: {
-              $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
-            },
-            interiorOutlet: {
-              $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
-            },
-            businessPlan: {
-              $ifNull: [
-                { $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] },
-                null,
-              ],
-            },
-            gstCertificate: {
-              $ifNull: [
-                {
-                  $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0],
-                },
-                null,
-              ],
-            },
-            pancard: {
-              $ifNull: [
-                { $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] },
-                null,
-              ],
-            },
-            awards: {
-              $cond: {
-                if: {
-                  $and: [
-                    { $isArray: "$$firstUpload.uploads.awards" },
-                    { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
-                  ],
-                },
-                then: {
-                  $map: {
-                    input: "$$firstUpload.uploads.awards",
-                    as: "award",
-                    in: {
-                      awardDescription: "$$award.awardDescription",
-                      awardImage: "$$award.awardImage",
-                    },
+                  $size: {
+                    $arrayElemAt: ["$totalViewData.viewedByInvestors", 0],
                   },
                 },
-                else: [],
+                0,
+              ],
+            },
+            totalBrandViews: {
+              $cond: [
+                { $gt: [{ $size: "$totalViewData" }, 0] },
+                {
+                  $size: { $arrayElemAt: ["$totalViewData.viewedByBrands", 0] },
+                },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "shortlisteds",
+            localField: "_id",
+            foreignField: "brandOwnerId",
+            as: "shortlisteds",
+          },
+        },
+        {
+          $addFields: {
+            totalSortlistCount: {
+              $cond: [
+                { $isArray: "$shortlisteds" },
+                { $size: "$shortlisteds" },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "favoritebrands",
+            localField: "_id",
+            foreignField: "brandOwnerId",
+            as: "favoritebrands",
+          },
+        },
+        {
+          $addFields: {
+            totalLikedCount: {
+              $sum: {
+                $map: {
+                  input: "$favoritebrands",
+                  in: { $size: { $ifNull: ["$$this.favoriteBy", []] } },
+                },
+              },
+            },
+          },
+        }
+      );
+      projectStage = {
+        _id: 0,
+        uuid: 1,
+        brandDetails: 1,
+        brandID: 1,
+        franchiseDetails: "$brandfranchisedetails.franchiseDetails",
+        uploads: {
+          $let: {
+            vars: {
+              firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
+            },
+            in: {
+              logo: {
+                $ifNull: [
+                  { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
+                  null,
+                ],
+              },
+              franchiseVideos: {
+                $ifNull: [
+                  {
+                    $arrayElemAt: [
+                      "$$firstUpload.uploads.franchisePromotionVideo",
+                      0,
+                    ],
+                  },
+                  null,
+                ],
+              },
+              exteriorOutlet: {
+                $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
+              },
+              interiorOutlet: {
+                $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
+              },
+              businessPlan: {
+                $ifNull: [
+                  { $arrayElemAt: ["$$firstUpload.uploads.businessPlan", 0] },
+                  null,
+                ],
+              },
+              gstCertificate: {
+                $ifNull: [
+                  {
+                    $arrayElemAt: ["$$firstUpload.uploads.gstCertificate", 0],
+                  },
+                  null,
+                ],
+              },
+              pancard: {
+                $ifNull: [
+                  { $arrayElemAt: ["$$firstUpload.uploads.pancard", 0] },
+                  null,
+                ],
+              },
+              awards: {
+                $cond: {
+                  if: {
+                    $and: [
+                      { $isArray: "$$firstUpload.uploads.awards" },
+                      { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
+                    ],
+                  },
+                  then: {
+                    $map: {
+                      input: "$$firstUpload.uploads.awards",
+                      as: "award",
+                      in: {
+                        awardDescription: "$$award.awardDescription",
+                        awardImage: "$$award.awardImage",
+                      },
+                    },
+                  },
+                  else: [],
+                },
               },
             },
           },
         },
-      },
-      expansionlocationdata: {
-        $let: {
-          vars: {
-            data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
-          },
-          in: {
-            currentOutletLocations:
-              "$$data.expansionLocationData.currentOutletLocations",
-            expansionLocations:
-              "$$data.expansionLocationData.expansionLocations",
-            isInternationalExpansion:
-              "$$data.expansionLocationData.isInternationalExpansion",
+        expansionlocationdata: {
+          $let: {
+            vars: {
+              data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
+            },
+            in: {
+              currentOutletLocations:
+                "$$data.expansionLocationData.currentOutletLocations",
+              expansionLocations:
+                "$$data.expansionLocationData.expansionLocations",
+              isInternationalExpansion:
+                "$$data.expansionLocationData.isInternationalExpansion",
+            },
           },
         },
-      },
-      totalViewCount: {
-        $add: ["$totalInvestorViews", "$totalBrandViews"],
-      },
-      totalSortlistCount: 1,
-      totalLikedCount: 1,
-    };
+        totalViewCount: {
+          $add: ["$totalInvestorViews", "$totalBrandViews"],
+        },
+        totalSortlistCount: 1,
+        totalLikedCount: 1,
+      };
     }
 
     aggregationPipeline.push({ $project: projectStage });
     const data = await BrandDetails.aggregate(aggregationPipeline);
-  
 
-    const length = data[0]?.oldPackageHistory?.length || 0
+    const length = data[0]?.oldPackageHistory?.length || 0;
 
-    if ( length <= 0) {
+    if (length <= 0) {
       return res.json(
-      new ApiResponse(200, data[0], "package history not updated yet")
-    );
+        new ApiResponse(200, data[0], "package history not updated yet")
+      );
     }
 
     return res.json(

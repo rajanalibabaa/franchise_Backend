@@ -123,7 +123,7 @@ export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
       $set: {
         "brandDetails.paymentPackage.sentLeadsPercentage": `${(
           percentage.toFixed(2)
-        )} %`,
+        )}%`,
       },
     },
     {
@@ -148,6 +148,7 @@ export const paidLeadHelperFunction = async (
     {
       $match: {
         "brandDetails.isBrandPause": { $ne: true },
+        "brandDetails.isPaidBrandLeadPaused": { $ne: true },
         "brandDetails.payment": true,
       },
     },

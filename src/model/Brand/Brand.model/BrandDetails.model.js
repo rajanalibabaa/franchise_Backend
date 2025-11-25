@@ -59,6 +59,10 @@ const BrandDetailsSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      isPaidBrandLeadPaused: {
+        type: Boolean,
+        default: false,
+      },
       paymentPackage: {
         packageType: {
           type: String,
@@ -88,12 +92,12 @@ const BrandDetailsSchema = new mongoose.Schema(
         },
         isActive: {
           type: Boolean,
-          default:false
+          default:true
         },
         packageUpdatedTime: { type: Date, default: Date.now },
         sentLeadsPercentage: {
           type: String,
-          default:"0 %"
+          default:"0%"
         }
       },
       listingPackages: {
