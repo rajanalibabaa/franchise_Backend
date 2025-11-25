@@ -10,110 +10,190 @@ const getLeadsBybrandId = async (req, res) => {
     }
 
     const packageStartDate = req?.query?.packageStartDate;
-    const date = format(new Date(packageStartDate));
-    console.log("packageStartDate :", date);
+    const status = req?.query?.status || "true";
+    const page = req?.query?.page || 0;
+    const limit = req?.query?.limit || 10;
+    console.log("page :", page);
+    const leadType = req?.query?.leadType || "paid";
+    let date;
+    if (status === "true") {
+      date = format(new Date(packageStartDate));
+    } else {
+      date = packageStartDate;
+    }
 
-    const result = await BrandDetails.aggregate([
+    if (!packageStartDate && leadType !== "free") {
+      return res.json(new ApiResponse(404, null, "packageStartDate and leadType query params are required"));
+    }
+    let project = {};
+
+    const aggregationPipline = [
       {
         $match: { uuid: id },
       },
+    ];
 
-      {
-        $lookup: {
-          from: "categoryinvestmentrangematches",
-          localField: "uuid",
-          foreignField: "brandId",
-          as: "categoryInvestmentrangeMatch",
-        },
-      },
-      {
-        $lookup: {
-          from: "brandemailcounts",
-          localField: "uuid",
-          foreignField: "brandId",
-          as: "freeLeads",
-        },
-      },
-      {
-        $lookup: {
-          from: "categorylocationmatches",
-          localField: "uuid",
-          foreignField: "brandId",
-          as: "categoryLocationMatch",
-        },
-      },
-      {
-        $lookup: {
-          from: "categorylocationmatches",
-          localField: "uuid",
-          foreignField: "brandId",
-          as: "categoryLocationMatch",
-        },
-      },
-      {
-        $unwind: {
-          path: "$categoryLocationMatch",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $unwind: {
-          path: "$categoryInvestmentrangeMatch",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $unwind: {
-          path: "$freeLeads",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          uuid: 1,
-          // paymentPackage: "$brandDetails.paymentPackage",
-          freeLead: {
-            leadCount: "$freeLeads.freeEmailCount" || 0,
-            records: "$freeLeads.freeEmailRecords",
+    if (leadType === "paid") {
+      aggregationPipline.push(
+        {
+          $lookup: {
+            from: "categoryinvestmentrangematches",
+            localField: "uuid",
+            foreignField: "brandId",
+            as: "categoryInvestmentrangeMatch",
           },
-          categoryInvestmentrangeMatch: {
-            $first: {
-              $filter: {
-                input:
-                  "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
-                as: "d",
-                cond: {
-                  $eq: ["$$d.packageStartDate", date],
-                },
-              },
+        },
+        {
+          $lookup: {
+            from: "categorylocationmatches",
+            localField: "uuid",
+            foreignField: "brandId",
+            as: "categoryLocationMatch",
+          },
+        },
+        {
+          $unwind: {
+            path: "$categoryLocationMatch",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: {
+            path: "$categoryInvestmentrangeMatch",
+            preserveNullAndEmptyArrays: true,
+          },
+        }
+      );
+
+      project = {
+        _id: 0,
+        uuid: 1,
+
+        categoryInvestmentrangeMatch: {
+          $first: {
+            $filter: {
+              input:
+                "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
+              as: "d",
+              cond: { $eq: ["$$d.packageStartDate", date] },
             },
           },
-          categoryLocationMatch: {
-            $arrayElemAt: [
-              {
-                $filter: {
-                  input: "$categoryLocationMatch.categoryLocationMatchRecords",
-                  as: "d",
-                  cond: {
-                    $eq: ["$$d.packageStartDate", date],
-                  },
-                },
-              },
-              0,
-            ],
+        },
+
+        categoryLocationMatch: {
+          $first: {
+            $filter: {
+              input: "$categoryLocationMatch.categoryLocationMatchRecords",
+              as: "d",
+              cond: { $eq: ["$$d.packageStartDate", date] },
+            },
           },
         },
-      },
-    ]);
+      };
+    } else {
+      aggregationPipline.push(
+        {
+          $lookup: {
+            from: "brandemailcounts",
+            localField: "uuid",
+            foreignField: "brandId",
+            as: "freeLeads",
+          },
+        },
 
-    console.log("result :", result);
+        {
+          $unwind: {
+            path: "$freeLeads",
+            preserveNullAndEmptyArrays: true,
+          },
+        }
+      );
+      project = {
+        _id: 0,
+        uuid: 1,
+        freeLeads: {
+          leadCount: { $ifNull: ["$freeLeads.freeEmailCount", 0] },
+          records: "$freeLeads.freeEmailRecords",
+        },
+      };
+    }
 
-    if (!result) {
+    aggregationPipline.push({ $project: project });
+
+    const result = await BrandDetails.aggregate(aggregationPipline);
+
+    let leads = [];
+
+    // console.log("result :", result[0].freeLeads?.records);
+    if (leadType === "paid") {
+      const catLoc = result[0]?.categoryLocationMatch?.records;
+      if (catLoc?.length > 0) {
+        for (let i = catLoc.length - 1; i >= 0; i--) {
+          const element = catLoc[i];
+          let data = element?.leadsRecords;
+
+          for (let j = data.length - 1; j >= 0; j--) {
+            const record = data[j];
+            leads.push({
+              ...record,
+              matchType: "Category Location",
+            });
+          }
+        }
+      }
+      const catInv = result[0]?.categoryInvestmentrangeMatch?.records;
+      if (catInv?.length > 0) {
+        for (let i = catInv.length - 1; i >= 0; i--) {
+          const element = catInv[i];
+          let data = element?.leadsRecords;
+
+          for (let j = data.length - 1; j >= 0; j--) {
+            const record = data[j];
+            leads.push({
+              ...record,
+              matchType: "Category Investmentrange",
+            });
+          }
+        }
+      }
+
+      leads.sort((a, b) => new Date(b?.sentAt) - new Date(a?.sentAt));
+    } else {
+      const free = result[0]?.freeLeads?.records;
+      if (free?.length > 0) {
+        for (let i = free.length - 1; i >= 0; i--) {
+          const element = free[i];
+          let data = element?.records;
+
+          for (let j = data.length - 1; j >= 0; j--) {
+            const record = data[j];
+            leads.push({
+              ...record,
+              matchType: "free",
+            });
+          }
+        }
+      }
+    }
+
+    if (!leads || leads.length <= 0) {
       return res.json(new ApiResponse(200, null, "data not found"));
     }
 
-    return res.json(new ApiResponse(200, result[0], "data fetch successfully"));
+    // console.log("leads :", leads);
+    const total = leads?.length;
+    leads = leads?.slice(page * limit, page * limit + limit);
+
+    const pagination = {
+      totalRecords: total,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / limit),
+      pageSize: parseInt(limit),
+    };
+
+    return res.json(
+      new ApiResponse(200, { leads, pagination }, "data fetch successfully")
+    );
   } catch (error) {
     return res.json(new ApiResponse(500, "Server error", error.message));
   }
