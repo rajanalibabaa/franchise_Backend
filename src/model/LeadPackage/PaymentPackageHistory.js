@@ -1,15 +1,15 @@
 import mongoose from "mongoose";
 
 const PaymentPackageHistorySchema = new mongoose.Schema({
-    
-    uuid: {
-      type: String,
-      unique: true, 
-    },
-    brandName: {
-      type: String,
-    },
-    paymentPackage: [{
+  uuid: {
+    type: String,
+    unique: true,
+  },
+  brandName: {
+    type: String,
+  },
+  paymentPackage: [
+    {
       packageType: {
         type: String,
         required: true,
@@ -40,15 +40,16 @@ const PaymentPackageHistorySchema = new mongoose.Schema({
       },
       sentLeadsPercentage: {
         type: String,
-        default: "0 %",
+        default: "0%",
       },
-      packageStartTime: { type: String }, 
-        packageEndTime: { type: String },
-      timestamp: { type: String  },
-    }]
-  },
+      packageStartTime: { type: String },
+      packageEndTime: { type: String },
+      timestamp: { type: String },
+    },
+  ],
+});
 
+export const PaymentPackageHistory = mongoose.model(
+  "PaymentPackageHistory",
+  PaymentPackageHistorySchema
 );
-
-export const PaymentPackageHistory = mongoose.model("PaymentPackageHistory", PaymentPackageHistorySchema);
-    

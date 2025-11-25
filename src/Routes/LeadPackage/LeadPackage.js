@@ -5,6 +5,6 @@ import {leadPackageUpdate} from "../../controller/LeadPackageController/LeadPack
 
 const leadPackageRouter=express.Router();
 
-leadPackageRouter.put("/leadPackageUpdate/:id", leadPackageUpdate);
+leadPackageRouter.put("/v1/leadPackageUpdate/:id", leadPackageUpdate);
 
 export default leadPackageRouter;
