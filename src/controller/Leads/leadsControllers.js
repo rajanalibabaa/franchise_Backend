@@ -15,6 +15,8 @@ const getLeadsBybrandId = async (req, res) => {
     const limit = req?.query?.limit || 10;
     console.log("page :", page);
     const leadType = req?.query?.leadType || "paid";
+    const filter = req?.query?.filter;
+    const dateFilter = req?.query?.filter;
     let date;
     if (status === "true") {
       date = format(new Date(packageStartDate));
@@ -23,7 +25,13 @@ const getLeadsBybrandId = async (req, res) => {
     }
 
     if (!packageStartDate && leadType !== "free") {
-      return res.json(new ApiResponse(404, null, "packageStartDate and leadType query params are required"));
+      return res.json(
+        new ApiResponse(
+          404,
+          null,
+          "packageStartDate and leadType query params are required"
+        )
+      );
     }
     let project = {};
 
@@ -34,62 +42,128 @@ const getLeadsBybrandId = async (req, res) => {
     ];
 
     if (leadType === "paid") {
-      aggregationPipline.push(
-        {
-          $lookup: {
-            from: "categoryinvestmentrangematches",
-            localField: "uuid",
-            foreignField: "brandId",
-            as: "categoryInvestmentrangeMatch",
-          },
-        },
-        {
-          $lookup: {
-            from: "categorylocationmatches",
-            localField: "uuid",
-            foreignField: "brandId",
-            as: "categoryLocationMatch",
-          },
-        },
-        {
-          $unwind: {
-            path: "$categoryLocationMatch",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: "$categoryInvestmentrangeMatch",
-            preserveNullAndEmptyArrays: true,
-          },
-        }
-      );
-
-      project = {
-        _id: 0,
-        uuid: 1,
-
-        categoryInvestmentrangeMatch: {
-          $first: {
-            $filter: {
-              input:
-                "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
-              as: "d",
-              cond: { $eq: ["$$d.packageStartDate", date] },
+      if (filter === "catInv") {
+        aggregationPipline.push(
+          {
+            $lookup: {
+              from: "categoryinvestmentrangematches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryInvestmentrangeMatch",
             },
           },
-        },
+          {
+            $unwind: {
+              path: "$categoryInvestmentrangeMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          }
+        );
 
-        categoryLocationMatch: {
-          $first: {
-            $filter: {
-              input: "$categoryLocationMatch.categoryLocationMatchRecords",
-              as: "d",
-              cond: { $eq: ["$$d.packageStartDate", date] },
+        project = {
+          _id: 0,
+          uuid: 1,
+
+          categoryInvestmentrangeMatch: {
+            $first: {
+              $filter: {
+                input:
+                  "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
             },
           },
-        },
-      };
+        };
+      } else if (filter === "catLoc") {
+        aggregationPipline.push(
+          {
+            $lookup: {
+              from: "categorylocationmatches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryLocationMatch",
+            },
+          },
+          {
+            $unwind: {
+              path: "$categoryLocationMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          }
+        );
+
+        project = {
+          _id: 0,
+          uuid: 1,
+          categoryLocationMatch: {
+            $first: {
+              $filter: {
+                input: "$categoryLocationMatch.categoryLocationMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
+            },
+          },
+        };
+      } else {
+        aggregationPipline.push(
+          {
+            $lookup: {
+              from: "categoryinvestmentrangematches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryInvestmentrangeMatch",
+            },
+          },
+          {
+            $lookup: {
+              from: "categorylocationmatches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryLocationMatch",
+            },
+          },
+          {
+            $unwind: {
+              path: "$categoryLocationMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: "$categoryInvestmentrangeMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          }
+        );
+
+        project = {
+          _id: 0,
+          uuid: 1,
+
+          categoryInvestmentrangeMatch: {
+            $first: {
+              $filter: {
+                input:
+                  "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
+            },
+          },
+
+          categoryLocationMatch: {
+            $first: {
+              $filter: {
+                input: "$categoryLocationMatch.categoryLocationMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
+            },
+          },
+        };
+      }
     } else {
       aggregationPipline.push(
         {
