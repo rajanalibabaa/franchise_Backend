@@ -42,7 +42,7 @@ async function saveOldPackageToHistory(
   const existing = await PaymentPackageHistory.findOne({ uuid: brand.uuid });
 
   if (existing) {
-    await PaymentPackageHistory.updateOne(
+    await PaymentPackageHistory.updateOne( 
       { uuid: brand.uuid },
       {
         $push: {
