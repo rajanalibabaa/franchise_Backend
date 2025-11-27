@@ -64,7 +64,8 @@ async function saveOldPackageToHistory(
 export const leadPackageUpdate = async (req, res) => {
   try {
     const brandId = req.params.id;
-    const upgradePacakgeType = req.body;
+    const upgradePacakgeType = req.body.packageName;
+    console.log("upgradePacakgeType :", upgradePacakgeType);
 
     // Get brand details
     const brands = await BrandDetails.find({ uuid: brandId });

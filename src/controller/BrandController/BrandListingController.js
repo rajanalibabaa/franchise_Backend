@@ -2235,7 +2235,7 @@ export const getBrandById = async (req, res) => {
       {
         $match: {
           uuid: id,
-        },
+        },  
       },
     ];
     let projectStage = {};
