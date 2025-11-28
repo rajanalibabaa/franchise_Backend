@@ -149,12 +149,15 @@ export const leadPackageUpdate = async (req, res) => {
         (pkg) => pkg.packageName === selectedPackageName
       );
 
+      
+
       if (matched) {
         newUpgradePackage = {
           ...matched,
           packageType: matched.packageName,
           isActive: true,
           packageUpdatedTime: new Date(),
+          packageEndDate: new Date(new Date().setMonth(new Date().getMonth() + matched.totalMonths)),
         };
       }
 

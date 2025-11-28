@@ -120,13 +120,17 @@ const createBrandListing = async (req, res) => {
         (pkg) => pkg.packageName === selectedPackageName
       );
       console.log("matched", matched);
+      const packageStartDate = new Date();
+      const packageEndDate = new Date(packageStartDate);
+  packageEndDate.setMonth(packageEndDate.getMonth() + matched.totalMonths);
 
       if (matched) {
         const matchedPackage = {
           ...matched,
           packageType: matched.packageName,
           isActive: true,
-          packageUpdatedTime: new Date(),
+          packageUpdatedTime: packageStartDate,
+          packageEndDate: packageEndDate,
         };
 
         console.log("Matched Package:", matchedPackage);
