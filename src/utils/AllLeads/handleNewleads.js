@@ -9,7 +9,7 @@ import { sendInstantApplyLeadLocation } from "../Centralized Email/centralizedEm
 export const handleNewleads = async (
   fullName,
   email,
-  mobileNumber, 
+  mobileNumber,
   mainCategory,
   subCategory,
   childCategory,
@@ -20,7 +20,7 @@ export const handleNewleads = async (
   planToInvest,
   readyToInvest,
   applyBy,
-  applyId,
+  applyId
 ) => {
   // console.log("Starting handleNewleads with parameters:", {
   //   fullName,
@@ -251,7 +251,7 @@ export const handleNewleads = async (
             investorName: fullName,
             investorEmail: email,
             investorMobile: mobileNumber,
-            sentAt: now,  
+            sentAt: now,
           };
 
           // ⚠️ Mongoose doesn’t auto-track deep nested array mutation sometimes,
@@ -302,6 +302,13 @@ export const handleNewleads = async (
               investmentRange,
               planToInvest,
               readyToInvest
+            );
+            await BrandDetails.findByIdAndUpdate(
+              brand._id,
+              {
+                $inc: { "brandDetails.overAllLeads": 1 },
+              },
+              { new: true }
             );
 
             brandsSent.push({
@@ -356,19 +363,16 @@ export const handleNewleads = async (
       //   "CategoryInvestmentrangeLocation",
       //   "threeMatchTypes"
       // );
-
       // // console.log("threeMatchTypes result:", result);
       // if (result.length > 0) {
       //   result.forEach((d) => {
       //     const existingIndex = brandsSent.findIndex(
       //       (i) => i.brandId === d.brandId
       //     );
-
       //     if (existingIndex === -1) {
       //       brandsSent.push(d);
       //     } else {
       //       const existing = brandsSent[existingIndex];
-
       //       d.leadMatchBy.forEach((type) => {
       //         if (!existing.leadMatchBy.includes(type)) {
       //           existing.leadMatchBy.push(type);
@@ -453,12 +457,10 @@ export const handleNewleads = async (
       //     const existingIndex = brandsSent.findIndex(
       //       (i) => i.brandId === d.brandId
       //     );
-
       //     if (existingIndex === -1) {
       //       brandsSent.push(d);
       //     } else {
       //       const existing = brandsSent[existingIndex];
-
       //       d.leadMatchBy.forEach((type) => {
       //         if (!existing.leadMatchBy.includes(type)) {
       //           existing.leadMatchBy.push(type);
@@ -490,4 +492,3 @@ export const handleNewleads = async (
     throw error;
   }
 };
- 

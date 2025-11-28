@@ -13,8 +13,9 @@ const getLeadsBybrandId = async (req, res) => {
     const status = req?.query?.status || "true";
     const page = req?.query?.page || 0;
     const limit = req?.query?.limit || 10;
-    console.log("page :", page);
     const leadType = req?.query?.leadType || "paid";
+    const filter = req?.query?.filter;
+    const dateFilter = req?.query?.dateFilter;
     let date;
     if (status === "true") {
       date = format(new Date(packageStartDate));
@@ -23,7 +24,13 @@ const getLeadsBybrandId = async (req, res) => {
     }
 
     if (!packageStartDate && leadType !== "free") {
-      return res.json(new ApiResponse(404, null, "packageStartDate and leadType query params are required"));
+      return res.json(
+        new ApiResponse(
+          404,
+          null,
+          "packageStartDate and leadType query params are required"
+        )
+      );
     }
     let project = {};
 
@@ -34,62 +41,128 @@ const getLeadsBybrandId = async (req, res) => {
     ];
 
     if (leadType === "paid") {
-      aggregationPipline.push(
-        {
-          $lookup: {
-            from: "categoryinvestmentrangematches",
-            localField: "uuid",
-            foreignField: "brandId",
-            as: "categoryInvestmentrangeMatch",
-          },
-        },
-        {
-          $lookup: {
-            from: "categorylocationmatches",
-            localField: "uuid",
-            foreignField: "brandId",
-            as: "categoryLocationMatch",
-          },
-        },
-        {
-          $unwind: {
-            path: "$categoryLocationMatch",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $unwind: {
-            path: "$categoryInvestmentrangeMatch",
-            preserveNullAndEmptyArrays: true,
-          },
-        }
-      );
-
-      project = {
-        _id: 0,
-        uuid: 1,
-
-        categoryInvestmentrangeMatch: {
-          $first: {
-            $filter: {
-              input:
-                "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
-              as: "d",
-              cond: { $eq: ["$$d.packageStartDate", date] },
+      if (filter === "catInv") {
+        aggregationPipline.push(
+          {
+            $lookup: {
+              from: "categoryinvestmentrangematches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryInvestmentrangeMatch",
             },
           },
-        },
+          {
+            $unwind: {
+              path: "$categoryInvestmentrangeMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          }
+        );
 
-        categoryLocationMatch: {
-          $first: {
-            $filter: {
-              input: "$categoryLocationMatch.categoryLocationMatchRecords",
-              as: "d",
-              cond: { $eq: ["$$d.packageStartDate", date] },
+        project = {
+          _id: 0,
+          uuid: 1,
+
+          categoryInvestmentrangeMatch: {
+            $first: {
+              $filter: {
+                input:
+                  "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
             },
           },
-        },
-      };
+        };
+      } else if (filter === "catLoc") {
+        aggregationPipline.push(
+          {
+            $lookup: {
+              from: "categorylocationmatches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryLocationMatch",
+            },
+          },
+          {
+            $unwind: {
+              path: "$categoryLocationMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          }
+        );
+
+        project = {
+          _id: 0,
+          uuid: 1,
+          categoryLocationMatch: {
+            $first: {
+              $filter: {
+                input: "$categoryLocationMatch.categoryLocationMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
+            },
+          },
+        };
+      } else {
+        aggregationPipline.push(
+          {
+            $lookup: {
+              from: "categoryinvestmentrangematches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryInvestmentrangeMatch",
+            },
+          },
+          {
+            $lookup: {
+              from: "categorylocationmatches",
+              localField: "uuid",
+              foreignField: "brandId",
+              as: "categoryLocationMatch",
+            },
+          },
+          {
+            $unwind: {
+              path: "$categoryLocationMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: "$categoryInvestmentrangeMatch",
+              preserveNullAndEmptyArrays: true,
+            },
+          }
+        );
+
+        project = {
+          _id: 0,
+          uuid: 1,
+
+          categoryInvestmentrangeMatch: {
+            $first: {
+              $filter: {
+                input:
+                  "$categoryInvestmentrangeMatch.categoryInvestmentrangeMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
+            },
+          },
+
+          categoryLocationMatch: {
+            $first: {
+              $filter: {
+                input: "$categoryLocationMatch.categoryLocationMatchRecords",
+                as: "d",
+                cond: { $eq: ["$$d.packageStartDate", date] },
+              },
+            },
+          },
+        };
+      }
     } else {
       aggregationPipline.push(
         {
@@ -123,8 +196,7 @@ const getLeadsBybrandId = async (req, res) => {
     const result = await BrandDetails.aggregate(aggregationPipline);
 
     let leads = [];
-
-    // console.log("result :", result[0].freeLeads?.records);
+    
     if (leadType === "paid") {
       const catLoc = result[0]?.categoryLocationMatch?.records;
       if (catLoc?.length > 0) {
@@ -176,11 +248,25 @@ const getLeadsBybrandId = async (req, res) => {
       }
     }
 
-    if (!leads || leads.length <= 0) {
-      return res.json(new ApiResponse(200, null, "data not found"));
-    }
+    if (dateFilter) {
+      const today = new Date();
+      const from = new Date();
 
-    // console.log("leads :", leads);
+      from.setDate(today.getDate() - Number(dateFilter));
+      const to = today;
+
+      console.log("from:", from.toISOString());
+      console.log("to:", to.toISOString());
+      console.log("dateFilter:", dateFilter);
+
+      const filteredLeads = leads.filter((item) => {
+        const sentAt = new Date(item.sentAt);
+        return sentAt >= from && sentAt <= to;
+      });
+
+      leads = filteredLeads;
+    }
+    
     const total = leads?.length;
     leads = leads?.slice(page * limit, page * limit + limit);
 
