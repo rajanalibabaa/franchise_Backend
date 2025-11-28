@@ -124,6 +124,7 @@ export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
         "brandDetails.paymentPackage.sentLeadsPercentage": `${(
           percentage.toFixed(2)
         )}%`,
+        "brandDetails.overAllLeads": brand.brandDetails.overAllLeads + 1,
       },
     },
     {
@@ -196,50 +197,50 @@ export const paidLeadHelperFunction = async (
     },
   ];
 
-  if (investmentRange) {
-    aggregationPipeline.push({
-      $match: {
-        "franchiseDetails.franchiseDetails.fico.0.investmentRange":
-          investmentRange,
-      },
-    });
-  }
+  // if (investmentRange) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "franchiseDetails.franchiseDetails.fico.0.investmentRange":
+  //         investmentRange,
+  //     },
+  //   });
+  // }
 
-  if (category) {
-    aggregationPipeline.push({
-      $match: {
-        "franchiseDetails.franchiseDetails.brandCategories.main":
-          category.mainCategory,
-        // "franchiseDetails.franchiseDetails.brandCategories.sub":
-        //   category.subCategory,
-      },
-    });
-  }
+  // if (category) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "franchiseDetails.franchiseDetails.brandCategories.main":
+  //         category.mainCategory,
+  //       // "franchiseDetails.franchiseDetails.brandCategories.sub":
+  //       //   category.subCategory,
+  //     },
+  //   });
+  // }
 
-  if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
-    aggregationPipeline.push({
-      $match: {
-        "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
-          {
-            $elemMatch: {
-              state: location.state,
-              districts: {
-                $elemMatch: {
-                  district: location.district,
-                },
-              },
-            },
-          },
-      },
-    });
-  } else if (location?.state) {
-    aggregationPipeline.push({
-      $match: {
-        "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
-          location.state,
-      },
-    });
-  }
+  // if (location?.state && !brandBatchDoc.isDistrictMatchPaused) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations":
+  //         {
+  //           $elemMatch: {
+  //             state: location.state,
+  //             districts: {
+  //               $elemMatch: {
+  //                 district: location.district,
+  //               },
+  //             },
+  //           },
+  //         },
+  //     },
+  //   });
+  // } else if (location?.state) {
+  //   aggregationPipeline.push({
+  //     $match: {
+  //       "expansionLocationDatas.expansionLocationData.expansionLocations.domestic.locations.state":
+  //         location.state,
+  //     },
+  //   });
+  // }
   if (matchType === "twoMatchTypes") {
     aggregationPipeline.push(
       {
