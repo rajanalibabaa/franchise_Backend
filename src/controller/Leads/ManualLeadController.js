@@ -84,7 +84,7 @@ class ManualLeadController {
         uuid: uuidv4(),
         fullName: fullName.trim(),
         email: email.toLowerCase().trim(),
-        mobileNumber: mobileNumber.trim(),
+        mobileNumber: String(mobileNumber).trim(),
         state: state.trim(),
         district: district?.trim() || '',
         city: city?.trim() || '',
@@ -110,7 +110,7 @@ class ManualLeadController {
       // Create Investor Registration only if doesn't exist
       if (!existingInvestor) {
         // Format mobile number to match schema validation (+91xxxxxxxxxx)
-        let formattedMobile = mobileNumber.trim();
+        let formattedMobile = String(mobileNumber).trim();
         if (!formattedMobile.startsWith('+91')) {
           // Remove any existing country code and add +91
           formattedMobile = formattedMobile
