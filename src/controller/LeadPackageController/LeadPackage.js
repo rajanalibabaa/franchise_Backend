@@ -174,11 +174,13 @@ export const leadPackageUpdate = async (req, res) => {
         isActive: true,
       };
 
-      console.log("=== newUpgradePackage ===:", newUpgradePackage);
+      console.log("=== newUpgradePackage ===:", newUpgradePackage.packageType);
 
       // Save to brand
-      brand.brandDetails.paymentPackage = newUpgradePackage;
+      const paymentvalue = newUpgradePackage.packageType === "free" ? false : true;
 
+      brand.brandDetails.paymentPackage = newUpgradePackage;
+      brand.brandDetails.payment = paymentvalue;
       const saved = await brand.save();
       if (!saved) {
         console.log("Error saving brand details");
