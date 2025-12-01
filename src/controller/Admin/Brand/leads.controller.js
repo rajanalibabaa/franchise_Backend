@@ -167,7 +167,7 @@ export const updateBatchEmailConfig = async (req, res) => {
       );
   }
 };
-// Utility function to get config values (for use in your existing instantApplyLocationMatch function)
+// Utility function to get config values (for use in your existing handleNewleads function)
 export const getBatchEmailValues = async () => {
   try {
     const config = await SystemConfig.findOne();
@@ -523,5 +523,46 @@ export const postSpecialLeadCount = async (req, res) => {
       message: "Server error",
       error: outerError.message,
     });
+  }
+};
+
+
+
+export const togglePaidleadPausedandPlayById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const exists = await BrandDetails.findOne({ uuid: id });
+
+    if (!exists) {
+      return res.json(new ApiResponse(404, {}, "Brand not found"));
+    }
+
+    console.log(exists.brandDetails.isPaidBrandLeadPaused);
+
+    const data = await BrandDetails.findByIdAndUpdate(
+      exists._id,
+      {
+        $set: {
+          "brandDetails.isPaidBrandLeadPaused":
+            !exists?.brandDetails.isPaidBrandLeadPaused,
+        },
+      },
+      { new: true }
+    );
+
+    let message;
+    if (data.brandDetails.isPaidBrandLeadPaused === true) {
+      message = "Paid Brand lead pause successfully";
+    } else {
+      message = "Paid Brand lead play successfully";
+    }
+
+    return res.json(new ApiResponse(200, data, message));
+  } catch (outerError) {
+    console.error(" Outer error:", outerError);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: outerError.message });
   }
 };

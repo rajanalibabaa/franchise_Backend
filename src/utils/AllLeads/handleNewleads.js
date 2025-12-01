@@ -4,14 +4,12 @@ import SystemConfig from "../../model/NewIncomeInvestor/SystemConfigSchema.js";
 import BrandEmailCount from "../../model/NewIncomeInvestor/BrandEmailCountSchema.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { paidLeadHelperFunction } from "./instantApplyPaidLeads.js";
+import { sendInstantApplyLeadLocation } from "../Centralized Email/centralizedEmail.js";
 
-export const instantApplyLocationMatch = async (
+export const handleNewleads = async (
   fullName,
   email,
   mobileNumber,
-  brandName,
-  brandId,
-  brandEmail,
   mainCategory,
   subCategory,
   childCategory,
@@ -22,10 +20,9 @@ export const instantApplyLocationMatch = async (
   planToInvest,
   readyToInvest,
   applyBy,
-  applyId,
-  brandLogo
+  applyId
 ) => {
-  // console.log("Starting instantApplyLocationMatch with parameters:", {
+  // console.log("Starting handleNewleads with parameters:", {
   //   fullName,
   //   email,
   //   mobileNumber,
@@ -72,7 +69,7 @@ export const instantApplyLocationMatch = async (
 
   // Ensure required params are present
   if (!state) {
-    throw new Error("State is required for instantApplyLocationMatch");
+    throw new Error("State is required for handleNewleads");
   }
 
   const now = new Date();
@@ -294,18 +291,25 @@ export const instantApplyLocationMatch = async (
 
         if (brandsToSend.length > 0) {
           for (const { brand, currentStats } of brandsToSend) {
-            // await sendInstantApplyLeadLocation(
-            //   fullName,
-            //   email,
-            //   mobileNumber,
-            //   brand.brandDetails?.email || "",
-            //   brand.brandDetails?.brandName || "",
-            //   `${mainCategory},${subCategory},${childCategory}`,
-            //   `${state},${district},${city}`,
-            //   investmentRange,
-            //   planToInvest,
-            //   readyToInvest
-            // );
+            await sendInstantApplyLeadLocation(
+              fullName,
+              email,
+              mobileNumber,
+              brand.brandDetails?.email || "",
+              brand.brandDetails?.brandName || "",
+              `${mainCategory},${subCategory},${childCategory}`,
+              `${state},${district},${city}`,
+              investmentRange,
+              planToInvest,
+              readyToInvest
+            );
+            await BrandDetails.findByIdAndUpdate(
+              brand._id,
+              {
+                $inc: { "brandDetails.overAllLeads": 1 },
+              },
+              { new: true }
+            );
 
             brandsSent.push({
               brandId: brand.uuid,
@@ -327,7 +331,7 @@ export const instantApplyLocationMatch = async (
         }
       }
     }
-    let catogory = {
+    let category = {
       mainCategory,
       subCategory,
       childCategory,
@@ -346,45 +350,42 @@ export const instantApplyLocationMatch = async (
       applyBy,
       applyId,
       location,
-      catogory,
+      category,
       investmentRange,
     };
 
     if (!brandBatchDoc.isPaidCategoryInvestmentrangeLocationLeadsPaused) {
-      const result = await paidLeadHelperFunction(
-        investmentRange,
-        catogory,
-        location,
-        investerData,
-        "CategoryInvestmentrangeLocation",
-        "threeMatchTypes"
-      );
-
-      // console.log("threeMatchTypes result:", result);
-      if (result.length > 0) {
-        result.forEach((d) => {
-          const existingIndex = brandsSent.findIndex(
-            (i) => i.brandId === d.brandId
-          );
-
-          if (existingIndex === -1) {
-            brandsSent.push(d);
-          } else {
-            const existing = brandsSent[existingIndex];
-
-            d.leadMatchBy.forEach((type) => {
-              if (!existing.leadMatchBy.includes(type)) {
-                existing.leadMatchBy.push(type);
-              }
-            });
-          }
-        });
-      }
+      // const result = await paidLeadHelperFunction(
+      //   investmentRange,
+      //   category,
+      //   location,
+      //   investerData,
+      //   "CategoryInvestmentrangeLocation",
+      //   "threeMatchTypes"
+      // );
+      // // console.log("threeMatchTypes result:", result);
+      // if (result.length > 0) {
+      //   result.forEach((d) => {
+      //     const existingIndex = brandsSent.findIndex(
+      //       (i) => i.brandId === d.brandId
+      //     );
+      //     if (existingIndex === -1) {
+      //       brandsSent.push(d);
+      //     } else {
+      //       const existing = brandsSent[existingIndex];
+      //       d.leadMatchBy.forEach((type) => {
+      //         if (!existing.leadMatchBy.includes(type)) {
+      //           existing.leadMatchBy.push(type);
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
     }
     if (!brandBatchDoc.isPaidCategoryLocationPaused) {
       const result = await paidLeadHelperFunction(
         false,
-        catogory,
+        category,
         location,
         investerData,
         "CategoryLocation",
@@ -414,7 +415,7 @@ export const instantApplyLocationMatch = async (
     if (!brandBatchDoc.isPaidCategoryInvestmentrangePaused) {
       const result = await paidLeadHelperFunction(
         false,
-        catogory,
+        category,
         false,
         investerData,
         "CategoryInvestmentrange",
@@ -442,34 +443,32 @@ export const instantApplyLocationMatch = async (
       }
     }
     if (!brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused) {
-      const result = await paidLeadHelperFunction(
-        investmentRange,
-        false,
-        location,
-        investerData,
-        "LocationInvestmentRange",
-        "twoMatchTypes"
-      );
-      // console.log("twoMatchTypes result:", result);
-      if (result.length > 0) {
-        result.forEach((d) => {
-          const existingIndex = brandsSent.findIndex(
-            (i) => i.brandId === d.brandId
-          );
-
-          if (existingIndex === -1) {
-            brandsSent.push(d);
-          } else {
-            const existing = brandsSent[existingIndex];
-
-            d.leadMatchBy.forEach((type) => {
-              if (!existing.leadMatchBy.includes(type)) {
-                existing.leadMatchBy.push(type);
-              }
-            });
-          }
-        });
-      }
+      // const result = await paidLeadHelperFunction(
+      //   investmentRange,
+      //   false,
+      //   location,
+      //   investerData,
+      //   "LocationInvestmentRange",
+      //   "twoMatchTypes"
+      // );
+      // // console.log("twoMatchTypes result:", result);
+      // if (result.length > 0) {
+      //   result.forEach((d) => {
+      //     const existingIndex = brandsSent.findIndex(
+      //       (i) => i.brandId === d.brandId
+      //     );
+      //     if (existingIndex === -1) {
+      //       brandsSent.push(d);
+      //     } else {
+      //       const existing = brandsSent[existingIndex];
+      //       d.leadMatchBy.forEach((type) => {
+      //         if (!existing.leadMatchBy.includes(type)) {
+      //           existing.leadMatchBy.push(type);
+      //         }
+      //       });
+      //     }
+      //   });
+      // }
     }
     await InstantApplyInvestor.create({
       investorEmail: email,
@@ -489,7 +488,7 @@ export const instantApplyLocationMatch = async (
       brandsSent: brandsSent,
     });
   } catch (error) {
-    console.error("Error in instantApplyLocationMatch:", error);
+    console.error("Error in handleNewleads:", error);
     throw error;
   }
 };

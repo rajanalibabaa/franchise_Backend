@@ -5,9 +5,7 @@ import BrandBatch from "../../model/NewIncomeInvestor/InstantApplyTrackSchema.js
 import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
 import { LocationInvestmentRangeMatch } from "../../model/Leads/locationInvestmentRangeMatch.model.js";
-import {
-  CategoryInvestmentrangeLocationMatchFunction,
-} from "../../controller/Leads/CategoryInvestmentrangeLocationMatch.js";
+import { CategoryInvestmentrangeLocationMatchFunction } from "../../controller/Leads/CategoryInvestmentrangeLocationMatch.js";
 import { CategoryInvestmentrangeMatchFunction } from "../../controller/Leads/CategoryInvestmentrangeMatch.js";
 import { CategoryLocationMatchFunction } from "../../controller/Leads/CategoryLocationMatch.js";
 import { LocationInvestmentRangeMatchFunction } from "../../controller/Leads/LocationInvestmentRangeMatch.js";
@@ -20,11 +18,14 @@ export const format = (d) => {
   const minutes = String(d?.getMinutes()).padStart(2, "0");
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-};
+}; 
 
-export const twoMatchTypesleadcount = async (brand) => {
+export const twoMatchTypesleadcount = async (brand, investorData) => {
   let totalLeadsendcount = 0;
+  let exists = false;
+
   await brand?.categorylocationMatchData?.forEach((r) => {
+    if (exists) return;
     const records = r?.categoryLocationMatchRecords;
     const lastRecord = records[records?.length - 1];
 
@@ -33,13 +34,40 @@ export const twoMatchTypesleadcount = async (brand) => {
         String(lastRecord?.packageStartDate) ===
         String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
       ) {
-        console.log("**** LAST RECORD categorylocationMatchData ****", lastRecord?.leadCount, "****");
+        lastRecord.records.forEach((monthRec) => {
+          if (exists) return;
 
-        totalLeadsendcount += lastRecord?.leadCount;
+          monthRec.leadsRecords.forEach((lead) => {
+            if (exists) return;
+
+            // console.log("Investor ID categorylocationMatchData =>", lead.investorId);
+
+            if (
+              lead.investorId === investorData?.applyId ||
+              lead.investorEmail === investorData?.email
+            ) {
+              exists = true;
+              console.log("======categorylocationMatchData stop=======");
+              return;
+            }
+          });
+        });
+
+        if (!exists) {
+          totalLeadsendcount += lastRecord?.leadCount;
+        }
       }
     }
   });
+
+  if (exists === true) {
+    console.log("======stop=======");
+    return { totalLeadsendcount, exists };
+  }
+
   await brand?.categoryInvestmentrangeMatchData?.forEach((r) => {
+    if (exists) return;
+
     const records = r.categoryInvestmentrangeMatchRecords;
     const lastRecord = records[records?.length - 1];
 
@@ -48,30 +76,63 @@ export const twoMatchTypesleadcount = async (brand) => {
         String(lastRecord?.packageStartDate) ===
         String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
       ) {
-        console.log("**** LAST RECORD categoryInvestmentrangeMatchData ****", lastRecord?.leadCount, "****");
+        lastRecord.records.forEach((monthRec) => {
+          if (exists) return;
 
-        totalLeadsendcount += lastRecord?.leadCount;
+          monthRec.leadsRecords.forEach((lead) => {
+            if (exists) return;
+
+            // console.log(
+            //   "Investor ID categoryInvestmentrangeMatchData=>",
+            //   lead.investorId
+            // );
+
+            if (
+              lead.investorId === investorData?.applyId ||
+              lead.investorEmail === investorData?.email
+            ) {
+              exists = true;
+              console.log("======categoryInvestmentrangeMatchData stop=======");
+              return;
+            }
+          });
+        });
+
+        if (!exists) {
+          totalLeadsendcount += lastRecord?.leadCount;
+        }
       }
     }
   });
-  await brand?.LocationInvestmentRangeMatchData?.forEach((r) => {
-    const records = r.locationInvestmentRangeMatchRecords;
-    const lastRecord = records[records.length - 1];
 
-    if (lastRecord) {
-      if (
-        String(lastRecord?.packageStartDate) ===
-        String(format(brand.brandDetails?.paymentPackage?.packageUpdatedTime))
-      ) {
-        console.log("**** LAST RECORD locationInvestmentRangeMatchRecords ****", lastRecord?.leadCount, "****");
+  if (exists === true) {
+    return { totalLeadsendcount, exists };
+  }
 
-        totalLeadsendcount += lastRecord?.leadCount;
-      }
+  console.log("==== twoMatchTypesleadcount ==== :", totalLeadsendcount);
+  return { totalLeadsendcount, exists };
+};
+
+export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
+  const percentage =
+    ((totalLeadsendcount + 1) / brand?.brandDetails?.paymentPackage?.totalLeads) * 100;
+
+  const p = await BrandDetails.findByIdAndUpdate(
+     brand._id,
+    {
+      $set: {
+        "brandDetails.paymentPackage.sentLeadsPercentage": `${(
+          percentage.toFixed(2)
+        )}%`,
+        "brandDetails.overAllLeads": brand.brandDetails.overAllLeads + 1,
+      },
+    },
+    {
+      new: true,
     }
-  });
+  );
 
-  console.log("==== twoMatchTypesleadcount ==== :",totalLeadsendcount);
-  return totalLeadsendcount
+  // console.log("===p===", p.brandDetails.paymentPackage);
 };
 
 export const paidLeadHelperFunction = async (
@@ -88,6 +149,7 @@ export const paidLeadHelperFunction = async (
     {
       $match: {
         "brandDetails.isBrandPause": { $ne: true },
+        "brandDetails.isPaidBrandLeadPaused": { $ne: true },
         "brandDetails.payment": true,
       },
     },
@@ -149,8 +211,8 @@ export const paidLeadHelperFunction = async (
       $match: {
         "franchiseDetails.franchiseDetails.brandCategories.main":
           category.mainCategory,
-        "franchiseDetails.franchiseDetails.brandCategories.sub":
-          category.subCategory,
+        // "franchiseDetails.franchiseDetails.brandCategories.sub":
+        //   category.subCategory,
       },
     });
   }
@@ -270,8 +332,10 @@ export const paidLeadHelperFunction = async (
         "CategoryLocation" === check
       ) {
         console.log("category &&  && location");
-        await CategoryLocationMatchFunction(brand, investorData);
-        brandsSent.push({
+        const exists = await CategoryLocationMatchFunction(brand, investorData);
+        if (!exists) {
+          
+          brandsSent.push({
           brandId: brand.uuid,
           brandName: brand.brandDetails?.brandName || "",
           brandEmail: brand.brandDetails?.email || "",
@@ -280,14 +344,19 @@ export const paidLeadHelperFunction = async (
           paidBrand: Boolean(true),
           leadMatchBy: ["Category_LocationMatch"],
         });
+        
+        }
+        console.log("======stop brandsSent=======")
+        
       }
       if (
         !brandBatchDoc.isPaidCategoryInvestmentrangePaused &&
         "CategoryInvestmentrange" === check
       ) {
         console.log("category && investmentRange && ");
-        await CategoryInvestmentrangeMatchFunction(brand, investorData);
-        brandsSent.push({
+        const exists = await CategoryInvestmentrangeMatchFunction(brand, investorData);
+        if (!exists) {
+          brandsSent.push({
           brandId: brand.uuid,
           brandName: brand.brandDetails?.brandName || "",
           brandEmail: brand.brandDetails?.email || "",
@@ -295,7 +364,11 @@ export const paidLeadHelperFunction = async (
           emailSentAt: new Date(),
           paidBrand: Boolean(true),
           leadMatchBy: ["Category_Investmentrange"],
-        });
+        }); 
+        }
+                  console.log("======stop brandsSent=======")
+
+        
       }
       if (
         !brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused &&

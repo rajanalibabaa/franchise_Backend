@@ -8,6 +8,7 @@ import {
   getBrandListingByUUID,
   reEntry,
   updateBrandListingByUUID,
+ 
   // getTopFoodFranchise,
   // getTopBeverageFranchise,
   // getTopLeadingFranchise,
@@ -24,7 +25,7 @@ import { updateBrandImageById } from "../../controller/BrandController/uploadIma
 import { datafieldnewEntry, testgetAllBrands } from "../../controller/BrandController/anonymousFunction.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
-import {createPaymentPackage,getAllPaymentPackages,deletePaymentPackage,getPaymentPackageById,updatePaymentPackage} from '../../controller/BrandController/AdvertiseBrandController.js'
+import {createPaymentPackage,getAllPaymentPackages,deletePaymentPackage,getPaymentPackageById,updatePaymentPackage,AddpackageUpdate} from '../../controller/BrandController/AdvertiseBrandController.js'
 
 
 import {submitRequest,getAllRequests,deleteRequestByBrandUuid,getRequestByBrandId,getRequestById,updateRequestById} from "../../controller/BrandController/userRequesChanges/userRequestController.js"
@@ -121,9 +122,10 @@ router.get("/testgetAllBrands", testgetAllBrands);
 
 router.post('/v1/brandadvertise/payment',createPaymentPackage);
 router.get('/v1/brandadvertise/payment',getAllPaymentPackages);
-router.delete('/v1/brandadvertise/payment/:uuid',deletePaymentPackage);
+router.delete('/v1/brandadvertise/payment-packages/:uuid/:type/:index',deletePaymentPackage);
 router.get('/v1/brandadvertise/payment',getPaymentPackageById);
-router.put('/v1/brandadvertise/payment/:uuid',updatePaymentPackage);
+router.put('/v1/brandadvertise/payment-packages/:uuid/:type/:index',updatePaymentPackage);
+router.post('/v1/brandadvertise/payment-packages/:uuid/add/:type/:index',AddpackageUpdate);
 
 
 

@@ -1,14 +1,19 @@
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { CategoryInvestmentrangeMatch } from "../../model/Leads/categoryInvestmentrangeMatch.model.js";
-import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import { format, generateSentLeadsPercentage } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
-export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) => {
+export const CategoryInvestmentrangeMatchFunction = async (
+  brand,
+  investorData
+) => {
   const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
   // console.log("paymentPackage :", paymentPackage);
 
   if (!paymentPackage?.packageUpdatedTime) {
-    console.log("⚠️ No packageUpdatedTime found");
+    console.log("No packageUpdatedTime found");
     return;
   }
 
@@ -17,11 +22,15 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
- 
   let lastupdatedData = null;
 
-  let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+  const {totalLeadsendcount ,exists } = await twoMatchTypesleadcount(brand,investorData);
 
+
+  if (exists === true) {
+    console.log("======stop=======")
+    return exists
+  }
   brand.categoryInvestmentrangeMatchData.forEach((r) => {
     const records = r.categoryInvestmentrangeMatchRecords;
     const lastRecord = records[records.length - 1];
@@ -32,7 +41,7 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
-    console.log("===expired===")
+    console.log("===expired===");
     return;
   }
   // console.log("==== :",totalLeadsendcount)
@@ -75,6 +84,21 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   let brandDoc = await CategoryInvestmentrangeMatch.findOne({
     brandId: brand.uuid,
   });
+
+  await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
+
+  await generateSentLeadsPercentage(brand,totalLeadsendcount)
 
   if (!brandDoc) {
     brandDoc = await CategoryInvestmentrangeMatch.create({
@@ -147,7 +171,8 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   }
 
   const recordsArr =
-    brand?.categoryInvestmentrangeMatchData[0]?.categoryInvestmentrangeMatchRecords;
+    brand?.categoryInvestmentrangeMatchData[0]
+      ?.categoryInvestmentrangeMatchRecords;
   const lastIndex = recordsArr.length - 1;
 
   // console.log("===recordsArr=== :", recordsArr);
@@ -159,7 +184,7 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
   const innerLastRecord = lastRecord.records[innerLastIndex];
 
   if (
-    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber) || (paymentPackage?.totalMonths + 1) === Number(innerLastRecord?.monthNumber)
   ) {
     // console.log("Month matched. Updating leads...");
 
@@ -187,7 +212,8 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
 
     return;
   } else if (
-    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) &&
+    paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
   ) {
     console.log("New month detected. Creating new month record...");
 
@@ -198,6 +224,35 @@ export const CategoryInvestmentrangeMatchFunction = async (brand, investorData) 
           [`categoryInvestmentrangeMatchRecords.${lastIndex}.records`]: {
             range: formattedRange,
             monthNumber: filterdata[0]?.monthNumber || 1,
+            count: 1,
+            leadsRecords: [
+              {
+                investorId: investorData?.applyId,
+                investorName: investorData?.fullName,
+                investorEmail: investorData?.email,
+                investorMobile: investorData?.mobileNumber,
+                sentAt: new Date(),
+              },
+            ],
+          },
+        },
+
+        $inc: {
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.leadCount`]: 1,
+        },
+      }
+    );
+
+    return;
+  } else {
+    console.log("=================bending===================")
+    await CategoryInvestmentrangeMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          [`categoryInvestmentrangeMatchRecords.${lastIndex}.records`]: {
+            range: format(currentDate),
+            monthNumber: Number(paymentPackage?.totalMonths) + 1 ,
             count: 1,
             leadsRecords: [
               {

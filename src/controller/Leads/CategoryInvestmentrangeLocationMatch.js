@@ -1,7 +1,9 @@
 import { CategoryInvestmentrangeLocationMatch } from "../../model/Leads/categoryInvestmentrangeLocationMatch.model.js";
 import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
-
-
+import {
+  paidLeadInstantApplyEmail,
+  sendInstantApplyLeadLocation,
+} from "../../utils/Centralized Email/centralizedEmail.js";
 
 export const CategoryInvestmentrangeLocationMatchFunction = async (
   brand,
@@ -9,6 +11,7 @@ export const CategoryInvestmentrangeLocationMatchFunction = async (
 ) => {
   const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
+  console.log("=== Sending Paid Lead Instant Apply Email === :", investorData);
 
   if (!paymentPackage?.packageUpdatedTime) {
     console.log("⚠️ No packageUpdatedTime found");
@@ -77,6 +80,19 @@ export const CategoryInvestmentrangeLocationMatchFunction = async (
     brandId: brand.uuid,
   });
 
+  // await sendInstantApplyLeadLocation(
+  //   investorData?.fullName,
+  //   investorData?.email,
+  //   investorData?.mobileNumber,
+  //   brand.brandDetails?.email,
+  //   brand.brandDetails?.companyName,
+  //   investorData?.category,
+  //   investorData?.location,
+  //   investorData?.investmentRange,
+  //   investorData?.planToInvest,
+  //   investorData?.readyToInvest
+  // );
+ 
   if (!brandDoc) {
     brandDoc = await CategoryInvestmentrangeLocationMatch.create({
       brandId: brand.uuid,

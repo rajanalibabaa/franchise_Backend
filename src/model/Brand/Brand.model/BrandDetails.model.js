@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const BrandDetailsSchema = new mongoose.Schema(
+
   {
     uuid: {
       type: String,
@@ -38,6 +39,10 @@ const BrandDetailsSchema = new mongoose.Schema(
       specialFreeLeadCount: {
         type: Number,
       },
+      overAllLeads: {
+        type: Number,
+        default: 0,
+      },
       pause: {
         type: Boolean,
         default: false,
@@ -55,6 +60,10 @@ const BrandDetailsSchema = new mongoose.Schema(
         default: false,
       },
       isFreeLeadPaused: {
+        type: Boolean,
+        default: false,
+      },
+      isPaidBrandLeadPaused: {
         type: Boolean,
         default: false,
       },
@@ -87,9 +96,14 @@ const BrandDetailsSchema = new mongoose.Schema(
         },
         isActive: {
           type: Boolean,
-          default:false
+          default:true
         },
         packageUpdatedTime: { type: Date, default: Date.now },
+        packageEndDate: { type: Date, default: null },
+        sentLeadsPercentage: {
+          type: String,
+          default:"0%"
+        }
       },
       listingPackages: {
         periodMonths: {

@@ -1,6 +1,10 @@
 import { CategoryLocationMatch } from "../../model/Leads/categoryLocationMatch.model.js";
-import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import {
+  format,
+  generateSentLeadsPercentage,
+} from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
+import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
 export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const currentDate = new Date();
@@ -8,7 +12,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   // console.log("paymentPackage :", paymentPackage);
 
   if (!paymentPackage?.packageUpdatedTime) {
-    console.log("⚠️ No packageUpdatedTime found");
+    console.log("No packageUpdatedTime found");
     return;
   }
 
@@ -17,7 +21,15 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-   let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+  const { totalLeadsendcount, exists } = await twoMatchTypesleadcount(
+    brand,
+    investorData
+  );
+
+  if (exists) {
+    console.log("======stop=======");
+    return exists;
+  }
   let lastupdatedData = null;
 
   brand?.categorylocationMatchData?.forEach((r) => {
@@ -30,7 +42,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
-    console.log("===expired===")
+    console.log("===expired===");
     return;
   }
   // console.log("==== :",totalLeadsendcount)
@@ -76,6 +88,20 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   let brandDoc = await CategoryLocationMatch.findOne({
     brandId: brand.uuid,
   });
+
+  await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest
+  );
+  await generateSentLeadsPercentage(brand,totalLeadsendcount)
 
   if (!brandDoc) {
     brandDoc = await CategoryLocationMatch.create({
@@ -164,7 +190,9 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   const innerLastRecord = lastRecord?.records?.[innerLastIndex];
 
   if (
-    Number(filterdata[0]?.monthNumber) === Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) ===
+      Number(innerLastRecord?.monthNumber) ||
+    paymentPackage?.totalMonths + 1 === Number(innerLastRecord?.monthNumber)
   ) {
     // console.log("Month matched. Updating leads...");
 
@@ -192,7 +220,8 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
 
     return;
   } else if (
-    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber)
+    Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) &&
+    paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
   ) {
     console.log("New month detected. Creating new month record...");
 
@@ -223,5 +252,31 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     );
 
     return;
+  } else {
+    await CategoryLocationMatch.updateOne(
+      { _id: brandDoc._id },
+      {
+        $push: {
+          [`categoryLocationMatchRecords.${lastIndex}.records`]: {
+            range: format(currentDate),
+            monthNumber: paymentPackage?.totalMonths + 1 || 1,
+            count: 1,
+            leadsRecords: [
+              {
+                investorId: investorData?.applyId,
+                investorName: investorData?.fullName,
+                investorEmail: investorData?.email,
+                investorMobile: investorData?.mobileNumber,
+                sentAt: new Date(),
+              },
+            ],
+          },
+        },
+
+        $inc: {
+          [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
+        },
+      }
+    );
   }
 };
