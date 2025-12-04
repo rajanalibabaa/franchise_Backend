@@ -80,26 +80,65 @@ export const getAllIndustry = async (req, res) => {
 };
 
 export const deleteIndustryById = async (req, res) => {
-  const { id } = req.query;
+  const { id } = req.params;
+  const { remove } = req.body;
+
+  console.log(id, remove);
 
   if (!id) {
     return res.json(new ApiResponse(401, {}, "id is required"));
   }
-
-  const deleted = await IndustryManagement.findOneAndDelete({
+  const { type, parent, index } = remove;
+  const match = {
     uuid: id,
-  });
+  };
+
+  const industry = await IndustryManagement.findOne({ uuid: id });
+
+ 
+
+  if (type === "category") {
+    if (index < industry.categories.length) {
+      industry.categories = industry.categories.filter((_, i) => i !== index);
+    } else {
+      return res.json(new ApiResponse(400, {}, "Invalid category index"));
+    }
+  }
+  if (type === "productTag") {
+    if (index < industry.productTags.length && parent) {
+      industry.productTags = industry.productTags.map(item => {
+        if (item?.parent === parent) {
+          item.tag = item.tag.filter((_, i) => i !== index);
+        }
+      })
+      
+      
+      
+      
+    } 
+    else {
+      return res.json(new ApiResponse(400, {}, "Invalid category index"));
+    }
+  }
+
+   console.log("industry :", industry.productTags);
+   await industry.save();
+  return res.json(new ApiResponse(200, industry, "Data deleted successfully"));
+
+  const deleted = await IndustryManagement.findOneAndDelete(match);
 
   if (!deleted) {
     return res.json(new ApiResponse(401, {}, "Failed to delete"));
   }
 
   return res.json(new ApiResponse(200, deleted, "Data deleted successfully"));
-}; 
+};
 
 export const updateIndustryById = async (req, res) => {
   const { id } = req.query;
-  const {newUpdate} = req.body
+
+  // !industry || !categories || !productTags || !serviceTags
+  const { newUpdate } = req.body;
 
   if (!id) {
     return res.json(new ApiResponse(401, {}, "id is required"));
@@ -113,7 +152,5 @@ export const updateIndustryById = async (req, res) => {
     return res.json(new ApiResponse(401, {}, "Data not exists"));
   }
 
-
-
   return res.json(new ApiResponse(200, exists, "Data deleted successfully"));
-};  
+};
