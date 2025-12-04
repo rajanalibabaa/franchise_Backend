@@ -35,6 +35,7 @@ import ManualLeadRouter from "./src/Routes/Lead/ManualLeadApplyRoutes/ManualLead
 import { paymentRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/paymentRouter.js";
 import leadPackageRouter from "./src/Routes/LeadPackage/LeadPackage.js";
 import { brandleadsRouter } from "./src/Routes/Lead/brandLeadsRouter.js";
+import { industryManagementRouter } from "./src/Routes/AdminRoutes/CMS/industryManagement.routes.js";
 
 const router = express.Router();
 
@@ -122,6 +123,10 @@ router.use(brandpauseplayRouter)
 
 //paymentRouter
 router.use(paymentRouter)
+
+
+//industryManagementRouter
+router.use(industryManagementRouter)
 
 
 
