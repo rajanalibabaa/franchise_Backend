@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import uuid from "../../../utils/uuid.js";
 
 const productTagSchema = new mongoose.Schema(
   {
@@ -6,13 +7,19 @@ const productTagSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    tag: {
+    tags: {
       type: [String],
       required: true,
+      default:[]
+    },
+    id: {
+      type: String,
+      default: uuid(),
     },
   },
-  { _id: false }
-);
+  { _id: false },
+  
+); 
 
 const industryManagement = new mongoose.Schema(
   {
