@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { IndustryManagement } from "../../../model/Admin/CMS/industryManagement.model.js";
 import { ApiResponse } from "../../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../../utils/uuid.js";
@@ -9,20 +10,40 @@ export const createIndustryManagement = async (req, res) => {
     return res.json(new ApiResponse(404, {}, "All fields are required"));
   }
 
-  const exists = await IndustryManagement.findOne({ industry: industry });
-
-  const GenerateId = uuid();
+  const exists = await IndustryManagement.findOne({ industry });
 
   if (exists) {
-    return res.json(new ApiResponse(401, {}, "Already industry is exists"));
+    return res.json(new ApiResponse(401, {}, "Industry already exists"));
   }
+
+  const formattedCategories = categories.map((cat) => ({
+    id: uuid(),
+    category: cat,
+  }));
+  const formattedProductTags = productTags.map((pt) => ({
+    id: uuid(),
+    parent: pt.parent,
+    tags: (pt.tags || []).map((tag) => ({
+      id: uuid(),
+      tag: tag,
+    })),
+  }));
+
+  const formattedServiceTags = serviceTags.map((st) => ({
+    id: uuid(),
+    parent: st.parent,
+    tags: (st.tags || []).map((tag) => ({
+      id: uuid(),
+      tag: tag,
+    })),
+  }));
 
   const data = await IndustryManagement.create({
     industry,
-    categories,
-    productTags,
-    serviceTags,
-    uuid: GenerateId,
+    categories: formattedCategories,
+    productTags: formattedProductTags,
+    serviceTags: formattedServiceTags,
+    uuid: uuid(),
   });
 
   if (!data) {
@@ -95,31 +116,46 @@ export const updateIndustryById = async (req, res) => {
     uuid: id,
   });
 
-  console.log(exists);
+  // console.log(exists);
   if (!exists) {
     return res.json(new ApiResponse(401, {}, "Data not exists"));
   }
 
   if (categories?.length > 0) {
     categories.map((item) => {
-      exists.categories.push(String(item));
+      const formattedCategories = {
+        category: item,
+        id: uuid(),
+      };
+      exists.categories.push(formattedCategories);
     });
   }
 
   if (productTags) {
     if (productTags?.addProductTags) {
       productTags?.addProductTags.map((item) => {
-        exists.productTags.push(Object(item));
+        item.id = uuid();
+        (item.tags = (item.tags || []).map((tag) => ({
+          id: uuid(),
+          tag: tag,
+        }))),
+          exists.productTags.push(Object(item));
       });
     }
     if (productTags?.pushProductTags?.length > 0) {
       productTags.pushProductTags.forEach((item) => {
-        const parentObj = exists.productTags.find(
-          (p) => p.parent === item.parent
-        );
-
+        const parentObj = exists.productTags.find((p) => p.id === item.id);
+        if (!parentObj) {
+          return res.json(
+            new ApiResponse(404, item.id, "ProductTag Id doesn't exists")
+          );
+        }
         if (parentObj) {
-          parentObj.tags.push(...item.tags);
+          const newTags = (item.tags || []).map((tag) => ({
+            id: uuid(),
+            tag,
+          }));
+          parentObj.tags.push(...newTags);
         }
       });
     }
@@ -127,17 +163,29 @@ export const updateIndustryById = async (req, res) => {
   if (serviceTags) {
     if (serviceTags?.addServiceTags) {
       serviceTags?.addServiceTags.map((item) => {
+        item.id = uuid();
+        item.tags = (item.tags || []).map((tag) => ({
+          id: uuid(),
+          tag,
+        }));
         exists.serviceTags.push(Object(item));
       });
     }
     if (serviceTags?.pushServiceTags?.length > 0) {
       serviceTags.pushServiceTags.forEach((item) => {
-        const parentObj = exists.serviceTags.find(
-          (p) => p.parent === item.parent
-        );
+        const parentObj = exists.serviceTags.find((p) => p.id === item.id);
 
+        if (!parentObj) {
+          return res.json(
+            new ApiResponse(404, item.id, "serviceTag Id doesn't exists")
+          );
+        }
         if (parentObj) {
-          parentObj.tags.push(...item.tags);
+          const newTags = (item.tags || []).map((tag) => ({
+            id: uuid(),
+            tag,
+          }));
+          parentObj.tags.push(...newTags);
         }
       });
     }
@@ -145,7 +193,9 @@ export const updateIndustryById = async (req, res) => {
 
   await exists.save();
 
-  return res.json(new ApiResponse(200, exists, "Data deleted successfully"));
+  return res.json(
+    new ApiResponse(200, exists.serviceTags, "Data deleted successfully")
+  );
 };
 
 // export const deleteIndustryById = async (req, res) => {
@@ -233,7 +283,7 @@ export const deleteIndustryById = async (req, res) => {
   try {
     const { id } = req.params;
     const { remove, deleteIndustry } = req.body;
-    const { type, parent, index, categories, productTags } = remove || {};
+    const { serviceTags, categories, productTags } = remove || {};
 
     if (!id) {
       return res.json(new ApiResponse(400, {}, "id is required"));
@@ -245,70 +295,85 @@ export const deleteIndustryById = async (req, res) => {
       return res.json(new ApiResponse(404, {}, "Industry not found"));
     }
 
-    if (
-      type === undefined &&
-      parent === undefined &&
-      index === undefined &&
-      deleteIndustry === "true"
-    ) {
+    if (deleteIndustry === "true") {
       await IndustryManagement.findByIdAndDelete(industry._id);
       return res.json(
         new ApiResponse(200, {}, "Industry deleted successfully")
       );
     }
 
-    console.log(industry.productTags.length);
-
     if (categories?.length > 0) {
-      categories.sort((a, b) => b - a);
-
-      categories.forEach((idx) => {
-        if (idx >= 0 && idx < industry.categories.length) {
-          industry.categories.splice(idx, 1);
-        }
+      categories.forEach((item) => {
+        industry.categories = industry?.categories.filter((c) => c.id !== item);
       });
     }
 
     if (productTags) {
-      if (parent) {
-        industry.productTags = industry.productTags.map((item) => {
-          if (item.parent === parent) {
-            item.tags = item.tags.filter((_, i) => i !== index);
-          }
-          return item; 
+      if (productTags?.products?.length > 0) {
+        productTags?.products.map((ids) => {
+          const tagsArray = Array.isArray(industry.productTags)
+            ? industry.productTags
+            : Object.values(industry.productTags);
+
+          industry.productTags = tagsArray.filter((p) => !ids.includes(p.id));
         });
       }
 
-      if (productTags?.products.length > 0) {
-        productTags?.products.sort((a, b) => b - a);
-        productTags?.products.forEach((idx) => {
-          if (idx >= 0 && idx < industry.productTags.length) {
-            industry.productTags.splice(idx, 1);
+      if (productTags?.tags?.length > 0) {
+        
+        productTags?.tags.map((item) => {
+          const tagsArray = Array.isArray(industry.productTags)
+            ? industry.productTags
+            : Object.values(industry.productTags);
+
+          const parentObj = tagsArray.find((p) => p.id === item.productId);
+          
+          if (parentObj) {
+             parentObj.tags = parentObj.tags.filter(
+                (t) => !item.ids.includes(t.id)
+              );
           }
+          
         });
       }
     }
 
-    // if (type === "serviceTag") {
-    //   if (parent) {
-    //     industry.serviceTags = industry.serviceTags.map((item) => {
-    //       if (item.parent === parent) {
-    //         item.tags = item.tags.filter((_, i) => i !== index);
-    //       }
-    //       return item;
-    //     });
-    //   } else if (!parent && industry.serviceTags.length >= index) {
-    //     industry.serviceTags = industry.serviceTags.filter(
-    //       (_, i) => i !== index
-    //     );
-    //   } else {
-    //     return res.json(new ApiResponse(400, {}, "Invalid category index"));
-    //   }
-    // }
+    if (serviceTags) {
+      if (serviceTags?.services?.length > 0) {
+        serviceTags?.services.map((ids) => {
+          const tagsArray = Array.isArray(industry.serviceTags)
+            ? industry.serviceTags
+            : Object.values(industry.serviceTags);
+
+          industry.serviceTags = tagsArray.filter((p) => !ids.includes(p.id));
+        });
+      }
+
+      if (serviceTags?.tags?.length > 0) {
+        
+        serviceTags?.tags.map((item) => {
+          const tagsArray = Array.isArray(industry.serviceTags)
+            ? industry.serviceTags
+            : Object.values(industry.serviceTags);
+
+            // console.log("tagsArray :",tagsArray)
+
+          const parentObj = tagsArray.find((p) => p.id === item.serviceId);
+
+          if (parentObj) {
+             parentObj.tags = parentObj.tags.filter(
+                (t) => !item.ids.includes(t.id)
+              );
+          }
+          
+        });
+      }
+    }
 
     // await industry.save();
+    
     return res.json(
-      new ApiResponse(200, industry.productTags, "Data deleted successfully")
+      new ApiResponse(200, industry.serviceTags, "Data deleted successfully")
     );
   } catch (error) {
     console.log(error);

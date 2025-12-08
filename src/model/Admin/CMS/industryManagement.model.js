@@ -1,6 +1,19 @@
 import mongoose from "mongoose";
-import uuid from "../../../utils/uuid.js";
 
+const tagSchema = new mongoose.Schema(
+  {
+    tag: {
+      type: String,
+      required: true,
+    },
+    id: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false },
+  
+);
 const productTagSchema = new mongoose.Schema(
   {
     parent: {
@@ -8,13 +21,27 @@ const productTagSchema = new mongoose.Schema(
       required: true,
     },
     tags: {
-      type: [String],
+      type: [tagSchema],
       required: true,
       default:[]
     },
     id: {
       type: String,
-      default: uuid(),
+      required: true,
+    },
+  },
+  { _id: false },
+  
+); 
+const categoriesSchema = new mongoose.Schema(
+  {
+    category: {
+      type: String,
+      required: true,
+    },
+    id: {
+      type: String,
+      required: true,
     },
   },
   { _id: false },
@@ -28,7 +55,7 @@ const industryManagement = new mongoose.Schema(
       require: true,
     },
     categories: {
-      type: [String],
+      type: [categoriesSchema],
       require: true,
     },
     productTags: {
