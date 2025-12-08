@@ -198,87 +198,6 @@ export const updateIndustryById = async (req, res) => {
   );
 };
 
-// export const deleteIndustryById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { remove, deleteIndustry } = req.body;
-//     const { type, parent, index } = remove || {};
-
-//     if (!id) {
-//       return res.json(new ApiResponse(400, {}, "id is required"));
-//     }
-
-//     const industry = await IndustryManagement.findOne({ uuid: id });
-
-//     if (!industry) {
-//       return res.json(new ApiResponse(404, {}, "Industry not found"));
-//     }
-
-//     if (
-//       type === undefined &&
-//       parent === undefined &&
-//       index === undefined &&
-//       deleteIndustry === "true"
-//     ) {
-//       await IndustryManagement.findByIdAndDelete(industry._id);
-//       return res.json(
-//         new ApiResponse(200, {}, "Industry deleted successfully")
-//       );
-//     }
-
-//     if (type === "category") {
-//       if (index < industry?.categories?.length) {
-//         industry.categories = industry.categories.filter((_, i) => i !== index);
-//       } else {
-//         return res.json(new ApiResponse(400, {}, "Invalid category index"));
-//       }
-//     }
-
-//     if (type === "productTag") {
-//       if (parent) {
-//         industry.productTags = industry.productTags.map((item) => {
-//           if (item.parent === parent) {
-//             item.tags = item.tags.filter((_, i) => i !== index);
-//           }
-//           return item;
-//         });
-//       } else if (!parent && industry.serviceTags.length >= index) {
-//         industry.serviceTags = industry.serviceTags.filter(
-//           (_, i) => i !== index
-//         );
-//       } else {
-//         return res.json(new ApiResponse(400, {}, "Invalid category index"));
-//       }
-//     }
-
-//     if (type === "serviceTag") {
-//       if (parent) {
-//         industry.serviceTags = industry.serviceTags.map((item) => {
-//           if (item.parent === parent) {
-//             item.tags = item.tags.filter((_, i) => i !== index);
-//           }
-//           return item;
-//         });
-//       } else if (!parent && industry.serviceTags.length >= index) {
-//         industry.serviceTags = industry.serviceTags.filter(
-//           (_, i) => i !== index
-//         );
-//       } else {
-//         return res.json(new ApiResponse(400, {}, "Invalid category index"));
-//       }
-//     }
-
-//     await industry.save();
-
-//     return res.json(
-//       new ApiResponse(200, industry.categories, "Data deleted successfully")
-//     );
-//   } catch (error) {
-//     console.log(error);
-//     return res.json(new ApiResponse(500, {}, "Something went wrong"));
-//   }
-// };
-
 export const deleteIndustryById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -356,8 +275,6 @@ export const deleteIndustryById = async (req, res) => {
             ? industry.serviceTags
             : Object.values(industry.serviceTags);
 
-            // console.log("tagsArray :",tagsArray)
-
           const parentObj = tagsArray.find((p) => p.id === item.serviceId);
 
           if (parentObj) {
@@ -370,7 +287,7 @@ export const deleteIndustryById = async (req, res) => {
       }
     }
 
-    // await industry.save();
+    await industry.save();
     
     return res.json(
       new ApiResponse(200, industry.serviceTags, "Data deleted successfully")
