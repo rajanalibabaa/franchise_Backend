@@ -104,13 +104,15 @@ export const updateIndustryById = async (req, res) => {
   const { id } = req.params;
 
   // !industry || !categories || !productTags || !serviceTags
-  const { newUpdate } = req?.body;
+  const { newUpdate, remove } = req?.body;
 
   if (!id) {
     return res.json(new ApiResponse(401, {}, "id is required"));
   }
 
-  const { categories, productTags, serviceTags } = newUpdate;
+  const { categories, productTags, serviceTags } = newUpdate || {};
+  const { removeServiceTags, removeCategories, removeProductTags } =
+    remove || {};
 
   const exists = await IndustryManagement.findOne({
     uuid: id,
@@ -129,6 +131,68 @@ export const updateIndustryById = async (req, res) => {
       };
       exists.categories.push(formattedCategories);
     });
+  }
+
+  if (removeCategories?.length > 0) {
+    removeCategories.forEach((item) => {
+      exists.categories = exists?.categories.filter((c) => c.id !== item);
+    });
+  }
+
+  if (removeProductTags) {
+    if (removeProductTags?.products?.length > 0) {
+      removeProductTags?.products.map((ids) => {
+        const tagsArray = Array.isArray(exists.productTags)
+          ? exists.productTags
+          : Object.values(exists.productTags);
+
+        exists.productTags = tagsArray.filter((p) => !ids.includes(p.id));
+      });
+    }
+
+    if (removeProductTags?.tags?.length > 0) {
+      removeProductTags?.tags.map((item) => {
+        const tagsArray = Array.isArray(exists.productTags)
+          ? exists.productTags
+          : Object.values(exists.productTags);
+
+        const parentObj = tagsArray.find((p) => p.id === item.productId);
+
+        if (parentObj) {
+          parentObj.tags = parentObj.tags.filter(
+            (t) => !item.ids.includes(t.id)
+          );
+        }
+      });
+    }
+  }
+
+  if (removeServiceTags) {
+    if (removeServiceTags?.services?.length > 0) {
+      removeServiceTags?.services.map((ids) => {
+        const tagsArray = Array.isArray(exists.serviceTags)
+          ? exists.serviceTags
+          : Object.values(exists.serviceTags);
+
+        exists.serviceTags = tagsArray.filter((p) => !ids.includes(p.id));
+      });
+    }
+
+    if (removeServiceTags?.tags?.length > 0) {
+      removeServiceTags?.tags.map((item) => {
+        const tagsArray = Array.isArray(exists.serviceTags)
+          ? exists.serviceTags
+          : Object.values(exists.serviceTags);
+
+        const parentObj = tagsArray.find((p) => p.id === item.serviceId);
+
+        if (parentObj) {
+          parentObj.tags = parentObj.tags.filter(
+            (t) => !item.ids.includes(t.id)
+          );
+        }
+      });
+    }
   }
 
   if (productTags) {
@@ -239,20 +303,18 @@ export const deleteIndustryById = async (req, res) => {
       }
 
       if (productTags?.tags?.length > 0) {
-        
         productTags?.tags.map((item) => {
           const tagsArray = Array.isArray(industry.productTags)
             ? industry.productTags
             : Object.values(industry.productTags);
 
           const parentObj = tagsArray.find((p) => p.id === item.productId);
-          
+
           if (parentObj) {
-             parentObj.tags = parentObj.tags.filter(
-                (t) => !item.ids.includes(t.id)
-              );
+            parentObj.tags = parentObj.tags.filter(
+              (t) => !item.ids.includes(t.id)
+            );
           }
-          
         });
       }
     }
@@ -269,7 +331,6 @@ export const deleteIndustryById = async (req, res) => {
       }
 
       if (serviceTags?.tags?.length > 0) {
-        
         serviceTags?.tags.map((item) => {
           const tagsArray = Array.isArray(industry.serviceTags)
             ? industry.serviceTags
@@ -278,17 +339,16 @@ export const deleteIndustryById = async (req, res) => {
           const parentObj = tagsArray.find((p) => p.id === item.serviceId);
 
           if (parentObj) {
-             parentObj.tags = parentObj.tags.filter(
-                (t) => !item.ids.includes(t.id)
-              );
+            parentObj.tags = parentObj.tags.filter(
+              (t) => !item.ids.includes(t.id)
+            );
           }
-          
         });
       }
     }
 
     await industry.save();
-    
+
     return res.json(
       new ApiResponse(200, industry.serviceTags, "Data deleted successfully")
     );
