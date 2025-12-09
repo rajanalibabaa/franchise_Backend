@@ -21,7 +21,6 @@ import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
 import {registerNotificationSocket} from './src/socket/notificationSocket.js'
-import {postToAllPlatforms} from "./src/utils/socialmediapost/socialmediapost.js";
 
 
 dotenv.config(); // ✅ Load env FIRST
@@ -39,13 +38,7 @@ app.use(limiter);
 
 app.use(helmet());
 
-// app.use(cors({
-//   origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-//   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-//   optionsSuccessStatus: 200,
-// }));
+
 
 
 const allowedOrigins = [
@@ -72,6 +65,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
