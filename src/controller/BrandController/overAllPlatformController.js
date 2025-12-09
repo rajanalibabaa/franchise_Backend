@@ -128,10 +128,9 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           }
         }
       },
-      { $skip: skip },
-      { $limit: limit }
+      // { $skip: skip },
+      // { $limit: limit }
     ];
- 
     const [brandsData, totalCount] = await Promise.all([
       BrandFranchiseDetails.aggregate(aggregationPipeline),
       BrandFranchiseDetails.countDocuments({
@@ -142,6 +141,7 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     if (!brandsData || brandsData.length === 0) {
       return res.json(new ApiResponse(404, null, "No top food franchises found"));
     }
+   console.log(" brandsData.length  :", brandsData.length);
    
      const brands = shuffleArray(brandsData)
  

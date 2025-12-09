@@ -394,6 +394,9 @@ export const getAllBrandsAndFilter = async (req, res) => {
       areaRequired,
     } = req.query || {};
 
+
+    console.log("-------- :", subcat);
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
     
     const match = {
@@ -727,7 +730,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state,areaRequired } = req.query;
  
-  console.log(req.query);
+  // console.log(req.query);
  
   console.log(main);
  
@@ -878,6 +881,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         {
           $match: {
             "franchiseDetails.brandCategories.main": main,
+     
           },
         },
         {
