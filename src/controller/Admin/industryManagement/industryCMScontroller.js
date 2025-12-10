@@ -84,12 +84,20 @@ export const getAllIndustry = async (req, res) => {
 
       const industrys = exists.map((item) => item.industry);
 
-      const data = {
-        industrys,
-        categories: exists[0].categories,
-        productTags: exists[0].productTags,
-        serviceTags: exists[0].serviceTags,
-      };
+      let data = {};
+
+      if (!main) {
+        data = {
+          industrys,
+          categories: exists[0].categories,
+          productTags: exists[0].productTags,
+          serviceTags: exists[0].serviceTags,
+        };
+      } else {
+        data = {
+          industrys,
+        };
+      }
 
       return res.json(new ApiResponse(200, data, "Data fetched successfully"));
     }
