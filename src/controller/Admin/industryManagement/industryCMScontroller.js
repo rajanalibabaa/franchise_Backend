@@ -6,6 +6,8 @@ import uuid from "../../../utils/uuid.js";
 export const createIndustryManagement = async (req, res) => {
   const { industry, categories, productTags, serviceTags } = req.body;
 
+  console.log(req.body);
+
   if (!industry || !categories || !productTags || !serviceTags) {
     return res.json(new ApiResponse(404, {}, "All fields are required"));
   }
