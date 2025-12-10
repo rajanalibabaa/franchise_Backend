@@ -29,8 +29,8 @@ export const getAllBrandsAndFilter = async (req, res) => {
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const match = {
-      "brandDetails.isBrandPause": { $ne: true },
-      "brandDetails.isApproved": { $ne: false },
+      // "brandDetails.isBrandPause": { $ne: true },
+      // "brandDetails.isApproved": { $ne: false },
     };
 
     // console.log("======search===== :",serchterm)
@@ -183,7 +183,15 @@ export const getAllBrandsAndFilter = async (req, res) => {
       match.$and = (match?.$and || []).concat(locationConditions);
     }
 
+    console.log("==match== :",match)
+
     const aggregationPipeline = [
+      {
+        $match: {
+          "brandDetails.isBrandPause": { $ne: true },
+          "brandDetails.isApproved": { $ne: false },
+        },
+      },
       {
         $lookup: {
           from: "brandfranchisedetails",
