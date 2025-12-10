@@ -183,7 +183,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       match.$and = (match?.$and || []).concat(locationConditions);
     }
 
-    console.log("==match== :",match)
+   
 
     const aggregationPipeline = [
       {
@@ -306,9 +306,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       { $limit: limit },
     ];
 
-    // -----------------------
-    // Count pipeline
-    // -----------------------
+    
     const countPipeline = [
       
       {
