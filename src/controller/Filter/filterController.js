@@ -26,6 +26,9 @@ export const getAllBrandsAndFilter = async (req, res) => {
       areaRequired,
     } = req.query || {};
 
+
+    console.log("-------- :", subcat);
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const match = {
