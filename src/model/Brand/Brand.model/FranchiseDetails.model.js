@@ -37,7 +37,8 @@ const FranchiseDetailsSchema = new mongoose.Schema(
         main: String,
         sub: String,
         groupId: String,
-        child: String
+        productTags: [{parent:String,tags:[String]}],
+        serviceTags: [{parent:String,tags:[String]}]
       },
       brandDescription: String,
       companyOwnedOutlets: String,

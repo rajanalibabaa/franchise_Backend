@@ -57,18 +57,81 @@ export const createIndustryManagement = async (req, res) => {
   );
 };
 
+// export const getIndustryByIndustryName = async (req, res) => {
+//   const { industry } = req.query;
+//   console.log(industry);
+
+//   const exists = await IndustryManagement.findOne({
+//     industry: industry,
+//   }).select(" -__v -_id");
+
+//   console.log(exists);
+
+//   if (!exists) {
+//     return res.json(new ApiResponse(401, {}, "Industry is not exists"));
+//   }
+
+//   return res.json(new ApiResponse(200, exists, "Data fetch successfully"));
+// };
+
 export const getIndustryByIndustryName = async (req, res) => {
   const { industry } = req.query;
+  console.log(industry);
 
-  const exists = await IndustryManagement.findOne({
-    industry: industry,
-  }).select(" -__v -_id");
+  // If no industry param is provided, return a list of all industries (just industry names as array under "Industry" key)
+  if (!industry) {
+    const industriesList = await IndustryManagement.find({})
+      .select("industry")
+      .select(" -__v -_id"); // Exclude __v and _id
 
-  if (!exists) {
-    return res.json(new ApiResponse(401, {}, "Industry is not exists"));
+    const industryNames = industriesList.map(item => item.industry);
+
+    const responseData = {
+      Industry: industryNames
+    };
+
+    console.log(responseData);
+
+    return res.json(new ApiResponse(200, responseData, "Industries fetched successfully"));
   }
 
-  return res.json(new ApiResponse(200, exists, "Data fetch successfully"));
+  // If industry param is provided, return full details for that industry, excluding unwanted id fields and transforming to flat arrays
+  const exists = await IndustryManagement.findOne({
+    industry: industry,
+  }).select({
+    __v: 0,
+    _id: 0,
+    "categories.id": 0,
+    "productTags.id": 0,
+    "productTags.tags.id": 0,
+    "serviceTags.id": 0,
+    "serviceTags.tags.id": 0,
+  });
+
+  console.log(exists);
+
+  if (!exists) {
+    return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+  }
+
+  // Transform the data to the desired format: flat arrays for categories and tags
+  const transformedData = {
+    industry: exists.industry,
+    categories: exists.categories.map(cat => cat.category),
+    productTags: exists.productTags.map(pt => ({
+      parent: pt.parent,
+      tags: pt.tags.map(tag => tag.tag)
+    })),
+    serviceTags: exists.serviceTags.map(st => ({
+      parent: st.parent,
+      tags: st.tags.map(tag => tag.tag)
+    })),
+    uuid: exists.uuid,
+    createdAt: exists.createdAt,
+    updatedAt: exists.updatedAt
+  };
+
+  return res.json(new ApiResponse(200, transformedData, "Industry data fetched successfully"));
 };
 
 export const getAllIndustry = async (req, res) => {
