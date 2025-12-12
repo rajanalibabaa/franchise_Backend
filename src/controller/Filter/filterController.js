@@ -392,7 +392,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, areaRequired ,industry} = req.query;
 
-  console.log(main);
 
   try {
     if ((sub && main) || sub) {
