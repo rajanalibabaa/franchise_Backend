@@ -794,9 +794,11 @@ const updateBrandListingByUUID = async (req, res) => {
     // ---------- Parse brand & franchise ----------
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
-
+  
     console.log("ParseBrandDetails:", ParseBrandDetails);
     console.log("parseFranchiseDetails", ParseFranchiseDetails);
+
+  
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
@@ -865,7 +867,21 @@ const updateBrandListingByUUID = async (req, res) => {
         }
       }
 
-      if (Array.isArray(ParseFranchiseDetails.trainingSupport)) {
+      
+      if (Array.isArray(ParseFranchiseDetails?.brandCategories?.productTags)) {
+        ParseFranchiseDetails?.brandCategories?.productTags.forEach((item, index) => {
+          // Spread object to ensure proper object structure
+          updates.$set[`franchiseDetails.brandCategories.productTags.${index}`] = { ...item };
+        });
+      }
+
+      if (Array.isArray(ParseFranchiseDetails?.brandCategories?.serviceTags)) {
+        ParseFranchiseDetails?.brandCategories?.serviceTags.forEach((item, index) => {
+          updates.$set[`franchiseDetails.brandCategories.serviceTags.${index}`] = { ...item };
+        });
+      }
+
+      if (Array.isArray(ParseFranchiseDetails?.trainingSupport)) {
         ParseFranchiseDetails.trainingSupport.forEach((item, index) => {
           updates.$set[`franchiseDetails.trainingSupport.${index}`] = item;
         });
