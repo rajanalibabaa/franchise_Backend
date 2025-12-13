@@ -26,9 +26,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       areaRequired,
     } = req.query || {};
 
-
-    console.log("-------- :", subcat);
-
+ 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const match = {
@@ -186,8 +184,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
       match.$and = (match?.$and || []).concat(locationConditions);
     }
 
-   
-
     const aggregationPipeline = [
       {
         $match: {
@@ -309,9 +305,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       { $limit: limit },
     ];
 
-    
     const countPipeline = [
-      
       {
         $match: {
           "brandDetails.isBrandPause": { $ne: true },
@@ -393,8 +387,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
 };
 
 export const getAllBrandFiltersdata = async (req, res) => {
-  const { main, sub, district, state, areaRequired ,industry} = req.query;
-
+  const { main, sub, district, state, areaRequired, industry } = req.query;
 
   try {
     if ((sub && main) || sub) {
@@ -568,9 +561,17 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
         {
+          $unwind: {
+            path: "$brandInfo",
+            preserveNullAndEmptyArrays: false,
+          },
+        },
+        {
           $match: {
-            "brandInfo.brandDetails.isBrandPause": { $ne: true },
-            "brandInfo.brandDetails.isApproved": { $ne: false },
+            $and: [
+              { "brandInfo.brandDetails.isBrandPause": { $ne: true } },
+              { "brandInfo.brandDetails.isApproved": { $ne: false } },
+            ],
           },
         },
         {
@@ -687,9 +688,17 @@ export const getAllBrandFiltersdata = async (req, res) => {
         },
       },
       {
+        $unwind: {
+          path: "$brandInfo",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true },
-          "brandInfo.brandDetails.isApproved": { $ne: false },
+          $and: [
+            { "brandInfo.brandDetails.isBrandPause": { $ne: true } },
+            { "brandInfo.brandDetails.isApproved": { $ne: false } },
+          ],
         },
       },
       {
@@ -698,9 +707,17 @@ export const getAllBrandFiltersdata = async (req, res) => {
           maincat: "$franchiseDetails.brandCategories.main",
           subcat: "$franchiseDetails.brandCategories.sub",
           // childcat: "$franchiseDetails.brandCategories.child",
-          investmentRange: "$franchiseDetails.fico.investmentRange",
-          areaRequired: "$franchiseDetails.fico.areaRequired",
-          franchiseModel: "$franchiseDetails.fico.franchiseModel",
+
+          investmentRange: {
+            $arrayElemAt: ["$franchiseDetails.fico.investmentRange", 0],
+          },
+          areaRequired: {
+            $arrayElemAt: ["$franchiseDetails.fico.areaRequired", 0],
+          },
+          franchiseModel: {
+            $arrayElemAt: ["$franchiseDetails.fico.franchiseModel", 0],
+          },
+
           states:
             "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state",
           // districts: "$brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts.district",
