@@ -20,7 +20,7 @@ import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
-import {postToAllPlatforms} from "./src/utils/socialmediapost/socialmediapost.js";
+import {registerNotificationSocket} from './src/socket/notificationSocket.js'
 
 
 dotenv.config(); // ✅ Load env FIRST
@@ -38,17 +38,14 @@ app.use(limiter);
 
 app.use(helmet());
 
-// app.use(cors({
-//   origin: ['https://fb.mrfranchise.in', 'http://localhost:5173', 'http://localhost:5174'],
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-//   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
-//   optionsSuccessStatus: 200,
-// }));
+
+
+
 const allowedOrigins = [
   "https://fb.mrfranchise.in",
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:5175",
   "https://admin.mrfranchise.in",
 
   "http://localhost:3000",
@@ -68,6 +65,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -112,6 +110,7 @@ const io = new SocketIOServer(httpServer, {
       "https://fb.mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
+      "http://localhost:5175",
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
       "https://www.thirumalthirumagal.com/"
@@ -122,6 +121,8 @@ const io = new SocketIOServer(httpServer, {
 
 // ✅ Socket.IO connection
 io.on("connection", (socket) => mainSocket(socket, io));
+registerNotificationSocket(io);
+app.set("io", io);
 
 // ✅ Start server
 const startServer = async () => {                                                               

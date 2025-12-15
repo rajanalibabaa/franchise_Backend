@@ -20,6 +20,10 @@ const transporter = nodemailer.createTransport({
         auth: {
             user: process.env.EMAIL_USER_LOGIN,
             pass: process.env.EMAIL_PASS_LOGIN,
+            // user: process.env.EMAIL_USER,
+            // pass: process.env.EMAIL_PASS,
+            // user:process.env.EMAIL_USER_SUPPORT,
+            // pass:process.env.EMAIL_PASS_SUPPORT
         },
         tls: {
     rejectUnauthorized: false, // Allow self-signed certs
@@ -35,7 +39,7 @@ const transporter = nodemailer.createTransport({
 //   },
 //   tls: {
 //     rejectUnauthorized: false,
-//   },
+//   }, 
 // });
 
 // Function to read HTML template and replace placeholders with dynamic dat;
@@ -59,7 +63,7 @@ const getTemplate = (templateName, data) => {
 export const sendEmail = async (to, subject, templateName, data) => {
   // console.log("Sending email to:", to);
   // console.log("Subject:", subject);
-  // console.log("Template Name:", templateName);
+  console.log("Template Name:", templateName);
   // console.log("Data:", data);
 
   const html = getTemplate(templateName, data);

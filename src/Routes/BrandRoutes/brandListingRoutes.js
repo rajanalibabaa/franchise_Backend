@@ -8,21 +8,27 @@ import {
   getBrandListingByUUID,
   reEntry,
   updateBrandListingByUUID,
-  getTopFoodFranchise,
-  getTopBeverageFranchise,
-  getTopLeadingFranchise,
-  getTopCafes,
-  getTopDesertAndBakery,
-  getTopTrucksAndKiosks,
-  getTopRestaurants,
+ 
+  // getTopFoodFranchise,
+  // getTopBeverageFranchise,
+  // getTopLeadingFranchise,
+  // getTopCafes,
+  // getTopDesertAndBakery,
+  // getTopTrucksAndKiosks,
+  // getTopRestaurants,
   getBrandsByCategory,
   getBrandById,
   // getFoodAndBeverageCategory,
 } from "../../controller/BrandController/BrandListingController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { updateBrandImageById } from "../../controller/BrandController/uploadImages.js";
+import { datafieldnewEntry, testgetAllBrands } from "../../controller/BrandController/anonymousFunction.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
+import {createPaymentPackage,getAllPaymentPackages,deletePaymentPackage,getPaymentPackageById,updatePaymentPackage,AddpackageUpdate} from '../../controller/BrandController/AdvertiseBrandController.js'
+
+
+import {submitRequest,getAllRequests,deleteRequestByBrandUuid,getRequestByBrandId,getRequestById,updateRequestById} from "../../controller/BrandController/userRequesChanges/userRequestController.js"
 const router = express.Router();
  
 
@@ -45,13 +51,13 @@ router.post(
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingByUUID/:id", getBrandListingByUUID);
 router.get("/v1/brandlisting/getBrandById/:id",  getBrandById);
-router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
-router.get("/v1/brandlisting/getTopBeverageFranchise", getTopBeverageFranchise);
-router.get("/v1/brandlisting/getTopLeadingFranchise", getTopLeadingFranchise);
-router.get("/v1/brandlisting/getTopCafes", getTopCafes);
-router.get("/v1/brandlisting/getTopDesertAndBakery", getTopDesertAndBakery);
-router.get("/v1/brandlisting/getTopTrucksAndKiosks", getTopTrucksAndKiosks);
-router.get("/v1/brandlisting/getTopRestaurants", getTopRestaurants);
+// router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
+// router.get("/v1/brandlisting/getTopBeverageFranchise", getTopBeverageFranchise);
+// router.get("/v1/brandlisting/getTopLeadingFranchise", getTopLeadingFranchise);
+// router.get("/v1/brandlisting/getTopCafes", getTopCafes);
+// router.get("/v1/brandlisting/getTopDesertAndBakery", getTopDesertAndBakery);
+// router.get("/v1/brandlisting/getTopTrucksAndKiosks", getTopTrucksAndKiosks);
+// router.get("/v1/brandlisting/getTopRestaurants", getTopRestaurants);
 router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
 // router.get(
 //   "/v1/brandlisting/getFoodAndBeverageCategory",
@@ -70,7 +76,7 @@ router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
 // router.get('/v1/brandlisting/getTopRestaurants',getTopRestaurants)
 // router.get('/v1/brandlisting/getBrandsByChildCategory',getBrandsByCategory)
 router.patch(
-  "/v1/brandlisting/updateBrandListingByUUID/:id",verifyJWT,
+  "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },
@@ -85,7 +91,7 @@ router.patch(
   updateBrandListingByUUID
 );
 router.patch(
-  "/v1/brandlisting/updateBrandImageById/:id",verifyJWT,
+  "/v1/brandlisting/updateBrandImageById/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
     { name: "brandLogo", maxCount: 1 },
@@ -107,5 +113,33 @@ router.delete('/deleteBrandListingByUUID/:uuid', deleteBrandListingByUUID);
 
 router.post("/reEntry", reEntry);
 router.get("/allId", allId);
+
+// anonymousFunction
+router.get("/datafieldnewEntry", datafieldnewEntry);
+router.get("/testgetAllBrands", testgetAllBrands);
+
+// AdvertiseCreation router
+
+router.post('/v1/brandadvertise/payment',createPaymentPackage);
+router.get('/v1/brandadvertise/payment',getAllPaymentPackages);
+router.delete('/v1/brandadvertise/payment-packages/:uuid/:type/:index',deletePaymentPackage);
+router.get('/v1/brandadvertise/payment',getPaymentPackageById);
+router.put('/v1/brandadvertise/payment-packages/:uuid/:type/:index',updatePaymentPackage);
+router.post('/v1/brandadvertise/payment-packages/:uuid/add/:type/:index',AddpackageUpdate);
+
+
+
+// request Routes
+
+router.post ('/v1/brandlisting/userRequestNotification',submitRequest)
+router.get('/v1/brandlisting/userRequestNotification',getAllRequests)
+router.get('/v1/brandlisting/userRequestNotificationByBrandId/:brandId',getRequestByBrandId)
+router.delete('/v1/brandlisting/userRequestNotification/:uuid',deleteRequestByBrandUuid)
+
+router.get('/v1/brandlisting/userRequestNotificationByUUID/:uuid',getRequestById)
+router.patch('/v1/brandlisting/userRequestNotification/:uuid',updateRequestById)
+
+
+
 
 export default router;

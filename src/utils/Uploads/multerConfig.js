@@ -3,6 +3,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import uuid from '../uuid.js';
 
 // Ensure 'uploads/' directory exists
 const uploadDir = path.join(process.cwd(), 'uploads');
@@ -10,13 +11,16 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
+
 // Multer storage configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
   },
+  
   filename: function (req, file, cb) {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
+    const uniqueName = `${Date.now()}-${file.originalname}-${uuid()}`;
+    console.log("Generated Unique Filename:", uniqueName);
     cb(null, uniqueName);
   },
 });

@@ -23,6 +23,9 @@ export const industryMapping = {
 };
 
 export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
+// console.log('leads creation',body);
+
+
   try {
     const selectedIndustry =
       exist.franchiseDetails.franchiseDetails.brandCategories.main;
@@ -32,7 +35,7 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
     const fields = {
       uuid: generateUUID,
       fullName: body?.fullName,
-      investorEmail: body?.email,
+      email: body?.email,
       investorMobileNumber: body?.mobileNumber,
       state: body?.state,
       district: body?.district,
@@ -54,7 +57,7 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
         applyId,
       },
     };
-    const modelName = industryMapping[selectedIndustry];
+    const modelName = industryMapping[selectedIndustry.trim()];
     const model = IndustryModels[modelName];
 
     const data = await model.create(fields);
@@ -72,3 +75,5 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
     return new ApiResponse(500, {}, "Internal server error");
   }
 };
+
+

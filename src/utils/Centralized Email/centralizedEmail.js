@@ -95,18 +95,17 @@ export const sendInstantApplyLeadLocation = async (
   planToInvest,
   readyToInvest
 ) => {
-  console.log( "dddd:",fullName,
-  email,
-  mobileNumber,
-  brandEmail,
-  brandCompanyName,
-  categories,
-  location,
-  investmentRange,
-  emailSubject,
-  planToInvest,
-  readyToInvest)
-  console.log(categories, location, ".o.o.o");
+  // console.log( "dddd:",fullName,  email,
+  // mobileNumber,
+  // brandEmail,
+  // brandCompanyName,
+  // categories,
+  // location,
+  // investmentRange,
+  // emailSubject,
+  // planToInvest,
+  // readyToInvest)
+  // console.log(categories, location, ".o.o.o");
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = "instantApply_LeadLocation_template"; // Ensure this matches the template file name in the 'templates' folder
   const emailData = {
@@ -127,6 +126,40 @@ export const sendInstantApplyLeadLocation = async (
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
 };
 
+
+export const paidLeadInstantApplyEmail = async (
+  fullName,
+  email,
+  mobileNumber,
+  brandEmail,
+  brandCompanyName,
+  categories,
+  location,
+  investmentRange,
+  planToInvest,
+  readyToInvest,
+  emailTemplate
+) => {
+  const subject = "You Have A Good News, New Instant Applier Details Here..! ";
+  const emailTemplateName = emailTemplate 
+  console.log("emailTemplateName :",emailTemplateName)
+  const emailData = {
+    brandCompanyName: brandCompanyName,
+    name: fullName,
+    email: email,
+    mobileNumber: mobileNumber,
+    categories: categories,
+    location: location,
+    investmentRange: investmentRange,
+    emailSubject: subject,
+    planToInvest: planToInvest,
+    readyToInvest: readyToInvest,
+  };
+
+
+  // Call the sendEmail function
+  await sendEmail(brandEmail, subject, emailTemplateName, emailData);
+};
 
 export const sendPremiumPackageOfferEmail = async (
   fullName,
