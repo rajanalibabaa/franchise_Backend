@@ -6,6 +6,8 @@ import uuid from "../../../utils/uuid.js";
 export const createIndustryManagement = async (req, res) => {
   const { industry, categories, productTags, serviceTags } = req.body;
 
+  console.log(req.body);
+
   if (!industry || !categories || !productTags || !serviceTags) {
     return res.json(new ApiResponse(404, {}, "All fields are required"));
   }
@@ -55,18 +57,81 @@ export const createIndustryManagement = async (req, res) => {
   );
 };
 
+// export const getIndustryByIndustryName = async (req, res) => {
+//   const { industry } = req.query;
+//   console.log(industry);
+
+//   const exists = await IndustryManagement.findOne({
+//     industry: industry,
+//   }).select(" -__v -_id");
+
+//   console.log(exists);
+
+//   if (!exists) {
+//     return res.json(new ApiResponse(401, {}, "Industry is not exists"));
+//   }
+
+//   return res.json(new ApiResponse(200, exists, "Data fetch successfully"));
+// };
+
 export const getIndustryByIndustryName = async (req, res) => {
   const { industry } = req.query;
+  console.log(industry);
 
-  const exists = await IndustryManagement.findOne({
-    industry: industry,
-  }).select(" -__v -_id");
+  // If no industry param is provided, return a list of all industries (just industry names as array under "Industry" key)
+  if (!industry) {
+    const industriesList = await IndustryManagement.find({})
+      .select("industry")
+      .select(" -__v -_id"); // Exclude __v and _id
 
-  if (!exists) {
-    return res.json(new ApiResponse(401, {}, "Industry is not exists"));
+    const industryNames = industriesList.map(item => item.industry);
+
+    const responseData = {
+      Industry: industryNames
+    };
+
+    console.log(responseData);
+
+    return res.json(new ApiResponse(200, responseData, "Industries fetched successfully"));
   }
 
-  return res.json(new ApiResponse(200, exists, "Data fetch successfully"));
+  // If industry param is provided, return full details for that industry, excluding unwanted id fields and transforming to flat arrays
+  const exists = await IndustryManagement.findOne({
+    industry: industry,
+  }).select({
+    __v: 0,
+    _id: 0,
+    "categories.id": 0,
+    "productTags.id": 0,
+    "productTags.tags.id": 0,
+    "serviceTags.id": 0,
+    "serviceTags.tags.id": 0,
+  });
+
+  console.log(exists);
+
+  if (!exists) {
+    return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+  }
+
+  // Transform the data to the desired format: flat arrays for categories and tags
+  const transformedData = {
+    industry: exists.industry,
+    categories: exists.categories.map(cat => cat.category),
+    productTags: exists.productTags.map(pt => ({
+      parent: pt.parent,
+      tags: pt.tags.map(tag => tag.tag)
+    })),
+    serviceTags: exists.serviceTags.map(st => ({
+      parent: st.parent,
+      tags: st.tags.map(tag => tag.tag)
+    })),
+    uuid: exists.uuid,
+    createdAt: exists.createdAt,
+    updatedAt: exists.updatedAt
+  };
+
+  return res.json(new ApiResponse(200, transformedData, "Industry data fetched successfully"));
 };
 
 export const getAllIndustry = async (req, res) => {
@@ -84,12 +149,20 @@ export const getAllIndustry = async (req, res) => {
 
       const industrys = exists.map((item) => item.industry);
 
-      const data = {
-        industrys,
-        categories: exists[0].categories,
-        productTags: exists[0].productTags,
-        serviceTags: exists[0].serviceTags,
-      };
+      let data = {};
+
+      if (!main) {
+        data = {
+          industrys,
+          categories: exists[0].categories,
+          productTags: exists[0].productTags,
+          serviceTags: exists[0].serviceTags,
+        };
+      } else {
+        data = {
+          industrys,
+        };
+      }
 
       return res.json(new ApiResponse(200, data, "Data fetched successfully"));
     }
@@ -104,13 +177,15 @@ export const updateIndustryById = async (req, res) => {
   const { id } = req.params;
 
   // !industry || !categories || !productTags || !serviceTags
-  const { newUpdate } = req?.body;
+  const { newUpdate, remove } = req?.body;
 
   if (!id) {
     return res.json(new ApiResponse(401, {}, "id is required"));
   }
 
-  const { categories, productTags, serviceTags } = newUpdate;
+  const { categories, productTags, serviceTags } = newUpdate || {};
+  const { removeServiceTags, removeCategories, removeProductTags } =
+    remove || {};
 
   const exists = await IndustryManagement.findOne({
     uuid: id,
@@ -129,6 +204,68 @@ export const updateIndustryById = async (req, res) => {
       };
       exists.categories.push(formattedCategories);
     });
+  }
+
+  if (removeCategories?.length > 0) {
+    removeCategories.forEach((item) => {
+      exists.categories = exists?.categories.filter((c) => c.id !== item);
+    });
+  }
+
+  if (removeProductTags) {
+    if (removeProductTags?.products?.length > 0) {
+      removeProductTags?.products.map((ids) => {
+        const tagsArray = Array.isArray(exists.productTags)
+          ? exists.productTags
+          : Object.values(exists.productTags);
+
+        exists.productTags = tagsArray.filter((p) => !ids.includes(p.id));
+      });
+    }
+
+    if (removeProductTags?.tags?.length > 0) {
+      removeProductTags?.tags.map((item) => {
+        const tagsArray = Array.isArray(exists.productTags)
+          ? exists.productTags
+          : Object.values(exists.productTags);
+
+        const parentObj = tagsArray.find((p) => p.id === item.productId);
+
+        if (parentObj) {
+          parentObj.tags = parentObj.tags.filter(
+            (t) => !item.ids.includes(t.id)
+          );
+        }
+      });
+    }
+  }
+
+  if (removeServiceTags) {
+    if (removeServiceTags?.services?.length > 0) {
+      removeServiceTags?.services.map((ids) => {
+        const tagsArray = Array.isArray(exists.serviceTags)
+          ? exists.serviceTags
+          : Object.values(exists.serviceTags);
+
+        exists.serviceTags = tagsArray.filter((p) => !ids.includes(p.id));
+      });
+    }
+
+    if (removeServiceTags?.tags?.length > 0) {
+      removeServiceTags?.tags.map((item) => {
+        const tagsArray = Array.isArray(exists.serviceTags)
+          ? exists.serviceTags
+          : Object.values(exists.serviceTags);
+
+        const parentObj = tagsArray.find((p) => p.id === item.serviceId);
+
+        if (parentObj) {
+          parentObj.tags = parentObj.tags.filter(
+            (t) => !item.ids.includes(t.id)
+          );
+        }
+      });
+    }
   }
 
   if (productTags) {
@@ -239,20 +376,18 @@ export const deleteIndustryById = async (req, res) => {
       }
 
       if (productTags?.tags?.length > 0) {
-        
         productTags?.tags.map((item) => {
           const tagsArray = Array.isArray(industry.productTags)
             ? industry.productTags
             : Object.values(industry.productTags);
 
           const parentObj = tagsArray.find((p) => p.id === item.productId);
-          
+
           if (parentObj) {
-             parentObj.tags = parentObj.tags.filter(
-                (t) => !item.ids.includes(t.id)
-              );
+            parentObj.tags = parentObj.tags.filter(
+              (t) => !item.ids.includes(t.id)
+            );
           }
-          
         });
       }
     }
@@ -269,7 +404,6 @@ export const deleteIndustryById = async (req, res) => {
       }
 
       if (serviceTags?.tags?.length > 0) {
-        
         serviceTags?.tags.map((item) => {
           const tagsArray = Array.isArray(industry.serviceTags)
             ? industry.serviceTags
@@ -278,17 +412,16 @@ export const deleteIndustryById = async (req, res) => {
           const parentObj = tagsArray.find((p) => p.id === item.serviceId);
 
           if (parentObj) {
-             parentObj.tags = parentObj.tags.filter(
-                (t) => !item.ids.includes(t.id)
-              );
+            parentObj.tags = parentObj.tags.filter(
+              (t) => !item.ids.includes(t.id)
+            );
           }
-          
         });
       }
     }
 
     await industry.save();
-    
+
     return res.json(
       new ApiResponse(200, industry.serviceTags, "Data deleted successfully")
     );

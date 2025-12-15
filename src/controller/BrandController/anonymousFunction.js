@@ -55,116 +55,116 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 // };
 
 
+
+
+
 export const datafieldnewEntry = async (req, res) => {
   try {
-    // Get first 65 brands
-    const data = await BrandDetails.find({}).limit(65);
+    
+    const brands = await BrandFranchiseDetails.find({"franchiseDetails.brandCategories.sub":"Quick Service Restaurant"})
 
-    if (data.length === 0) {
+    if (!brands.length) {
       return res
         .status(404)
         .json(new ApiResponse(404, [], "No brand records found"));
     }
 
-    let matched = 0;
-    let modified = 0;
+    console.log(`🟢 Found ${brands.length} brands to update.`);
 
-    // Update each document one-by-one
-    for (let i = 0; i < data.length; i++) {
-      const element = data[i];
+   
+  
+    const updatedBrands = await Promise.all(
+      brands.map(async (brand, index) => {
+        try {
+          const updated = await BrandFranchiseDetails.findByIdAndUpdate(
+            brand._id,
+            {
+              $set: {"franchiseDetails.brandCategories.sub":"Quick Service Restaurants (QSR)"},
+            },
+            { new: true }
+          );
 
-      const result = await BrandDetails.findByIdAndUpdate(
-        element._id, // FIXED
-        { 
-          $set: { 
-            "brandDetails.isBrandPause": false 
-          } 
-        },
-        { new: true } // optional but safe
-      );
+          console.log(`✅ Updated brand #${index + 1}:`, updated?._id);
+          return updated;
+        } catch (innerErr) {
+          console.error(
+            `❌ Error updating brand at index ${index}:`,
+            innerErr.message
+          );
+          return null;
+        }
+      })
+    );
 
-      if (result) {
-        matched++;
-        modified++; // assumes update always modifies (or check old value if needed)
-      }
-    }
+  
+    const successfulUpdates = updatedBrands.filter(Boolean);
 
+  
     return res.json(
       new ApiResponse(
         200,
-        { matched, modified },
-        `Re-entry completed. Updated ${modified} brands.`
+        successfulUpdates,
+        `Re-entry process completed successfully. Updated ${successfulUpdates.length} brands.`
       )
     );
-
-  } catch (error) {
-    console.error("🚨 Server error:", error);
+  } catch (outerError) {
+    console.error("🚨 Outer error:", outerError);
     return res
       .status(500)
-      .json(new ApiResponse(500, null, `Server error: ${error.message}`));
+      .json(
+        new ApiResponse(500, null, `Server error: ${outerError.message}`)
+      );
   }
 };
 
 
 // export const datafieldnewEntry = async (req, res) => {
 //   try {
-    
-//     const brands = await BrandFranchiseDetails.find({}).lean();
+//     // Get first 65 brands
+//     const data = await BrandDetails.find({}).limit(65);
 
-//     if (!brands.length) {
+//     if (data.length === 0) {
 //       return res
 //         .status(404)
 //         .json(new ApiResponse(404, [], "No brand records found"));
 //     }
 
-//     console.log(`🟢 Found ${brands.length} brands to update.`);
+//     let matched = 0;
+//     let modified = 0;
 
-   
+//     // Update each document one-by-one
+//     for (let i = 0; i < data.length; i++) {
+//       const element = data[i];
 
-  
-//     const updatedBrands = await Promise.all(
-//       brands.map(async (brand, index) => {
-//         try {
-//           const updated = await BrandFranchiseDetails.findByIdAndUpdate(
-//             brand._id,
-//             {
-//               $set: {
-//                 "brandDetails.isBrandPause":true,
-//               },
-//             },
-//             { new: true }
-//           );
+//       const result = await BrandDetails.findByIdAndUpdate(
+//         element._id, // FIXED
+//         { 
+//           $set: { 
+//             "brandDetails.isBrandPause": false 
+//           } 
+//         },
+//         { new: true } // optional but safe
+//       );
 
-//           console.log(`✅ Updated brand #${index + 1}:`, updated?._id);
-//           return updated;
-//         } catch (innerErr) {
-//           console.error(
-//             `❌ Error updating brand at index ${index}:`,
-//             innerErr.message
-//           );
-//           return null;
-//         }
-//       })
-//     );
+//       if (result) {
+//         matched++;
+//         modified++; // assumes update always modifies (or check old value if needed)
+//       }
+//     }
 
-  
-//     const successfulUpdates = updatedBrands.filter(Boolean);
-
-  
 //     return res.json(
 //       new ApiResponse(
 //         200,
-//         successfulUpdates,
-//         `Re-entry process completed successfully. Updated ${successfulUpdates.length} brands.`
+//         { matched, modified },
+//         `Re-entry completed. Updated ${modified} brands.`
 //       )
 //     );
-//   } catch (outerError) {
-//     console.error("🚨 Outer error:", outerError);
+
+//   } catch (error) {
+//     console.error("🚨 Server error:", error);
 //     return res
 //       .status(500)
-//       .json(
-//         new ApiResponse(500, null, `Server error: ${outerError.message}`)
-//       );
+//       .json(new ApiResponse(500, null, `Server error: ${error.message}`));
 //   }
 // };
 
