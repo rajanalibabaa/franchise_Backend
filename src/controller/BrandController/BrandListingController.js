@@ -794,9 +794,11 @@ const updateBrandListingByUUID = async (req, res) => {
     // ---------- Parse brand & franchise ----------
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
-
+  
     console.log("ParseBrandDetails:", ParseBrandDetails);
     console.log("parseFranchiseDetails", ParseFranchiseDetails);
+
+
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
@@ -856,7 +858,7 @@ const updateBrandListingByUUID = async (req, res) => {
       }
 
       if (ParseFranchiseDetails.brandCategories) {
-        const brandCategoriesFields = ["main", "sub", "groupId", "child"];
+        const brandCategoriesFields = ["main", "sub", "groupId", "ProductTags", "ServiceTags"];
         for (const field of brandCategoriesFields) {
           if (ParseFranchiseDetails.brandCategories[field] !== undefined) {
             updates.$set[`franchiseDetails.brandCategories.${field}`] =
@@ -937,7 +939,7 @@ const updateBrandListingByUUID = async (req, res) => {
           ProductServiceTypes: "ProductServiceTypes",
           TargetAudience: "TargetAudience",
           ServiceModel: "ServiceModel",
-          PricingValue: "PricingValue",
+          PricingValue: "PricingValue", 
           AmbienceExperience: "AmbienceExperience",
           FeaturesAmenities: "FeaturesAmenities",
           TechnologyIntegration: "TechnologyIntegration",

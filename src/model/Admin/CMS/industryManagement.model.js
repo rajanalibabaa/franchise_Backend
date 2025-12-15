@@ -1,18 +1,52 @@
 import mongoose from "mongoose";
 
+const tagSchema = new mongoose.Schema(
+  {
+    tag: {
+      type: String,
+      required: true,
+    },
+    id: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false },
+  
+);
 const productTagSchema = new mongoose.Schema(
   {
     parent: {
       type: String,
       required: true,
     },
-    tag: {
-      type: [String],
+    tags: {
+      type: [tagSchema],
+      required: true,
+      default:[]
+    },
+    id: {
+      type: String,
       required: true,
     },
   },
-  { _id: false }
-);
+  { _id: false },
+  
+); 
+const categoriesSchema = new mongoose.Schema(
+  {
+    category: {
+      type: String,
+      required: true,
+    },
+    id: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false },
+  
+); 
 
 const industryManagement = new mongoose.Schema(
   {
@@ -21,7 +55,7 @@ const industryManagement = new mongoose.Schema(
       require: true,
     },
     categories: {
-      type: [String],
+      type: [categoriesSchema],
       require: true,
     },
     productTags: {
