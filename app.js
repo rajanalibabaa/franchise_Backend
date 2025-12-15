@@ -33,8 +33,9 @@ import { mahalRouter } from "./src/Routes/Mahal/mahal.router.js";
 import { brandpauseplayRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/brandpauseplayRouter.js";
 import ManualLeadRouter from "./src/Routes/Lead/ManualLeadApplyRoutes/ManualLeadRoutes.js";
 import { paymentRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/paymentRouter.js";
-
-
+import leadPackageRouter from "./src/Routes/LeadPackage/LeadPackage.js";
+import { brandleadsRouter } from "./src/Routes/Lead/brandLeadsRouter.js";
+import { industryManagementRouter } from "./src/Routes/AdminRoutes/CMS/industryManagement.routes.js";
 
 const router = express.Router();
 
@@ -97,6 +98,10 @@ router.use(superAdminRouter)
 
 router.use(ManualLeadRouter)
 
+router.use(brandleadsRouter);
+
+router.use(leadPackageRouter);
+
 //shortListRouter
 router.use(shortListRouter);
 
@@ -118,6 +123,10 @@ router.use(brandpauseplayRouter)
 
 //paymentRouter
 router.use(paymentRouter)
+
+
+//industryManagementRouter
+router.use(industryManagementRouter)
 
 
 

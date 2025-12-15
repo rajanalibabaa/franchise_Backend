@@ -18,12 +18,12 @@ const transporter = nodemailer.createTransport({
         port:465,
         secure: true,
         auth: {
-            // user: process.env.EMAIL_USER_LOGIN,
-            // pass: process.env.EMAIL_PASS_LOGIN,
+            user: process.env.EMAIL_USER_LOGIN,
+            pass: process.env.EMAIL_PASS_LOGIN,
             // user: process.env.EMAIL_USER,
             // pass: process.env.EMAIL_PASS,
-            user:process.env.EMAIL_USER_SUPPORT,
-            pass:process.env.EMAIL_PASS_SUPPORT
+            // user:process.env.EMAIL_USER_SUPPORT,
+            // pass:process.env.EMAIL_PASS_SUPPORT
         },
         tls: {
     rejectUnauthorized: false, // Allow self-signed certs
@@ -63,13 +63,13 @@ const getTemplate = (templateName, data) => {
 export const sendEmail = async (to, subject, templateName, data) => {
   // console.log("Sending email to:", to);
   // console.log("Subject:", subject);
-  // console.log("Template Name:", templateName);
+  console.log("Template Name:", templateName);
   // console.log("Data:", data);
 
   const html = getTemplate(templateName, data);
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.EMAIL_USER_LOGIN,
     to,
     subject,
     html,

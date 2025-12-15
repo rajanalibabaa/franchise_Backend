@@ -1,33 +1,64 @@
+
+
+// new Emailaddress tracking schema
+
 import mongoose from "mongoose";
 
-const EmailRecordSchema = new mongoose.Schema({
-  investorEmail: { type: String, required: true },
-  sentAt: { type: Date, default: Date.now },
-});
+// 🧩 Schema for each investor email record
+const emailRecordSchema = new mongoose.Schema(
+  {
+    investorId: { type: String }, // optional for free leads
+    investorName: { type: String, required: true },
+    investorEmail: { type: String, required: true },
+    investorMobile: { type: String, required: true },
+    sentAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
 
-const PremiumOfferRecordSchema = new mongoose.Schema({
-  investorEmail: { type: String, required: true },
-  sentAt: { type: Date, default: Date.now },
-});
+// 🗓️ Schema for monthly record (used for both free & paid)
+const monthlyRecordSchema = new mongoose.Schema(
+  {
+    monthYear: { type: String, required: true }, // e.g., "Nov-2025"
+    count: { type: Number, default: 0 }, // total sent in that month
+    records: [emailRecordSchema],
+  },
+  { _id: false }
+);
 
-const BrandEmailCountSchema = new mongoose.Schema(
+// 🏷️ Main BrandEmailCount Schema
+const brandEmailCountSchema = new mongoose.Schema(
   {
     brandId: {
-      type: mongoose.Schema.Types.UUID,
-      ref: "BrandListing",
+      type: String,
       required: true,
+      index: true,
     },
-    brandName: { type: String, required: true },
-    month: { type: Number, required: true },
-    year: { type: Number, required: true },
-    emailCount: { type: Number, default: 0 },
-    emailRecords: [EmailRecordSchema],
-    premiumOfferCount: { type: Number, default: 0 }, // New field
-    premiumOfferRecords: [PremiumOfferRecordSchema], // New field
+    brandName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    // 🟢 Free Leads (current month only)
+    freeEmailCount: {
+      type: Number,
+      default: 0,
+    },
+    freeEmailRecords: {
+      type: [monthlyRecordSchema],
+      default: [],
+    },
+    // 🟠 Paid Leads (current month only)
+    paidEmailCount: {
+      type: Number,
+      default: 0,
+    },
+    paidEmailRecords: {
+      type: [monthlyRecordSchema],
+      default: [],
+    },
   },
   { timestamps: true }
 );
 
-BrandEmailCountSchema.index({ brandId: 1, month: 1, year: 1 }, { unique: true });
-
-export default mongoose.model("BrandEmailCount", BrandEmailCountSchema);
+export default mongoose.model("BrandEmailCount", brandEmailCountSchema);

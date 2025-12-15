@@ -167,8 +167,7 @@ export const updateBatchEmailConfig = async (req, res) => {
       );
   }
 };
-
-// Utility function to get config values (for use in your existing instantApplyLocationMatch function)
+// Utility function to get config values (for use in your existing handleNewleads function)
 export const getBatchEmailValues = async () => {
   try {
     const config = await SystemConfig.findOne();
@@ -215,10 +214,7 @@ export const getLeadStatus = async (req, res) => {
       new ApiResponse(
         200,
         {
-          isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused || false,
-          isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused || false,
-          _id: brandBatch._id,
-          updatedAt: brandBatch.updatedAt,
+          brandBatch
         },
         "Lead status retrieved successfully"
       )
@@ -228,28 +224,12 @@ export const getLeadStatus = async (req, res) => {
     return res.status(500).json(new ApiResponse(500, {}, "Server error"));
   }
 };
-
 // Enhanced version of your existing controller
 export const leadsFreeAndPaidStopAndStart = async (req, res) => {
   try {
-    const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused } = req.body;
+    const { isFreeLeadsBrandPaused, isPaidLeadsBrandPaused, isPaidCategoryInvestmentrangeLocationLeadsPaused, isPaidCategoryInvestmentrangePaused, isPaidCategoryLocationPaused, isPaidLocationInvestmentRangeLeadsPaused, isDistrictMatchPaused} = req.body;
 
-    // Validation
-    if (
-      isFreeLeadsBrandPaused === undefined &&
-      isPaidLeadsBrandPaused === undefined
-    ) {
-      return res
-        .status(400)
-        .json(
-          new ApiResponse(
-            400,
-            {},
-            "At least one field (isFreeLeadsBrandPaused or isPaidLeadsBrandPaused) must be provided"
-          )
-        );
-    }
-
+    
     let brandBatch = await BrandBatch.findOne({});
 
     if (!brandBatch) {
@@ -274,22 +254,27 @@ export const leadsFreeAndPaidStopAndStart = async (req, res) => {
     if (isPaidLeadsBrandPaused !== undefined) {
       updateData.isPaidLeadsBrandPaused = isPaidLeadsBrandPaused;
     }
+    if (isPaidCategoryInvestmentrangeLocationLeadsPaused !== undefined) {
+      updateData.isPaidCategoryInvestmentrangeLocationLeadsPaused = isPaidCategoryInvestmentrangeLocationLeadsPaused;
+    }
+    if (isPaidCategoryInvestmentrangePaused !== undefined) {
+      updateData.isPaidCategoryInvestmentrangePaused = isPaidCategoryInvestmentrangePaused;
+    }
+    if (isPaidCategoryLocationPaused !== undefined) {
+      updateData.isPaidCategoryLocationPaused = isPaidCategoryLocationPaused;
+    }
+    if (isPaidLocationInvestmentRangeLeadsPaused !== undefined) {
+      updateData.isPaidLocationInvestmentRangeLeadsPaused = isPaidLocationInvestmentRangeLeadsPaused;
+    }
+    if (isDistrictMatchPaused !== undefined) {
+      updateData.isDistrictMatchPaused = isDistrictMatchPaused;
+    }
 
     const updatedData = await BrandBatch.findByIdAndUpdate(
       brandBatch._id,
       { $set: updateData },
       { new: true }
     );
-
-    // Log the changes for audit
-    console.log("Lead settings updated:", {
-      previousState: {
-        isFreeLeadsBrandPaused: brandBatch.isFreeLeadsBrandPaused,
-        isPaidLeadsBrandPaused: brandBatch.isPaidLeadsBrandPaused,
-      },
-      newState: updateData,
-      updatedAt: new Date().toISOString(),
-    });
 
     return res.json(
       new ApiResponse(200, updatedData, "Lead settings updated successfully")
@@ -538,5 +523,46 @@ export const postSpecialLeadCount = async (req, res) => {
       message: "Server error",
       error: outerError.message,
     });
+  }
+};
+
+
+
+export const togglePaidleadPausedandPlayById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const exists = await BrandDetails.findOne({ uuid: id });
+
+    if (!exists) {
+      return res.json(new ApiResponse(404, {}, "Brand not found"));
+    }
+
+    console.log(exists.brandDetails.isPaidBrandLeadPaused);
+
+    const data = await BrandDetails.findByIdAndUpdate(
+      exists._id,
+      {
+        $set: {
+          "brandDetails.isPaidBrandLeadPaused":
+            !exists?.brandDetails.isPaidBrandLeadPaused,
+        },
+      },
+      { new: true }
+    );
+
+    let message;
+    if (data.brandDetails.isPaidBrandLeadPaused === true) {
+      message = "Paid Brand lead pause successfully";
+    } else {
+      message = "Paid Brand lead play successfully";
+    }
+
+    return res.json(new ApiResponse(200, data, message));
+  } catch (outerError) {
+    console.error(" Outer error:", outerError);
+    return res
+      .status(500)
+      .json({ message: "Server error", error: outerError.message });
   }
 };

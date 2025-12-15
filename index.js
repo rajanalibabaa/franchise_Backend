@@ -50,6 +50,7 @@ const allowedOrigins = [
   "https://fb.mrfranchise.in",
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:5175",
   "https://admin.mrfranchise.in",
 
   "http://localhost:3000",
@@ -113,6 +114,7 @@ const io = new SocketIOServer(httpServer, {
       "https://fb.mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
+      "http://localhost:5175",
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
       "https://www.thirumalthirumagal.com/"

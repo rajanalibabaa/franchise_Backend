@@ -395,7 +395,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
     } = req.query || {};
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
     
     const match = {
       "brandDetails.isBrandPause": { $ne: true },
@@ -636,7 +635,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
               else: null,
             },
-          },
+          }, 
           franchiseVideos: {
             $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
@@ -650,7 +649,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       },
       { $skip: skip },
       { $limit: limit },
-    ];
+    ]; 
 
     // -----------------------
     // Count pipeline

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const BrandDetailsSchema = new mongoose.Schema(
+
   {
     uuid: {
       type: String,
@@ -36,29 +37,84 @@ const BrandDetailsSchema = new mongoose.Schema(
       gstNumber: String,
       pancardNumber: String,
       specialFreeLeadCount: {
-        type: Number
+        type: Number,
       },
-      pause:{
-        type:Boolean,
-        default:false
+      overAllLeads: {
+        type: Number,
+        default: 0,
       },
-      isApproved:{
-        type:Boolean,
-        default:false
+      pause: {
+        type: Boolean,
+        default: false,
       },
-      isBrandPause:{
-        type:Boolean,
-        default:false
+      isApproved: {
+        type: Boolean,
+        default: false,
       },
-      payment:{
-        type:Boolean,
-        default:false
+      isBrandPause: {
+        type: Boolean,
+        default: false,
       },
-      isFreeLeadPaused:{
-        type:Boolean,
-        default:false
+      payment: {
+        type: Boolean,
+        default: false,
       },
-      
+      isFreeLeadPaused: {
+        type: Boolean,
+        default: false,
+      },
+      isPaidBrandLeadPaused: {
+        type: Boolean,
+        default: false,
+      },
+      paymentPackage: {
+        packageType: {
+          type: String,
+          required: true,
+          default:"free"
+        },
+        
+        totalAmount: {
+          type: Number,
+          // required: true,
+          min: 0,
+        },
+        totalMonths: {
+          type: Number,
+          // required: true,
+          min: 1,
+        },
+        perMonthLead: {
+          type: Number,
+          // required: true,
+          min: 0,
+        },
+        totalLeads: {
+          type: Number,
+          // required: true,
+          min: 0,
+        },
+        isActive: {
+          type: Boolean,
+          default:true
+        },
+        packageUpdatedTime: { type: Date, default: Date.now },
+        packageEndDate: { type: Date, default: null },
+        sentLeadsPercentage: {
+          type: String,
+          default:"0%"
+        }
+      },
+      listingPackages: {
+        periodMonths: {
+          type: Number,
+          min: 1,
+        },
+        amount: {
+          type: Number,
+          min: 0,
+        },
+      },
     },
     active: {
       type: Boolean,
@@ -80,7 +136,6 @@ const BrandDetailsSchema = new mongoose.Schema(
     userNewVerifyToken: {
       type: String,
     },
- 
   },
   {
     timestamps: true,
