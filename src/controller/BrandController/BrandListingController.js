@@ -856,7 +856,7 @@ const updateBrandListingByUUID = async (req, res) => {
       }
 
       if (ParseFranchiseDetails.brandCategories) {
-        const brandCategoriesFields = ["main", "sub", "groupId", "ProductTags", "ServiceTags"];
+        const brandCategoriesFields = ["main", "sub", "groupId", "productTags", "serviceTags"];
         for (const field of brandCategoriesFields) {
           if (ParseFranchiseDetails.brandCategories[field] !== undefined) {
             updates.$set[`franchiseDetails.brandCategories.${field}`] =
