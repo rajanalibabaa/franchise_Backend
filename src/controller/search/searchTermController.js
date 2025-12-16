@@ -17,14 +17,27 @@ export const searchSuggestions = async (req, res) => {
 
   const limit = 30;
   let skip = 0;
+
   let companyNamesMatches = [];
   let brandNamesMatches = [];
   let industryMatches = [];
+  let serviceTagsMatches = [];
+  let productTagsMatches = [];
 
   let count =
     brandNamesMatches.length +
     companyNamesMatches.length +
-    industryMatches.length;
+    industryMatches.length +
+    serviceTagsMatches.length +
+    productTagsMatches.length;
+
+ 
+  const pushWithLimit = (source, target) => {
+    for (let i = 0; i < source.length && count < 10; i++) {
+      target.push(source[i]);
+      count++;
+    }
+  };
 
   while (count < 10) {
     const brands = await getBrandsHelperfuntion(
@@ -42,22 +55,15 @@ export const searchSuggestions = async (req, res) => {
       companyNamesResults,
       brandNamesResults,
       industryResults,
+      serviceTagsResults,
+      productTagsResults,
     } = searchBrandAndCompanyNames(brands, searchTerm, count);
 
-    for (let i = 0; i < companyNamesResults.length && count < 10; i++) {
-      companyNamesMatches.push(companyNamesResults[i]);
-      count++;
-    }
-
-    for (let i = 0; i < brandNamesResults.length && count < 10; i++) {
-      brandNamesMatches.push(brandNamesResults[i]);
-      count++;
-    }
-
-    for (let i = 0; i < industryResults.length && count < 10; i++) {
-      industryMatches.push(industryResults[i]);
-      count++;
-    }
+    pushWithLimit(companyNamesResults, companyNamesMatches);
+    pushWithLimit(brandNamesResults, brandNamesMatches);
+    pushWithLimit(industryResults, industryMatches);
+    pushWithLimit(serviceTagsResults, serviceTagsMatches);
+    pushWithLimit(productTagsResults, productTagsMatches);
 
     skip += limit;
   }
@@ -66,12 +72,16 @@ export const searchSuggestions = async (req, res) => {
     brandNamesMatches,
     companyNamesMatches,
     industryMatches,
+    serviceTagsMatches,
+    productTagsMatches,
   };
 
   if (
     result.companyNamesMatches.length === 0 &&
     result.brandNamesMatches.length === 0 &&
-    result.industryMatches.length === 0
+    result.industryMatches.length === 0 &&
+    result.serviceTagsMatches.length === 0 &&
+    result.productTagsMatches.length === 0
   ) {
     return res.json(new ApiResponse(200, [], "suggestions not match"));
   }
@@ -80,4 +90,3 @@ export const searchSuggestions = async (req, res) => {
     new ApiResponse(200, result, "Fetch suggestions successfully")
   );
 };
-

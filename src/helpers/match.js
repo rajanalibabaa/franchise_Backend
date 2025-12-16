@@ -5,6 +5,8 @@ export const searchBrandAndCompanyNames = (
 ) => {
   const brandNamesResults = [];
   const companyNamesResults = [];
+  const serviceTagsResults = [];
+  const productTagsResults = [];
   const industryResults = [];
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -13,10 +15,18 @@ export const searchBrandAndCompanyNames = (
     brandNamesResults.length +
     companyNamesResults.length +
     industryResults.length +
+    serviceTagsResults.length +
+    productTagsResults.length +
     existsCount;
 
   if (currentCount >= 10)
-    return { companyNamesResults, brandNamesResults, industryResults };
+    return {
+      companyNamesResults,
+      brandNamesResults,
+      industryResults,
+      serviceTagsResults,
+      productTagsResults,
+    };
 
   for (let i = 0; i < brand.length; i++) {
     if (currentCount >= 10) break;
@@ -34,7 +44,7 @@ export const searchBrandAndCompanyNames = (
       brandName.toLowerCase().includes(normalizedSearch) &&
       !brandNamesResults.some((b) => b.brandName === brandName)
     ) {
-      brandNamesResults.push({ brandName, logo,id });
+      brandNamesResults.push({ brandName, logo, id });
       currentCount++;
       continue;
     }
@@ -44,7 +54,7 @@ export const searchBrandAndCompanyNames = (
       companyName.toLowerCase().includes(normalizedSearch) &&
       !companyNamesResults.some((c) => c.companyName === companyName)
     ) {
-      companyNamesResults.push({ companyName, logo ,id});
+      companyNamesResults.push({ companyName, logo, id });
       currentCount++;
       continue;
     }
@@ -54,10 +64,58 @@ export const searchBrandAndCompanyNames = (
       industry.main.toLowerCase().includes(normalizedSearch) &&
       !industryResults.some((i) => i.industry === industry.main)
     ) {
-      industryResults.push({ industry: industry.main, logo,id });
+      industryResults.push({ industry: industry.main, logo, id });
       currentCount++;
+    }
+
+    if (Array.isArray(industry?.serviceTags)) {
+      for (const ind of industry.serviceTags) {
+        if (currentCount >= 10) break;
+
+        if (Array.isArray(ind?.tags)) {
+          for (const tag of ind.tags) {
+            if (currentCount >= 10) break;
+
+            if (
+              tag &&
+              tag.toLowerCase().includes(normalizedSearch) 
+            ) {
+              serviceTagsResults.push({ tag, logo, id });
+              currentCount++;
+              break
+            }
+          }
+        }
+      }
+    }
+
+    if (Array.isArray(industry?.productTags)) {
+      for (const ind of industry.productTags) {
+        if (currentCount >= 10) break;
+
+        if (Array.isArray(ind?.tags)) {
+          for (const tag of ind.tags) {
+            if (currentCount >= 10) break;
+
+            if (
+              tag &&
+              tag.toLowerCase().includes(normalizedSearch)
+            ) {
+              productTagsResults.push({ tag, logo, id });
+              currentCount++;
+              break
+            }
+          }
+        }
+      }
     }
   }
 
-  return { companyNamesResults, brandNamesResults, industryResults };
+  return {
+    companyNamesResults,
+    brandNamesResults,
+    industryResults,
+    serviceTagsResults,
+    productTagsResults,
+  };
 };
