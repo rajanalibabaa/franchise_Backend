@@ -19,9 +19,12 @@ export const searchSuggestions = async (req, res) => {
   let skip = 0;
   let companyNamesMatches = [];
   let brandNamesMatches = [];
+  let industryMatches = [];
 
-  
-  const count = brandNamesMatches.length + companyNamesMatches.length
+  let count =
+    brandNamesMatches.length +
+    companyNamesMatches.length +
+    industryMatches.length;
 
   while (count < 10) {
     const brands = await getBrandsHelperfuntion(
@@ -29,39 +32,48 @@ export const searchSuggestions = async (req, res) => {
       undefined,
       limit,
       skip,
-      false,
       true,
+      true
     );
 
     if (!brands || brands.length === 0) break;
 
-    const {companyNamesResults,brandNamesResults} = searchBrandAndCompanyNames(
-      brands,
-      searchTerm,
-      count
-    );
+    const {
+      companyNamesResults,
+      brandNamesResults,
+      industryResults,
+    } = searchBrandAndCompanyNames(brands, searchTerm, count);
 
-    for (let i = 0; i < companyNamesResults?.length && count < 10; i++) {
+    for (let i = 0; i < companyNamesResults.length && count < 10; i++) {
       companyNamesMatches.push(companyNamesResults[i]);
+      count++;
     }
-    for (let i = 0; i < brandNamesResults?.length && count < 10; i++) {
+
+    for (let i = 0; i < brandNamesResults.length && count < 10; i++) {
       brandNamesMatches.push(brandNamesResults[i]);
+      count++;
+    }
+
+    for (let i = 0; i < industryResults.length && count < 10; i++) {
+      industryMatches.push(industryResults[i]);
+      count++;
     }
 
     skip += limit;
   }
 
- 
-
   let result = {
     brandNamesMatches,
-    companyNamesMatches
-  }
+    companyNamesMatches,
+    industryMatches,
+  };
 
-  if (result.companyNamesMatches.length === 0 && result.brandNamesMatches.length === 0) {
-    return res.json(
-      new ApiResponse(200, [], "suggestions not match")
-    );
+  if (
+    result.companyNamesMatches.length === 0 &&
+    result.brandNamesMatches.length === 0 &&
+    result.industryMatches.length === 0
+  ) {
+    return res.json(new ApiResponse(200, [], "suggestions not match"));
   }
 
   return res.json(

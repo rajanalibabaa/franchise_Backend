@@ -693,14 +693,14 @@ export const getAllBrandFiltersdata = async (req, res) => {
           preserveNullAndEmptyArrays: false,
         },
       },
-      {
-        $match: {
-          $and: [
-            { "brandInfo.brandDetails.isBrandPause": { $ne: true } },
-            { "brandInfo.brandDetails.isApproved": { $ne: false } },
-          ],
-        },
-      },
+      // {
+      //   $match: {
+      //     $and: [
+      //       { "brandInfo.brandDetails.isBrandPause": { $ne: true } },
+      //       { "brandInfo.brandDetails.isApproved": { $ne: false } },
+      //     ],
+      //   },
+      // },
       {
         $project: {
           _id: 0,

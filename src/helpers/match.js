@@ -1,43 +1,63 @@
-export const searchBrandAndCompanyNames = (brands, searchTerm, existsCount = 0) => {
+export const searchBrandAndCompanyNames = (
+  brand,
+  searchTerm,
+  existsCount = 0
+) => {
   const brandNamesResults = [];
   const companyNamesResults = [];
+  const industryResults = [];
+
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
-  let currentCount = companyNamesResults.length + brandNamesResults.length + existsCount;
+  let currentCount =
+    brandNamesResults.length +
+    companyNamesResults.length +
+    industryResults.length +
+    existsCount;
 
-  if (currentCount >= 10) return results;
+  if (currentCount >= 10)
+    return { companyNamesResults, brandNamesResults, industryResults };
 
-  for (let i = 0; i < brands.length; i++) {
+  for (let i = 0; i < brand.length; i++) {
     if (currentCount >= 10) break;
 
-    const companyName = brands[i]?.brandDetails?.companyName;
-    const brandName = brands[i]?.brandDetails?.brandName;
+    const companyName = brand[i]?.brandDetails?.companyName;
+    const brandName = brand[i]?.brandDetails?.brandName;
+    const id = brand[i]?.uuid;
+    const industry =
+      brand[i]?.franchiseDetails?.franchiseDetails?.brandCategories;
+
+    const logo = brand[i]?.uploads?.uploads?.brandLogo?.[0];
 
     if (
       brandName &&
       brandName.toLowerCase().includes(normalizedSearch) &&
-      !brandNamesResults.includes(brandName) &&
-      !companyNamesResults.includes(companyName)
+      !brandNamesResults.some((b) => b.brandName === brandName)
     ) {
-      brandNamesResults.push({brandName,"logo":brands?.[0]?.uploads?.uploads?.brandLogo?.[0]});
+      brandNamesResults.push({ brandName, logo,id });
       currentCount++;
-      continue; 
+      continue;
     }
-   
+
     if (
       companyName &&
       companyName.toLowerCase().includes(normalizedSearch) &&
-      !companyNamesResults.includes(companyName) &&
-      !brandNamesResults.includes(brandName)
+      !companyNamesResults.some((c) => c.companyName === companyName)
     ) {
-      companyNamesResults.push({companyName,"logo":brands?.[0]?.uploads?.uploads?.brandLogo?.[0]});
+      companyNamesResults.push({ companyName, logo ,id});
       currentCount++;
-      
+      continue;
     }
 
-    
-    
+    if (
+      industry?.main &&
+      industry.main.toLowerCase().includes(normalizedSearch) &&
+      !industryResults.some((i) => i.industry === industry.main)
+    ) {
+      industryResults.push({ industry: industry.main, logo,id });
+      currentCount++;
+    }
   }
 
-  return {companyNamesResults,brandNamesResults};
+  return { companyNamesResults, brandNamesResults, industryResults };
 };
