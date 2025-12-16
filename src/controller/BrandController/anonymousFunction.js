@@ -61,7 +61,7 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 export const datafieldnewEntry = async (req, res) => {
   try {
     
-    const brands = await BrandFranchiseDetails.find({"franchiseDetails.fico.0.investmentRange":"10-20 Lakhs"})
+    const brands = await BrandFranchiseDetails.find({"franchiseDetails.brandCategories.sub":"Quick Service Restaurant"})
 
     if (!brands.length) {
       return res
@@ -79,7 +79,7 @@ export const datafieldnewEntry = async (req, res) => {
           const updated = await BrandFranchiseDetails.findByIdAndUpdate(
             brand._id,
             {
-              $set: {"franchiseDetails.fico.0.investmentRange":"Rs. 10 Lakhs - 20 Lakhs"},
+              $set: {"franchiseDetails.brandCategories.sub":"Quick Service Restaurants (QSR)"},
             },
             { new: true }
           );

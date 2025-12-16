@@ -794,9 +794,11 @@ const updateBrandListingByUUID = async (req, res) => {
     // ---------- Parse brand & franchise ----------
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
-
+  
     console.log("ParseBrandDetails:", ParseBrandDetails);
     console.log("parseFranchiseDetails", ParseFranchiseDetails);
+
+
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
