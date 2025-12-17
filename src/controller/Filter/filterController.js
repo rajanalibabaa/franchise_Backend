@@ -35,9 +35,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
       // "brandDetails.isApproved": { $ne: false },
     };
 
-    // console.log("======search===== :",serchterm)
-
-    // Text search (brand name / description / etc.)
     if (serchterm) {
       match.$or = [
         { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
@@ -46,6 +43,20 @@ export const getAllBrandsAndFilter = async (req, res) => {
             $regex: serchterm,
             $options: "i",
           },
+        },
+        {
+          "franchiseDetails.franchiseDetails.brandCategories.productTags.tags":
+            {
+              $regex: serchterm,
+              $options: "i",
+            },
+        },
+        {
+          "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags":
+            {
+              $regex: serchterm,
+              $options: "i",
+            },
         },
         {
           "franchiseDetails.franchiseDetails.brandCategories.main": {
