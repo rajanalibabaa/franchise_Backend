@@ -38,6 +38,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
     if (serchterm) {
       match.$or = [
         { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
+        { "uuid": serchterm },
         {
           "franchiseDetails.franchiseDetails.brandDescription": {
             $regex: serchterm,
