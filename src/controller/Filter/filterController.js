@@ -25,20 +25,17 @@ export const getAllBrandsAndFilter = async (req, res) => {
       investmentRange,
       modelType,
       areaRequired,
+      serchIndustry,
     } = req.query || {};
 
- 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    const match = {
-      // "brandDetails.isBrandPause": { $ne: true },
-      // "brandDetails.isApproved": { $ne: false },
-    };
+    const match = {};
 
-    if (serchterm) {
-      match.$or = [
+      if (serchterm) {
+      const orConditions = [
         { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
-        { "uuid": serchterm },
+        { uuid: { $regex: `^${serchterm}$`, $options: "i" } },
         {
           "franchiseDetails.franchiseDetails.brandDescription": {
             $regex: serchterm,
@@ -46,18 +43,16 @@ export const getAllBrandsAndFilter = async (req, res) => {
           },
         },
         {
-          "franchiseDetails.franchiseDetails.brandCategories.productTags.tags":
-            {
-              $regex: serchterm,
-              $options: "i",
-            },
+          "franchiseDetails.franchiseDetails.brandCategories.productTags.tags": {
+            $regex: serchterm,
+            $options: "i",
+          },
         },
         {
-          "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags":
-            {
-              $regex: serchterm,
-              $options: "i",
-            },
+          "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags": {
+            $regex: serchterm,
+            $options: "i",
+          },
         },
         {
           "franchiseDetails.franchiseDetails.brandCategories.main": {
@@ -104,7 +99,20 @@ export const getAllBrandsAndFilter = async (req, res) => {
             { $regex: serchterm, $options: "i" },
         },
       ];
+
+      if (serchIndustry) {
+        match.$and = [
+          {
+            "franchiseDetails.franchiseDetails.brandCategories.main":
+              serchIndustry,
+          },
+          { $or: orConditions },
+        ];
+      } else {
+        match.$or = orConditions;
+      }
     }
+
 
     // Category filters
     if (maincat)
@@ -816,10 +824,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
 //   }
 // };
 
-
-
-
-
 const AREA_REQUIRED = [
   "100 - 300 Sq.ft",
   "300 - 600 Sq.ft",
@@ -827,16 +831,11 @@ const AREA_REQUIRED = [
   "1000+ Sq.ft",
 ];
 
-const FRANCHISE_MODEL = [
-  "FOFO",
-  "FOCO",
-  "COCO",
-  "Distributor",
-];
+const FRANCHISE_MODEL = ["FOFO", "FOCO", "COCO", "Distributor"];
 
 const InvestmentRange = [
   "Below ₹5 Lakhs",
-  "₹5 Lakhs - ₹10 Lakhs", 
+  "₹5 Lakhs - ₹10 Lakhs",
   "₹10 Lakhs - ₹25 Lakhs",
   "₹25 Lakhs - ₹50 Lakhs",
   "₹50 Lakhs - ₹1 Crore",
@@ -926,8 +925,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         },
         {
           $group: {
-            _id:
-              "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
+            _id: "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
           },
         },
         {
@@ -942,7 +940,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       return res.json(
         new ApiResponse(
           200,
-          districtsData.map(d => d.district),
+          districtsData.map((d) => d.district),
           "Districts fetched successfully"
         )
       );
@@ -1006,13 +1004,11 @@ export const getAllBrandFiltersdata = async (req, res) => {
     ================================================== */
     const statesData = await BrandExpansionLocationData.aggregate([
       {
-        $unwind:
-          "$expansionLocationData.expansionLocations.domestic.locations",
+        $unwind: "$expansionLocationData.expansionLocations.domestic.locations",
       },
       {
         $group: {
-          _id:
-            "$expansionLocationData.expansionLocations.domestic.locations.state",
+          _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
         },
       },
       {
@@ -1024,7 +1020,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       { $sort: { state: 1 } },
     ]);
 
-    const states = statesData.map(s => s.state);
+    const states = statesData.map((s) => s.state);
 
     /* =================================================
        2️⃣ MAIN CATEGORY SELECTED
@@ -1040,16 +1036,14 @@ export const getAllBrandFiltersdata = async (req, res) => {
       });
 
       if (!industryData) {
-        return res.json(
-          new ApiResponse(404, {}, "Industry does not exist")
-        );
+        return res.json(new ApiResponse(404, {}, "Industry does not exist"));
       }
 
       return res.json(
         new ApiResponse(
           200,
           {
-            subcat: industryData.categories.map(c => c.category),
+            subcat: industryData.categories.map((c) => c.category),
             investmentRange: InvestmentRange,
             areaRequired: AREA_REQUIRED,
             franchiseModel: FRANCHISE_MODEL,
@@ -1079,11 +1073,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
   } catch (error) {
     console.error("Filter API Error:", error);
     return res.json(
-      new ApiResponse(
-        500,
-        null,
-        `Failed to fetch filters: ${error.message}`
-      )
+      new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`)
     );
   }
 };

@@ -1,9 +1,15 @@
+// searchSuggestions.js
 import { getBrandsHelperfuntion } from "../../helpers/getbrands.js";
-import { searchBrandAndCompanyNames } from "../../helpers/match.js";
+import { getIndustryCatTags } from "../../helpers/getIndustry.js";
+import {
+  findIndustryCategoriesAndTags,
+  searchBrandAndCompanyNames,
+} from "../../helpers/match.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
 export const searchSuggestions = async (req, res) => {
   const searchTerm = req.query.searchTerm || req.body.searchTerm;
+  const industry = req.query?.industry || req.body?.industry || "";
 
   if (!searchTerm || searchTerm.trim().length < 2) {
     return res.json(
@@ -21,27 +27,44 @@ export const searchSuggestions = async (req, res) => {
   let companyNamesMatches = [];
   let brandNamesMatches = [];
   let industryMatches = [];
-  let serviceTagsMatches = [];
-  let productTagsMatches = [];
+  let tagsMatches = [];
+  let categoriesMatches = [];
 
   let count =
-    brandNamesMatches.length +
-    companyNamesMatches.length +
+    brandNamesMatches?.length +
+    companyNamesMatches?.length +
     industryMatches.length +
-    serviceTagsMatches.length +
-    productTagsMatches.length;
+    categoriesMatches?.length +
+    tagsMatches?.length;
 
- 
   const pushWithLimit = (source, target) => {
-    for (let i = 0; i < source.length && count < 10; i++) {
+    for (let i = 0; i < source?.length && count < 10; i++) {
       target.push(source[i]);
       count++;
     }
   };
 
+  // Only create match if industry is provided
+  const match =
+    industry && industry?.length > 0
+      ? { "franchiseDetails.franchiseDetails.brandCategories.main": industry }
+      : undefined;
+
+  const data = await getIndustryCatTags(industry); 
+  let oneTimeFunction = true
+
   while (count < 10) {
+    if (oneTimeFunction) {
+      const { industryResults,categoryResults,tagsList } = findIndustryCategoriesAndTags(data, searchTerm, count);
+     pushWithLimit(industryResults, industryMatches);
+   pushWithLimit(categoryResults, categoriesMatches);
+    pushWithLimit(tagsList, tagsMatches);
+    oneTimeFunction = false
+    }
+
+   
     const brands = await getBrandsHelperfuntion(
-      undefined,
+      match,
       undefined,
       limit,
       skip,
@@ -54,16 +77,13 @@ export const searchSuggestions = async (req, res) => {
     const {
       companyNamesResults,
       brandNamesResults,
-      industryResults,
-      serviceTagsResults,
-      productTagsResults,
+      
+      
     } = searchBrandAndCompanyNames(brands, searchTerm, count);
 
     pushWithLimit(companyNamesResults, companyNamesMatches);
     pushWithLimit(brandNamesResults, brandNamesMatches);
-    pushWithLimit(industryResults, industryMatches);
-    pushWithLimit(serviceTagsResults, serviceTagsMatches);
-    pushWithLimit(productTagsResults, productTagsMatches);
+ 
 
     skip += limit;
   }
@@ -72,16 +92,16 @@ export const searchSuggestions = async (req, res) => {
     brandNamesMatches,
     companyNamesMatches,
     industryMatches,
-    serviceTagsMatches,
-    productTagsMatches,
+    tagsMatches,
+    categoriesMatches,
   };
 
   if (
     result.companyNamesMatches.length === 0 &&
     result.brandNamesMatches.length === 0 &&
     result.industryMatches.length === 0 &&
-    result.serviceTagsMatches.length === 0 &&
-    result.productTagsMatches.length === 0
+    result.tagsMatches.length === 0 &&
+    result.categoriesMatches.length === 0
   ) {
     return res.json(new ApiResponse(200, [], "suggestions not match"));
   }

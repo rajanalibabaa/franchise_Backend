@@ -1,3 +1,4 @@
+
 import { BrandDetails } from "../model/Brand/Brand.model/BrandDetails.model.js";
 
 export const getBrandsHelperfuntion = async (
@@ -12,7 +13,6 @@ export const getBrandsHelperfuntion = async (
   try {
     const pipeline = [];
 
-  
     pipeline.push({
       $match: {
         "brandDetails.isBrandPause": { $ne: true },
@@ -20,7 +20,6 @@ export const getBrandsHelperfuntion = async (
       },
     });
 
-   
     if (brandfranchisedetails) {
       pipeline.push(
         {
@@ -35,7 +34,7 @@ export const getBrandsHelperfuntion = async (
           $unwind: {
             path: "$franchiseDetails",
             preserveNullAndEmptyArrays: true,
-          },
+          }, 
         }
       );
     }
@@ -78,16 +77,15 @@ export const getBrandsHelperfuntion = async (
       );
     }
 
-    if(match && Object.keys(match).length) {
-        pipeline.push({ $match: match });
+    // Only push match if it's an object with keys
+    if (match && Object.keys(match).length > 0) {
+      pipeline.push({ $match: match });
     }
 
- 
     if (Object.keys(project).length) {
       pipeline.push({ $project: project });
     }
 
- 
     if (typeof skip === "number" && skip > 0) {
       pipeline.push({ $skip: skip });
     }
@@ -95,6 +93,8 @@ export const getBrandsHelperfuntion = async (
     if (typeof limit === "number" && limit > 0) {
       pipeline.push({ $limit: limit });
     }
+
+    console.log("pipeline :", pipeline);
 
     return await BrandDetails.aggregate(pipeline);
   } catch (error) {
