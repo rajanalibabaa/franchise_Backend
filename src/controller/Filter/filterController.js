@@ -25,23 +25,31 @@ export const getAllBrandsAndFilter = async (req, res) => {
       investmentRange,
       modelType,
       areaRequired,
+      serchIndustry,
     } = req.query || {};
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    const match = {
-      // "brandDetails.isBrandPause": { $ne: true },
-      // "brandDetails.isApproved": { $ne: false },
-    };
+    const match = {};
 
-    // console.log("======search===== :",serchterm)
-
-    // Text search (brand name / description / etc.)
-    if (serchterm) {
-      match.$or = [
+      if (serchterm) {
+      const orConditions = [
         { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
+        { uuid: { $regex: `^${serchterm}$`, $options: "i" } },
         {
           "franchiseDetails.franchiseDetails.brandDescription": {
+            $regex: serchterm,
+            $options: "i",
+          },
+        },
+        {
+          "franchiseDetails.franchiseDetails.brandCategories.productTags.tags": {
+            $regex: serchterm,
+            $options: "i",
+          },
+        },
+        {
+          "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags": {
             $regex: serchterm,
             $options: "i",
           },
@@ -91,7 +99,20 @@ export const getAllBrandsAndFilter = async (req, res) => {
             { $regex: serchterm, $options: "i" },
         },
       ];
+
+      if (serchIndustry) {
+        match.$and = [
+          {
+            "franchiseDetails.franchiseDetails.brandCategories.main":
+              serchIndustry,
+          },
+          { $or: orConditions },
+        ];
+      } else {
+        match.$or = orConditions;
+      }
     }
+
 
     // Category filters
     if (maincat)
