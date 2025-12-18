@@ -17,7 +17,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
       maincat,
       subcat,
       childcat,
-      serchterm,
       country,
       state,
       district,
@@ -28,76 +27,79 @@ export const getAllBrandsAndFilter = async (req, res) => {
       serchIndustry,
     } = req.query || {};
 
+    const searchterm = req.query.searchterm || req.query.searchTerm
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
     const match = {};
 
-      if (serchterm) {
+      if (searchterm) {
       const orConditions = [
-        { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
-        { uuid: { $regex: `^${serchterm}$`, $options: "i" } },
-        {
-          "franchiseDetails.franchiseDetails.brandDescription": {
-            $regex: serchterm,
-            $options: "i",
-          },
-        },
+        { "brandDetails.brandName": { $regex: searchterm, $options: "i" } },
+        { "brandDetails.companyName": { $regex: searchterm, $options: "i" } },
+        { uuid: { $regex: `^${searchterm}$`, $options: "i" } },
+        // {
+        //   "franchiseDetails.franchiseDetails.brandDescription": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
         {
           "franchiseDetails.franchiseDetails.brandCategories.productTags.tags": {
-            $regex: serchterm,
+            $regex: searchterm,
             $options: "i",
           },
         },
-        {
-          "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags": {
-            $regex: serchterm,
-            $options: "i",
-          },
-        },
+        // {
+        //   "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
         {
           "franchiseDetails.franchiseDetails.brandCategories.main": {
-            $regex: serchterm,
+            $regex: searchterm,
             $options: "i",
           },
         },
         {
           "franchiseDetails.franchiseDetails.brandCategories.sub": {
-            $regex: serchterm,
+            $regex: searchterm,
             $options: "i",
           },
         },
-        {
-          "franchiseDetails.franchiseDetails.brandCategories.child": {
-            $regex: serchterm,
-            $options: "i",
-          },
-        },
-        {
-          "franchiseDetails.franchiseDetails.fico.areaRequired": {
-            $regex: serchterm,
-            $options: "i",
-          },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.state":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.city":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.city":
-            { $regex: serchterm, $options: "i" },
-        },
+        // {
+        //   "franchiseDetails.franchiseDetails.brandCategories.child": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
+        // {
+        //   "franchiseDetails.franchiseDetails.fico.areaRequired": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.state":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.city":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.city":
+        //     { $regex: searchterm, $options: "i" },
+        // },
       ];
 
       if (serchIndustry) {
