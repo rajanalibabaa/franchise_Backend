@@ -21,7 +21,7 @@ export const searchBrandAndCompanyNames = (
 
   // let industrySet = new Set();
 
-  if (currentCount >= 10)
+  if (currentCount >= 15)
     return {
       companyNamesResults,
       brandNamesResults,
@@ -32,7 +32,7 @@ export const searchBrandAndCompanyNames = (
     };
 
   for (let i = 0; i < brand.length; i++) {
-    if (currentCount >= 10) break;
+    if (currentCount >= 15) break;
 
     const companyName = brand[i]?.brandDetails?.companyName;
     const brandName = brand[i]?.brandDetails?.brandName;
@@ -87,11 +87,11 @@ export const searchBrandAndCompanyNames = (
     // Service Tags
     if (Array.isArray(industry?.serviceTags)) {
       for (const ind of industry.serviceTags) {
-        if (currentCount >= 10) break;
+        if (currentCount >= 15) break;
 
         if (Array.isArray(ind?.tags)) {
           for (const tag of ind.tags) {
-            if (currentCount >= 10) break;
+            if (currentCount >= 15) break;
 
             if (tag && tag.toLowerCase().includes(normalizedSearch)) {
               serviceTagsResults.push({ tag });
@@ -106,11 +106,11 @@ export const searchBrandAndCompanyNames = (
     // Product Tags
     if (Array.isArray(industry?.productTags)) {
       for (const ind of industry.productTags) {
-        if (currentCount >= 10) break;
+        if (currentCount >= 15) break;
 
         if (Array.isArray(ind?.tags)) {
           for (const tag of ind.tags) {
-            if (currentCount >= 10) break;
+            if (currentCount >= 15) break;
 
             if (tag && tag.toLowerCase().includes(normalizedSearch)) {
               productTagsResults.push({ tag });
@@ -134,42 +134,55 @@ export const searchBrandAndCompanyNames = (
   };
 };
 
-export const findIndustryCategoriesAndTags = (data, searchTerm, count) => {
-  console.log("data :", data);
-
+export const findIndustryCategoriesAndTags = (data, searchTerm, count = 0) => {
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
-  let industryResults = [];
-  let categoryResults = [];
-  let tagsList = [];
+  const industryResults = [];
+  const categoryResults = [];
+  const tagsList = [];
 
-  data.map((d) => {
-  
-    if (d.industry.toLowerCase().includes(normalizedSearch)) {
+  for (const d of data) {
+    if (d.industry?.toLowerCase().includes(normalizedSearch)) {
       industryResults.push({ industry: d.industry });
+      count++;
+      if (count >= 15) break;
     }
 
-   
-    d.categories.map((c) => {
-      if (c.category.toLowerCase().includes(normalizedSearch)) {
-        categoryResults.push({ category: c.category});
+    for (const c of d.categories || []) {
+      if (c.category?.toLowerCase().includes(normalizedSearch)) {
+        categoryResults.push({ category: c.category });
+        count++;
+        if (count >= 15) break;
       }
-    });
+    }
+    if (count >= 15) break;
 
     
-    d.productTags.map((t) => {
-      t.tags.map((tagObj) => {
-        const tagText = typeof tagObj === "string" ? tagObj : tagObj.tag; 
-        if (tagText && tagText.toLowerCase().includes(normalizedSearch)) {
+    for (const t of d.productTags || []) {
+      for (const tagObj of t.tags || []) {
+        const tagText = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+        if (tagText?.toLowerCase().includes(normalizedSearch)) {
           tagsList.push({ tag: tagText });
+          count++;
+          if (count >= 15) break;
         }
-      });
-    });
-  });
+      }
+      if (count >= 15) break;
+    }
+    // for (const t of d.serviceTags || []) {
+    //   for (const tagObj of t.tags || []) {
+    //     const tagText = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+    //     if (tagText?.toLowerCase().includes(normalizedSearch)) {
+    //       tagsList.push({ tag: tagText });
+    //       count++;
+    //       if (count >= 15) break;
+    //     }
+    //   }
+    //   if (count >= 15) break;
+    // }
+    if (count >= 15) break;
+  }
 
-  // console.log("industriesList :", industryResults);
-  // console.log("categoryResults :", categoryResults);
-  // console.log("tagsList :", tagsList);
-
-  return {industryResults, categoryResults, tagsList };
+  return { industryResults, categoryResults, tagsList, count };
 };
+
