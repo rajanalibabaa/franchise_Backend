@@ -17,7 +17,6 @@ export const getAllBrandsAndFilter = async (req, res) => {
       maincat,
       subcat,
       childcat,
-      serchterm,
       country,
       state,
       district,
@@ -25,86 +24,97 @@ export const getAllBrandsAndFilter = async (req, res) => {
       investmentRange,
       modelType,
       areaRequired,
+      serchIndustry,
     } = req.query || {};
 
- 
+    const searchterm = req.query.searchterm || req.query.searchTerm
+
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
-    const match = {
-      // "brandDetails.isBrandPause": { $ne: true },
-      // "brandDetails.isApproved": { $ne: false },
-    };
+    const match = {};
 
-    if (serchterm) {
-      match.$or = [
-        { "brandDetails.brandName": { $regex: serchterm, $options: "i" } },
-        { "uuid": serchterm },
+      if (searchterm) {
+      const orConditions = [
+        { "brandDetails.brandName": { $regex: searchterm, $options: "i" } },
+        { "brandDetails.companyName": { $regex: searchterm, $options: "i" } },
+        { uuid: { $regex: `^${searchterm}$`, $options: "i" } },
+        // {
+        //   "franchiseDetails.franchiseDetails.brandDescription": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
         {
-          "franchiseDetails.franchiseDetails.brandDescription": {
-            $regex: serchterm,
+          "franchiseDetails.franchiseDetails.brandCategories.productTags.tags": {
+            $regex: searchterm,
             $options: "i",
           },
         },
-        {
-          "franchiseDetails.franchiseDetails.brandCategories.productTags.tags":
-            {
-              $regex: serchterm,
-              $options: "i",
-            },
-        },
-        {
-          "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags":
-            {
-              $regex: serchterm,
-              $options: "i",
-            },
-        },
+        // {
+        //   "franchiseDetails.franchiseDetails.brandCategories.serviceTags.tags": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
         {
           "franchiseDetails.franchiseDetails.brandCategories.main": {
-            $regex: serchterm,
+            $regex: searchterm,
             $options: "i",
           },
         },
         {
           "franchiseDetails.franchiseDetails.brandCategories.sub": {
-            $regex: serchterm,
+            $regex: searchterm,
             $options: "i",
           },
         },
-        {
-          "franchiseDetails.franchiseDetails.brandCategories.child": {
-            $regex: serchterm,
-            $options: "i",
-          },
-        },
-        {
-          "franchiseDetails.franchiseDetails.fico.areaRequired": {
-            $regex: serchterm,
-            $options: "i",
-          },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.state":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.city":
-            { $regex: serchterm, $options: "i" },
-        },
-        {
-          "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.city":
-            { $regex: serchterm, $options: "i" },
-        },
+        // {
+        //   "franchiseDetails.franchiseDetails.brandCategories.child": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
+        // {
+        //   "franchiseDetails.franchiseDetails.fico.areaRequired": {
+        //     $regex: searchterm,
+        //     $options: "i",
+        //   },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.state":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.state":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.districts":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.domestic.locations.city":
+        //     { $regex: searchterm, $options: "i" },
+        // },
+        // {
+        //   "brandexpansionlocationdata.expansionLocationData.expansionLocations.international.city":
+        //     { $regex: searchterm, $options: "i" },
+        // },
       ];
+
+      if (serchIndustry) {
+        match.$and = [
+          {
+            "franchiseDetails.franchiseDetails.brandCategories.main":
+              serchIndustry,
+          },
+          { $or: orConditions },
+        ];
+      } else {
+        match.$or = orConditions;
+      }
     }
+
 
     // Category filters
     if (maincat)
@@ -816,45 +826,119 @@ export const getAllBrandsAndFilter = async (req, res) => {
 //   }
 // };
 
-
-
-
-
 const AREA_REQUIRED = [
-  "100 - 300 Sq.ft",
-  "300 - 600 Sq.ft",
-  "600 - 1000 Sq.ft",
-  "1000+ Sq.ft",
+  "No Space Required",
+  "100 - 200 Sq. Ft.",
+  "200 - 500 Sq. Ft.",
+  "500 - 1,000 Sq. Ft.",
+  "1,000 - 2,000 Sq. Ft.",
+  "2,000 - 3,000 Sq. Ft.",
+  "3,000 - 5,000 Sq. Ft.",
+  "5,000 - 7,000 Sq. Ft.",
+  "7,000 - 10,000 Sq. Ft.",
+  "10,000 - 15,000 Sq. Ft."
 ];
 
 const FRANCHISE_MODEL = [
-  "FOFO",
-  "FOCO",
-  "COCO",
-  "Distributor",
+  "FOFO ",
+  "FOCO ",
+  "FICO ",
+  "COCO ",
+  "KIOSK",
+  "SHOP IN SHOP",
+  "CLOUD KITCHEN",
 ];
 
 const InvestmentRange = [
-  "Below ₹5 Lakhs",
-  "₹5 Lakhs - ₹10 Lakhs", 
-  "₹10 Lakhs - ₹25 Lakhs",
-  "₹25 Lakhs - ₹50 Lakhs",
-  "₹50 Lakhs - ₹1 Crore",
-  "Above ₹1 Crore",
+  "Below - 50k",
+  "Rs. 50k - 2 Lakhs", 
+  "Rs. 2 Lakhs - 5 Lakhs",
+  "Rs. 5 Lakhs - 10 Lakhs",
+  "Rs. 10 Lakhs - 20 Lakhs",
+  "Rs. 20 Lakhs - 30 Lakhs",
+  "Rs. 30 Lakhs - 50 Lakhs",
+  "Rs. 50 Lakhs - 1 Crore",
+  "Rs. 1 Crores - 2 Crores",
+  "Rs. 2 Crores - 5 Crores",
+  "Rs. 5 Crores - above"
 ];
 
+// Add caching mechanism
+
+import NodeCache from "node-cache";
+
+const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
+
 export const getAllBrandFiltersdata = async (req, res) => {
-  const { main, sub, district, state, areaRequired: _, industry } = req.query; // Ignore areaRequired query param as it's not used for filtering here
+  const { main, sub, district, state, industry } = req.query;
+
+  // Generate cache key based on query params
+  const cacheKey = JSON.stringify(req.query);
+  const cachedData = cache.get(cacheKey);
+
+  if (cachedData) {
+    return res.json(cachedData);
+  }
+
+  console.log("Filter Query Params:", req.query);
 
   try {
-    /* =================================================
-       CHILD CATEGORY FOR SUB SELECTED
-    ================================================== */
-    if ((sub && main) || sub) {
+    // Early returns with proper validation
+    if (!main && !sub && !district && !state && !industry) {
+      // Initial load - get industries and states
+      const [industriesData, statesData] = await Promise.all([
+        IndustryManagement.find({})
+          .select({ _id: 0, industry: 1 })
+          .lean()
+          .then((industries) =>
+            (industries || [])
+              .map((i) => i.industry)
+              .filter(Boolean)
+              .sort()
+          ),
+        BrandExpansionLocationData.aggregate([
+          {
+            $unwind:
+              "$expansionLocationData.expansionLocations.domestic.locations",
+          },
+          {
+            $group: {
+              _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              state: "$_id",
+            },
+          },
+          { $sort: { state: 1 } },
+        ]).then((states) => states.map((s) => s.state)),
+      ]);
+
+      const response = new ApiResponse(
+        200,
+        {
+          maincat: industriesData,
+          investmentRange: InvestmentRange,
+          areaRequired: AREA_REQUIRED,
+          franchiseModel: FRANCHISE_MODEL,
+          states: statesData,
+        },
+        "Brand filters fetched successfully"
+      );
+
+      cache.set(cacheKey, response);
+      return res.json(response);
+    }
+
+    // Handle sub category child fetch
+    if (sub) {
       const childcatData = await BrandFranchiseDetails.aggregate([
         {
           $match: {
             "franchiseDetails.brandCategories.sub": sub,
+            ...(main && { "franchiseDetails.brandCategories.main": main }),
           },
         },
         {
@@ -865,7 +949,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         {
           $unwind: {
             path: "$childcat",
-            preserveNullAndEmptyArrays: true,
+            preserveNullAndEmptyArrays: false,
           },
         },
         {
@@ -879,29 +963,22 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
         {
-          $project: {
-            _id: 0,
-            child: "$_id",
-          },
-        },
-        {
-          $sort: { child: 1 },
+          $sort: { _id: 1 },
         },
       ]);
 
-      const childcatNames = childcatData.map((item) => item.child);
-      return res.json(
-        new ApiResponse(
-          200,
-          childcatNames,
-          "Child categories fetched successfully"
-        )
+      const childcatNames = childcatData.map((item) => item._id);
+      const response = new ApiResponse(
+        200,
+        childcatNames,
+        "Child categories fetched successfully"
       );
+
+      cache.set(cacheKey, response);
+      return res.json(response);
     }
 
-    /* =================================================
-       1️⃣ STATE SELECTED → RETURN ONLY DISTRICTS (ARRAY)
-    ================================================== */
+    // Handle state districts
     if (state) {
       const districtsData = await BrandExpansionLocationData.aggregate([
         {
@@ -921,169 +998,93 @@ export const getAllBrandFiltersdata = async (req, res) => {
           },
         },
         {
-          $unwind:
-            "$expansionLocationData.expansionLocations.domestic.locations.districts",
-        },
-        {
-          $group: {
-            _id:
+          $project: {
+            districts:
               "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
           },
         },
         {
-          $project: {
-            _id: 0,
-            district: "$_id",
-          },
-        },
-        { $sort: { district: 1 } },
-      ]);
-
-      return res.json(
-        new ApiResponse(
-          200,
-          districtsData.map(d => d.district),
-          "Districts fetched successfully"
-        )
-      );
-    }
-
-    /* =================================================
-       DISTRICT SELECTED → RETURN ONLY CITIES (ARRAY)
-    ================================================== */
-    if (district) {
-      const citiesData = await BrandExpansionLocationData.aggregate([
-        {
-          $match: {
-            "expansionLocationData.expansionLocations.domestic.locations.districts.district":
-              district,
-          },
-        },
-        {
-          $unwind:
-            "$expansionLocationData.expansionLocations.domestic.locations",
-        },
-        {
-          $unwind:
-            "$expansionLocationData.expansionLocations.domestic.locations.districts",
-        },
-        {
-          $match: {
-            "expansionLocationData.expansionLocations.domestic.locations.districts.district":
-              district,
-          },
-        },
-        {
-          $unwind:
-            "$expansionLocationData.expansionLocations.domestic.locations.districts.cities",
+          $unwind: "$districts",
         },
         {
           $group: {
-            _id: "$expansionLocationData.expansionLocations.domestic.locations.districts.cities",
+            _id: "$districts",
           },
         },
         {
-          $project: {
-            _id: 0,
-            city: "$_id",
-          },
-        },
-        {
-          $sort: {
-            city: 1,
-          },
+          $sort: { _id: 1 },
         },
       ]);
 
-      const cityNames = citiesData.map((item) => item.city);
-      return res.json(
-        new ApiResponse(200, cityNames, "Cities fetched successfully")
+      const districts = districtsData.map((d) => d._id);
+      const response = new ApiResponse(
+        200,
+        districts,
+        "Districts fetched successfully"
       );
+
+      cache.set(cacheKey, response);
+      return res.json(response);
     }
 
-    /* =================================================
-       FETCH STATES (USED IN 2️⃣ & 3️⃣)
-    ================================================== */
-    const statesData = await BrandExpansionLocationData.aggregate([
-      {
-        $unwind:
-          "$expansionLocationData.expansionLocations.domestic.locations",
-      },
-      {
-        $group: {
-          _id:
-            "$expansionLocationData.expansionLocations.domestic.locations.state",
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          state: "$_id",
-        },
-      },
-      { $sort: { state: 1 } },
-    ]);
-
-    const states = statesData.map(s => s.state);
-
-    /* =================================================
-       2️⃣ MAIN CATEGORY SELECTED
-    ================================================== */
+    // Handle main/industry category
     if (main || industry) {
       const industryName = main || industry;
-      const industryData = await IndustryManagement.findOne({
-        industry: industryName,
-      }).select({
-        _id: 0,
-        __v: 0,
-        "categories.id": 0,
-      });
+
+      const [industryData, statesData] = await Promise.all([
+        IndustryManagement.findOne({
+          industry: industryName,
+        }).select({
+          _id: 0,
+          __v: 0,
+          "categories.id": 0,
+        }),
+        BrandExpansionLocationData.aggregate([
+          {
+            $unwind:
+              "$expansionLocationData.expansionLocations.domestic.locations",
+          },
+          {
+            $group: {
+              _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              state: "$_id",
+            },
+          },
+          { $sort: { state: 1 } },
+        ]).then((states) => states.map((s) => s.state)),
+      ]);
 
       if (!industryData) {
-        return res.json(
-          new ApiResponse(404, {}, "Industry does not exist")
-        );
+        return res.json(new ApiResponse(404, {}, "Industry does not exist"));
       }
 
-      return res.json(
-        new ApiResponse(
-          200,
-          {
-            subcat: industryData.categories.map(c => c.category),
-            investmentRange: InvestmentRange,
-            areaRequired: AREA_REQUIRED,
-            franchiseModel: FRANCHISE_MODEL,
-            states,
-          },
-          "Categories fetched successfully"
-        )
-      );
-    }
-
-    /* =================================================
-       3️⃣ INITIAL LOAD (NO QUERY)
-    ================================================== */
-    return res.json(
-      new ApiResponse(
+      const response = new ApiResponse(
         200,
         {
-          maincat: ["Food & Beverages"], // default main
+          subcat: (industryData.categories || []).map((c) => c.category),
           investmentRange: InvestmentRange,
           areaRequired: AREA_REQUIRED,
           franchiseModel: FRANCHISE_MODEL,
-          states,
+          states: statesData,
         },
-        "Brand filters fetched successfully"
-      )
-    );
+        "Categories fetched successfully"
+      );
+
+      cache.set(cacheKey, response);
+      return res.json(response);
+    }
+
+    // Fallback - return empty
+    return res.json(new ApiResponse(200, {}, "No data found"));
   } catch (error) {
     console.error("Filter API Error:", error);
     return res.json(
-      new ApiResponse(
-        500,
-        null,
-        `Failed to fetch filters: ${error.message}`
-      )
+      new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`)
     );
   }
 };
