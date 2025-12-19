@@ -38,7 +38,7 @@ export const searchSuggestions = async (req, res) => {
     tagsMatches?.length;
 
   const pushWithLimit = (source, target) => {
-    for (let i = 0; i < source?.length && count < 10; i++) {
+    for (let i = 0; i < source?.length && count < 15; i++) {
       target.push(source[i]);
       count++;
     }
@@ -53,7 +53,7 @@ export const searchSuggestions = async (req, res) => {
   const data = await getIndustryCatTags(industry); 
   let oneTimeFunction = true
 
-  while (count < 10) {
+  while (count < 15) {
     if (oneTimeFunction) {
       const { industryResults,categoryResults,tagsList } = findIndustryCategoriesAndTags(data, searchTerm, count);
      pushWithLimit(industryResults, industryMatches);
