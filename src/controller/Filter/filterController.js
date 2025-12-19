@@ -27,7 +27,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       serchIndustry,
     } = req.query || {};
 
-    const searchterm = req.query.searchterm || req.query.searchTerm
+    const searchterm = req.query.searchterm || req.query.searchTerm || req.query.serchterm
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
