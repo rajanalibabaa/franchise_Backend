@@ -36,6 +36,7 @@ import { paymentRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/p
 import leadPackageRouter from "./src/Routes/LeadPackage/LeadPackage.js";
 import { brandleadsRouter } from "./src/Routes/Lead/brandLeadsRouter.js";
 import { industryManagementRouter } from "./src/Routes/AdminRoutes/CMS/industryManagement.routes.js";
+import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
 
 const router = express.Router();
 
@@ -127,6 +128,10 @@ router.use(paymentRouter)
 
 //industryManagementRouter
 router.use(industryManagementRouter)
+
+
+//searchRoutes
+router.use(searchRoutes)
 
 
 
@@ -348,3 +353,5 @@ function getMethodBadgeColor(method) {
 
 
 export default router;
+
+0

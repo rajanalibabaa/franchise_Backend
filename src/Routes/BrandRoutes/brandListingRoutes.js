@@ -106,7 +106,7 @@ router.patch(
   updateBrandImageById
 );
 // Add both possibilities to be safe
-router.delete('/deleteBrandListingByUUID/:uuid', deleteBrandListingByUUID);
+router.delete('/v1/deleteBrandListingByUUID/:uuid', deleteBrandListingByUUID);
 // router.delete('/deleteBrandListingByUUID/:id', deleteBrandListingByUUID); // Fallback
 
 //brand Apply form for franchise ROutes

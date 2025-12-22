@@ -858,7 +858,7 @@ const updateBrandListingByUUID = async (req, res) => {
       }
 
       if (ParseFranchiseDetails.brandCategories) {
-        const brandCategoriesFields = ["main", "sub", "groupId", "ProductTags", "ServiceTags"];
+        const brandCategoriesFields = ["main", "sub", "groupId", "productTags", "serviceTags"];
         for (const field of brandCategoriesFields) {
           if (ParseFranchiseDetails.brandCategories[field] !== undefined) {
             updates.$set[`franchiseDetails.brandCategories.${field}`] =
@@ -1994,102 +1994,292 @@ export const allId = async (req, res) => {
   return res.json(new ApiResponse(200, arr, "fetch successfully"));
 };
 
+// export const getBrandsByCategory = async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 30;
+//     const skip = (page - 1) * limit;
+//     const id = req.query.id || null;
+//     const childCategory = req.query.childCategory || null;
+//     const subCategory = req.query.subCategory || null;
+
+//     if (!childCategory && !subCategory) {
+//       return res.json(
+//         new ApiResponse(
+//           400,
+//           null,
+//           "Either childCategory or subCategory is required"
+//         )
+//       );
+//     }
+
+//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+
+//     let mainCategory;
+//     let relatedCategories = [];
+//     let matchCondition = {};
+
+//     if (childCategory) {
+//       // When childCategory is provided
+//       const categoryInfo = await BrandFranchiseDetails.aggregate([
+//         {
+//           $match: {
+//             "franchiseDetails.brandCategories.child": childCategory,
+//           },
+//         },
+//         {
+//           $group: {
+//             _id: "$franchiseDetails.brandCategories.main",
+//             subCategories: {
+//               $addToSet: "$franchiseDetails.brandCategories.sub",
+//             },
+//           },
+//         },
+//         {
+//           $project: {
+//             _id: 0,
+//             mainCategory: "$_id",
+//             subCategories: 1,
+//           },
+//         },
+//       ]);
+
+//       if (!categoryInfo || categoryInfo.length === 0) {
+//         return res.json(new ApiResponse(404, null, "Child category not found"));
+//       }
+
+//       mainCategory = categoryInfo[0].mainCategory;
+//       relatedCategories = [childCategory]; // Only filter by specific child
+//       matchCondition = {
+//         "franchiseDetails.brandCategories.main": mainCategory,
+//         "franchiseDetails.brandCategories.child": childCategory,
+//       };
+//     } else if (subCategory) {
+//       // When subCategory is provided
+//       const categoryInfo = await BrandFranchiseDetails.aggregate([
+//         {
+//           $match: {
+//             "franchiseDetails.brandCategories.sub": subCategory,
+//           },
+//         },
+//         {
+//           $group: {
+//             _id: "$franchiseDetails.brandCategories.main",
+//             subCategories: {
+//               $addToSet: "$franchiseDetails.brandCategories.sub",
+//             },
+//           },
+//         },
+//         {
+//           $project: {
+//             _id: 0,
+//             mainCategory: "$_id",
+//             subCategories: 1,
+//           },
+//         },
+//       ]);
+
+//       if (!categoryInfo || categoryInfo.length === 0) {
+//         return res.json(new ApiResponse(404, null, "Sub category not found"));
+//       }
+
+//       mainCategory = categoryInfo[0].mainCategory;
+//       relatedCategories = categoryInfo[0].subCategories;
+//       matchCondition = {
+//         "franchiseDetails.brandCategories.main": mainCategory,
+//         "franchiseDetails.brandCategories.sub": { $in: relatedCategories },
+//       };
+//     }
+
+//     const aggregationPipeline = [
+//       { $match: matchCondition },
+//       {
+//         $lookup: {
+//           from: "branddetails",
+//           localField: "brandOwnerId",
+//           foreignField: "uuid",
+//           as: "brandInfo",
+//         },
+//       },
+//       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
+//       {
+//         $match: {
+//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
+//           "brandInfo.brandDetails.isApproved": { $ne: true },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "branduploads",
+//           localField: "brandOwnerId",
+//           foreignField: "brandOwnerId",
+//           as: "uploads",
+//         },
+//       },
+//       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
+//       {
+//         $addFields: {
+//           isLiked: {
+//             $in: [
+//               "$brandInfo._id",
+//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+//             ],
+//           },
+//           isShortListed: {
+//             $in: [
+//               "$brandInfo._id",
+//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+//             ],
+//           },
+//         },
+//       },
+//       { $sort: { createdAt: -1 } },
+//       {
+//         $project: {
+//           _id: 0,
+//           brandID: "$brandInfo.brandID",
+//           uuid: "$brandOwnerId",
+//           isLiked: 1,
+//           isShortListed: 1,
+//           brandname: "$brandInfo.brandDetails.brandName",
+//           brandCategories: {
+//             $ifNull: ["$franchiseDetails.brandCategories", null],
+//           },
+//           fico: {
+//             $let: {
+//               vars: {
+//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
+//               },
+//               in: {
+//                 investmentRange: "$$data.investmentRange",
+//                 areaRequired: "$$data.areaRequired",
+//                 franchiseModel: "$$data.franchiseModel",
+//               },
+//             },
+//           },
+//           logo: {
+//             $cond: {
+//               if: { $isArray: "$uploads.uploads.brandLogo" },
+//               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+//               else: null,
+//             },
+//           },
+//           franchiseVideos: {
+//             $cond: {
+//               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
+//               then: {
+//                 $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+//               },
+//               else: null,
+//             },
+//           },
+//         },
+//       },
+//       { $skip: skip },
+//       { $limit: limit },
+//     ];
+
+//     const [brandsData, totalCount] = await Promise.all([
+//       BrandFranchiseDetails.aggregate(aggregationPipeline),
+//       BrandFranchiseDetails.countDocuments(matchCondition),
+//     ]);
+
+//     if (!brandsData || brandsData.length === 0) {
+//       return res.json(
+//         new ApiResponse(404, null, "No brands found for this category")
+//       );
+//     }
+
+//     // Remove the shuffleArray function call and just use brandsData directly
+//     const brands = brandsData;
+
+//     const totalPages = Math.ceil(totalCount / limit);
+//     const hasNext = page < totalPages;
+//     const hasPrevious = page > 1;
+
+//     return res.json(
+//       new ApiResponse(
+//         200,
+//         {
+//           mainCategory,
+//           relatedCategories,
+//           currentCategory: childCategory || subCategory,
+//           brands,
+//           pagination: {
+//             total: totalCount,
+//             totalPages,
+//             currentPage: page,
+//             limit,
+//             hasNext,
+//             hasPrevious,
+//           },
+//         },
+//         "Brands fetched successfully by category"
+//       )
+//     );
+//   } catch (error) {
+//     console.error("Error fetching brands by category:", error);
+//     return res.json(
+//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+//     );
+//   }
+// };
+
 export const getBrandsByCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 30;
     const skip = (page - 1) * limit;
-    const id = req.query.id || null;
-    const childCategory = req.query.childCategory || null;
+    const id = req.query.id || null; // This is only used for likeandshortlist
     const subCategory = req.query.subCategory || null;
 
-    if (!childCategory && !subCategory) {
+    if (!subCategory) {
       return res.json(
-        new ApiResponse(
-          400,
-          null,
-          "Either childCategory or subCategory is required"
-        )
+        new ApiResponse(400, null, "subCategory is required")
       );
     }
 
-    const { likedBrands, shortListedBrands } = await likeandshortlist(id);
+    const { likedBrands, shortListedBrands } = id ? await likeandshortlist(id) : { likedBrands: [], shortListedBrands: [] };
 
     let mainCategory;
     let relatedCategories = [];
     let matchCondition = {};
 
-    if (childCategory) {
-      // When childCategory is provided
-      const categoryInfo = await BrandFranchiseDetails.aggregate([
-        {
-          $match: {
-            "franchiseDetails.brandCategories.child": childCategory,
+    // When subCategory is provided
+    const categoryInfo = await BrandFranchiseDetails.aggregate([
+      {
+        $match: {
+          "franchiseDetails.brandCategories.sub": subCategory,
+        },
+      },
+      {
+        $group: {
+          _id: "$franchiseDetails.brandCategories.main",
+          subCategories: {
+            $addToSet: "$franchiseDetails.brandCategories.sub",
           },
         },
-        {
-          $group: {
-            _id: "$franchiseDetails.brandCategories.main",
-            subCategories: {
-              $addToSet: "$franchiseDetails.brandCategories.sub",
-            },
-          },
+      },
+      {
+        $project: {
+          _id: 0,
+          mainCategory: "$_id",
+          subCategories: 1,
         },
-        {
-          $project: {
-            _id: 0,
-            mainCategory: "$_id",
-            subCategories: 1,
-          },
-        },
-      ]);
+      },
+    ]);
 
-      if (!categoryInfo || categoryInfo.length === 0) {
-        return res.json(new ApiResponse(404, null, "Child category not found"));
-      }
-
-      mainCategory = categoryInfo[0].mainCategory;
-      relatedCategories = [childCategory]; // Only filter by specific child
-      matchCondition = {
-        "franchiseDetails.brandCategories.main": mainCategory,
-        "franchiseDetails.brandCategories.child": childCategory,
-      };
-    } else if (subCategory) {
-      // When subCategory is provided
-      const categoryInfo = await BrandFranchiseDetails.aggregate([
-        {
-          $match: {
-            "franchiseDetails.brandCategories.sub": subCategory,
-          },
-        },
-        {
-          $group: {
-            _id: "$franchiseDetails.brandCategories.main",
-            subCategories: {
-              $addToSet: "$franchiseDetails.brandCategories.sub",
-            },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            mainCategory: "$_id",
-            subCategories: 1,
-          },
-        },
-      ]);
-
-      if (!categoryInfo || categoryInfo.length === 0) {
-        return res.json(new ApiResponse(404, null, "Sub category not found"));
-      }
-
-      mainCategory = categoryInfo[0].mainCategory;
-      relatedCategories = categoryInfo[0].subCategories;
-      matchCondition = {
-        "franchiseDetails.brandCategories.main": mainCategory,
-        "franchiseDetails.brandCategories.sub": { $in: relatedCategories },
-      };
+    if (!categoryInfo || categoryInfo.length === 0) {
+      return res.json(new ApiResponse(404, null, "Sub category not found"));
     }
+
+    mainCategory = categoryInfo[0].mainCategory;
+    relatedCategories = categoryInfo[0].subCategories;
+    
+    // Match only by subCategory, not by id
+    matchCondition = {
+      "franchiseDetails.brandCategories.sub": subCategory,
+    };
 
     const aggregationPipeline = [
       { $match: matchCondition },
@@ -2101,12 +2291,27 @@ export const getBrandsByCategory = async (req, res) => {
           as: "brandInfo",
         },
       },
-      { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
+      { 
+        $unwind: { 
+          path: "$brandInfo", 
+          preserveNullAndEmptyArrays: true 
+        } 
+      },
+      // Remove the $match on brandInfo to include all brands even if no brandInfo
+      // Only filter out paused brands if brandInfo exists
       {
         $match: {
-          "brandInfo.brandDetails.isBrandPause": { $ne: true },
-          "brandInfo.brandDetails.isApproved": { $ne: true },
-        },
+          $or: [
+            { "brandInfo": null },
+            { "brandInfo": { $exists: false } },
+            {
+              $and: [
+                { "brandInfo.brandDetails.isBrandPause": { $ne: true } },
+                { "brandInfo.brandDetails.isApproved": { $ne: false } }
+              ]
+            }
+          ]
+        }
       },
       {
         $lookup: {
@@ -2116,20 +2321,28 @@ export const getBrandsByCategory = async (req, res) => {
           as: "uploads",
         },
       },
-      { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
-          isLiked: {
+          // Only check isLiked/isShortListed if id was provided
+          isLiked: id ? {
             $in: [
               "$brandInfo._id",
               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
             ],
-          },
-          isShortListed: {
+          } : false,
+          isShortListed: id ? {
             $in: [
               "$brandInfo._id",
               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
             ],
+          } : false,
+          // Get first uploads document if exists
+          uploadsData: {
+            $cond: {
+              if: { $gt: [{ $size: "$uploads" }, 0] },
+              then: { $arrayElemAt: ["$uploads", 0] },
+              else: null,
+            },
           },
         },
       },
@@ -2137,39 +2350,53 @@ export const getBrandsByCategory = async (req, res) => {
       {
         $project: {
           _id: 0,
-          brandID: "$brandInfo.brandID",
+          brandID: { $ifNull: ["$brandInfo.brandID", null] },
           uuid: "$brandOwnerId",
           isLiked: 1,
           isShortListed: 1,
-          brandname: "$brandInfo.brandDetails.brandName",
+          brandname: { $ifNull: ["$brandInfo.brandDetails.brandName", null] },
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null],
           },
           fico: {
             $let: {
               vars: {
-                data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
+                firstFico: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
               in: {
-                investmentRange: "$$data.investmentRange",
-                areaRequired: "$$data.areaRequired",
-                franchiseModel: "$$data.franchiseModel",
+                investmentRange: { $ifNull: ["$$firstFico.investmentRange", "Not specified"] },
+                areaRequired: { $ifNull: ["$$firstFico.areaRequired", "Not specified"] },
+                franchiseModel: { $ifNull: ["$$firstFico.franchiseModel", "Not specified"] },
               },
             },
           },
+          // Handle logo - check if uploadsData exists and has brandLogo array
           logo: {
             $cond: {
-              if: { $isArray: "$uploads.uploads.brandLogo" },
-              then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
+              if: {
+                $and: [
+                  { $ne: ["$uploadsData", null] },
+                  { $ne: ["$uploadsData.uploads", null] },
+                  { $isArray: "$uploadsData.uploads.brandLogo" },
+                  { $gt: [{ $size: "$uploadsData.uploads.brandLogo" }, 0] },
+                ],
+              },
+              then: { $arrayElemAt: ["$uploadsData.uploads.brandLogo", 0] },
               else: null,
             },
           },
+          // Handle franchiseVideos - check if uploadsData exists and has franchisePromotionVideo array
           franchiseVideos: {
             $cond: {
-              if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-              then: {
-                $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+              if: {
+                $and: [
+                  { $ne: ["$uploadsData", null] },
+                  { $ne: ["$uploadsData.uploads", null] },
+                  { $isArray: "$uploadsData.uploads.franchisePromotionVideo" },
+                  { $gt: [{ $size: "$uploadsData.uploads.franchisePromotionVideo" }, 0] },
+                ],
               },
+              then: { $arrayElemAt: ["$uploadsData.uploads.franchisePromotionVideo", 0] },
               else: null,
             },
           },
@@ -2190,9 +2417,6 @@ export const getBrandsByCategory = async (req, res) => {
       );
     }
 
-    // Remove the shuffleArray function call and just use brandsData directly
-    const brands = brandsData;
-
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
@@ -2203,8 +2427,8 @@ export const getBrandsByCategory = async (req, res) => {
         {
           mainCategory,
           relatedCategories,
-          currentCategory: childCategory || subCategory,
-          brands,
+          currentCategory: subCategory,
+          brands: brandsData,
           pagination: {
             total: totalCount,
             totalPages,

@@ -47,9 +47,8 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "https://admin.mrfranchise.in",
-
   "http://localhost:3000",
-  "https://www.thirumalthirumagal.com/"
+  "https://www.thirumalthirumagal.com"
 ];
 
 app.use(
@@ -113,7 +112,7 @@ const io = new SocketIOServer(httpServer, {
       "http://localhost:5175",
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
-      "https://www.thirumalthirumagal.com/"
+      "https://www.thirumalthirumagal.com"
     ],
     credentials: true,
   },
