@@ -50,8 +50,7 @@ const webhookslimiter = rateLimit({
     message: "Too many requests to webhooks. Please try again later."
   }
 });
-// Middlewares
-// app.use(limiter);
+
 
 app.use(helmet());
 app.use(compression());
@@ -60,6 +59,7 @@ app.use(compression());
 
 const allowedOrigins = [
   "https://fb.mrfranchise.in",
+  "https://mrfranchise.in",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
@@ -124,6 +124,7 @@ const io = new SocketIOServer(httpServer, {
   cors: {
     origin: [
       "https://fb.mrfranchise.in",
+      "https://mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
