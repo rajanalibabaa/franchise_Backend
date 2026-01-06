@@ -26,18 +26,35 @@ import {registerNotificationSocket} from './src/socket/notificationSocket.js'
 dotenv.config(); // ✅ Load env FIRST
 
 const app = express();
+app.set("trust proxy", 1); // trust first proxy
 
+// Rate Limiter
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 100,
-  message: "Too many requests, try again later.",
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 300,               // 🔥 increased limit
+  standardHeaders: true,  // Return rate limit info in headers
+  legacyHeaders: false,   // Disable X-RateLimit-* legacy headers
+  message: {
+    status: 429,
+    message: "Too many requests. Please try again later."
+  }
 });
 
+const webhookslimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100,               // 🔥 increased limit for webhooks
+  standardHeaders: true,  // Return rate limit info in headers
+  legacyHeaders: false,   // Disable X-RateLimit-* legacy headers
+  message: {
+    status: 429,
+    message: "Too many requests to webhooks. Please try again later."
+  }
+});
 // Middlewares
-app.use(limiter);
+// app.use(limiter);
 
 app.use(helmet());
-
+app.use(compression());
 
 
 
@@ -65,7 +82,7 @@ app.use(
   })
 );
 
-app.use(compression());
+// app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -134,12 +151,12 @@ const startServer = async () => {
       res.json({ message: "Welcome to the Home Page!" });
     });
 
-    app.use("/api", allRouters);
-    app.use("/api/v1/upload", s3Uploads);
+    app.use("/api", limiter, allRouters);
+    app.use("/api/v1/upload", limiter, s3Uploads);
 
 
     // ✅ This is for webhook verification
-app.get("/api/webhooks", (req, res) => {
+app.get("/api/webhooks", webhookslimiter, (req, res) => {
   const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
 
   const mode = req.query["hub.mode"];
@@ -155,12 +172,12 @@ app.get("/api/webhooks", (req, res) => {
 });
 
 // ✅ This is for receiving webhook events (messages, comments, etc.)
-app.post("/api/webhooks", (req, res) => {
+app.post("/api/webhooks", webhookslimiter,(req, res) => {
   console.log("Incoming webhook event:", req.body);
   res.sendStatus(200);
 });
 
-
+  
 
     // Error handler
     app.use(errorHandler);
