@@ -27,7 +27,7 @@ jobs:
             cd /root/franchise_Backend &&
             git pull &&
             npm install &&
-            pm2 restart franchise_backend || pm2 start server.js --name franchise_backend 
+            pm2 restart franchise_backend || pm2 start index.js --name franchise_backend 
           "
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
