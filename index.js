@@ -58,25 +58,31 @@ app.use(compression());
 
 
 const allowedOrigins = [
-  "https://fb.mrfranchise.in",
   "https://mrfranchise.in",
+  "https://fb.mrfranchise.in",
+  "https://www.mrfranchise.in",
+  "https://admin.mrfranchise.in",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-  "https://admin.mrfranchise.in",
   "http://localhost:3000",
   "https://www.thirumalthirumagal.com"
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin:(origin, callback)=> {
       if (!origin) return callback(null, true); // allow non-browser requests like Postman
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = "CORS policy: This origin is not allowed";
-        return callback(new Error(msg), false);
+      
+      // if (allowedOrigins.indexOf(origin) === -1) {
+      //   const msg = "CORS policy: This origin is not allowed";
+      //   return callback(new Error(msg), false);
+      // }
+      if(allowedOrigins.includes(origin)){
+        return callback(null, true);
       }
-      return callback(null, true);
+      console.warn(`CORS policy: This origin ${origin} is not allowed`);
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -123,8 +129,9 @@ const httpServer = createServer(app);
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: [
-      "https://fb.mrfranchise.in",
       "https://mrfranchise.in",
+      "https://fb.mrfranchise.in",
+      "https://www.mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
@@ -172,7 +179,6 @@ app.get("/api/webhooks", webhookslimiter, (req, res) => {
   }
 });
 
-// ✅ This is for receiving webhook events (messages, comments, etc.)
 app.post("/api/webhooks", webhookslimiter,(req, res) => {
   console.log("Incoming webhook event:", req.body);
   res.sendStatus(200);
@@ -180,7 +186,6 @@ app.post("/api/webhooks", webhookslimiter,(req, res) => {
 
   
 
-    // Error handler
     app.use(errorHandler);
 
     // ✅ Use httpServer.listen (not app.listen)
