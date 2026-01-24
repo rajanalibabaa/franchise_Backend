@@ -1,4 +1,4 @@
-
+    
 
 import  express  from "express";
 import { existingEmailOTP, generateNewEmailOTP, verifyExistingEmailOTP, verifynewEmailOTP } from "../../controller/otpController/sendOTPandVerifyOTPController.js";

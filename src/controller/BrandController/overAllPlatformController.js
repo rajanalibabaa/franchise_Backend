@@ -85,6 +85,7 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandInfo.brandDetails.brandName",
+          slug: "$brandInfo.brandDetails.slug",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null]
           },

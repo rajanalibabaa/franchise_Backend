@@ -276,6 +276,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
+          slug: "$brandDetails.slug",
           isBrandPause: "$brandDetails.isBrandPause",
           payment: "$brandDetails.payment",
           isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",

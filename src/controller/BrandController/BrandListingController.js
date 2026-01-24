@@ -20,7 +20,7 @@ import {
 } from "../../model/Investor/favoriteBrandsInvestor.js";
 import ShortListed from "../../model/ShortList/shortListedModel.js";
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
-import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
+// import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
 export const likeandshortlist = async (id) => {
@@ -71,6 +71,21 @@ export const likeandshortlist = async (id) => {
 
   return { likedBrands, shortListedBrands };
 };
+
+const slugify = (text) => {
+  if (!text || typeof text !== "string") return null;
+
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+};
+
+
+
+
 const createBrandListing = async (req, res) => {
   try {
     const { admin } = req.body;
@@ -98,6 +113,38 @@ const createBrandListing = async (req, res) => {
         return fallback;
       }
     };
+
+    const brandName = brandDetails?.brandName;
+
+    if (!brandName) {
+  return res.json(
+    new ApiResponse(400, {}, "brandDetails.brandName is required")
+  );
+}
+
+let baseSlug = slugify(brandName);
+
+if (!baseSlug) {
+  return res.json(
+    new ApiResponse(400, {}, "Invalid brand name for slug generation")
+  );
+}
+
+let slug = baseSlug;
+let count = 1;
+
+// IMPORTANT: check nested slug
+while (
+  await BrandDetails.exists({
+    "brandDetails.slug": slug,
+  })
+) {
+  slug = `${baseSlug}-${count++}`;
+}
+
+// Inject slug into brandDetails
+brandDetails.slug = slug;
+
 
     const brandDetails = safeJsonParse(req.body?.brandDetails);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
@@ -469,6 +516,7 @@ const getAllBrands = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
+          slug: "$brandDetails.slug",
           isBrandPause: "$brandDetails.isBrandPause",
           isFreeLeadPaused: "$brandDetails.isFreeLeadPaused",
           brandCategories: {
@@ -564,17 +612,237 @@ const getAllBrands = async (req, res) => {
   }
 };
 
-const getBrandListingByUUID = async (req, res) => {
-  const { id } = req.params;
+// const getBrandListingByUUID = async (req, res) => {
+//   const { id } = req.params;
+//   const userId = req.query.userId || null;
+//   const paymentHistory = req.query.paymentHistory || null;
+
+//   try {
+//       const brandIdentifier = id.replace(/-/g, " ");
+
+//     const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
+//     const aggregationPipeline = [
+//       {
+//       $match: {
+//       $or: [
+//       { uuid: id },
+//       { "brandDetails.brandName": {
+//         $regex: `^${brandIdentifier}$`,
+//         $options: "i",
+//       } }
+//       ]
+//       }
+//       },
+//       {
+//         $lookup: {
+//           from: "brandfranchisedetails",
+//           localField: "uuid",
+//           foreignField: "brandOwnerId",
+//           as: "brandfranchisedetails",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "branduploads",
+//           localField: "uuid",
+//           foreignField: "brandOwnerId",
+//           as: "uploads",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "brandexpansionlocationdatas",
+//           localField: "uuid",
+//           foreignField: "brandOwnerId",
+//           as: "brandexpansionlocationdatas",
+//         },
+//       },
+//       {
+//         $addFields: {
+//           isLiked: {
+//             $in: [
+//               "$_id",
+//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+//             ],
+//           },
+//           isShortListed: {
+//             $in: [
+//               "$_id",
+//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+//             ],
+//           },
+//         },
+//       },
+//     ];
+
+//     let projectStage = {
+//       _id: 0,
+//       uuid: 1,
+//       isLiked: 1,
+//       isShortListed: 1,
+//       brandDetails: {
+//         companyName: "$brandDetails.companyName",
+//         brandName: "$brandDetails.brandName",
+//         tagLine: "$brandDetails.tagLine",
+//         brandID: "$brandID",
+//         state: "$brandDetails.state",
+//         city: "$brandDetails.city",
+//         paymentPackage: "$brandDetails.paymentPackage",
+//         listingPackages: "$brandDetails.listingPackages",
+//       },
+//       brandfranchisedetails: {
+//         $let: {
+//           vars: {
+//             firstFranchise: { $arrayElemAt: ["$brandfranchisedetails", 0] },
+//           },
+//           in: {
+//             franchiseDetails: "$$firstFranchise.franchiseDetails",
+//           },
+//         },
+//       },
+//       uploads: {
+//         $let: {
+//           vars: {
+//             firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
+//           },
+//           in: {
+//             logo: {
+//               $ifNull: [
+//                 { $arrayElemAt: ["$$firstUpload.uploads.brandLogo", 0] },
+//                 null,
+//               ],
+//             },
+//             franchiseVideos: {
+//               $ifNull: [
+//                 {
+//                   $arrayElemAt: [
+//                     "$$firstUpload.uploads.franchisePromotionVideo",
+//                     0,
+//                   ],
+//                 },
+//                 null,
+//               ],
+//             },
+//             exteriorOutlet: {
+//               $ifNull: ["$$firstUpload.uploads.exteriorOutlet", 0],
+//             },
+//             interiorOutlet: {
+//               $ifNull: ["$$firstUpload.uploads.interiorOutlet", 0],
+//             },
+//             awards: {
+//               $cond: {
+//                 if: {
+//                   $and: [
+//                     { $isArray: "$$firstUpload.uploads.awards" },
+//                     { $gt: [{ $size: "$$firstUpload.uploads.awards" }, 0] },
+//                   ],
+//                 },
+//                 then: {
+//                   $map: {
+//                     input: "$$firstUpload.uploads.awards",
+//                     as: "award",
+//                     in: {
+//                       awardDescription: "$$award.awardDescription",
+//                       awardImage: "$$award.awardImage",
+//                     },
+//                   },
+//                 },
+//                 else: [],
+//               },
+//             },
+//           },
+//         },
+//       },
+//       brandexpansionlocationdatas: {
+//         $let: {
+//           vars: {
+//             data: { $arrayElemAt: ["$brandexpansionlocationdatas", 0] },
+//           },
+//           in: {
+//             currentOutletLocations:
+//               "$$data.expansionLocationData.currentOutletLocations",
+//             expansionLocations:
+//               "$$data.expansionLocationData.expansionLocations",
+//           },
+//         },
+//       },
+//     };
+//     aggregationPipeline.push({ $project: projectStage });
+
+//     if (paymentHistory === "true") {
+//       aggregationPipeline.push(
+//         {
+//           $lookup: {
+//             from: "paymentpackagehistories",
+//             localField: "uuid",
+//             foreignField: "uuid",
+//             as: "oldPackageHistory",
+//           },
+//         },
+//         {
+//           $unwind: {
+//             path: "$oldPackageHistory",
+//             preserveNullAndEmptyArrays: true,
+//           },
+//         }
+//       );
+//       projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
+//     }
+//     const data = await BrandDetails.aggregate(aggregationPipeline);
+
+//     return res.json(
+//       new ApiResponse(200, data, "✅ Brand fetched successfully")
+//     );
+//   } catch (error) {
+//     console.error("Error fetching top food franchises:", error);
+//     return res.json(
+//       new ApiResponse(
+//         500,
+//         null,
+//         `Failed to fetch top food franchises: ${error.message}`
+//       )
+//     );
+//   }
+// };
+
+const getBrandListingSlug = async (req, res) => {
+  const { identifier } = req.params; // slug OR uuid
   const userId = req.query.userId || null;
-  const paymentHistory = req.query.paymentHistory || null;
+  const paymentHistory = req.query.paymentHistory === "true";
 
   try {
-    const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
+    const { likedBrands, shortListedBrands } =
+      await likeandshortlist(userId);
+      
+
+const slugifyForRegex = (text) => {
+  if (!text) return "";
+
+  // Lowercase and remove any leading/trailing spaces
+  const cleanText = text.toLowerCase().trim();
+
+  // Split the text into characters ignoring non-alphanumeric chars
+  const letters = cleanText.replace(/[^a-z0-9]/g, "").split("");
+
+  // Join letters with optional [-\s]* so gaps, hyphens, or no gaps all match
+  return letters.join("[-\\s]*");
+};
+
+
+
     const aggregationPipeline = [
       {
         $match: {
-          uuid: id,
+          $or: [
+            // 1️⃣ Primary: SLUG (SEO route)
+            { "brandDetails.slug":{
+              $regex: `^${slugifyForRegex(identifier)}$`,
+              $options: "i",
+            }  },
+
+            // 2️⃣ Fallback: UUID (old URLs / internal use)
+            { uuid: identifier },
+          ],
         },
       },
       {
@@ -627,8 +895,8 @@ const getBrandListingByUUID = async (req, res) => {
       brandDetails: {
         companyName: "$brandDetails.companyName",
         brandName: "$brandDetails.brandName",
+        slug: "$brandDetails.slug", // ✅ include slug
         tagLine: "$brandDetails.tagLine",
-        brandID: "$brandID",
         state: "$brandDetails.state",
         city: "$brandDetails.city",
         paymentPackage: "$brandDetails.paymentPackage",
@@ -647,7 +915,7 @@ const getBrandListingByUUID = async (req, res) => {
       uploads: {
         $let: {
           vars: {
-            firstUpload: { $arrayElemAt: ["$uploads", 0] } || null,
+            firstUpload: { $arrayElemAt: ["$uploads", 0] },
           },
           in: {
             logo: {
@@ -711,9 +979,10 @@ const getBrandListingByUUID = async (req, res) => {
         },
       },
     };
+
     aggregationPipeline.push({ $project: projectStage });
 
-    if (paymentHistory === "true") {
+    if (paymentHistory) {
       aggregationPipeline.push(
         {
           $lookup: {
@@ -730,24 +999,28 @@ const getBrandListingByUUID = async (req, res) => {
           },
         }
       );
-      projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
+      projectStage.oldPackageHistory =
+        "$oldPackageHistory.paymentPackage";
     }
-    const data = await BrandDetails.aggregate(aggregationPipeline);
 
+    const data = await BrandDetails.aggregate(aggregationPipeline);
+if (!data || data.length === 0) {
+  return res.status(404).json(
+    new ApiResponse(404, [], "❌ Brand not found")
+  );
+}
     return res.json(
       new ApiResponse(200, data, "✅ Brand fetched successfully")
     );
   } catch (error) {
-    console.error("Error fetching top food franchises:", error);
-    return res.json(
-      new ApiResponse(
-        500,
-        null,
-        `Failed to fetch top food franchises: ${error.message}`
-      )
+    console.error("Error fetching brand:", error);
+    return res.status(500).json(
+      new ApiResponse(500, null, error.message)
     );
   }
 };
+
+
 
 const updateBrandListingByUUID = async (req, res) => {
   try {
@@ -2355,6 +2628,7 @@ export const getBrandsByCategory = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: { $ifNull: ["$brandInfo.brandDetails.brandName", null] },
+          slug: { $ifNull: ["$brandInfo.brandDetails.slug", null] },
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null],
           },
@@ -2728,7 +3002,8 @@ export const getBrandById = async (req, res) => {
 export {
   createBrandListing,
   getAllBrands,
-  getBrandListingByUUID,
+  // getBrandListingByUUID,
+  getBrandListingSlug,
   updateBrandListingByUUID,
   // deleteBrandListingByUUID,
 };
