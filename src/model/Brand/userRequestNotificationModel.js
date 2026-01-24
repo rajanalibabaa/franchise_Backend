@@ -8,7 +8,7 @@ const userRequestSchema = new mongoose.Schema({
   brandId: { type: String, required: true },
   brandOriginalId: { type: String, required: true },
   brandName: { type: String, required: true },
-  brandLogo: { type: String  },
+  brandLogo: { type: String },
   brandEmail: { type: String, required: true },
   mobileNumber: { type: String },
   whatsappNumber: { type: String },
@@ -22,17 +22,17 @@ const userRequestSchema = new mongoose.Schema({
     {
       emergencyContactName: { type: String },
       emergencyContactEmail: { type: String },
-      emergencyContactPhone: { type: String }
-    }
+      emergencyContactPhone: { type: String },
+    },
   ],
 
   // Status flags
-  isActive: { type: Boolean, default: true },   // Active request
+  isActive: { type: Boolean, default: true }, // Active request
   isViewed: { type: Boolean, default: false }, // Admin/user has seen the request
   isOpened: { type: Boolean, default: false }, // User/admin has opened the message
 
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
 
 // Middleware to update updatedAt automatically

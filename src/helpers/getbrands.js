@@ -1,4 +1,3 @@
-
 import { BrandDetails } from "../model/Brand/Brand.model/BrandDetails.model.js";
 
 export const getBrandsHelperfuntion = async (
@@ -8,7 +7,7 @@ export const getBrandsHelperfuntion = async (
   skip,
   brandfranchisedetails = false,
   branduploads = false,
-  brandexpansionlocationdatas = false
+  brandexpansionlocationdatas = false,
 ) => {
   try {
     const pipeline = [];
@@ -34,8 +33,8 @@ export const getBrandsHelperfuntion = async (
           $unwind: {
             path: "$franchiseDetails",
             preserveNullAndEmptyArrays: true,
-          }, 
-        }
+          },
+        },
       );
     }
 
@@ -54,7 +53,7 @@ export const getBrandsHelperfuntion = async (
             path: "$uploads",
             preserveNullAndEmptyArrays: true,
           },
-        }
+        },
       );
     }
 
@@ -73,7 +72,7 @@ export const getBrandsHelperfuntion = async (
             path: "$brandexpansionlocationdata",
             preserveNullAndEmptyArrays: true,
           },
-        }
+        },
       );
     }
 
@@ -94,7 +93,7 @@ export const getBrandsHelperfuntion = async (
       pipeline.push({ $limit: limit });
     }
 
-    console.log("pipeline :", pipeline);
+    // console.log("pipeline :", pipeline);
 
     return await BrandDetails.aggregate(pipeline);
   } catch (error) {

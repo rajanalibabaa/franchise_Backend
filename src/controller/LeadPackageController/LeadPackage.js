@@ -19,7 +19,7 @@ export const format = (d) => {
 async function saveOldPackageToHistory(
   brand,
   packageEndTime,
-  packageStartTime
+  packageStartTime,
 ) {
   if (!brand?.brandDetails?.paymentPackage) return;
 
@@ -42,13 +42,13 @@ async function saveOldPackageToHistory(
   const existing = await PaymentPackageHistory.findOne({ uuid: brand.uuid });
 
   if (existing) {
-    await PaymentPackageHistory.updateOne( 
+    await PaymentPackageHistory.updateOne(
       { uuid: brand.uuid },
       {
         $push: {
           paymentPackage: newHistoryEntry,
         },
-      }
+      },
     );
 
     return; // done
@@ -65,7 +65,6 @@ export const leadPackageUpdate = async (req, res) => {
   try {
     const brandId = req.params.id;
     const upgradePacakgeType = req.body.packageName;
-    console.log("upgradePacakgeType :", upgradePacakgeType);
 
     // Get brand details
     const brands = await BrandDetails.find({ uuid: brandId });
@@ -90,7 +89,7 @@ export const leadPackageUpdate = async (req, res) => {
     packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
     const packageEndTime = format(packageEndDate);
 
-    console.log("Package Start Time:", packageEndTime);
+    // console.log("Package Start Time:", packageEndTime);
 
     if (!packageStartTime) {
       return res.status(400).json({
@@ -111,14 +110,14 @@ export const leadPackageUpdate = async (req, res) => {
       CategoryInvestmentrangeMatch,
       "categoryInvestmentrangeMatchRecords",
       brandId,
-      packageStartTime
+      packageStartTime,
     );
 
     const catLocCount = await getLeadCount(
       CategoryLocationMatch,
       "categoryLocationMatchRecords",
       brandId,
-      packageStartTime
+      packageStartTime,
     );
 
     // const locInvCount = await getLeadCount(
@@ -134,7 +133,7 @@ export const leadPackageUpdate = async (req, res) => {
 
     const balanceLeads = PackageLeadCount - totalLeadCount;
 
-    console.log("balanceLeads :", balanceLeads);
+    // console.log("balanceLeads :", balanceLeads);
     await saveOldPackageToHistory(brand, packageEndTime, packageStartTime);
 
     if (upgradePacakgeType) {
@@ -146,10 +145,8 @@ export const leadPackageUpdate = async (req, res) => {
 
       // Find matching package in packages[]
       const matched = PaymentPackagesData.packages.find(
-        (pkg) => pkg.packageName === selectedPackageName
+        (pkg) => pkg.packageName === selectedPackageName,
       );
-
-      
 
       if (matched) {
         newUpgradePackage = {
@@ -157,11 +154,13 @@ export const leadPackageUpdate = async (req, res) => {
           packageType: matched.packageName,
           isActive: true,
           packageUpdatedTime: new Date(),
-          packageEndDate: new Date(new Date().setMonth(new Date().getMonth() + matched.totalMonths)),
+          packageEndDate: new Date(
+            new Date().setMonth(new Date().getMonth() + matched.totalMonths),
+          ),
         };
       }
 
-      console.log("newUpgradePackage :", newUpgradePackage);
+      // console.log("newUpgradePackage :", newUpgradePackage);
 
       if (!newUpgradePackage) {
         return res.json(new ApiResponse(404, {}, "Upgrade package not found"));
@@ -174,10 +173,11 @@ export const leadPackageUpdate = async (req, res) => {
         isActive: true,
       };
 
-      console.log("=== newUpgradePackage ===:", newUpgradePackage.packageType);
+      // console.log("=== newUpgradePackage ===:", newUpgradePackage.packageType);
 
       // Save to brand
-      const paymentvalue = newUpgradePackage.packageType === "free" ? false : true;
+      const paymentvalue =
+        newUpgradePackage.packageType === "free" ? false : true;
 
       brand.brandDetails.paymentPackage = newUpgradePackage;
       brand.brandDetails.payment = paymentvalue;
@@ -187,10 +187,10 @@ export const leadPackageUpdate = async (req, res) => {
         return res.json(new ApiResponse(500, {}, "Error saving brand details"));
       }
 
-      console.log(
-        "=== newUpgradePackageLast ===:",
-        brand.brandDetails.paymentPackage
-      );
+      // console.log(
+      //   "=== newUpgradePackageLast ===:",
+      //   brand.brandDetails.paymentPackage
+      // );
     }
 
     return res.status(200).json({
@@ -227,7 +227,7 @@ async function getLeadCount(
   model,
   foreignFieldName,
   brandId,
-  packageStartTime
+  packageStartTime,
 ) {
   const doc = await model.findOne({ brandId });
 

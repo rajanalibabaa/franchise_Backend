@@ -1,18 +1,18 @@
 // passport/strategies.js
 
-import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
-import dotenv from 'dotenv';
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as FacebookStrategy } from "passport-facebook";
+import dotenv from "dotenv";
 
 dotenv.config();
 passport.serializeUser((user, done) => {
-    done(null, user);
-  });
-  
-  passport.deserializeUser((user, done) => {
-    done(null, user);
-  });
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
+});
 
 // 🔹 Google Strategy
 const configureGoogleStrategy = () => {
@@ -25,8 +25,8 @@ const configureGoogleStrategy = () => {
       },
       (accessToken, refreshToken, profile, done) => {
         return done(null, profile);
-      }
-    )
+      },
+    ),
   );
 };
 
@@ -38,13 +38,13 @@ const configureFacebookStrategy = () => {
         clientID: process.env.FACEBOOK_APP_ID,
         clientSecret: process.env.FACEBOOK_APP_SECRET,
         callbackURL: process.env.FACEBOOK_CALLBACK_URL,
-        profileFields: ['id', 'displayName', 'emails'],
+        profileFields: ["id", "displayName", "emails"],
       },
       (accessToken, refreshToken, profile, done) => {
-        console.log("profile :",profile)
+        console.log("profile :", profile);
         return done(null, profile);
-      }
-    )
+      },
+    ),
   );
 };
 

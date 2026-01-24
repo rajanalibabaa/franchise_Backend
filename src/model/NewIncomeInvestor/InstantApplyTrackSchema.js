@@ -33,7 +33,7 @@ const BrandBatchSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  
+
   updatedAt: {
     type: Date,
     default: Date.now,

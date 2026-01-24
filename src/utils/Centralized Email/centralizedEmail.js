@@ -139,7 +139,7 @@ export const paidLeadInstantApplyEmail = async (
 ) => {
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = emailTemplate;
-  console.log("emailTemplateName :", emailTemplateName);
+  // console.log("emailTemplateName :", emailTemplateName);
   const emailData = {
     brandCompanyName: brandCompanyName,
     name: fullName,
@@ -170,7 +170,7 @@ export const sendPremiumPackageOfferEmail = async (
   planToInvest,
   readyToInvest,
 ) => {
-  console.log(categories, location, ".o.o.o");
+  // console.log(categories, location, ".o.o.o");
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = "InstantApplyPerAndPar_template"; // Ensure this matches the template file name in the 'templates' folder
   const emailData = {
@@ -205,7 +205,7 @@ export const sendInstantApplyPerAndPar = async (
   planToInvest,
   readyToInvest,
 ) => {
-  console.log(categories, location, ".o.o.o");
+  // console.log(categories, location, ".o.o.o");
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = "InstantApplyPerAndPar_template"; // Ensure this matches the template file name in the 'templates' folder
   const emailData = {

@@ -51,5 +51,5 @@ const PaymentPackageHistorySchema = new mongoose.Schema({
 
 export const PaymentPackageHistory = mongoose.model(
   "PaymentPackageHistory",
-  PaymentPackageHistorySchema
+  PaymentPackageHistorySchema,
 );

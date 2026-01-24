@@ -7,8 +7,9 @@ const logOut = async (req, res) => {
   const { uuid } = req.params;
 
   if (!uuid) {
-    return res.status(400)
-    .json(new ApiResponse(400, null, "UUID parameter is required"));
+    return res
+      .status(400)
+      .json(new ApiResponse(400, null, "UUID parameter is required"));
   }
 
   let matchedUser = null;
@@ -17,7 +18,7 @@ const logOut = async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
-    path: "/", 
+    path: "/",
   };
 
   // 👇 Log all cookies first
@@ -26,80 +27,87 @@ const logOut = async (req, res) => {
   if (req?.admin && req.admin.uuid === uuid) {
     matchedUser = req.admin;
 
-    return res.status(200)
+    return res
+      .status(200)
       .clearCookie("adminAccessToken", option)
       .json(new ApiResponse(200, null, "Admin logged out successfully."));
   } else if (req?.investorUser && req.investorUser.uuid === uuid) {
     matchedUser = req.investorUser;
     await InvsRegister.findOneAndUpdate(
       {
-        uuid
+        uuid,
       },
       {
-        $set : {
+        $set: {
           active: false,
-          userNewVerifyToken : ""
-        }
+          userNewVerifyToken: "",
+        },
       },
       {
-        new: true
-      }
-    )
+        new: true,
+      },
+    );
   } else if (req?.brandUser && req.brandUser.uuid === uuid) {
     matchedUser = req.brandUser;
     await BrandDetails.findOneAndUpdate(
       {
-        uuid
+        uuid,
       },
       {
-        $set : {
+        $set: {
           active: false,
-          userNewVerifyToken : ""
-        }
+          userNewVerifyToken: "",
+        },
       },
       {
-        new: true
-      }
-    )
+        new: true,
+      },
+    );
   } else if (req?.thirdPartyUser && req.thirdPartyUser.uuid === uuid) {
     matchedUser = req.thirdPartyUser;
     await ThirdPartyAuth.findOneAndUpdate(
       {
-        uuid
+        uuid,
       },
       {
-        $set : {
+        $set: {
           active: false,
-          userNewVerifyToken : ""
-        }
+          userNewVerifyToken: "",
+        },
       },
       {
-        new: true
-      }
-    )
+        new: true,
+      },
+    );
   }
 
   // console.log("Matched user:", matchedUser);
 
   if (!matchedUser) {
-    return res.status(403)
-    .json(
-      new ApiResponse(403, null, "Unauthorized access to this resource.")
-    );
+    return res
+      .status(403)
+      .json(
+        new ApiResponse(403, null, "Unauthorized access to this resource."),
+      );
   }
 
   res.clearCookie("AccessToken", option);
 
   return res
-  .status(200)
-  .json(new ApiResponse(200, null, "User logged out successfully."));
+    .status(200)
+    .json(new ApiResponse(200, null, "User logged out successfully."));
 };
 
-const autoLogOut = async (req,res) => {
-  return res.status(200)
-  .json(
-    new ApiResponse(200,null,"It looks like you're logged in on device or browser.")
-  )
-}
+const autoLogOut = async (req, res) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        null,
+        "It looks like you're logged in on device or browser.",
+      ),
+    );
+};
 
-export { logOut ,autoLogOut};
+export { logOut, autoLogOut };

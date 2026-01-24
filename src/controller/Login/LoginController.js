@@ -2,7 +2,6 @@ import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
 import { sendEmailOTP } from "../../utils/Centralized Email/centralizedEmail.js";
-import sendMobileSMS from "../../utils/SenderMSG/sendTwilio.js";
 import { generateToken } from "../../utils/generateToken.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { ThirdPartyAuth } from "../../model/ThirdpartyAuthentication/thirdpartyAuthentication.model.js";
@@ -164,7 +163,7 @@ const generateOTPforLogin = async (req, res) => {
     if (email) {
       await sendEmailOTP(email, newOTP);
     } else {
-      await sendMobileSMS(mobileNumber, newOTP);
+      // await sendMobileSMS(mobileNumber, newOTP);
     }
 
     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));

@@ -1856,6 +1856,7 @@ export const deleteBrandListingByUUID = async (req, res) => {
   }
 };
 
+// ------------------ DATABASE MIGRATION SCRIPTS ------------------
 export const db = async (req, res) => {
   try {
     const data = await BrandListing.find({
@@ -1882,6 +1883,7 @@ export const db = async (req, res) => {
   }
 };
 
+// Re-entry script to migrate data from BrandListing to new collections
 export const reEntry = async (req, res) => {
   try {
     const data = await BrandListing.find({});
@@ -1966,7 +1968,7 @@ export const reEntry = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
+// Fetch all brand IDs
 export const allId = async (req, res) => {
   const data = await BrandListing.find({});
 
@@ -1978,6 +1980,8 @@ export const allId = async (req, res) => {
   return res.json(new ApiResponse(200, arr, "fetch successfully"));
 };
 
+// ------------------ NEW FEATURES ------------------
+// Get brands by category with pagination and like/shortlist status
 export const getBrandsByCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;

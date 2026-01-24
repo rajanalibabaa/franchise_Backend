@@ -16,8 +16,8 @@ export const searchSuggestions = async (req, res) => {
       new ApiResponse(
         404,
         {},
-        "search term required and must be minimum 2 letters"
-      )
+        "search term required and must be minimum 2 letters",
+      ),
     );
   }
 
@@ -50,40 +50,35 @@ export const searchSuggestions = async (req, res) => {
       ? { "franchiseDetails.franchiseDetails.brandCategories.main": industry }
       : undefined;
 
-  const data = await getIndustryCatTags(industry); 
-  let oneTimeFunction = true
+  const data = await getIndustryCatTags(industry);
+  let oneTimeFunction = true;
 
   while (count < 15) {
     if (oneTimeFunction) {
-      const { industryResults,categoryResults,tagsList } = findIndustryCategoriesAndTags(data, searchTerm, count);
-     pushWithLimit(industryResults, industryMatches);
-   pushWithLimit(categoryResults, categoriesMatches);
-    pushWithLimit(tagsList, tagsMatches);
-    oneTimeFunction = false
+      const { industryResults, categoryResults, tagsList } =
+        findIndustryCategoriesAndTags(data, searchTerm, count);
+      pushWithLimit(industryResults, industryMatches);
+      pushWithLimit(categoryResults, categoriesMatches);
+      pushWithLimit(tagsList, tagsMatches);
+      oneTimeFunction = false;
     }
 
-   
     const brands = await getBrandsHelperfuntion(
       match,
       undefined,
       limit,
       skip,
       true,
-      true
+      true,
     );
 
     if (!brands || brands.length === 0) break;
 
-    const {
-      companyNamesResults,
-      brandNamesResults,
-      
-      
-    } = searchBrandAndCompanyNames(brands, searchTerm, count);
+    const { companyNamesResults, brandNamesResults } =
+      searchBrandAndCompanyNames(brands, searchTerm, count);
 
     pushWithLimit(companyNamesResults, companyNamesMatches);
     pushWithLimit(brandNamesResults, brandNamesMatches);
- 
 
     skip += limit;
   }
@@ -107,6 +102,6 @@ export const searchSuggestions = async (req, res) => {
   }
 
   return res.json(
-    new ApiResponse(200, result, "Fetch suggestions successfully")
+    new ApiResponse(200, result, "Fetch suggestions successfully"),
   );
 };

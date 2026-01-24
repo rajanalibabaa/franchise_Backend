@@ -12,7 +12,6 @@ const tagSchema = new mongoose.Schema(
     },
   },
   { _id: false },
-  
 );
 const productTagSchema = new mongoose.Schema(
   {
@@ -23,7 +22,7 @@ const productTagSchema = new mongoose.Schema(
     tags: {
       type: [tagSchema],
       required: true,
-      default:[]
+      default: [],
     },
     id: {
       type: String,
@@ -31,8 +30,7 @@ const productTagSchema = new mongoose.Schema(
     },
   },
   { _id: false },
-  
-); 
+);
 const categoriesSchema = new mongoose.Schema(
   {
     category: {
@@ -45,8 +43,7 @@ const categoriesSchema = new mongoose.Schema(
     },
   },
   { _id: false },
-  
-); 
+);
 
 const industryManagement = new mongoose.Schema(
   {
@@ -69,14 +66,14 @@ const industryManagement = new mongoose.Schema(
     uuid: {
       type: String,
       require: true,
-    }
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const IndustryManagement = mongoose.model(
   "IndustryManagement",
-  industryManagement
+  industryManagement,
 );

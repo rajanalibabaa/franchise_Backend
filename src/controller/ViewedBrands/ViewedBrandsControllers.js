@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import BrandListing from "../../model/Brand/brandListingPage.js";
-import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import {
   ViewedBrandsByBrands,
   ViewedBrandsByInvestor,
@@ -16,8 +15,6 @@ export const postViewBrands = async (req, res) => {
     const viewedID = req.body.viewedID;
     const investor = req.investorUser;
     const brand = req.brandUser;
-
-    console.log("view :", viewedID);
 
     if (paramsID !== investor?.uuid && paramsID !== brand?.uuid) {
       return res.json(new ApiResponse(403, {}, "Unauthorized request"));
@@ -41,7 +38,7 @@ export const postViewBrands = async (req, res) => {
             InvestorUserId: investor._id,
             "viewedByInvestors.BrandID": targetBrand._id,
           },
-          { $set: { "viewedByInvestors.$.addedAt": new Date() } }
+          { $set: { "viewedByInvestors.$.addedAt": new Date() } },
         );
       } else {
         await ViewedBrandsByInvestor.findOneAndUpdate(
@@ -54,7 +51,7 @@ export const postViewBrands = async (req, res) => {
               },
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, new: true },
         );
       }
 
@@ -70,7 +67,7 @@ export const postViewBrands = async (req, res) => {
             brandUserID: targetBrand._id,
             "viewedByInvestors.InvestorID": investor._id,
           },
-          { $set: { "viewedByInvestors.$.addedAt": new Date() } }
+          { $set: { "viewedByInvestors.$.addedAt": new Date() } },
         );
       } else {
         await ViewedToBrands.findOneAndUpdate(
@@ -83,12 +80,12 @@ export const postViewBrands = async (req, res) => {
               },
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, new: true },
         );
       }
 
       return res.json(
-        new ApiResponse(200, {}, "Viewed brand successfully recorded")
+        new ApiResponse(200, {}, "Viewed brand successfully recorded"),
       );
     }
 
@@ -102,7 +99,7 @@ export const postViewBrands = async (req, res) => {
       if (existingBrandView) {
         await ViewedBrandsByBrands.updateOne(
           { brandUserID: brand._id, "viewedByBrands.BrandID": targetBrand._id },
-          { $set: { "viewedByBrands.$.addedAt": new Date() } }
+          { $set: { "viewedByBrands.$.addedAt": new Date() } },
         );
       } else {
         await ViewedBrandsByBrands.findOneAndUpdate(
@@ -115,7 +112,7 @@ export const postViewBrands = async (req, res) => {
               },
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, new: true },
         );
       }
 
@@ -127,7 +124,7 @@ export const postViewBrands = async (req, res) => {
       if (existingTargetBrandView) {
         await ViewedToBrands.updateOne(
           { brandUserID: targetBrand._id, "viewedByBrands.BrandID": brand._id },
-          { $set: { "viewedByBrands.$.addedAt": new Date() } }
+          { $set: { "viewedByBrands.$.addedAt": new Date() } },
         );
       } else {
         await ViewedToBrands.findOneAndUpdate(
@@ -140,12 +137,12 @@ export const postViewBrands = async (req, res) => {
               },
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, new: true },
         );
       }
 
       return res.json(
-        new ApiResponse(200, {}, "Viewed brand successfully recorded")
+        new ApiResponse(200, {}, "Viewed brand successfully recorded"),
       );
     }
 
@@ -173,10 +170,10 @@ export const getAllViewBrandByID = async (req, res) => {
       const viewedData = await ViewedBrandsByInvestor.findOne({
         InvestorUserId: investor._id,
       });
- 
+
       if (!viewedData?.viewedByInvestors?.length) {
         return res.json(
-          new ApiResponse(200, [], "You haven't viewed any brands yet")
+          new ApiResponse(200, [], "You haven't viewed any brands yet"),
         );
       }
 
@@ -187,10 +184,10 @@ export const getAllViewBrandByID = async (req, res) => {
       const viewedData = await ViewedBrandsByBrands.findOne({
         brandUserID: brand._id,
       });
- 
+
       if (!viewedData?.viewedByBrands?.length) {
         return res.json(
-          new ApiResponse(200, [], "You haven't viewed any brands yet")
+          new ApiResponse(200, [], "You haven't viewed any brands yet"),
         );
       }
 
@@ -200,9 +197,7 @@ export const getAllViewBrandByID = async (req, res) => {
     }
 
     if (!brandIds.length) {
-      return res.json(
-        new ApiResponse(200, [], "No viewed brands found")
-      );
+      return res.json(new ApiResponse(200, [], "No viewed brands found"));
     }
 
     // ✅ Single pipeline for all brands
@@ -224,7 +219,12 @@ export const getAllViewBrandByID = async (req, res) => {
           as: "uploads",
         },
       },
-      { $unwind: { path: "$franchiseDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: "$franchiseDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
 
       // ✅ Filter by "main" if provided
@@ -263,7 +263,10 @@ export const getAllViewBrandByID = async (req, res) => {
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
           brandCategories: {
-            $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null],
+            $ifNull: [
+              "$franchiseDetails.franchiseDetails.brandCategories",
+              null,
+            ],
           },
           fico: {
             $let: {
@@ -289,7 +292,9 @@ export const getAllViewBrandByID = async (req, res) => {
           franchiseVideos: {
             $cond: {
               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-              then: { $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0] },
+              then: {
+                $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
+              },
               else: null,
             },
           },
@@ -303,7 +308,7 @@ export const getAllViewBrandByID = async (req, res) => {
 
     // ✅ Count total before skip/limit
     const totalCountPipeline = pipeline.filter(
-      (stage) => !("$skip" in stage) && !("$limit" in stage)
+      (stage) => !("$skip" in stage) && !("$limit" in stage),
     );
     totalCountPipeline.push({ $count: "count" });
 
@@ -316,7 +321,7 @@ export const getAllViewBrandByID = async (req, res) => {
     const totalPages = Math.ceil(totalCount / limit);
     const hasNext = page < totalPages;
     const hasPrevious = page > 1;
- 
+
     return res.json(
       new ApiResponse(
         200,
@@ -331,8 +336,8 @@ export const getAllViewBrandByID = async (req, res) => {
             hasPrevious,
           },
         },
-        "Viewed brands retrieved successfully"
-      )
+        "Viewed brands retrieved successfully",
+      ),
     );
   } catch (err) {
     console.error("Error in getAllViewBrandByID:", err);
@@ -361,12 +366,12 @@ export const deleteViewBrandByID = async (req, res) => {
       const updatedView = await ViewedBrandsByInvestor.findOneAndUpdate(
         { InvestorUserId: investor._id },
         { $pull: { viewedByInvestors: { BrandID: target._id } } },
-        { new: true }
+        { new: true },
       );
 
       await ViewedToBrands.findOneAndUpdate(
         { brandUserID: target._id },
-        { $pull: { viewedByInvestors: { InvestorID: investor._id } } }
+        { $pull: { viewedByInvestors: { InvestorID: investor._id } } },
       );
 
       return res
@@ -375,8 +380,8 @@ export const deleteViewBrandByID = async (req, res) => {
           new ApiResponse(
             200,
             updatedView,
-            "Brand removed from investor's views"
-          )
+            "Brand removed from investor's views",
+          ),
         );
     }
 
@@ -384,18 +389,18 @@ export const deleteViewBrandByID = async (req, res) => {
       const updatedView = await ViewedBrandsByBrands.findOneAndUpdate(
         { brandUserID: brand._id },
         { $pull: { viewedByBrands: { BrandID: target._id } } },
-        { new: true }
+        { new: true },
       );
 
       await ViewedToBrands.findOneAndUpdate(
         { brandUserID: target._id },
-        { $pull: { viewedByBrands: { BrandID: brand._id } } }
+        { $pull: { viewedByBrands: { BrandID: brand._id } } },
       );
 
       return res
         .status(200)
         .json(
-          new ApiResponse(200, updatedView, "Brand removed from brand views")
+          new ApiResponse(200, updatedView, "Brand removed from brand views"),
         );
     }
 
@@ -429,8 +434,8 @@ export const getViewBrandsByAll = async (req, res) => {
         {
           totalViewCount: total,
         },
-        "View data retrieved successfully"
-      )
+        "View data retrieved successfully",
+      ),
     );
   } catch (error) {
     console.error("getAllViewBrands error:", error);
@@ -439,6 +444,3 @@ export const getViewBrandsByAll = async (req, res) => {
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
 };
-
-
-
