@@ -11,9 +11,7 @@ import { RegisterSuperAdmin } from "../../model/Admin/superAdmin/registerSuperAd
 const generateOTPforLogin = async (req, res) => {
   try {
     const { email, mobileNumber, platform } = req.body;
-    const logingAnyway = req.body.logingAnyway 
-
-    
+    const logingAnyway = req.body.logingAnyway;
 
     if (!email && !mobileNumber) {
       return res
@@ -22,8 +20,8 @@ const generateOTPforLogin = async (req, res) => {
           new ApiResponse(
             400,
             null,
-            "Please provide either email or phone number"
-          )
+            "Please provide either email or phone number",
+          ),
         );
     }
 
@@ -40,7 +38,7 @@ const generateOTPforLogin = async (req, res) => {
     }
 
     const newOTP = generateOTP().toString().trim();
-    console.log("Generated OTP:", newOTP);
+    // console.log("Generated OTP:", newOTP);
 
     // Store OTP with current timestamp
     const timestamp = Date.now() + 5 * 60 * 1000;
@@ -51,15 +49,14 @@ const generateOTPforLogin = async (req, res) => {
       data = await InvsRegister.findOne({
         $or: [{ email }, { mobileNumber }],
       });
-      
-      
+
       if (data?.active === true && logingAnyway !== true) {
         return res.json(
           new ApiResponse(
-            309, 
+            309,
             null,
-            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
-          )
+            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`,
+          ),
         );
       }
 
@@ -76,7 +73,7 @@ const generateOTPforLogin = async (req, res) => {
           },
           {
             new: true,
-          }
+          },
         );
       }
     }
@@ -90,15 +87,15 @@ const generateOTPforLogin = async (req, res) => {
             : []),
         ],
       });
-      console.log("logingAnyway OTP:", logingAnyway === true);
+      // console.log("logingAnyway OTP:", logingAnyway === true);
       if (data?.active === true && logingAnyway !== true) {
         // console.log("Generated OTP:", 222222);
         return res.json(
           new ApiResponse(
             309,
             null,
-            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
-          )
+            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`,
+          ),
         );
       }
 
@@ -120,7 +117,7 @@ const generateOTPforLogin = async (req, res) => {
           },
           {
             new: true,
-          }
+          },
         );
       }
     }
@@ -136,8 +133,8 @@ const generateOTPforLogin = async (req, res) => {
           new ApiResponse(
             309,
             null,
-            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`
-          )
+            `You are already logged in on ${data?.loginPlatform}. Would you like to proceed anyway.`,
+          ),
         );
       }
       if (data) {
@@ -153,14 +150,14 @@ const generateOTPforLogin = async (req, res) => {
           },
           {
             new: true,
-          }
+          },
         );
       }
     }
 
     if (!data) {
       return res.json(
-        new ApiResponse(404, null, "You are not a registered user")
+        new ApiResponse(404, null, "You are not a registered user"),
       );
     }
 
@@ -180,7 +177,7 @@ const generateOTPforLogin = async (req, res) => {
 const verifyLogin = async (req, res) => {
   try {
     const { verifyOtp, email, platform, mobileNumber } = req.body;
-    console.log(req.body)
+    // console.log(req.body)
 
     if (!verifyOtp) {
       return res.json(new ApiResponse(400, null, "OTP required"));
@@ -229,7 +226,7 @@ const verifyLogin = async (req, res) => {
       thirdPartyUsers?.newOtp
     ) {
       return res.json(
-        new ApiResponse(400, null, "No OTP generated or OTP expired")
+        new ApiResponse(400, null, "No OTP generated or OTP expired"),
       );
     }
 
@@ -240,8 +237,8 @@ const verifyLogin = async (req, res) => {
         new ApiResponse(
           400,
           null,
-          "Invalid OTP. Please check the code and try again."
-        )
+          "Invalid OTP. Please check the code and try again.",
+        ),
       );
     }
     const payload = {
@@ -253,7 +250,7 @@ const verifyLogin = async (req, res) => {
     const AccessToken = generateToken(
       payload,
       process.env.ACCESS_TOKEN_SECRET,
-      process.env.ACCESS_TOKEN_EXPIRY
+      process.env.ACCESS_TOKEN_EXPIRY,
     );
 
     const cookieOptions = {
@@ -274,12 +271,12 @@ const verifyLogin = async (req, res) => {
             loginPlatform: platform,
             otpExpired: null,
             newOtp: null,
-            userNewVerifyToken:AccessToken
+            userNewVerifyToken: AccessToken,
           },
         },
         {
           new: true,
-        }
+        },
       );
     }
 
@@ -300,12 +297,12 @@ const verifyLogin = async (req, res) => {
             loginPlatform: platform,
             otpExpired: null,
             newOtp: null,
-            userNewVerifyToken:AccessToken
+            userNewVerifyToken: AccessToken,
           },
         },
         {
           new: true,
-        }
+        },
       );
     }
 
@@ -321,12 +318,12 @@ const verifyLogin = async (req, res) => {
             loginPlatform: platform,
             otpExpired: null,
             newOtp: null,
-            userNewVerifyToken:AccessToken
+            userNewVerifyToken: AccessToken,
           },
         },
         {
           new: true,
-        }
+        },
       );
     }
 
@@ -340,8 +337,8 @@ const verifyLogin = async (req, res) => {
           AccessToken,
           userData,
         },
-        "User verified and logged in"
-      )
+        "User verified and logged in",
+      ),
     );
   } catch (error) {
     console.error("Investor login error:", error);
@@ -371,10 +368,10 @@ export const generateOTPforAdminLogin = async (req, res) => {
     }
 
     const newOTP = generateOTP();
-    console.log("otp", newOTP);
+    // console.log("otp", newOTP);
     const timestamp = Date.now() + 5 * 60 * 1000;
 
-    console.log(Date.now());
+    // console.log(Date.now());
     // console.log("time :",timestamp);
 
     const data = await RegisterSuperAdmin.findOneAndUpdate(
@@ -385,12 +382,12 @@ export const generateOTPforAdminLogin = async (req, res) => {
           otpExpired: timestamp,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!data) {
       return res.json(
-        new ApiResponse(500, {}, "Failed to update OTP. Please try again")
+        new ApiResponse(500, {}, "Failed to update OTP. Please try again"),
       );
     }
 
@@ -402,18 +399,20 @@ export const generateOTPforAdminLogin = async (req, res) => {
   }
 };
 
-export const verifyAdminLoginOTP = async (req, res) => { 
+export const verifyAdminLoginOTP = async (req, res) => {
   try {
     const { verifyOTP, email, platform } = req.body;
 
     if (!email) {
-      return res.json(new ApiResponse(400, {}, "Please Generate OTP"));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Please Generate OTP"));
     }
 
     const exists = await RegisterSuperAdmin.findOne({ adminEmail: email });
 
     if (!exists) {
-      return res.json(new ApiResponse(404, {}, "Admin not found"));
+      return res.status(404).json(new ApiResponse(404, {}, "Admin not found"));
     }
 
     if (Date.now() > new Date(exists.otpExpired).getTime()) {
@@ -421,23 +420,27 @@ export const verifyAdminLoginOTP = async (req, res) => {
     }
 
     if (!verifyOTP) {
-      return res.json(new ApiResponse(400, {}, "Please Enter the OTP"));
+      return res
+        .status(400)
+        .json(new ApiResponse(400, {}, "Please Enter the OTP"));
     }
 
     if (verifyOTP !== exists.otp) {
-      return res.json(
-        new ApiResponse(
-          400,
-          {},
-          "Wrong OTP, please check and enter correct OTP"
-        )
-      );
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            {},
+            "Wrong OTP, please check and enter correct OTP",
+          ),
+        );
     }
 
     const adminAccessToken = generateToken(
       { adminUUID: exists.uuid },
       process.env.ADMIN_ACCESS_TOKEN_SECRET,
-      process.env.ADMIN_ACCESS_TOKEN_EXPIRY
+      process.env.ADMIN_ACCESS_TOKEN_EXPIRY,
     );
 
     const cookieOptions = {
@@ -455,18 +458,20 @@ export const verifyAdminLoginOTP = async (req, res) => {
           userNewVerifyToken: adminAccessToken,
         },
       },
-      { new: true }
+      { new: true },
     ).select(" -otp -otpExpired -_id ");
 
     res.cookie("adminAccessToken", adminAccessToken, cookieOptions);
 
-    return res.json(
-      new ApiResponse(
-        200,
-        { adminAccessToken, adminData },
-        "Verification successful"
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { adminAccessToken, adminData },
+          "Verification successful",
+        ),
+      );
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.json(new ApiResponse(500, {}, "Internal Server Error"));

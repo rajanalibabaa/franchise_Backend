@@ -35,33 +35,32 @@ export const likeandshortlist = async (id) => {
       });
       likedBrands =
         investorFavorites?.favoriteBrandByInvestor.map((b) =>
-          b.brandID.toString()
+          b.brandID.toString(),
         ) || [];
 
       const investorShortList = await ShortListed.find({
         "ShortListedBy.investor.userId": investor._id,
       });
       shortListedBrands = investorShortList.map((s) =>
-        s.brandOwnerId.toString()
+        s.brandOwnerId.toString(),
       );
     } else {
       const brand = await BrandDetails.findOne({ uuid: id });
-      console.log("brand :", brand);
+
       if (brand) {
         const brandFavorites = await FavoriteBrandsLikedBybrand.findOne({
           brandUserId: brand._id,
         });
-        console.log("brandFavorites id :", brandFavorites);
         likedBrands =
           brandFavorites?.favoriteBrandBybrand.map((b) =>
-            b.brandID.toString()
+            b.brandID.toString(),
           ) || [];
 
         const brandShortList = await ShortListed.find({
           "ShortListedBy.brand.userId": brand._id,
         });
         shortListedBrands = brandShortList.map((s) =>
-          s.brandOwnerId.toString()
+          s.brandOwnerId.toString(),
         );
       }
     }
@@ -74,8 +73,7 @@ export const likeandshortlist = async (id) => {
 const createBrandListing = async (req, res) => {
   try {
     const { admin } = req.body;
-    const id = uuid(); // Make sure this is properly imported/defined
-    console.log("Incoming data:", req.body);
+    const id = uuid();
     const fileFields = [
       "awardDoc",
       "brandLogo",
@@ -102,10 +100,8 @@ const createBrandListing = async (req, res) => {
     const brandDetails = safeJsonParse(req.body?.brandDetails);
     const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
     const expansionLocationData = safeJsonParse(
-      req.body?.expansionLocationData
+      req.body?.expansionLocationData,
     );
-
-    console.log("Parsed brandDetails:", brandDetails);
 
     if (brandDetails.paymentPackage) {
       // brandDetails.paymentPackage = "basic" or "premium"
@@ -113,16 +109,14 @@ const createBrandListing = async (req, res) => {
       const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
 
       const selectedPackageName = brandDetails.paymentPackage;
-      console.log("Selected Package:", selectedPackageName);
 
       // Find matching package from packages[]
       const matched = PaymentPackagesData.packages.find(
-        (pkg) => pkg.packageName === selectedPackageName
+        (pkg) => pkg.packageName === selectedPackageName,
       );
-      console.log("matched", matched);
       const packageStartDate = new Date();
       const packageEndDate = new Date(packageStartDate);
-  packageEndDate.setMonth(packageEndDate.getMonth() + matched.totalMonths);
+      packageEndDate.setMonth(packageEndDate.getMonth() + matched.totalMonths);
 
       if (matched) {
         const matchedPackage = {
@@ -133,14 +127,12 @@ const createBrandListing = async (req, res) => {
           packageEndDate: packageEndDate,
         };
 
-        console.log("Matched Package:", matchedPackage);
-
-    // Save FULL OBJECT into brandDetails.paymentPackage
-    brandDetails.paymentPackage = matchedPackage;
-  } else {
-    console.log("No matching package found for:", selectedPackageName);
-  }
-}
+        // Save FULL OBJECT into brandDetails.paymentPackage
+        brandDetails.paymentPackage = matchedPackage;
+      } else {
+        console.log("No matching package found for:", selectedPackageName);
+      }
+    }
 
     // console.log("updated data:", brandDetails);
 
@@ -150,8 +142,8 @@ const createBrandListing = async (req, res) => {
         new ApiResponse(
           400,
           {},
-          "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing"
-        )
+          "Required fields (brandDetails, franchiseDetails, expansionLocationData) are missing",
+        ),
       );
     }
 
@@ -173,7 +165,7 @@ const createBrandListing = async (req, res) => {
         districtObj.cities.length === 0
       ) {
         districtObj.cities = [districtObj.district || fallbackName].filter(
-          Boolean
+          Boolean,
         );
       }
       return districtObj;
@@ -186,7 +178,7 @@ const createBrandListing = async (req, res) => {
         const districtKey = isInternational ? "district" : "districts";
         if (Array.isArray(loc[districtKey])) {
           loc[districtKey] = loc[districtKey].map((d) =>
-            normalizeDistrictData(d, loc[key])
+            normalizeDistrictData(d, loc[key]),
           );
         }
         return loc;
@@ -197,14 +189,14 @@ const createBrandListing = async (req, res) => {
     if (expansionLocationData?.expansionLocations?.domestic?.locations) {
       expansionLocationData.expansionLocations.domestic.locations =
         normalizeLocations(
-          expansionLocationData.expansionLocations.domestic.locations
+          expansionLocationData.expansionLocations.domestic.locations,
         );
     }
 
     if (expansionLocationData?.currentOutletLocations?.domestic?.locations) {
       expansionLocationData.currentOutletLocations.domestic.locations =
         normalizeLocations(
-          expansionLocationData.currentOutletLocations.domestic.locations
+          expansionLocationData.currentOutletLocations.domestic.locations,
         );
     }
 
@@ -212,7 +204,7 @@ const createBrandListing = async (req, res) => {
       expansionLocationData.expansionLocations.international.country =
         normalizeLocations(
           expansionLocationData.expansionLocations.international.country,
-          true
+          true,
         );
     }
 
@@ -220,7 +212,7 @@ const createBrandListing = async (req, res) => {
       expansionLocationData.currentOutletLocations.international.country =
         normalizeLocations(
           expansionLocationData.currentOutletLocations.international.country,
-          true
+          true,
         );
     }
 
@@ -254,9 +246,9 @@ const createBrandListing = async (req, res) => {
             const uploadedUrl = await uploadFileToR2(file.path, file.mimetype, {
               convertToHLS: isVideo,
             });
-            console.log(`✅ Uploaded ${field}:`, uploadedUrl);
+            // console.log(`✅ Uploaded ${field}:`, uploadedUrl);
             return uploadedUrl;
-          })
+          }),
         );
         uploadedFiles[field] = urls;
       }
@@ -316,7 +308,11 @@ const createBrandListing = async (req, res) => {
         !newBrandUploads
       ) {
         return res.json(
-          new ApiResponse(500, {}, "Failed to create one or more brand records")
+          new ApiResponse(
+            500,
+            {},
+            "Failed to create one or more brand records",
+          ),
         );
       }
 
@@ -329,8 +325,8 @@ const createBrandListing = async (req, res) => {
             locations: newBrandExpansionLocationData,
             uploads: newBrandUploads,
           },
-          "Brand listing created successfully"
-        )
+          "Brand listing created successfully",
+        ),
       );
     }
 
@@ -377,7 +373,7 @@ const createBrandListing = async (req, res) => {
       !newBrandUploads
     ) {
       return res.json(
-        new ApiResponse(500, {}, "Failed to create one or more brand records")
+        new ApiResponse(500, {}, "Failed to create one or more brand records"),
       );
     }
 
@@ -390,8 +386,8 @@ const createBrandListing = async (req, res) => {
           locations: newBrandExpansionLocationData,
           uploads: newBrandUploads,
         },
-        "Brand listing created successfully"
-      )
+        "Brand listing created successfully",
+      ),
     );
   } catch (error) {
     console.error("❌ Error in createBrandListing:", error);
@@ -399,8 +395,8 @@ const createBrandListing = async (req, res) => {
       new ApiResponse(
         500,
         {},
-        `Failed to create brand listing: ${error.message}`
-      )
+        `Failed to create brand listing: ${error.message}`,
+      ),
     );
   }
 };
@@ -553,13 +549,13 @@ const getAllBrands = async (req, res) => {
             hasPrevious,
           },
         },
-        "Brand data fetched successfully"
-      )
+        "Brand data fetched successfully",
+      ),
     );
   } catch (error) {
     console.error("Error fetching brands:", error);
     return res.json(
-      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`),
     );
   }
 };
@@ -728,14 +724,14 @@ const getBrandListingByUUID = async (req, res) => {
             path: "$oldPackageHistory",
             preserveNullAndEmptyArrays: true,
           },
-        }
+        },
       );
       projectStage.oldPackageHistory = "$oldPackageHistory.paymentPackage";
     }
     const data = await BrandDetails.aggregate(aggregationPipeline);
 
     return res.json(
-      new ApiResponse(200, data, "✅ Brand fetched successfully")
+      new ApiResponse(200, data, "✅ Brand fetched successfully"),
     );
   } catch (error) {
     console.error("Error fetching top food franchises:", error);
@@ -743,8 +739,8 @@ const getBrandListingByUUID = async (req, res) => {
       new ApiResponse(
         500,
         null,
-        `Failed to fetch top food franchises: ${error.message}`
-      )
+        `Failed to fetch top food franchises: ${error.message}`,
+      ),
     );
   }
 };
@@ -753,7 +749,7 @@ const updateBrandListingByUUID = async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("id :", id);
+    // console.log("id :", id);
 
     // ---------- Safe Parse Helper ----------
     const safeParse = (data) => {
@@ -784,7 +780,7 @@ const updateBrandListingByUUID = async (req, res) => {
       expensionLocationData = await expansionLocationData(
         id,
         addExpansionLocationData,
-        removeExpansionLocationData
+        removeExpansionLocationData,
       );
     }
 
@@ -794,11 +790,9 @@ const updateBrandListingByUUID = async (req, res) => {
     // ---------- Parse brand & franchise ----------
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
-  
-    console.log("ParseBrandDetails:", ParseBrandDetails);
-    console.log("parseFranchiseDetails", ParseFranchiseDetails);
 
-
+    // console.log("ParseBrandDetails:", ParseBrandDetails);
+    // console.log("parseFranchiseDetails", ParseFranchiseDetails);
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
@@ -858,7 +852,13 @@ const updateBrandListingByUUID = async (req, res) => {
       }
 
       if (ParseFranchiseDetails.brandCategories) {
-        const brandCategoriesFields = ["main", "sub", "groupId", "productTags", "serviceTags"];
+        const brandCategoriesFields = [
+          "main",
+          "sub",
+          "groupId",
+          "productTags",
+          "serviceTags",
+        ];
         for (const field of brandCategoriesFields) {
           if (ParseFranchiseDetails.brandCategories[field] !== undefined) {
             updates.$set[`franchiseDetails.brandCategories.${field}`] =
@@ -939,7 +939,7 @@ const updateBrandListingByUUID = async (req, res) => {
           ProductServiceTypes: "ProductServiceTypes",
           TargetAudience: "TargetAudience",
           ServiceModel: "ServiceModel",
-          PricingValue: "PricingValue", 
+          PricingValue: "PricingValue",
           AmbienceExperience: "AmbienceExperience",
           FeaturesAmenities: "FeaturesAmenities",
           TechnologyIntegration: "TechnologyIntegration",
@@ -978,7 +978,7 @@ const updateBrandListingByUUID = async (req, res) => {
         updatedBrands.brandDetails = await BrandDetails.findOneAndUpdate(
           { uuid: id },
           { $set: updates.$set },
-          { new: true, runValidators: true, session }
+          { new: true, runValidators: true, session },
         );
       }
 
@@ -989,7 +989,7 @@ const updateBrandListingByUUID = async (req, res) => {
           await BrandFranchiseDetails.findOneAndUpdate(
             { brandOwnerId: id },
             { $set: updates.$set },
-            { new: true, runValidators: true, session }
+            { new: true, runValidators: true, session },
           );
       }
 
@@ -1005,12 +1005,12 @@ const updateBrandListingByUUID = async (req, res) => {
           (await BrandFranchiseDetails.findOne({ brandOwnerId: id })),
         expensionLocationData: expensionLocationData || null,
       };
-      console.log("resposnse data", responseData);
+      // console.log("resposnse data", responseData);
 
       return res
         .status(200)
         .json(
-          new ApiResponse(200, responseData, "✅ Brand updated successfully")
+          new ApiResponse(200, responseData, "✅ Brand updated successfully"),
         );
     } catch (error) {
       await session.abortTransaction();
@@ -1036,26 +1036,26 @@ const expansionLocationData = async (id, add, remove) => {
   let updatedLocations = JSON.parse(
     JSON.stringify(
       oldExpansionLocationData.expansionLocationData?.currentOutletLocations
-        ?.domestic?.locations || []
-    )
+        ?.domestic?.locations || [],
+    ),
   );
   let updatedInternationalLocations = JSON.parse(
     JSON.stringify(
       oldExpansionLocationData.expansionLocationData?.currentOutletLocations
-        ?.international?.locations || []
-    )
+        ?.international?.locations || [],
+    ),
   );
   let updatedExpansionLocations = JSON.parse(
     JSON.stringify(
       oldExpansionLocationData.expansionLocationData?.expansionLocations
-        ?.domestic?.locations || []
-    )
+        ?.domestic?.locations || [],
+    ),
   );
   let updatedInternationalExpansionLocations = JSON.parse(
     JSON.stringify(
       oldExpansionLocationData.expansionLocationData?.expansionLocations
-        ?.international?.locations || []
-    )
+        ?.international?.locations || [],
+    ),
   );
 
   // ---------- CurrentOutletLocations ----------
@@ -1065,25 +1065,25 @@ const expansionLocationData = async (id, add, remove) => {
     if (remove.currentOutletLocations.domestic.state) {
       updatedLocations = updatedLocations.filter(
         (loc) =>
-          !remove.currentOutletLocations.domestic.state.includes(loc.state)
+          !remove.currentOutletLocations.domestic.state.includes(loc.state),
       );
     }
 
     // 2. Remove Districts
     if (remove.currentOutletLocations.domestic.districts) {
       for (const [stateName, districts] of Object.entries(
-        remove.currentOutletLocations.domestic.districts
+        remove.currentOutletLocations.domestic.districts,
       )) {
         const stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (stateEntry) {
           stateEntry.districts = (stateEntry.districts || []).filter(
-            (d) => !districts.includes(d.district)
+            (d) => !districts.includes(d.district),
           );
 
           // cleanup empty states
           if (stateEntry.districts.length === 0) {
             updatedLocations = updatedLocations.filter(
-              (l) => l.state !== stateName
+              (l) => l.state !== stateName,
             );
           }
         }
@@ -1093,25 +1093,25 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Remove Cities
     if (remove.currentOutletLocations.domestic.city) {
       for (const [stateName, districtsObj] of Object.entries(
-        remove.currentOutletLocations.domestic.city
+        remove.currentOutletLocations.domestic.city,
       )) {
         const stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (stateEntry) {
           for (const [districtName, districtData] of Object.entries(
-            districtsObj
+            districtsObj,
           )) {
             const districtEntry = stateEntry.districts?.find(
-              (d) => d.district === districtName
+              (d) => d.district === districtName,
             );
             if (districtEntry) {
               districtEntry.cities = (districtEntry.cities || []).filter(
-                (c) => !(districtData.city || []).includes(c)
+                (c) => !(districtData.city || []).includes(c),
               );
 
               // cleanup empty districts
               if (districtEntry.cities.length === 0) {
                 stateEntry.districts = stateEntry.districts.filter(
-                  (d) => d.district !== districtName
+                  (d) => d.district !== districtName,
                 );
               }
             }
@@ -1120,7 +1120,7 @@ const expansionLocationData = async (id, add, remove) => {
           // cleanup empty states
           if (!stateEntry.districts || stateEntry.districts.length === 0) {
             updatedLocations = updatedLocations.filter(
-              (l) => l.state !== stateName
+              (l) => l.state !== stateName,
             );
           }
         }
@@ -1136,7 +1136,7 @@ const expansionLocationData = async (id, add, remove) => {
         const locationObj =
           typeof loc === "string" ? { state: loc, districts: [] } : loc;
         let stateEntry = updatedLocations.find(
-          (l) => l.state === locationObj.state
+          (l) => l.state === locationObj.state,
         );
         if (!stateEntry) {
           updatedLocations.push({
@@ -1150,7 +1150,7 @@ const expansionLocationData = async (id, add, remove) => {
     // 2. Add Districts
     if (add.currentOutletLocations.domestic.districts) {
       for (const [stateName, districts] of Object.entries(
-        add.currentOutletLocations.domestic.districts
+        add.currentOutletLocations.domestic.districts,
       )) {
         let stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (!stateEntry) {
@@ -1164,7 +1164,7 @@ const expansionLocationData = async (id, add, remove) => {
         stateEntry.districts = stateEntry.districts || [];
         for (const districtName of districts) {
           const existingDistrict = stateEntry.districts.find(
-            (d) => d.district === districtName
+            (d) => d.district === districtName,
           );
           if (!existingDistrict) {
             stateEntry.districts.push({ district: districtName, cities: [] });
@@ -1176,13 +1176,13 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Add Cities
     if (add.currentOutletLocations.domestic.city) {
       for (const [stateName, districtsObj] of Object.entries(
-        add.currentOutletLocations.domestic.city
+        add.currentOutletLocations.domestic.city,
       )) {
         let stateEntry = updatedLocations.find((l) => l.state === stateName);
         if (!stateEntry) {
           const newState = { state: stateName, districts: [] };
           for (const [districtName, districtData] of Object.entries(
-            districtsObj
+            districtsObj,
           )) {
             newState.districts.push({
               district: districtName,
@@ -1195,10 +1195,10 @@ const expansionLocationData = async (id, add, remove) => {
 
         stateEntry.districts = stateEntry.districts || [];
         for (const [districtName, districtData] of Object.entries(
-          districtsObj
+          districtsObj,
         )) {
           let districtEntry = stateEntry.districts.find(
-            (d) => d.district === districtName
+            (d) => d.district === districtName,
           );
           if (!districtEntry) {
             districtEntry = { district: districtName, cities: [] };
@@ -1208,7 +1208,7 @@ const expansionLocationData = async (id, add, remove) => {
             new Set([
               ...(districtEntry.cities || []),
               ...(districtData.city || []),
-            ])
+            ]),
           );
         }
       }
@@ -1217,14 +1217,14 @@ const expansionLocationData = async (id, add, remove) => {
 
   // ---------- REMOVE international Logic ----------
   if (remove?.currentOutletLocations?.international) {
-    console.log("International REMOVE Entry:", remove.currentOutletLocations);
+    // console.log("International REMOVE Entry:", remove.currentOutletLocations);
 
     // 1. Remove Countries
     if (remove.currentOutletLocations.international.country) {
       for (const countryName of remove.currentOutletLocations.international
         .country) {
         updatedInternationalLocations = updatedInternationalLocations.filter(
-          (l) => l.country !== countryName
+          (l) => l.country !== countryName,
         );
       }
     }
@@ -1232,15 +1232,15 @@ const expansionLocationData = async (id, add, remove) => {
     // 2. Remove States
     if (remove.currentOutletLocations.international.states) {
       for (const [countryName, states] of Object.entries(
-        remove.currentOutletLocations.international.states
+        remove.currentOutletLocations.international.states,
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
         if (!countryEntry) continue;
 
         countryEntry.states = (countryEntry.states || []).filter(
-          (s) => !states.includes(s.state)
+          (s) => !states.includes(s.state),
         );
       }
     }
@@ -1248,21 +1248,21 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Remove Cities
     if (remove.currentOutletLocations.international.city) {
       for (const [countryName, statesObj] of Object.entries(
-        remove.currentOutletLocations.international.city
+        remove.currentOutletLocations.international.city,
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
         if (!countryEntry) continue;
 
         for (const [stateName, stateData] of Object.entries(statesObj)) {
           let stateEntry = countryEntry.states?.find(
-            (s) => s.state === stateName
+            (s) => s.state === stateName,
           );
           if (!stateEntry) continue;
 
           stateEntry.cities = (stateEntry.cities || []).filter(
-            (c) => !(stateData.city || []).includes(c)
+            (c) => !(stateData.city || []).includes(c),
           );
         }
       }
@@ -1271,7 +1271,7 @@ const expansionLocationData = async (id, add, remove) => {
 
   // ---------- ADD international Logic ----------
   if (add?.currentOutletLocations?.international) {
-    console.log("International Entry:", add.currentOutletLocations);
+    // console.log("International Entry:", add.currentOutletLocations);
 
     // 1. Add Countries
     if (add.currentOutletLocations.international.country) {
@@ -1279,7 +1279,7 @@ const expansionLocationData = async (id, add, remove) => {
         const locationObj =
           typeof loc === "string" ? { country: loc, states: [] } : loc;
         let countryEntry = updatedInternationalLocations.find(
-          (l) => l.country === locationObj.country
+          (l) => l.country === locationObj.country,
         );
         if (!countryEntry) {
           updatedInternationalLocations.push({
@@ -1292,16 +1292,16 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 2. Add States (FIX: use .states instead of .state)
     if (add.currentOutletLocations.international.states) {
-      console.log(
-        "States Entry:",
-        add.currentOutletLocations.international.states
-      );
+      // console.log(
+      //   "States Entry:",
+      //   add.currentOutletLocations.international.states,
+      // );
 
       for (const [countryName, states] of Object.entries(
-        add.currentOutletLocations.international.states
+        add.currentOutletLocations.international.states,
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
 
         // if country not present, create it
@@ -1317,7 +1317,7 @@ const expansionLocationData = async (id, add, remove) => {
         countryEntry.states = countryEntry.states || [];
         for (const stateName of states) {
           const existingState = countryEntry.states.find(
-            (s) => s.state === stateName
+            (s) => s.state === stateName,
           );
           if (!existingState) {
             countryEntry.states.push({ state: stateName, cities: [] });
@@ -1329,10 +1329,10 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Add Cities
     if (add.currentOutletLocations.international.city) {
       for (const [countryName, statesObj] of Object.entries(
-        add.currentOutletLocations.international.city
+        add.currentOutletLocations.international.city,
       )) {
         let countryEntry = updatedInternationalLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
         if (!countryEntry) {
           const newCountry = { country: countryName, states: [] };
@@ -1340,7 +1340,7 @@ const expansionLocationData = async (id, add, remove) => {
             newCountry.states.push({
               state: stateName,
               cities: Array.from(
-                new Set(stateData.city || stateData.cities || [])
+                new Set(stateData.city || stateData.cities || []),
               ),
             });
           }
@@ -1351,14 +1351,14 @@ const expansionLocationData = async (id, add, remove) => {
         countryEntry.states = countryEntry.states || [];
         for (const [stateName, stateData] of Object.entries(statesObj)) {
           let stateEntry = countryEntry.states.find(
-            (s) => s.state === stateName
+            (s) => s.state === stateName,
           );
           if (!stateEntry) {
             stateEntry = { state: stateName, cities: [] };
             countryEntry.states.push(stateEntry);
           }
           stateEntry.cities = Array.from(
-            new Set([...(stateEntry.cities || []), ...(stateData.city || [])])
+            new Set([...(stateEntry.cities || []), ...(stateData.city || [])]),
           );
         }
       }
@@ -1371,27 +1371,27 @@ const expansionLocationData = async (id, add, remove) => {
     // 1. Remove States
     if (remove.expansionLocations.domestic.state) {
       updatedExpansionLocations = updatedExpansionLocations.filter(
-        (loc) => !remove.expansionLocations.domestic.state.includes(loc.state)
+        (loc) => !remove.expansionLocations.domestic.state.includes(loc.state),
       );
     }
 
     // 2. Remove Districts
     if (remove.expansionLocations.domestic.districts) {
       for (const [stateName, districts] of Object.entries(
-        remove.expansionLocations.domestic.districts
+        remove.expansionLocations.domestic.districts,
       )) {
         const stateEntry = updatedExpansionLocations.find(
-          (l) => l.state === stateName
+          (l) => l.state === stateName,
         );
         if (stateEntry) {
           stateEntry.districts = (stateEntry.districts || []).filter(
-            (d) => !districts.includes(d.district)
+            (d) => !districts.includes(d.district),
           );
 
           // cleanup empty states
           if (stateEntry.districts.length === 0) {
             updatedExpansionLocations = updatedExpansionLocations.filter(
-              (l) => l.state !== stateName
+              (l) => l.state !== stateName,
             );
           }
         }
@@ -1401,27 +1401,27 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Remove Cities
     if (remove.expansionLocations.domestic.city) {
       for (const [stateName, districtsObj] of Object.entries(
-        remove.expansionLocations.domestic.city
+        remove.expansionLocations.domestic.city,
       )) {
         const stateEntry = updatedExpansionLocations.find(
-          (l) => l.state === stateName
+          (l) => l.state === stateName,
         );
         if (stateEntry) {
           for (const [districtName, districtData] of Object.entries(
-            districtsObj
+            districtsObj,
           )) {
             const districtEntry = stateEntry.districts?.find(
-              (d) => d.district === districtName
+              (d) => d.district === districtName,
             );
             if (districtEntry) {
               districtEntry.cities = (districtEntry.cities || []).filter(
-                (c) => !(districtData.city || []).includes(c)
+                (c) => !(districtData.city || []).includes(c),
               );
 
               // cleanup empty districts
               if (districtEntry.cities.length === 0) {
                 stateEntry.districts = stateEntry.districts.filter(
-                  (d) => d.district !== districtName
+                  (d) => d.district !== districtName,
                 );
               }
             }
@@ -1430,7 +1430,7 @@ const expansionLocationData = async (id, add, remove) => {
           // cleanup empty states
           if (!stateEntry.districts || stateEntry.districts.length === 0) {
             updatedExpansionLocations = updatedExpansionLocations.filter(
-              (l) => l.state !== stateName
+              (l) => l.state !== stateName,
             );
           }
         }
@@ -1446,7 +1446,7 @@ const expansionLocationData = async (id, add, remove) => {
         const locationObj =
           typeof loc === "string" ? { state: loc, districts: [] } : loc;
         let stateEntry = updatedExpansionLocations.find(
-          (l) => l.state === locationObj.state
+          (l) => l.state === locationObj.state,
         );
         if (!stateEntry) {
           updatedExpansionLocations.push({
@@ -1460,10 +1460,10 @@ const expansionLocationData = async (id, add, remove) => {
     // 2. Add Districts
     if (add.expansionLocations.domestic.districts) {
       for (const [stateName, districts] of Object.entries(
-        add.expansionLocations.domestic.districts
+        add.expansionLocations.domestic.districts,
       )) {
         let stateEntry = updatedExpansionLocations.find(
-          (l) => l.state === stateName
+          (l) => l.state === stateName,
         );
         if (!stateEntry) {
           updatedExpansionLocations.push({
@@ -1476,7 +1476,7 @@ const expansionLocationData = async (id, add, remove) => {
         stateEntry.districts = stateEntry.districts || [];
         for (const districtName of districts) {
           const existingDistrict = stateEntry.districts.find(
-            (d) => d.district === districtName
+            (d) => d.district === districtName,
           );
           if (!existingDistrict) {
             stateEntry.districts.push({ district: districtName, cities: [] });
@@ -1488,15 +1488,15 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Add Cities
     if (add.expansionLocations.domestic.city) {
       for (const [stateName, districtsObj] of Object.entries(
-        add.expansionLocations.domestic.city
+        add.expansionLocations.domestic.city,
       )) {
         let stateEntry = updatedExpansionLocations.find(
-          (l) => l.state === stateName
+          (l) => l.state === stateName,
         );
         if (!stateEntry) {
           const newState = { state: stateName, districts: [] };
           for (const [districtName, districtData] of Object.entries(
-            districtsObj
+            districtsObj,
           )) {
             newState.districts.push({
               district: districtName,
@@ -1509,10 +1509,10 @@ const expansionLocationData = async (id, add, remove) => {
 
         stateEntry.districts = stateEntry.districts || [];
         for (const [districtName, districtData] of Object.entries(
-          districtsObj
+          districtsObj,
         )) {
           let districtEntry = stateEntry.districts.find(
-            (d) => d.district === districtName
+            (d) => d.district === districtName,
           );
           if (!districtEntry) {
             districtEntry = { district: districtName, cities: [] };
@@ -1522,7 +1522,7 @@ const expansionLocationData = async (id, add, remove) => {
             new Set([
               ...(districtEntry.cities || []),
               ...(districtData.city || []),
-            ])
+            ]),
           );
         }
       }
@@ -1531,7 +1531,7 @@ const expansionLocationData = async (id, add, remove) => {
 
   // ---------- REMOVE International Logic ----------
   if (remove?.expansionLocations?.international) {
-    console.log("International REMOVE Entry:", remove.expansionLocations);
+    // console.log("International REMOVE Entry:", remove.expansionLocations);
 
     // 1. Remove Countries
     if (remove.expansionLocations.international.country) {
@@ -1539,7 +1539,7 @@ const expansionLocationData = async (id, add, remove) => {
         .country) {
         updatedInternationalExpansionLocations =
           updatedInternationalExpansionLocations.filter(
-            (l) => l.country !== countryName
+            (l) => l.country !== countryName,
           );
       }
     }
@@ -1547,15 +1547,15 @@ const expansionLocationData = async (id, add, remove) => {
     // 2. Remove States
     if (remove.expansionLocations.international.states) {
       for (const [countryName, states] of Object.entries(
-        remove.expansionLocations.international.states
+        remove.expansionLocations.international.states,
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
         if (!countryEntry) continue;
 
         countryEntry.states = (countryEntry.states || []).filter(
-          (s) => !states.includes(s.state)
+          (s) => !states.includes(s.state),
         );
       }
     }
@@ -1563,21 +1563,21 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Remove Cities
     if (remove.expansionLocations.international.city) {
       for (const [countryName, statesObj] of Object.entries(
-        remove.expansionLocations.international.city
+        remove.expansionLocations.international.city,
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
         if (!countryEntry) continue;
 
         for (const [stateName, stateData] of Object.entries(statesObj)) {
           let stateEntry = countryEntry.states?.find(
-            (s) => s.state === stateName
+            (s) => s.state === stateName,
           );
           if (!stateEntry) continue;
 
           stateEntry.cities = (stateEntry.cities || []).filter(
-            (c) => !(stateData.city || []).includes(c)
+            (c) => !(stateData.city || []).includes(c),
           );
         }
       }
@@ -1586,7 +1586,7 @@ const expansionLocationData = async (id, add, remove) => {
 
   // ---------- ADD International Logic ----------
   if (add?.expansionLocations?.international) {
-    console.log("International Entry:", add.expansionLocations);
+    // console.log("International Entry:", add.expansionLocations);
 
     // 1. Add Countries
     if (add.expansionLocations.international.country) {
@@ -1594,7 +1594,7 @@ const expansionLocationData = async (id, add, remove) => {
         const locationObj =
           typeof loc === "string" ? { country: loc, states: [] } : loc;
         let countryEntry = updatedInternationalExpansionLocations.find(
-          (l) => l.country === locationObj.country
+          (l) => l.country === locationObj.country,
         );
         if (!countryEntry) {
           updatedInternationalExpansionLocations.push({
@@ -1607,13 +1607,13 @@ const expansionLocationData = async (id, add, remove) => {
 
     // 2. Add States
     if (add.expansionLocations.international.states) {
-      console.log("States Entry:", add.expansionLocations.international.states);
+      // console.log("States Entry:", add.expansionLocations.international.states);
 
       for (const [countryName, states] of Object.entries(
-        add.expansionLocations.international.states
+        add.expansionLocations.international.states,
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
 
         // if country not present, create it
@@ -1629,7 +1629,7 @@ const expansionLocationData = async (id, add, remove) => {
         countryEntry.states = countryEntry.states || [];
         for (const stateName of states) {
           const existingState = countryEntry.states.find(
-            (s) => s.state === stateName
+            (s) => s.state === stateName,
           );
           if (!existingState) {
             countryEntry.states.push({ state: stateName, cities: [] });
@@ -1641,10 +1641,10 @@ const expansionLocationData = async (id, add, remove) => {
     // 3. Add Cities
     if (add.expansionLocations.international.city) {
       for (const [countryName, statesObj] of Object.entries(
-        add.expansionLocations.international.city
+        add.expansionLocations.international.city,
       )) {
         let countryEntry = updatedInternationalExpansionLocations.find(
-          (l) => l.country === countryName
+          (l) => l.country === countryName,
         );
         if (!countryEntry) {
           const newCountry = { country: countryName, states: [] };
@@ -1652,7 +1652,7 @@ const expansionLocationData = async (id, add, remove) => {
             newCountry.states.push({
               state: stateName,
               cities: Array.from(
-                new Set(stateData.city || stateData.cities || [])
+                new Set(stateData.city || stateData.cities || []),
               ),
             });
           }
@@ -1663,14 +1663,14 @@ const expansionLocationData = async (id, add, remove) => {
         countryEntry.states = countryEntry.states || [];
         for (const [stateName, stateData] of Object.entries(statesObj)) {
           let stateEntry = countryEntry.states.find(
-            (s) => s.state === stateName
+            (s) => s.state === stateName,
           );
           if (!stateEntry) {
             stateEntry = { state: stateName, cities: [] };
             countryEntry.states.push(stateEntry);
           }
           stateEntry.cities = Array.from(
-            new Set([...(stateEntry.cities || []), ...(stateData.city || [])])
+            new Set([...(stateEntry.cities || []), ...(stateData.city || [])]),
           );
         }
       }
@@ -1692,7 +1692,7 @@ const expansionLocationData = async (id, add, remove) => {
           updatedInternationalExpansionLocations,
       },
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   // Return updated data
@@ -1706,7 +1706,7 @@ export const updateBrandImageById = async (req, res) => {
 
     if (imageDeleteData) {
       for (const [key, value] of Object.entries(imageDeleteData)) {
-        console.log(`Field to delete from: ${key}`);
+        // console.log(`Field to delete from: ${key}`);
         for (const img of value) {
           await deleteFileFromR2(img);
           data = await BrandUploads.findOneAndUpdate(
@@ -1717,7 +1717,7 @@ export const updateBrandImageById = async (req, res) => {
               ],
             },
             { $pull: { [`uploads.${key}`]: img } },
-            { new: true, runValidators: true }
+            { new: true, runValidators: true },
           );
         }
       }
@@ -1740,7 +1740,7 @@ export const updateBrandImageById = async (req, res) => {
       return res
         .status(404)
         .json(
-          new ApiResponse(404, {}, "No uploads found for this brand owner")
+          new ApiResponse(404, {}, "No uploads found for this brand owner"),
         );
     }
 
@@ -1753,13 +1753,13 @@ export const updateBrandImageById = async (req, res) => {
 
         const newFileUrl = await uploadFileToR2(
           uploadedFile.path,
-          uploadedFile.mimetype
+          uploadedFile.mimetype,
         );
 
         data = await BrandUploads.findOneAndUpdate(
           { brandOwnerId: req.params.id },
           { $set: { [`uploads.${field}`]: [newFileUrl] } },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         );
       }
     }
@@ -1768,19 +1768,19 @@ export const updateBrandImageById = async (req, res) => {
       const uploadedFiles = req.files?.[field];
       if (uploadedFiles && uploadedFiles.length > 0) {
         const newFileUrls = await Promise.all(
-          uploadedFiles.map((file) => uploadFileToR2(file.path, file.mimetype))
+          uploadedFiles.map((file) => uploadFileToR2(file.path, file.mimetype)),
         );
 
         data = await BrandUploads.findOneAndUpdate(
           { brandOwnerId: req.params.id },
           { $push: { [`uploads.${field}`]: { $each: newFileUrls } } },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true },
         );
       }
     }
 
     return res.json(
-      new ApiResponse(200, data, "Brand images updated successfully")
+      new ApiResponse(200, data, "Brand images updated successfully"),
     );
   } catch (error) {
     console.error(error);
@@ -1790,8 +1790,8 @@ export const updateBrandImageById = async (req, res) => {
         new ApiResponse(
           500,
           {},
-          "Something went wrong while updating brand images"
-        )
+          "Something went wrong while updating brand images",
+        ),
       );
   }
 };
@@ -1800,7 +1800,7 @@ export const deleteBrandListingByUUID = async (req, res) => {
   try {
     // Get the UUID from params
     const { uuid } = req.params;
-    console.log("Deletion request received for UUID:", uuid);
+    // console.log("Deletion request received for UUID:", uuid);
 
     if (!uuid) {
       return res
@@ -1821,18 +1821,6 @@ export const deleteBrandListingByUUID = async (req, res) => {
       BrandUploads.findOneAndDelete({ brandOwnerId: uuid }),
     ]);
 
-    // Log deletion results
-    console.log("Delete results:", {
-      brandDetails: brandDetails ? "found and deleted" : "not found",
-      brandFranchiseDetails: brandFranchiseDetails
-        ? "found and deleted"
-        : "not found",
-      brandExpansionLocationData: brandExpansionLocationData
-        ? "found and deleted"
-        : "not found",
-      brandUploads: brandUploads ? "found and deleted" : "not found",
-    });
-
     // Check if at least one document was found and deleted
     if (
       !brandDetails &&
@@ -1840,7 +1828,6 @@ export const deleteBrandListingByUUID = async (req, res) => {
       !brandExpansionLocationData &&
       !brandUploads
     ) {
-      console.log("No documents found with UUID:", uuid);
       return res
         .status(404)
         .json(new ApiResponse(404, null, "No brand found with the given ID"));
@@ -1856,15 +1843,15 @@ export const deleteBrandListingByUUID = async (req, res) => {
           locations: brandExpansionLocationData,
           uploads: brandUploads,
         },
-        "Brand listing deleted successfully"
-      )
+        "Brand listing deleted successfully",
+      ),
     );
   } catch (error) {
     console.error("Delete operation failed:", error);
     return res
       .status(500)
       .json(
-        new ApiResponse(500, null, `Internal Server Error: ${error.message}`)
+        new ApiResponse(500, null, `Internal Server Error: ${error.message}`),
       );
   }
 };
@@ -1884,11 +1871,10 @@ export const db = async (req, res) => {
             "franchiseDetails.fico.0.investmentRange": "Rs. 5 L - 10 L",
           },
         },
-        { new: true }
+        { new: true },
       );
     }
 
-    console.log(data);
     return res.status(200).json({ updatedCount: data.length, data });
   } catch (error) {
     console.error(error);
@@ -1972,8 +1958,8 @@ export const reEntry = async (req, res) => {
           successEntries,
           skippedEntries,
         },
-        "Re-entry process completed"
-      )
+        "Re-entry process completed",
+      ),
     );
   } catch (outerError) {
     console.error("Outer error:", outerError);
@@ -1984,8 +1970,6 @@ export const reEntry = async (req, res) => {
 export const allId = async (req, res) => {
   const data = await BrandListing.find({});
 
-  console.log(data);
-
   const arr = [];
   const id = data.map((d) => {
     arr.push(d.brandID);
@@ -1993,237 +1977,6 @@ export const allId = async (req, res) => {
 
   return res.json(new ApiResponse(200, arr, "fetch successfully"));
 };
-
-// export const getBrandsByCategory = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 30;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-//     const childCategory = req.query.childCategory || null;
-//     const subCategory = req.query.subCategory || null;
-
-//     if (!childCategory && !subCategory) {
-//       return res.json(
-//         new ApiResponse(
-//           400,
-//           null,
-//           "Either childCategory or subCategory is required"
-//         )
-//       );
-//     }
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     let mainCategory;
-//     let relatedCategories = [];
-//     let matchCondition = {};
-
-//     if (childCategory) {
-//       // When childCategory is provided
-//       const categoryInfo = await BrandFranchiseDetails.aggregate([
-//         {
-//           $match: {
-//             "franchiseDetails.brandCategories.child": childCategory,
-//           },
-//         },
-//         {
-//           $group: {
-//             _id: "$franchiseDetails.brandCategories.main",
-//             subCategories: {
-//               $addToSet: "$franchiseDetails.brandCategories.sub",
-//             },
-//           },
-//         },
-//         {
-//           $project: {
-//             _id: 0,
-//             mainCategory: "$_id",
-//             subCategories: 1,
-//           },
-//         },
-//       ]);
-
-//       if (!categoryInfo || categoryInfo.length === 0) {
-//         return res.json(new ApiResponse(404, null, "Child category not found"));
-//       }
-
-//       mainCategory = categoryInfo[0].mainCategory;
-//       relatedCategories = [childCategory]; // Only filter by specific child
-//       matchCondition = {
-//         "franchiseDetails.brandCategories.main": mainCategory,
-//         "franchiseDetails.brandCategories.child": childCategory,
-//       };
-//     } else if (subCategory) {
-//       // When subCategory is provided
-//       const categoryInfo = await BrandFranchiseDetails.aggregate([
-//         {
-//           $match: {
-//             "franchiseDetails.brandCategories.sub": subCategory,
-//           },
-//         },
-//         {
-//           $group: {
-//             _id: "$franchiseDetails.brandCategories.main",
-//             subCategories: {
-//               $addToSet: "$franchiseDetails.brandCategories.sub",
-//             },
-//           },
-//         },
-//         {
-//           $project: {
-//             _id: 0,
-//             mainCategory: "$_id",
-//             subCategories: 1,
-//           },
-//         },
-//       ]);
-
-//       if (!categoryInfo || categoryInfo.length === 0) {
-//         return res.json(new ApiResponse(404, null, "Sub category not found"));
-//       }
-
-//       mainCategory = categoryInfo[0].mainCategory;
-//       relatedCategories = categoryInfo[0].subCategories;
-//       matchCondition = {
-//         "franchiseDetails.brandCategories.main": mainCategory,
-//         "franchiseDetails.brandCategories.sub": { $in: relatedCategories },
-//       };
-//     }
-
-//     const aggregationPipeline = [
-//       { $match: matchCondition },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       { $unwind: { path: "$brandInfo", preserveNullAndEmptyArrays: true } },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: true },
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       { $unwind: { path: "$uploads", preserveNullAndEmptyArrays: true } },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           brandID: "$brandInfo.brandID",
-//           uuid: "$brandOwnerId",
-//           isLiked: 1,
-//           isShortListed: 1,
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: {
-//             $cond: {
-//               if: { $isArray: "$uploads.uploads.brandLogo" },
-//               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//               else: null,
-//             },
-//           },
-//           franchiseVideos: {
-//             $cond: {
-//               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-//               then: {
-//                 $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//               },
-//               else: null,
-//             },
-//           },
-//         },
-//       },
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     const [brandsData, totalCount] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.countDocuments(matchCondition),
-//     ]);
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(
-//         new ApiResponse(404, null, "No brands found for this category")
-//       );
-//     }
-
-//     // Remove the shuffleArray function call and just use brandsData directly
-//     const brands = brandsData;
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           mainCategory,
-//           relatedCategories,
-//           currentCategory: childCategory || subCategory,
-//           brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Brands fetched successfully by category"
-//       )
-//     );
-//   } catch (error) {
-//     console.error("Error fetching brands by category:", error);
-//     return res.json(
-//       new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
-//     );
-//   }
-// };
 
 export const getBrandsByCategory = async (req, res) => {
   try {
@@ -2234,12 +1987,12 @@ export const getBrandsByCategory = async (req, res) => {
     const subCategory = req.query.subCategory || null;
 
     if (!subCategory) {
-      return res.json(
-        new ApiResponse(400, null, "subCategory is required")
-      );
+      return res.json(new ApiResponse(400, null, "subCategory is required"));
     }
 
-    const { likedBrands, shortListedBrands } = id ? await likeandshortlist(id) : { likedBrands: [], shortListedBrands: [] };
+    const { likedBrands, shortListedBrands } = id
+      ? await likeandshortlist(id)
+      : { likedBrands: [], shortListedBrands: [] };
 
     let mainCategory;
     let relatedCategories = [];
@@ -2275,7 +2028,7 @@ export const getBrandsByCategory = async (req, res) => {
 
     mainCategory = categoryInfo[0].mainCategory;
     relatedCategories = categoryInfo[0].subCategories;
-    
+
     // Match only by subCategory, not by id
     matchCondition = {
       "franchiseDetails.brandCategories.sub": subCategory,
@@ -2291,27 +2044,27 @@ export const getBrandsByCategory = async (req, res) => {
           as: "brandInfo",
         },
       },
-      { 
-        $unwind: { 
-          path: "$brandInfo", 
-          preserveNullAndEmptyArrays: true 
-        } 
+      {
+        $unwind: {
+          path: "$brandInfo",
+          preserveNullAndEmptyArrays: true,
+        },
       },
       // Remove the $match on brandInfo to include all brands even if no brandInfo
       // Only filter out paused brands if brandInfo exists
       {
         $match: {
           $or: [
-            { "brandInfo": null },
-            { "brandInfo": { $exists: false } },
+            { brandInfo: null },
+            { brandInfo: { $exists: false } },
             {
               $and: [
                 { "brandInfo.brandDetails.isBrandPause": { $ne: true } },
-                { "brandInfo.brandDetails.isApproved": { $ne: false } }
-              ]
-            }
-          ]
-        }
+                { "brandInfo.brandDetails.isApproved": { $ne: false } },
+              ],
+            },
+          ],
+        },
       },
       {
         $lookup: {
@@ -2324,18 +2077,24 @@ export const getBrandsByCategory = async (req, res) => {
       {
         $addFields: {
           // Only check isLiked/isShortListed if id was provided
-          isLiked: id ? {
-            $in: [
-              "$brandInfo._id",
-              likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-            ],
-          } : false,
-          isShortListed: id ? {
-            $in: [
-              "$brandInfo._id",
-              shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-            ],
-          } : false,
+          isLiked: id
+            ? {
+                $in: [
+                  "$brandInfo._id",
+                  likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+                ],
+              }
+            : false,
+          isShortListed: id
+            ? {
+                $in: [
+                  "$brandInfo._id",
+                  shortListedBrands.map(
+                    (id) => new mongoose.Types.ObjectId(id),
+                  ),
+                ],
+              }
+            : false,
           // Get first uploads document if exists
           uploadsData: {
             $cond: {
@@ -2364,9 +2123,15 @@ export const getBrandsByCategory = async (req, res) => {
                 firstFico: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
               },
               in: {
-                investmentRange: { $ifNull: ["$$firstFico.investmentRange", "Not specified"] },
-                areaRequired: { $ifNull: ["$$firstFico.areaRequired", "Not specified"] },
-                franchiseModel: { $ifNull: ["$$firstFico.franchiseModel", "Not specified"] },
+                investmentRange: {
+                  $ifNull: ["$$firstFico.investmentRange", "Not specified"],
+                },
+                areaRequired: {
+                  $ifNull: ["$$firstFico.areaRequired", "Not specified"],
+                },
+                franchiseModel: {
+                  $ifNull: ["$$firstFico.franchiseModel", "Not specified"],
+                },
               },
             },
           },
@@ -2393,10 +2158,20 @@ export const getBrandsByCategory = async (req, res) => {
                   { $ne: ["$uploadsData", null] },
                   { $ne: ["$uploadsData.uploads", null] },
                   { $isArray: "$uploadsData.uploads.franchisePromotionVideo" },
-                  { $gt: [{ $size: "$uploadsData.uploads.franchisePromotionVideo" }, 0] },
+                  {
+                    $gt: [
+                      { $size: "$uploadsData.uploads.franchisePromotionVideo" },
+                      0,
+                    ],
+                  },
                 ],
               },
-              then: { $arrayElemAt: ["$uploadsData.uploads.franchisePromotionVideo", 0] },
+              then: {
+                $arrayElemAt: [
+                  "$uploadsData.uploads.franchisePromotionVideo",
+                  0,
+                ],
+              },
               else: null,
             },
           },
@@ -2413,7 +2188,7 @@ export const getBrandsByCategory = async (req, res) => {
 
     if (!brandsData || brandsData.length === 0) {
       return res.json(
-        new ApiResponse(404, null, "No brands found for this category")
+        new ApiResponse(404, null, "No brands found for this category"),
       );
     }
 
@@ -2438,68 +2213,62 @@ export const getBrandsByCategory = async (req, res) => {
             hasPrevious,
           },
         },
-        "Brands fetched successfully by category"
-      )
+        "Brands fetched successfully by category",
+      ),
     );
   } catch (error) {
     console.error("Error fetching brands by category:", error);
     return res.json(
-      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`)
+      new ApiResponse(500, null, `Failed to fetch brands: ${error.message}`),
     );
   }
 };
 
 export const getBrandById = async (req, res) => {
   const { id } = req.params;
-  console.log("Brand ID requested:", id);
   const paymentHistory = req.query.paymentHistory || null;
 
   const brand = req.brandUser;
-  // if (id !== brand?.uuid) {
-  //   return res.json(
-  //     new ApiResponse(401,null,"Unathorize request")
-  //   )
-  // }
+
   try {
     const aggregationPipeline = [
       {
         $match: {
           uuid: id,
-        },  
+        },
       },
     ];
     let projectStage = {};
 
     if (paymentHistory === "true") {
-  aggregationPipeline.push(
-    {
-      $lookup: {
-        from: "paymentpackagehistories",
-        localField: "uuid",
-        foreignField: "uuid",
-        as: "oldPackageHistory",
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        brandDetails: 1,
-        oldPackageHistory: {
-          $reverseArray: {
-            $first: "$oldPackageHistory.paymentPackage"
-          }
-        }
-      },
-    }
-  );
+      aggregationPipeline.push(
+        {
+          $lookup: {
+            from: "paymentpackagehistories",
+            localField: "uuid",
+            foreignField: "uuid",
+            as: "oldPackageHistory",
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            brandDetails: 1,
+            oldPackageHistory: {
+              $reverseArray: {
+                $first: "$oldPackageHistory.paymentPackage",
+              },
+            },
+          },
+        },
+      );
 
-  projectStage = {
-    _id: 0,
-    activePackage: "$brandDetails.paymentPackage",
-    oldPackageHistory: 1,
-  };
-}
- else {
+      projectStage = {
+        _id: 0,
+        activePackage: "$brandDetails.paymentPackage",
+        oldPackageHistory: 1,
+      };
+    } else {
       aggregationPipeline.push(
         {
           $lookup: {
@@ -2601,7 +2370,7 @@ export const getBrandById = async (req, res) => {
               },
             },
           },
-        }
+        },
       );
       projectStage = {
         _id: 0,
@@ -2712,12 +2481,12 @@ export const getBrandById = async (req, res) => {
 
     if (length <= 0) {
       return res.json(
-        new ApiResponse(200, data[0], "package history not updated yet")
+        new ApiResponse(200, data[0], "package history not updated yet"),
       );
     }
 
     return res.json(
-      new ApiResponse(200, data[0], "✅ Brand fetched successfully")
+      new ApiResponse(200, data[0], "✅ Brand fetched successfully"),
     );
   } catch (error) {
     console.error("getBrandListingByUUID error:", error);
@@ -2730,5 +2499,4 @@ export {
   getAllBrands,
   getBrandListingByUUID,
   updateBrandListingByUUID,
-  // deleteBrandListingByUUID,
 };

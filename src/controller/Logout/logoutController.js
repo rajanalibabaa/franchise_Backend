@@ -7,7 +7,8 @@ const logOut = async (req, res) => {
   const { uuid } = req.params;
 
   if (!uuid) {
-    return res.json(new ApiResponse(400, null, "UUID parameter is required"));
+    return res.status(400)
+    .json(new ApiResponse(400, null, "UUID parameter is required"));
   }
 
   let matchedUser = null;
@@ -25,7 +26,7 @@ const logOut = async (req, res) => {
   if (req?.admin && req.admin.uuid === uuid) {
     matchedUser = req.admin;
 
-    return res
+    return res.status(200)
       .clearCookie("adminAccessToken", option)
       .json(new ApiResponse(200, null, "Admin logged out successfully."));
   } else if (req?.investorUser && req.investorUser.uuid === uuid) {
@@ -81,18 +82,22 @@ const logOut = async (req, res) => {
   // console.log("Matched user:", matchedUser);
 
   if (!matchedUser) {
-    return res.json(
+    return res.status(403)
+    .json(
       new ApiResponse(403, null, "Unauthorized access to this resource.")
     );
   }
 
   res.clearCookie("AccessToken", option);
 
-  return res.json(new ApiResponse(200, null, "User logged out successfully."));
+  return res
+  .status(200)
+  .json(new ApiResponse(200, null, "User logged out successfully."));
 };
 
 const autoLogOut = async (req,res) => {
-  return res.json(
+  return res.status(200)
+  .json(
     new ApiResponse(200,null,"It looks like you're logged in on device or browser.")
   )
 }

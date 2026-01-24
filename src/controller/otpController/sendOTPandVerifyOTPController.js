@@ -6,7 +6,7 @@ import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
 
 // In-memory OTP store: Map<email, { otp: string, expiresAt: Date }>
 const otpStore = new Map();
-console.log("otpStore : ",otpStore)
+// console.log("otpStore : ",otpStore)
 
 const generateNewEmailOTP = async (req, res) => {
     const { email, mobileNuber } = req.body; 
@@ -24,11 +24,11 @@ const generateNewEmailOTP = async (req, res) => {
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
 
-    console.log("expiresAt: ",expiresAt)
+    // console.log("expiresAt: ",expiresAt)
 
     // Store OTP in memory
     const timmer = otpStore.set(email, { otp, expiresAt });
-     console.log("timmer: ",timmer)
+    //  console.log("timmer: ",timmer)
 
     // Send the OTP via email
     const sendOtp = await sendEmailOTP(email, otp);
