@@ -7,7 +7,7 @@ export const sendBrandEmailPerfect = async (
   category,
   location,
   investment,
-  emailSubject
+  emailSubject,
 ) => {
   try {
     const subject = "You Have A Good News, New Investor Register";
@@ -38,7 +38,7 @@ export const sendInstantApplyEmail = async (
   location,
   investmentRange,
   planToInvest,
-  readyToInvest
+  readyToInvest,
 ) => {
   console.log(
     "req.body :",
@@ -51,10 +51,9 @@ export const sendInstantApplyEmail = async (
     location,
     investmentRange,
     planToInvest,
-    readyToInvest
+    readyToInvest,
   );
   try {
-
     // Dummy data for testing
     const emailSubject =
       "You Have A Good News, New Investor interest your brand and apply";
@@ -93,7 +92,7 @@ export const sendInstantApplyLeadLocation = async (
   investmentRange,
   emailSubject,
   planToInvest,
-  readyToInvest
+  readyToInvest,
 ) => {
   // console.log( "dddd:",fullName,  email,
   // mobileNumber,
@@ -121,11 +120,9 @@ export const sendInstantApplyLeadLocation = async (
     readyToInvest: readyToInvest,
   };
 
-
   // Call the sendEmail function
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
 };
-
 
 export const paidLeadInstantApplyEmail = async (
   fullName,
@@ -138,11 +135,11 @@ export const paidLeadInstantApplyEmail = async (
   investmentRange,
   planToInvest,
   readyToInvest,
-  emailTemplate
+  emailTemplate,
 ) => {
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
-  const emailTemplateName = emailTemplate 
-  console.log("emailTemplateName :",emailTemplateName)
+  const emailTemplateName = emailTemplate;
+  // console.log("emailTemplateName :", emailTemplateName);
   const emailData = {
     brandCompanyName: brandCompanyName,
     name: fullName,
@@ -155,7 +152,6 @@ export const paidLeadInstantApplyEmail = async (
     planToInvest: planToInvest,
     readyToInvest: readyToInvest,
   };
-
 
   // Call the sendEmail function
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
@@ -172,9 +168,9 @@ export const sendPremiumPackageOfferEmail = async (
   investmentRange,
   emailSubject,
   planToInvest,
-  readyToInvest
+  readyToInvest,
 ) => {
-  console.log(categories, location, ".o.o.o");
+  // console.log(categories, location, ".o.o.o");
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = "InstantApplyPerAndPar_template"; // Ensure this matches the template file name in the 'templates' folder
   const emailData = {
@@ -207,9 +203,9 @@ export const sendInstantApplyPerAndPar = async (
   investmentRange,
   emailSubject,
   planToInvest,
-  readyToInvest
+  readyToInvest,
 ) => {
-  console.log(categories, location, ".o.o.o");
+  // console.log(categories, location, ".o.o.o");
   const subject = "You Have A Good News, New Instant Applier Details Here..! ";
   const emailTemplateName = "InstantApplyPerAndPar_template"; // Ensure this matches the template file name in the 'templates' folder
   const emailData = {
@@ -244,7 +240,7 @@ export const sendPostRequirementEmail = async (
   investmentRange,
   floorAreaRequirement,
   timelineToStart,
-  needLoan
+  needLoan,
 ) => {
   try {
     const subject =
@@ -273,12 +269,12 @@ export const sendPostRequirementEmail = async (
   }
 };
 
-export const  sendEmailOTP = async (email, otp) => {
+export const sendEmailOTP = async (email, otp) => {
   try {
     const subject = "Verify Your Email Address";
     const emailTemplateName = "otp_template";
     await sendEmail(email, subject, emailTemplateName, { otp });
-    console.log("Email sent: ", email);
+    // console.log("Email sent: ", email);
   } catch (error) {
     console.error("Error sending email:", error);
   }

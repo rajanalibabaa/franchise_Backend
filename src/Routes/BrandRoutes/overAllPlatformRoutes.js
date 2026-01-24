@@ -1,7 +1,9 @@
 import { Router } from "express";
-import  {overAllPlatformOnlyMainCategory}  from "../../controller/BrandController/overAllPlatformController.js";
+import { overAllPlatformOnlyMainCategory } from "../../controller/BrandController/overAllPlatformController.js";
 
 export const overAllPlatformRoutes = Router();
 
-
-overAllPlatformRoutes.get("/v1/overAllPlatformOnlyMainCategory", overAllPlatformOnlyMainCategory)
+overAllPlatformRoutes.get(
+  "/v1/overAllPlatformOnlyMainCategory",
+  overAllPlatformOnlyMainCategory,
+);

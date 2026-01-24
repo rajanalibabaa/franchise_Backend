@@ -164,10 +164,9 @@ const invsRegisterSchema = new mongoose.Schema(
     lastActive: {
       type: Date,
     },
-    
+
     loginPlatform: {
       type: String,
-      
     },
     newOtp: {
       type: String,
@@ -177,11 +176,11 @@ const invsRegisterSchema = new mongoose.Schema(
     },
     userNewVerifyToken: {
       type: String,
-    }
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Access Token Method
@@ -194,7 +193,7 @@ invsRegisterSchema.methods.generateAccessToken = function () {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    }
+    },
   );
 };
 
@@ -206,14 +205,14 @@ invsRegisterSchema.methods.generateRefreshToken = async function () {
       !process.env.REFRESH_TOKEN_EXPIRY
     ) {
       throw new Error(
-        "Missing REFRESH_TOKEN_SECRET or REFRESH_TOKEN_EXPIRY in environment variables."
+        "Missing REFRESH_TOKEN_SECRET or REFRESH_TOKEN_EXPIRY in environment variables.",
       );
     }
 
     const refreshToken = jwt.sign(
       { _id: this._id.toString() },
       process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRY },
     );
 
     this.refreshToken = refreshToken;

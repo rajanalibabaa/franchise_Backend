@@ -1,4 +1,4 @@
-  import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const investmentRangeEnum = [
   "Below-50,000",
@@ -11,89 +11,96 @@ const investmentRangeEnum = [
   "Rs.50L-1Cr",
   "Rs.1Cr-2Cr",
   "Rs.2Cr-5Cr",
-  "Rs.5Cr-above"
+  "Rs.5Cr-above",
 ];
 
 const applyByEnum = ["Investor", "Brand", "other"];
 
-const BrandSentSchema = new mongoose.Schema({
-  brandId: { 
-    type: String, 
-    ref: "BrandDetails", 
-    required: true 
-  },
-  brandName: { 
-    type: String, 
-    required: true 
-  },
-  brandEmail: { 
-    type: String, 
-    // required: true 
-  },
-  emailSent: { 
-    type: Boolean, 
-    default: false 
-  },
-  emailSentAt: { 
-    type: Date 
-  }
-}, { _id: false });
-
-const InstantApplyPaidSchema = new mongoose.Schema({
-  
-  investorEmail: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true,
-    match: [
-      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-      "Please fill a valid email address"
-    ]
-  },
-  investorName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  investorPhone: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  category: [  
-    {
-      main: { type: String },
-      sub: { type: String },
-      child: { type: String }
-    }
-  ],
-  location: {
-    state: { type: String, required: true },
-    city: { type: String,  },
-    district: { type: String, required: true }
-  },
-  investmentRange: {
-    type: String,
-    required: true,
-    // enum: investmentRangeEnum
-  },
-  planToInvest: { type: String },
-  readyToInvest: { type: String },
-  apply: {
-    applyBy: {
+const BrandSentSchema = new mongoose.Schema(
+  {
+    brandId: {
       type: String,
-      enum: applyByEnum,
-      default: "other",
-      required: true
+      ref: "BrandDetails",
+      required: true,
     },
-    applyId: {
+    brandName: {
       type: String,
-      default: "other"
-    }
+      required: true,
+    },
+    brandEmail: {
+      type: String,
+      // required: true
+    },
+    emailSent: {
+      type: Boolean,
+      default: false,
+    },
+    emailSentAt: {
+      type: Date,
+    },
   },
-  brandsSent: [BrandSentSchema],
+  { _id: false },
+);
 
-}, { timestamps: true });
+const InstantApplyPaidSchema = new mongoose.Schema(
+  {
+    investorEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        "Please fill a valid email address",
+      ],
+    },
+    investorName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    investorPhone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    category: [
+      {
+        main: { type: String },
+        sub: { type: String },
+        child: { type: String },
+      },
+    ],
+    location: {
+      state: { type: String, required: true },
+      city: { type: String },
+      district: { type: String, required: true },
+    },
+    investmentRange: {
+      type: String,
+      required: true,
+      // enum: investmentRangeEnum
+    },
+    planToInvest: { type: String },
+    readyToInvest: { type: String },
+    apply: {
+      applyBy: {
+        type: String,
+        enum: applyByEnum,
+        default: "other",
+        required: true,
+      },
+      applyId: {
+        type: String,
+        default: "other",
+      },
+    },
+    brandsSent: [BrandSentSchema],
+  },
+  { timestamps: true },
+);
 
-export const InstantApplyPaidUserLeadsData =  mongoose.model("InstantApplyPaidUserLeadsData", InstantApplyPaidSchema);
+export const InstantApplyPaidUserLeadsData = mongoose.model(
+  "InstantApplyPaidUserLeadsData",
+  InstantApplyPaidSchema,
+);

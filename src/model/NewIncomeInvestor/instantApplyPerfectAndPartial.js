@@ -127,13 +127,13 @@ const instantApplyLeadSchema = new mongoose.Schema(
       investmentAndLocation: { type: Number, default: 0 },
       total: { type: Number, default: 0 },
     },
-    
+
     status: {
       type: String,
       enum: ["new", "processing", "matched", "contacted", "closed", "failed"],
       default: "new",
     },
-    
+
     emailStatus: {
       initialEmailSent: { type: Boolean, default: false },
       initialEmailError: { type: String },
@@ -148,7 +148,7 @@ const instantApplyLeadSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Indexes for better query performance
@@ -161,6 +161,9 @@ instantApplyLeadSchema.index({ investmentRange: 1 });
 instantApplyLeadSchema.index({ status: 1 });
 instantApplyLeadSchema.index({ createdAt: -1 });
 
-const InstantApplyLead = mongoose.model("InstantApplyLead", instantApplyLeadSchema);
+const InstantApplyLead = mongoose.model(
+  "InstantApplyLead",
+  instantApplyLeadSchema,
+);
 
 export default InstantApplyLead;

@@ -1,7 +1,7 @@
 import { newbrand } from "./newbrand.js";
 
 export const mainSocket = (socket, io) => {
-  console.log("✅ A user connected:", socket.id);
+  // console.log("✅ A user connected:", socket.id);
 
   
   // ✅ register newbrand listener

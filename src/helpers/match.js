@@ -1,7 +1,7 @@
 export const searchBrandAndCompanyNames = (
   brand,
   searchTerm,
-  existsCount = 0
+  existsCount = 0,
 ) => {
   const brandNamesResults = [];
   const companyNamesResults = [];
@@ -157,7 +157,6 @@ export const findIndustryCategoriesAndTags = (data, searchTerm, count = 0) => {
     }
     if (count >= 15) break;
 
-    
     for (const t of d.productTags || []) {
       for (const tagObj of t.tags || []) {
         const tagText = typeof tagObj === "string" ? tagObj : tagObj?.tag;
@@ -185,4 +184,3 @@ export const findIndustryCategoriesAndTags = (data, searchTerm, count = 0) => {
 
   return { industryResults, categoryResults, tagsList, count };
 };
-

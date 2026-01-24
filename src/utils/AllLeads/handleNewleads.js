@@ -22,46 +22,6 @@ export const handleNewleads = async (
   applyBy,
   applyId
 ) => {
-  // console.log("Starting handleNewleads with parameters:", {
-  //   fullName,
-  //   email,
-  //   mobileNumber,
-  //   brandName,
-  //   brandId,
-  //   brandEmail,
-  //   mainCategory,
-  //   subCategory,
-  //   childCategory,
-  //   state,
-  //   district,
-  //   city,
-  //   investmentRange,
-  //   planToInvest,
-  //   readyToInvest,
-  //   applyBy,
-  //   applyId,
-  //   brandLogo,
-  // });
-  // console.log(
-  //   "data",
-  //   email,
-  //   mobileNumber,
-  //   brandName,
-  //   brandId,
-  //   brandEmail,
-  //   mainCategory,
-  //   subCategory,
-  //   childCategory,
-  //   state,
-  //   district,
-  //   city,
-  //   investmentRange,
-  //   planToInvest,
-  //   readyToInvest,
-  //   applyBy,
-  //   applyId,
-  //   brandLogo
-  // );
 
   const config = await SystemConfig.findOne();
   const BATCH_SIZE = config?.batchSize || 7;
@@ -154,10 +114,10 @@ export const handleNewleads = async (
       const OverAllBrandExists = await BrandDetails.aggregate(
         aggregationPipeline
       );
-      console.log(
-        "free Leads: Total eligible brands =",
-        OverAllBrandExists.length
-      );
+      // console.log(
+      //   "free Leads: Total eligible brands =",
+      //   OverAllBrandExists.length
+      // );
 
       if (OverAllBrandExists.length > 0) {
         if (!brandBatchDoc) {
@@ -235,7 +195,7 @@ export const handleNewleads = async (
             (r) => r.monthYear === monthYear
           );
 
-          console.log(monthRecord, "monthRecord");
+          // console.log(monthRecord, "monthRecord");
           if (!monthRecord) {
             monthRecord = {
               monthYear,
@@ -271,10 +231,10 @@ export const handleNewleads = async (
           // 💾 Finally save
           await brandDoc.save();
 
-          console.log(
-            "✅ Investor record stored successfully for",
-            brandDoc.brandName
-          );
+          // console.log(
+          //   "✅ Investor record stored successfully for",
+          //   brandDoc.brandName
+          // );
           if (brandDoc.freeEmailCount < MAX_EMAILS_PER_MONTH) {
             brandsToSend.push({ brand, brandDoc });
           }

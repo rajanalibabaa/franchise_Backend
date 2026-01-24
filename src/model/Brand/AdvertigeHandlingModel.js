@@ -4,7 +4,7 @@ import uuid from "../../utils/uuid.js";
 const PackageDetailsSchema = new mongoose.Schema({
   packageName: {
     type: String,
-    required: true
+    required: true,
   },
   totalAmount: {
     type: Number,
@@ -55,7 +55,10 @@ const PaymentPackagesSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export default mongoose.model("advertisePaymentPackages", PaymentPackagesSchema);
+export default mongoose.model(
+  "advertisePaymentPackages",
+  PaymentPackagesSchema,
+);

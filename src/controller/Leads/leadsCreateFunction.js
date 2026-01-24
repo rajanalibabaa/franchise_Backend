@@ -7,7 +7,7 @@ export const industryMapping = {
   "Education & Training": "EducationAndTrainingLeads",
   "Health, Beauty & Wellness": "HealthBeautyAndWellnessLeads",
   "Retails & Fashion": "RetailAndFashionLeads",
-  "Automotive": "AutomotiveLeads",
+  Automotive: "AutomotiveLeads",
   "Home Services & Maintenance": "HomeServicesAndMaintenanceLeads",
   "Real Estate & Property Services": "RealEstateAndPropertyServicesLeads",
   "Business & Professional Services": "BusinessAndProfessionalServicesLeads",
@@ -23,8 +23,7 @@ export const industryMapping = {
 };
 
 export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
-// console.log('leads creation',body);
-
+  // console.log('leads creation',body);
 
   try {
     const selectedIndustry =
@@ -65,7 +64,7 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
       new ApiResponse(
         500,
         null,
-        "Something went wrong while newSubmission saving in database"
+        "Something went wrong while newSubmission saving in database",
       );
     }
 
@@ -75,5 +74,3 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
     return new ApiResponse(500, {}, "Internal server error");
   }
 };
-
-

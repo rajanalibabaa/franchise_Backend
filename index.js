@@ -20,8 +20,7 @@ import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
-import {registerNotificationSocket} from './src/socket/notificationSocket.js'
-
+import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 
 dotenv.config(); // ✅ Load env FIRST
 
@@ -31,31 +30,28 @@ app.set("trust proxy", 1); // trust first proxy
 // Rate Limiter
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 300,               // 🔥 increased limit
-  standardHeaders: true,  // Return rate limit info in headers
-  legacyHeaders: false,   // Disable X-RateLimit-* legacy headers
+  max: 300, // 🔥 increased limit
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable X-RateLimit-* legacy headers
   message: {
     status: 429,
-    message: "Too many requests. Please try again later."
-  }
+    message: "Too many requests. Please try again later.",
+  },
 });
 
 const webhookslimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100,               // 🔥 increased limit for webhooks
-  standardHeaders: true,  // Return rate limit info in headers
-  legacyHeaders: false,   // Disable X-RateLimit-* legacy headers
+  max: 100, // 🔥 increased limit for webhooks
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable X-RateLimit-* legacy headers
   message: {
     status: 429,
-    message: "Too many requests to webhooks. Please try again later."
-  }
+    message: "Too many requests to webhooks. Please try again later.",
+  },
 });
-
 
 app.use(helmet());
 app.use(compression());
-
-
 
 const allowedOrigins = [
   "https://mrfranchise.in",
@@ -66,26 +62,22 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5175",
   "http://localhost:3000",
-  "https://www.thirumalthirumagal.com"
+  "https://www.thirumalthirumagal.com",
 ];
 
 app.use(
   cors({
-    origin:(origin, callback)=> {
+    origin: (origin, callback) => {
       if (!origin) return callback(null, true); // allow non-browser requests like Postman
-      
-      // if (allowedOrigins.indexOf(origin) === -1) {
-      //   const msg = "CORS policy: This origin is not allowed";
-      //   return callback(new Error(msg), false);
-      // }
-      if(allowedOrigins.includes(origin)){
+
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       console.warn(`CORS policy: This origin ${origin} is not allowed`);
       return callback(null, false);
     },
     credentials: true,
-  })
+  }),
 );
 
 // app.use(compression());
@@ -111,7 +103,7 @@ app.use(
       httpOnly: true,
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
-  })
+  }),
 );
 
 // Passport
@@ -137,7 +129,7 @@ const io = new SocketIOServer(httpServer, {
       "http://localhost:5175",
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
-      "https://www.thirumalthirumagal.com"
+      "https://www.thirumalthirumagal.com",
     ],
     credentials: true,
   },
@@ -149,7 +141,7 @@ registerNotificationSocket(io);
 app.set("io", io);
 
 // ✅ Start server
-const startServer = async () => {                                                               
+const startServer = async () => {
   try {
     await connectDatabase();
     console.log("✅ Database connected");
@@ -162,29 +154,26 @@ const startServer = async () => {
     app.use("/api", limiter, allRouters);
     app.use("/api/v1/upload", limiter, s3Uploads);
 
-
     // ✅ This is for webhook verification
-app.get("/api/webhooks", webhookslimiter, (req, res) => {
-  const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
+    app.get("/api/webhooks", webhookslimiter, (req, res) => {
+      const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
 
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
+      const mode = req.query["hub.mode"];
+      const token = req.query["hub.verify_token"];
+      const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("Webhook verified ✅");
-    res.status(200).send(challenge); // must return challenge
-  } else {
-    res.sendStatus(403);
-  }
-});
+      if (mode === "subscribe" && token === VERIFY_TOKEN) {
+        // console.log("Webhook verified ✅");
+        res.status(200).send(challenge); // must return challenge
+      } else {
+        res.sendStatus(403);
+      }
+    });
 
-app.post("/api/webhooks", webhookslimiter,(req, res) => {
-  console.log("Incoming webhook event:", req.body);
-  res.sendStatus(200);
-});
-
-  
+    app.post("/api/webhooks", webhookslimiter, (req, res) => {
+      // console.log("Incoming webhook event:", req.body);
+      res.sendStatus(200);
+    });
 
     app.use(errorHandler);
 

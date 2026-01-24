@@ -3,36 +3,29 @@ import mongoose from "mongoose";
 const adminVideoAdvertiseSchema = new mongoose.Schema(
   {
     title: {
-        type: String,
-        
+      type: String,
     },
     description: {
-        type: String,   
+      type: String,
     },
     videoUrl: {
-        type: String,
+      type: String,
     },
     thumbnailUrl: {
-        type: String,
+      type: String,
     },
-    uuid:{
-        type: String,
-        unique: true,
-        required: true,
-    }
-    
+    uuid: {
+      type: String,
+      unique: true,
+      required: true,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export const AdminVideoAdvertiseSchema = mongoose.model("AdminVideoAdvertiseSchema", adminVideoAdvertiseSchema);
-
-
-
-
-
-
-
-
+export const AdminVideoAdvertiseSchema = mongoose.model(
+  "AdminVideoAdvertiseSchema",
+  adminVideoAdvertiseSchema,
+);

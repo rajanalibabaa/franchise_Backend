@@ -18,7 +18,7 @@ export const format = (d) => {
   const minutes = String(d?.getMinutes()).padStart(2, "0");
   const seconds = String(d?.getSeconds()).padStart(2, "0");
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-}; 
+};
 
 export const twoMatchTypesleadcount = async (brand, investorData) => {
   let totalLeadsendcount = 0;
@@ -47,7 +47,7 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
               lead.investorEmail === investorData?.email
             ) {
               exists = true;
-              console.log("======categorylocationMatchData stop=======");
+              // console.log("======categorylocationMatchData stop=======");
               return;
             }
           });
@@ -61,7 +61,7 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
   });
 
   if (exists === true) {
-    console.log("======stop=======");
+    // console.log("======stop=======");
     return { totalLeadsendcount, exists };
   }
 
@@ -92,7 +92,7 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
               lead.investorEmail === investorData?.email
             ) {
               exists = true;
-              console.log("======categoryInvestmentrangeMatchData stop=======");
+              // console.log("======categoryInvestmentrangeMatchData stop=======");
               return;
             }
           });
@@ -109,27 +109,32 @@ export const twoMatchTypesleadcount = async (brand, investorData) => {
     return { totalLeadsendcount, exists };
   }
 
-  console.log("==== twoMatchTypesleadcount ==== :", totalLeadsendcount);
+  // console.log("==== twoMatchTypesleadcount ==== :", totalLeadsendcount);
   return { totalLeadsendcount, exists };
 };
 
-export const generateSentLeadsPercentage = async (brand,totalLeadsendcount) => {
+export const generateSentLeadsPercentage = async (
+  brand,
+  totalLeadsendcount,
+) => {
   const percentage =
-    ((totalLeadsendcount + 1) / brand?.brandDetails?.paymentPackage?.totalLeads) * 100;
+    ((totalLeadsendcount + 1) /
+      brand?.brandDetails?.paymentPackage?.totalLeads) *
+    100;
 
   const p = await BrandDetails.findByIdAndUpdate(
-     brand._id,
+    brand._id,
     {
       $set: {
-        "brandDetails.paymentPackage.sentLeadsPercentage": `${(
-          percentage.toFixed(2)
+        "brandDetails.paymentPackage.sentLeadsPercentage": `${percentage.toFixed(
+          2,
         )}%`,
         "brandDetails.overAllLeads": brand.brandDetails.overAllLeads + 1,
       },
     },
     {
       new: true,
-    }
+    },
   );
 
   // console.log("===p===", p.brandDetails.paymentPackage);
@@ -141,7 +146,7 @@ export const paidLeadHelperFunction = async (
   location,
   investorData,
   check,
-  matchType
+  matchType,
 ) => {
   let brandBatchDoc = await BrandBatch.findOne({});
 
@@ -266,7 +271,7 @@ export const paidLeadHelperFunction = async (
           foreignField: "brandId",
           as: "LocationInvestmentRangeMatchData",
         },
-      }
+      },
     );
   }
   if (matchType === "threeMatchTypes") {
@@ -304,7 +309,7 @@ export const paidLeadHelperFunction = async (
   aggregationPipeline.push({ $project: projectStage });
 
   const OverAllBrandExists = await BrandDetails.aggregate(aggregationPipeline);
-  console.log("Paid Leads: Total eligible brands =", OverAllBrandExists.length);
+  // console.log("Paid Leads: Total eligible brands =", OverAllBrandExists.length);
 
   let brandsSent = [];
 
@@ -316,7 +321,7 @@ export const paidLeadHelperFunction = async (
       ) {
         await CategoryInvestmentrangeLocationMatchFunction(brand, investorData);
 
-        console.log("===000=== :", brand.uuid);
+        // console.log("===000=== :", brand.uuid);
         brandsSent.push({
           brandId: brand.uuid,
           brandName: brand.brandDetails?.brandName || "",
@@ -331,50 +336,48 @@ export const paidLeadHelperFunction = async (
         !brandBatchDoc.isPaidCategoryLocationPaused &&
         "CategoryLocation" === check
       ) {
-        console.log("category &&  && location");
+        // console.log("category &&  && location");
         const exists = await CategoryLocationMatchFunction(brand, investorData);
         if (!exists) {
-          
           brandsSent.push({
-          brandId: brand.uuid,
-          brandName: brand.brandDetails?.brandName || "",
-          brandEmail: brand.brandDetails?.email || "",
-          emailSent: true,
-          emailSentAt: new Date(),
-          paidBrand: Boolean(true),
-          leadMatchBy: ["Category_LocationMatch"],
-        });
-        
+            brandId: brand.uuid,
+            brandName: brand.brandDetails?.brandName || "",
+            brandEmail: brand.brandDetails?.email || "",
+            emailSent: true,
+            emailSentAt: new Date(),
+            paidBrand: Boolean(true),
+            leadMatchBy: ["Category_LocationMatch"],
+          });
         }
-        console.log("======stop brandsSent=======")
-        
+        // console.log("======stop brandsSent=======")
       }
       if (
         !brandBatchDoc.isPaidCategoryInvestmentrangePaused &&
         "CategoryInvestmentrange" === check
       ) {
-        console.log("category && investmentRange && ");
-        const exists = await CategoryInvestmentrangeMatchFunction(brand, investorData);
+        // console.log("category && investmentRange && ");
+        const exists = await CategoryInvestmentrangeMatchFunction(
+          brand,
+          investorData,
+        );
         if (!exists) {
           brandsSent.push({
-          brandId: brand.uuid,
-          brandName: brand.brandDetails?.brandName || "",
-          brandEmail: brand.brandDetails?.email || "",
-          emailSent: true,
-          emailSentAt: new Date(),
-          paidBrand: Boolean(true),
-          leadMatchBy: ["Category_Investmentrange"],
-        }); 
+            brandId: brand.uuid,
+            brandName: brand.brandDetails?.brandName || "",
+            brandEmail: brand.brandDetails?.email || "",
+            emailSent: true,
+            emailSentAt: new Date(),
+            paidBrand: Boolean(true),
+            leadMatchBy: ["Category_Investmentrange"],
+          });
         }
-                  console.log("======stop brandsSent=======")
-
-        
+        // console.log("======stop brandsSent=======")
       }
       if (
         !brandBatchDoc.isPaidLocationInvestmentRangeLeadsPaused &&
         "LocationInvestmentRange" === check
       ) {
-        console.log(" && investmentRange && location");
+        // console.log(" && investmentRange && location");
         await LocationInvestmentRangeMatchFunction(brand, investorData);
         brandsSent.push({
           brandId: brand.uuid,

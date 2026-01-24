@@ -9,7 +9,7 @@ import {
   getBrandListingSlug,
   reEntry,
   updateBrandListingByUUID,
- 
+
   // getTopFoodFranchise,
   // getTopBeverageFranchise,
   // getTopLeadingFranchise,
@@ -23,15 +23,30 @@ import {
 } from "../../controller/BrandController/BrandListingController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { updateBrandImageById } from "../../controller/BrandController/uploadImages.js";
-import { datafieldnewEntry, testgetAllBrands } from "../../controller/BrandController/anonymousFunction.js";
+import {
+  datafieldnewEntry,
+  testgetAllBrands,
+} from "../../controller/BrandController/anonymousFunction.js";
 // import instaApplyBrnadFormController from "../../controller/BrandController/instaApplyBrnadFormController.js";
 
-import {createPaymentPackage,getAllPaymentPackages,deletePaymentPackage,getPaymentPackageById,updatePaymentPackage,AddpackageUpdate} from '../../controller/BrandController/AdvertiseBrandController.js'
+import {
+  createPaymentPackage,
+  getAllPaymentPackages,
+  deletePaymentPackage,
+  getPaymentPackageById,
+  updatePaymentPackage,
+  AddpackageUpdate,
+} from "../../controller/BrandController/AdvertiseBrandController.js";
 
-
-import {submitRequest,getAllRequests,deleteRequestByBrandUuid,getRequestByBrandId,getRequestById,updateRequestById} from "../../controller/BrandController/userRequesChanges/userRequestController.js"
+import {
+  submitRequest,
+  getAllRequests,
+  deleteRequestByBrandUuid,
+  getRequestByBrandId,
+  getRequestById,
+  updateRequestById,
+} from "../../controller/BrandController/userRequesChanges/userRequestController.js";
 const router = express.Router();
- 
 
 router.post(
   "/v1/brandlisting/createBrandListing",
@@ -46,7 +61,7 @@ router.post(
     { name: "interiorOutlet", maxCount: 5 },
   ]),
 
-  createBrandListing
+  createBrandListing,
 );
 
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
@@ -60,22 +75,7 @@ router.get("/v1/brandlisting/getBrandById/:id",  getBrandById);
 // router.get("/v1/brandlisting/getTopTrucksAndKiosks", getTopTrucksAndKiosks);
 // router.get("/v1/brandlisting/getTopRestaurants", getTopRestaurants);
 router.get("/v1/brandlisting/getBrandsByChildCategory", getBrandsByCategory);
-// router.get(
-//   "/v1/brandlisting/getFoodAndBeverageCategory",
-//   getFoodAndBeverageCategory
-// );
-// router.get("/v1/brandlisting/getBrandListingByUUID/:id",verifyJWT,getBrandListingByUUID);
-// router.get("/v1/brandlisting/getBrandById/:id",verifyJWT, getBrandById);
-// router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
 
-// router.get("/v1/brandlisting/getTopFoodFranchise",getTopFoodFranchise)
-// router.get("/v1/brandlisting/getTopBeverageFranchise",getTopBeverageFranchise)
-// router.get("/v1/brandlisting/getTopLeadingFranchise",getTopLeadingFranchise)
-// router.get('/v1/brandlisting/getTopCafes',getTopCafes)
-// router.get('/v1/brandlisting/getTopDesertAndBakery',getTopDesertAndBakery)
-// router.get('/v1/brandlisting/getTopTrucksAndKiosks',getTopTrucksAndKiosks)
-// router.get('/v1/brandlisting/getTopRestaurants',getTopRestaurants)
-// router.get('/v1/brandlisting/getBrandsByChildCategory',getBrandsByCategory)
 router.patch(
   "/v1/brandlisting/updateBrandListingByUUID/:id",
   upload.fields([
@@ -89,7 +89,7 @@ router.patch(
     { name: "gstCertificate", maxCount: 1 },
     { name: "interiorOutlet", maxCount: 5 },
   ]),
-  updateBrandListingByUUID
+  updateBrandListingByUUID,
 );
 router.patch(
   "/v1/brandlisting/updateBrandImageById/:id",
@@ -104,10 +104,10 @@ router.patch(
     { name: "gstCertificate", maxCount: 1 },
     { name: "interiorOutlet", maxCount: 5 },
   ]),
-  updateBrandImageById
+  updateBrandImageById,
 );
 // Add both possibilities to be safe
-router.delete('/v1/deleteBrandListingByUUID/:uuid', deleteBrandListingByUUID);
+router.delete("/v1/deleteBrandListingByUUID/:uuid", deleteBrandListingByUUID);
 // router.delete('/deleteBrandListingByUUID/:id', deleteBrandListingByUUID); // Fallback
 
 //brand Apply form for franchise ROutes
@@ -121,26 +121,42 @@ router.get("/testgetAllBrands", testgetAllBrands);
 
 // AdvertiseCreation router
 
-router.post('/v1/brandadvertise/payment',createPaymentPackage);
-router.get('/v1/brandadvertise/payment',getAllPaymentPackages);
-router.delete('/v1/brandadvertise/payment-packages/:uuid/:type/:index',deletePaymentPackage);
-router.get('/v1/brandadvertise/payment',getPaymentPackageById);
-router.put('/v1/brandadvertise/payment-packages/:uuid/:type/:index',updatePaymentPackage);
-router.post('/v1/brandadvertise/payment-packages/:uuid/add/:type/:index',AddpackageUpdate);
-
-
+router.post("/v1/brandadvertise/payment", createPaymentPackage);
+router.get("/v1/brandadvertise/payment", getAllPaymentPackages);
+router.delete(
+  "/v1/brandadvertise/payment-packages/:uuid/:type/:index",
+  deletePaymentPackage,
+);
+router.get("/v1/brandadvertise/payment", getPaymentPackageById);
+router.put(
+  "/v1/brandadvertise/payment-packages/:uuid/:type/:index",
+  updatePaymentPackage,
+);
+router.post(
+  "/v1/brandadvertise/payment-packages/:uuid/add/:type/:index",
+  AddpackageUpdate,
+);
 
 // request Routes
 
-router.post ('/v1/brandlisting/userRequestNotification',submitRequest)
-router.get('/v1/brandlisting/userRequestNotification',getAllRequests)
-router.get('/v1/brandlisting/userRequestNotificationByBrandId/:brandId',getRequestByBrandId)
-router.delete('/v1/brandlisting/userRequestNotification/:uuid',deleteRequestByBrandUuid)
+router.post("/v1/brandlisting/userRequestNotification", submitRequest);
+router.get("/v1/brandlisting/userRequestNotification", getAllRequests);
+router.get(
+  "/v1/brandlisting/userRequestNotificationByBrandId/:brandId",
+  getRequestByBrandId,
+);
+router.delete(
+  "/v1/brandlisting/userRequestNotification/:uuid",
+  deleteRequestByBrandUuid,
+);
 
-router.get('/v1/brandlisting/userRequestNotificationByUUID/:uuid',getRequestById)
-router.patch('/v1/brandlisting/userRequestNotification/:uuid',updateRequestById)
-
-
-
+router.get(
+  "/v1/brandlisting/userRequestNotificationByUUID/:uuid",
+  getRequestById,
+);
+router.patch(
+  "/v1/brandlisting/userRequestNotification/:uuid",
+  updateRequestById,
+);
 
 export default router;
