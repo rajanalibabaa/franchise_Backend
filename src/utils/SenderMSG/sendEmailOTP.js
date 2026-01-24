@@ -39,7 +39,7 @@ const transporter = nodemailer.createTransport({
 
 // Function to read HTML template and replace placeholders with dynamic dat;
 
-const getTemplate = (templateName, data) => {
+const getTemplate = (templateName = "otp_template", data) => {
   try {
     const filepath = path.join(
       __dirname,
@@ -61,10 +61,10 @@ const getTemplate = (templateName, data) => {
 };
 
 const sendEmailOTP = async (to, subject, templateName, data) => {
-  // console.log("Sending email to:", to);
-  // console.log("Subject:", subject);
-  // console.log("Template Name:", templateName);
-  // console.log("Data:", data);
+  console.log("Sending email to:", to);
+  console.log("Subject:", subject);
+  console.log("Template Name:", templateName);
+  console.log("Data:", data);
 
   const html = getTemplate(templateName, data);
 

@@ -2,7 +2,7 @@ import BrandListing from "../../model/Brand/brandListingPage.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
 import { generateOTP } from "../../utils/generateOTP.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
-import sendEmailOTP from "../../utils/SenderMSG/sendEmailOTP.js";
+import { sendEmailOTP } from "../../utils/Centralized Email/centralizedEmail.js";
 
 // In-memory OTP store: Map<email, { otp: string, expiresAt: Date }>
 const otpStore = new Map();
@@ -34,10 +34,8 @@ const generateNewEmailOTP = async (req, res) => {
   //  console.log("timmer: ",timmer)
 
   // Send the OTP via email
-  const sendOtp = await sendEmailOTP(email, otp);
-  if (!sendOtp) {
-    return res.json(new ApiResponse(500, false, "Failed to send OTP"));
-  }
+  await sendEmailOTP(email, otp);
+
 
   return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
 };
@@ -86,10 +84,8 @@ const existingEmailOTP = async (req, res) => {
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
   otpStore.set(email, { otp, expiresAt });
 
-  const sendOtp = await sendEmailOTP(email, otp);
-  if (!sendOtp) {
-    return res.json(new ApiResponse(500, false, "Failed to send OTP"));
-  }
+  await sendEmailOTP(email, otp);
+
   return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
 };
 

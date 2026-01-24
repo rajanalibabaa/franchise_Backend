@@ -271,6 +271,7 @@ export const sendPostRequirementEmail = async (
 
 export const sendEmailOTP = async (email, otp) => {
   try {
+    console.log("sendEmailOTP called with:", email, otp);
     const subject = "Verify Your Email Address";
     const emailTemplateName = "otp_template";
     await sendEmail(email, subject, emailTemplateName, { otp });
