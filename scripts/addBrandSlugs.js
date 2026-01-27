@@ -39,6 +39,12 @@ const run = async () => {
     );
     continue;
   }
+  if (!whatsappNumber) {
+    console.warn(
+      `⚠ Skipping brand ${brand._id} (missing brandDetails.whatsappNumber)`
+    );
+    continue;
+  }
 
   let baseSlug = slugify(brandName,whatsappNumber);
 
