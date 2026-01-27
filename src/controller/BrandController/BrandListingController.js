@@ -115,33 +115,33 @@ const createBrandListing = async (req, res) => {
     const brandName = brandDetails?.brandName;
 
     if (!brandName) {
-  return res.json(
-    new ApiResponse(400, {}, "brandDetails.brandName is required")
-  );
-}
+      return res.json(
+        new ApiResponse(400, {}, "brandDetails.brandName is required")
+      );
+    }
 
-let baseSlug = slugify(brandName);
+    let baseSlug = slugify(brandName);
 
-if (!baseSlug) {
-  return res.json(
-    new ApiResponse(400, {}, "Invalid brand name for slug generation")
-  );
-}
+    if (!baseSlug) {
+      return res.json(
+        new ApiResponse(400, {}, "Invalid brand name for slug generation")
+      );
+    }
 
-let slug = baseSlug;
-let count = 1;
+    let slug = baseSlug;
+    let count = 1;
 
-// IMPORTANT: check nested slug
-while (
-  await BrandDetails.exists({
-    "brandDetails.slug": slug,
-  })
-) {
-  slug = `${baseSlug}-${count++}`;
-}
+    // IMPORTANT: check nested slug
+    while (
+      await BrandDetails.exists({
+        "brandDetails.slug": slug,
+      })
+    ) {
+      slug = `${baseSlug}-${count++}`;
+    }
 
-// Inject slug into brandDetails
-brandDetails.slug = slug;
+    // Inject slug into brandDetails
+    brandDetails.slug = slug;
 
 
     const brandDetails = safeJsonParse(req.body?.brandDetails);
@@ -809,20 +809,20 @@ const getBrandListingSlug = async (req, res) => {
   try {
     const { likedBrands, shortListedBrands } =
       await likeandshortlist(userId);
-      
 
-const slugifyForRegex = (text) => {
-  if (!text) return "";
 
-  // Lowercase and remove any leading/trailing spaces
-  const cleanText = text.toLowerCase().trim();
+    const slugifyForRegex = (text) => {
+      if (!text) return "";
 
-  // Split the text into characters ignoring non-alphanumeric chars
-  const letters = cleanText.replace(/[^a-z0-9]/g, "").split("");
+      // Lowercase and remove any leading/trailing spaces
+      const cleanText = text.toLowerCase().trim();
 
-  // Join letters with optional [-\s]* so gaps, hyphens, or no gaps all match
-  return letters.join("[-\\s]*");
-};
+      // Split the text into characters ignoring non-alphanumeric chars
+      const letters = cleanText.replace(/[^a-z0-9]/g, "").split("");
+
+      // Join letters with optional [-\s]* so gaps, hyphens, or no gaps all match
+      return letters.join("[-\\s]*");
+    };
 
 
 
@@ -831,10 +831,12 @@ const slugifyForRegex = (text) => {
         $match: {
           $or: [
             // 1️⃣ Primary: SLUG (SEO route)
-            { "brandDetails.slug":{
-              $regex: `^${slugifyForRegex(identifier)}$`,
-              $options: "i",
-            }  },
+            {
+              "brandDetails.slug": {
+                $regex: `^${slugifyForRegex(identifier)}$`,
+                $options: "i",
+              }
+            },
 
             // 2️⃣ Fallback: UUID (old URLs / internal use)
             { uuid: identifier },
@@ -891,6 +893,7 @@ const slugifyForRegex = (text) => {
       brandDetails: {
         companyName: "$brandDetails.companyName",
         brandName: "$brandDetails.brandName",
+        whatsappNumber: "$brandDetails?.whatsappNumber",
         slug: "$brandDetails.slug", // ✅ include slug
         tagLine: "$brandDetails.tagLine",
         state: "$brandDetails.state",
@@ -1000,11 +1003,11 @@ const slugifyForRegex = (text) => {
     }
 
     const data = await BrandDetails.aggregate(aggregationPipeline);
-if (!data || data.length === 0) {
-  return res.status(404).json(
-    new ApiResponse(404, [], "❌ Brand not found")
-  );
-}
+    if (!data || data.length === 0) {
+      return res.status(404).json(
+        new ApiResponse(404, [], "❌ Brand not found")
+      );
+    }
     return res.json(
       new ApiResponse(200, data, "✅ Brand fetched successfully"),
     );
@@ -2356,21 +2359,21 @@ export const getBrandsByCategory = async (req, res) => {
           // Only check isLiked/isShortListed if id was provided
           isLiked: id
             ? {
-                $in: [
-                  "$brandInfo._id",
-                  likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-                ],
-              }
+              $in: [
+                "$brandInfo._id",
+                likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
+              ],
+            }
             : false,
           isShortListed: id
             ? {
-                $in: [
-                  "$brandInfo._id",
-                  shortListedBrands.map(
-                    (id) => new mongoose.Types.ObjectId(id),
-                  ),
-                ],
-              }
+              $in: [
+                "$brandInfo._id",
+                shortListedBrands.map(
+                  (id) => new mongoose.Types.ObjectId(id),
+                ),
+              ],
+            }
             : false,
           // Get first uploads document if exists
           uploadsData: {
