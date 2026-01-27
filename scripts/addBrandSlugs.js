@@ -31,6 +31,7 @@ const run = async () => {
 
     for (const brand of brands) {
   const brandName = brand.brandDetails?.brandName;
+  const whatsappNumber = brand.brandDetails?.whatsappNumber;
 
   if (!brandName) {
     console.warn(
@@ -39,7 +40,7 @@ const run = async () => {
     continue;
   }
 
-  let baseSlug = slugify(brandName);
+  let baseSlug = slugify(brandName,whatsappNumber);
 
   if (!baseSlug) {
     console.warn(
