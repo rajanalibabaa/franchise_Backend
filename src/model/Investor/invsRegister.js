@@ -59,12 +59,12 @@ const PreferenceSchema = new mongoose.Schema({
           return this.propertyType === "Own Property";
         },
       },
-      propertyCity: {
-        type: String,
-        required: function () {
-          return this.propertyType === "Own Property";
-        },
-      },
+      // propertyCity: {
+      //   type: String,
+      //   required: function () {
+      //     return this.propertyType === "Own Property";
+      //   },
+      // },
       _id: false,
     },
   ],

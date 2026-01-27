@@ -17,7 +17,12 @@ InvestorRouter.patch('/v1/investor/updateInvestor/:uuid',upload.single("profileI
 
 InvestorRouter.delete('/v1/investor/deleteInvestor/:uuid', deleteInvestor);
 InvestorRouter.patch('/v1/investor/deleteInvestorProfileImage/:uuid',verifyJWT, deleteInvestorProfileImage);
-
+InvestorRouter.patch(
+  '/v1/admin/updateInvestor/:uuid',           // ← New admin endpoint
+  upload.single("profileImage"),
+  // NO verifyJWT here!
+  updateInvestor
+);
 
 
 

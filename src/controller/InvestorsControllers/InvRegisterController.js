@@ -47,7 +47,7 @@ export const createInvestor = async (req, res) => {
         propertyCountry: prop.propertyCountry || "",
 
         propertyState: prop.propertyState || "",
-        propertyCity: prop.propertyCity || ""
+        // propertyCity: prop.propertyCity || ""
       }));
 
       return { 
@@ -58,7 +58,7 @@ export const createInvestor = async (req, res) => {
         preferredCountry: pref.preferredCountry || pref.preferredCuntry || "",
         preferredState: pref.preferredState || "",
         preferredDistrict: pref.preferredDistrict || pref.district || "",
-        preferredCity: pref.preferredCity || "",
+        // preferredCity: pref.preferredCity || "",
         propertyPreferred
       };
     }) || [];
@@ -186,6 +186,20 @@ export const getInvestorByUUID = async (req, res) => {
 export const updateInvestor = async (req, res) => {
     try {
         const { uuid } = req.params;
+        // ✅ Admin Support: Use URL uuid for /admin/ routes
+const targetUuid = req.path.includes('/admin/') 
+  ? uuid 
+  : req.investorUser?.uuid;
+
+if (!targetUuid) {
+  return res.status(400).json(new ApiResponse(400, null, "UUID is required"));
+}
+
+const oldData = await InvsRegister.findOne({ uuid: targetUuid });
+
+if (!oldData) {
+  return res.status(404).json(new ApiResponse(404, null, "Investor not found"));
+}
         const {
             firstName,
             email,
@@ -203,19 +217,14 @@ export const updateInvestor = async (req, res) => {
         } = req.body;
 
         // Authorization check
-        if (req?.investorUser?.uuid !== uuid) {
+      if (!req.path.includes('/admin/') && req?.investorUser?.uuid !== uuid) {
             return res.status(403).json(
                 new ApiResponse(403, null, "Unauthorized access to this resource")
             );
         }
 
-        // Find existing investor data
-        const oldData = await InvsRegister.findOne({ uuid: req.investorUser?.uuid });
-        if (!oldData) {
-            return res.status(404).json(
-                new ApiResponse(404, null, "Investor not found")
-            );
-        }
+   
+      
 
         let processedPreferences = [];
         let preferencesChanged = false;
@@ -261,12 +270,12 @@ export const updateInvestor = async (req, res) => {
                 });
 
                 // Validate location fields based on location type
-                if (pref.locationType === 'domestic') {
-                    if (!pref.preferredState || !pref.preferredDistrict || !pref.preferredCity) {
-                        throw new Error(`Domestic location fields (state, district, city) are required in preference ${index + 1}`);
-                    }
-                } else if (pref.locationType === 'international') {
-                    if (!pref.preferredCountry || !pref.preferredCity) {
+               if (pref.locationType === 'domestic') {
+    if (!pref.preferredState || !pref.preferredDistrict) {
+        throw new Error(`Domestic location fields (state, district) are required in preference ${index + 1}`);
+    }
+} else if (pref.locationType === 'international') {
+                    if (!pref.preferredCountry || !pref.preferredState) {
                         throw new Error(`International location fields (country, city) are required in preference ${index + 1}`);
                     }
                 }
@@ -303,7 +312,7 @@ export const updateInvestor = async (req, res) => {
                     preferredCountry: String(pref.preferredCountry || ''),
                     preferredState: String(pref.preferredState || ''),
                     preferredDistrict: String(pref.preferredDistrict || ''),
-                    preferredCity: String(pref.preferredCity || ''),
+                    // preferredCity: String(pref.preferredCity || ''),
                     locationType: String(pref.locationType).toLowerCase(),
                     category: processedCategories,
                     propertyPreferred: processedPropertyPreferred,
@@ -406,7 +415,7 @@ export const updateInvestor = async (req, res) => {
                     propertySize: prop.propertySize || '',
                     propertyCountry: prop.propertyCountry || '',
                     propertyState: prop.propertyState || '',
-                    propertyCity: prop.propertyCity || '',
+                    // propertyCity: prop.propertyCity || '',
                     _id: false
                 })) : [],
                 _id: pref._id || new mongoose.Types.ObjectId()
@@ -446,7 +455,7 @@ export const updateInvestor = async (req, res) => {
 
         // Perform the update
         const updatedInvestor = await InvsRegister.findOneAndUpdate(
-            { uuid: req.investorUser?.uuid },
+           { uuid: targetUuid },
             updateOperation,
             { new: true, runValidators: true }
         ).select("-__v -_id -createdAt -updatedAt -oldData -password");
