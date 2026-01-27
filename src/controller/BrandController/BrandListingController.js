@@ -895,6 +895,7 @@ const slugifyForRegex = (text) => {
         tagLine: "$brandDetails.tagLine",
         state: "$brandDetails.state",
         city: "$brandDetails.city",
+        whatsappnumber: "$brandDetails.whatsappNumber",
         paymentPackage: "$brandDetails.paymentPackage",
         listingPackages: "$brandDetails.listingPackages",
       },
