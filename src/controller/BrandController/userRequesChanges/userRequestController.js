@@ -14,14 +14,14 @@ export const submitRequest = async (req, res) => {
     }
 
         const brandLogoGet = await BrandUploads.findOne({ brandOwnerId: brandId });
-    console.log('Finding brand logo on schema', brandLogoGet);
+    // console.log('Finding brand logo on schema', brandLogoGet);
 
     // ✅ Fetch brand details using brandId (uuid)
     const brand = await BrandDetails.findOne({ uuid: brandId });
 
 
     if (!brandLogoGet) {
-      console.log('brand',brandLogoGet);
+      // console.log('brand',brandLogoGet);
     }
 
     
@@ -34,7 +34,7 @@ export const submitRequest = async (req, res) => {
     const brandEmail = brand?.brandDetails?.email || "not-available";
     const brandOriginalId = brand?.brandID || "not-available";
 const brandLogo = brandLogoGet?.uploads?.brandLogo[0] || "not-available";
-console.log('creating logo',brandLogo);
+// console.log('creating logo',brandLogo);
 
     const mobileNumber = brand?.brandDetails?.mobileNumber || "not-available";
     const whatsappNumber = brand?.brandDetails?.whatsappNumber || "not-available";

@@ -1,4 +1,4 @@
-import { log } from "console";
+
 import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandExpansionLocationData } from "../../../model/Brand/Brand.model/ExpansionLocation.model.js";
 import { BrandFranchiseDetails } from "../../../model/Brand/Brand.model/FranchiseDetails.model.js";
