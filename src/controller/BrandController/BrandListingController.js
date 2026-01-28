@@ -112,6 +112,11 @@ const createBrandListing = async (req, res) => {
       }
     };
 
+    const brandDetails = safeJsonParse(req.body?.brandDetails);
+    const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
+    const expansionLocationData = safeJsonParse(
+      req.body?.expansionLocationData,
+    );
     const brandName = brandDetails?.brandName;
 
     if (!brandName) {
@@ -130,6 +135,7 @@ const createBrandListing = async (req, res) => {
 
     let slug = baseSlug;
     let count = 1;
+    
 
     // IMPORTANT: check nested slug
     while (
@@ -140,16 +146,10 @@ const createBrandListing = async (req, res) => {
       slug = `${baseSlug}-${count++}`;
     }
 
-    // Inject slug into brandDetails
+      // Inject slug into brandDetails
     brandDetails.slug = slug;
 
-
-    const brandDetails = safeJsonParse(req.body?.brandDetails);
-    const franchiseDetails = safeJsonParse(req.body?.franchiseDetails);
-    const expansionLocationData = safeJsonParse(
-      req.body?.expansionLocationData,
-    );
-
+    
     if (brandDetails.paymentPackage) {
       // brandDetails.paymentPackage = "basic" or "premium"
 
