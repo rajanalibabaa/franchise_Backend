@@ -47,7 +47,7 @@ const BrandSentSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const InstantApplyInvestorSchema = new mongoose.Schema(
@@ -106,10 +106,10 @@ const InstantApplyInvestorSchema = new mongoose.Schema(
     },
     brandsSent: [BrandSentSchema],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model(
   "InstantApplyInvestor",
-  InstantApplyInvestorSchema
+  InstantApplyInvestorSchema,
 );

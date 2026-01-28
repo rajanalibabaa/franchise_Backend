@@ -19,9 +19,9 @@ const FicoSchema = new mongoose.Schema(
     breakEven: String,
     requireWorkingCapital: String,
     marginOnSales: String,
-    agreementPeriod: Number
+    agreementPeriod: Number,
   },
-  { _id: false }
+  { _id: false },
 );
 
 // -- Main Brand Listing Schema
@@ -30,11 +30,11 @@ const BrandListingSchema = new mongoose.Schema(
     uuid: {
       type: String,
       default: uuid,
-      unique: true
+      unique: true,
     },
     brandID: {
       type: String,
-      unique: true
+      unique: true,
     },
 
     brandDetails: {
@@ -50,21 +50,19 @@ const BrandListingSchema = new mongoose.Schema(
       ceoEmail: String,
       officeEmail: String,
       officeMobile: String,
-     headOfficeAddress: String,
-     country: { type: String, default: "INDIA" },
-     state: String,
-     district: String,
+      headOfficeAddress: String,
+      country: { type: String, default: "INDIA" },
+      state: String,
+      district: String,
       city: String,
       pincode: String,
-      
+
       website: String,
       facebook: String,
       instagram: String,
       linkedin: String,
       gstNumber: String,
       pancardNumber: String,
-        
-      
     },
 
     franchiseDetails: {
@@ -73,7 +71,7 @@ const BrandListingSchema = new mongoose.Schema(
         main: String,
         sub: String,
         groupId: String,
-        child: String
+        child: String,
       },
       brandDescription: String,
       companyOwnedOutlets: String,
@@ -85,7 +83,7 @@ const BrandListingSchema = new mongoose.Schema(
       totalOutlets: String,
       fico: [FicoSchema], // ✅ Correctly defined array of FICO objects
       trainingSupport: [String], // ✅ Fixed: now accepts arrays of strings
-      uniqueSellingPoints: [String]
+      uniqueSellingPoints: [String],
     },
 
     expansionLocationData: {
@@ -99,11 +97,11 @@ const BrandListingSchema = new mongoose.Schema(
                 {
                   _id: false,
                   district: String,
-                  cities: [String]
-                }
-              ]
-            }
-          ]
+                  cities: [String],
+                },
+              ],
+            },
+          ],
         },
         international: {
           country: [
@@ -114,12 +112,12 @@ const BrandListingSchema = new mongoose.Schema(
                 {
                   _id: false,
                   district: String,
-                  cities: [String]
-                }
-              ]
-            }
-          ]
-        }
+                  cities: [String],
+                },
+              ],
+            },
+          ],
+        },
       },
       expansionLocations: {
         domestic: {
@@ -131,13 +129,13 @@ const BrandListingSchema = new mongoose.Schema(
                 {
                   _id: false,
                   district: String,
-                  cities: [String]
-                }
-              ]
-            }
-          ]
+                  cities: [String],
+                },
+              ],
+            },
+          ],
         },
-         international: {
+        international: {
           country: [
             {
               _id: false,
@@ -146,14 +144,14 @@ const BrandListingSchema = new mongoose.Schema(
                 {
                   _id: false,
                   district: String,
-                  cities: [String]
-                }
-              ]
-            }
-          ]
-        }
+                  cities: [String],
+                },
+              ],
+            },
+          ],
+        },
       },
-      isInternationalExpansion: String
+      isInternationalExpansion: String,
     },
 
     uploads: {
@@ -168,14 +166,14 @@ const BrandListingSchema = new mongoose.Schema(
       awards: [
         {
           awardDescription: { type: String },
-          awardImage: { type: String }
-        }
-      ]
-    }
+          awardImage: { type: String },
+        },
+      ],
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 // Export the model

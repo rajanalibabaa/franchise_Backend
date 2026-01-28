@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   createPostRequirement,
   getAllPostRequirement,
@@ -6,32 +6,29 @@ import {
   getPostRequirementByUUID,
   updatePostRequirement,
   deletePostRequirement,
-} from '../../controller/PostRequirement/postRequirementController.js';
+} from "../../controller/PostRequirement/postRequirementController.js";
 
-import { validatePostRequirement } from '../../Validation/PostRequirementListing/PostRequirementListing.js';
-import { preprocessInvestmentRange } from '../../Middleware/PostRequirementMiddleware/preprocessInvestmentRange.js';
+import { preprocessInvestmentRange } from "../../Middleware/PostRequirementMiddleware/preprocessInvestmentRange.js";
 
 const router = Router();
 
 // RESTful Routes
 router.post(
-  '/post/postRequirements',
+  "/post/postRequirements",
   preprocessInvestmentRange,
-  validatePostRequirement,
-  createPostRequirement
+  createPostRequirement,
 );
 
-router.get('/v1/post/postRequirements', getAllPostRequirement);
-router.get('/v1/post/postRequirements/:id', getPostRequirementById);
-router.get('/v1/post/postRequirements/uuid/:uuid', getPostRequirementByUUID); // (or use query params)
+router.get("/v1/post/postRequirements", getAllPostRequirement);
+router.get("/v1/post/postRequirements/:id", getPostRequirementById);
+router.get("/v1/post/postRequirements/uuid/:uuid", getPostRequirementByUUID); // (or use query params)
 
 router.put(
-  '/postRequirements/:id',
+  "/postRequirements/:id",
   preprocessInvestmentRange,
-  validatePostRequirement,
-  updatePostRequirement
+  updatePostRequirement,
 );
 
-router.delete('/v1/post/postRequirements/:id', deletePostRequirement);
+router.delete("/v1/post/postRequirements/:id", deletePostRequirement);
 
 export default router;

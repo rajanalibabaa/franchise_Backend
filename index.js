@@ -20,53 +20,67 @@ import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
-import {registerNotificationSocket} from './src/socket/notificationSocket.js'
-
+import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 
 dotenv.config(); // ✅ Load env FIRST
 
 const app = express();
+app.set("trust proxy", 1); // trust first proxy
 
+// Rate Limiter
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 100,
-  message: "Too many requests, try again later.",
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 300, // 🔥 increased limit
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable X-RateLimit-* legacy headers
+  message: {
+    status: 429,
+    message: "Too many requests. Please try again later.",
+  },
 });
 
-// Middlewares
-app.use(limiter);
+const webhookslimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 🔥 increased limit for webhooks
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable X-RateLimit-* legacy headers
+  message: {
+    status: 429,
+    message: "Too many requests to webhooks. Please try again later.",
+  },
+});
 
 app.use(helmet());
-
-
-
+app.use(compression());
 
 const allowedOrigins = [
+  "https://mrfranchise.in",
   "https://fb.mrfranchise.in",
+  "https://www.mrfranchise.in",
+  "https://admin.mrfranchise.in",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-  "https://admin.mrfranchise.in",
-
   "http://localhost:3000",
-  "https://www.thirumalthirumagal.com/"
+  "https://www.thirumalthirumagal.com",
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
       if (!origin) return callback(null, true); // allow non-browser requests like Postman
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = "CORS policy: This origin is not allowed";
-        return callback(new Error(msg), false);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      return callback(null, true);
+      console.warn(`CORS policy: This origin ${origin} is not allowed`);
+      return callback(null, false);
     },
     credentials: true,
-  })
+  }),
 );
 
-app.use(compression());
+// app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -89,7 +103,7 @@ app.use(
       httpOnly: true,
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
-  })
+  }),
 );
 
 // Passport
@@ -107,13 +121,15 @@ const httpServer = createServer(app);
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: [
+      "https://mrfranchise.in",
       "https://fb.mrfranchise.in",
+      "https://www.mrfranchise.in",
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
-      "https://www.thirumalthirumagal.com/"
+      "https://www.thirumalthirumagal.com",
     ],
     credentials: true,
   },
@@ -125,7 +141,7 @@ registerNotificationSocket(io);
 app.set("io", io);
 
 // ✅ Start server
-const startServer = async () => {                                                               
+const startServer = async () => {
   try {
     await connectDatabase();
     console.log("✅ Database connected");
@@ -135,35 +151,30 @@ const startServer = async () => {
       res.json({ message: "Welcome to the Home Page!" });
     });
 
-    app.use("/api", allRouters);
-    app.use("/api/v1/upload", s3Uploads);
-
+    app.use("/api", limiter, allRouters);
+    app.use("/api/v1/upload", limiter, s3Uploads);
 
     // ✅ This is for webhook verification
-app.get("/api/webhooks", (req, res) => {
-  const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
+    app.get("/api/webhooks", webhookslimiter, (req, res) => {
+      const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
 
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
+      const mode = req.query["hub.mode"];
+      const token = req.query["hub.verify_token"];
+      const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("Webhook verified ✅");
-    res.status(200).send(challenge); // must return challenge
-  } else {
-    res.sendStatus(403);
-  }
-});
+      if (mode === "subscribe" && token === VERIFY_TOKEN) {
+        // console.log("Webhook verified ✅");
+        res.status(200).send(challenge); // must return challenge
+      } else {
+        res.sendStatus(403);
+      }
+    });
 
-// ✅ This is for receiving webhook events (messages, comments, etc.)
-app.post("/api/webhooks", (req, res) => {
-  console.log("Incoming webhook event:", req.body);
-  res.sendStatus(200);
-});
+    app.post("/api/webhooks", webhookslimiter, (req, res) => {
+      // console.log("Incoming webhook event:", req.body);
+      res.sendStatus(200);
+    });
 
-
-
-    // Error handler
     app.use(errorHandler);
 
     // ✅ Use httpServer.listen (not app.listen)

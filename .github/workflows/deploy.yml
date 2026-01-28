@@ -24,10 +24,12 @@ jobs:
       - name: Deploy on VPS
         run: |
           ssh $VPS_USER@$VPS_HOST "
-            cd /var/www/my-backend &&
-            git pull &&
-            npm install &&
-            pm2 restart all || pm2 start server.js --name my-backend
+          set -e
+          cd /root/franchise_Backend &&
+          git fetch origin &&
+          git reset --hard origin/rajan &&
+          npm install --production &&
+          pm2 restart franchise_backend --update-env || pm2 start index.js --name franchise_backend 
           "
         env:
           VPS_USER: ${{ secrets.VPS_USER }}

@@ -27,7 +27,7 @@ import { shortListRouter } from "./src/Routes/ShortListRouter/shortListRoutes.js
 import { newIncomingBrandRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/newIncomingBrandRoutes.js";
 import { overAllPlatformRoutes } from "./src/Routes/BrandRoutes/overAllPlatformRoutes.js";
 import { superAdminRouter } from "./src/Routes/AdminRoutes/superAdminRoutes/superAdminRoutes.js";
-import socailPost from "./src/utils/socialmediapost/SocialRouter.js"
+import socailPost from "./src/utils/socialmediapost/SocialRouter.js";
 import { userRouter } from "./src/Routes/AdminRoutes/userRoutes/userRoutes.js";
 import { mahalRouter } from "./src/Routes/Mahal/mahal.router.js";
 import { brandpauseplayRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/brandpauseplayRouter.js";
@@ -36,6 +36,7 @@ import { paymentRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/p
 import leadPackageRouter from "./src/Routes/LeadPackage/LeadPackage.js";
 import { brandleadsRouter } from "./src/Routes/Lead/brandLeadsRouter.js";
 import { industryManagementRouter } from "./src/Routes/AdminRoutes/CMS/industryManagement.routes.js";
+import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
 
 const router = express.Router();
 
@@ -49,7 +50,7 @@ router.use(complaintRoutes);
 router.use(InvestorRouter);
 router.use(brandListingRoutes);
 router.use(filterRouter);
-router.use(overAllPlatformRoutes)
+router.use(overAllPlatformRoutes);
 
 // admin
 router.use(adminRoutess);
@@ -58,18 +59,12 @@ router.use(AdminDashBoardClientRouter);
 // video advertise
 router.use(videoAdvertiseRoute);
 
-
-
 //logout routers
 router.use(logoutRouter);
 
 router.use(fbPostsRouter);
 
-
-
 router.use(sendOtpRouter);
-
-
 
 router.use(frontendHomePageBrandsRouter);
 
@@ -94,9 +89,9 @@ router.use(OtherIndustriesRouter);
 
 // superAdminRouter
 
-router.use(superAdminRouter)
+router.use(superAdminRouter);
 
-router.use(ManualLeadRouter)
+router.use(ManualLeadRouter);
 
 router.use(brandleadsRouter);
 
@@ -105,30 +100,27 @@ router.use(leadPackageRouter);
 //shortListRouter
 router.use(shortListRouter);
 
-
 //Admin New Incoming Brands Routes
 
-router.use(newIncomingBrandRouter)
-router.use(userRouter)
+router.use(newIncomingBrandRouter);
+router.use(userRouter);
 
-
-router.use(socailPost)
-
+router.use(socailPost);
 
 //Mahal project
-router.use(mahalRouter)
+router.use(mahalRouter);
 
 //brandpauseplayRouter
-router.use(brandpauseplayRouter)
+router.use(brandpauseplayRouter);
 
 //paymentRouter
-router.use(paymentRouter)
-
+router.use(paymentRouter);
 
 //industryManagementRouter
-router.use(industryManagementRouter)
+router.use(industryManagementRouter);
 
-
+//searchRoutes
+router.use(searchRoutes);
 
 function getRoutes(router, basePath = "") {
   const routes = [];
@@ -136,7 +128,7 @@ function getRoutes(router, basePath = "") {
     // Direct route (GET, POST, etc.)
     if (layer.route && layer.route.path) {
       const methods = Object.keys(layer.route.methods).map((m) =>
-        m.toUpperCase()
+        m.toUpperCase(),
       );
       routes.push({
         method: methods.join(", "),
@@ -257,11 +249,11 @@ router.get("/endpoints", (req, res) => {
                     <button class="btn btn-link text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
                         <span>
                             <span class="badge bg-${getMethodBadgeColor(
-                              route.method
+                              route.method,
                             )} badge-method me-2">${route.method}</span>
                             <span class="endpoint-path" id="endpoint-path-${index}">${
-              route.path
-            }
+                              route.path
+                            }
                             <button class="copy-btn" title="Copy path" data-path="${
                               route.path
                             }" data-index="${index}">
@@ -274,7 +266,7 @@ router.get("/endpoints", (req, res) => {
                 </h2>
             </div>
         </div>
-        `
+        `,
           )
           .join("")}
     </div>
@@ -344,7 +336,6 @@ function getMethodBadgeColor(method) {
   }
 }
 
-
-
-
 export default router;
+
+0;

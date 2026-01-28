@@ -1,17 +1,15 @@
-
 import mongoose from "mongoose";
 
-
 const subscribeSchema = new mongoose.Schema(
-    {
-        email : {
-            type: String,
-            required: true,
-        }
+  {
+    email: {
+      type: String,
+      required: true,
     },
-    {
-        timestamps:true
-    }
-)
+  },
+  {
+    timestamps: true,
+  },
+);
 
-export const SubscribeModel = mongoose.model("SubscribeModel",subscribeSchema)
+export const SubscribeModel = mongoose.model("SubscribeModel", subscribeSchema);

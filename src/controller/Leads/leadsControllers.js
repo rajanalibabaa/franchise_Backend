@@ -28,8 +28,8 @@ const getLeadsBybrandId = async (req, res) => {
         new ApiResponse(
           404,
           null,
-          "packageStartDate and leadType query params are required"
-        )
+          "packageStartDate and leadType query params are required",
+        ),
       );
     }
     let project = {};
@@ -56,7 +56,7 @@ const getLeadsBybrandId = async (req, res) => {
               path: "$categoryInvestmentrangeMatch",
               preserveNullAndEmptyArrays: true,
             },
-          }
+          },
         );
 
         project = {
@@ -89,7 +89,7 @@ const getLeadsBybrandId = async (req, res) => {
               path: "$categoryLocationMatch",
               preserveNullAndEmptyArrays: true,
             },
-          }
+          },
         );
 
         project = {
@@ -134,7 +134,7 @@ const getLeadsBybrandId = async (req, res) => {
               path: "$categoryInvestmentrangeMatch",
               preserveNullAndEmptyArrays: true,
             },
-          }
+          },
         );
 
         project = {
@@ -179,7 +179,7 @@ const getLeadsBybrandId = async (req, res) => {
             path: "$freeLeads",
             preserveNullAndEmptyArrays: true,
           },
-        }
+        },
       );
       project = {
         _id: 0,
@@ -196,7 +196,7 @@ const getLeadsBybrandId = async (req, res) => {
     const result = await BrandDetails.aggregate(aggregationPipline);
 
     let leads = [];
-    
+
     if (leadType === "paid") {
       const catLoc = result[0]?.categoryLocationMatch?.records;
       if (catLoc?.length > 0) {
@@ -255,9 +255,9 @@ const getLeadsBybrandId = async (req, res) => {
       from.setDate(today.getDate() - Number(dateFilter));
       const to = today;
 
-      console.log("from:", from.toISOString());
-      console.log("to:", to.toISOString());
-      console.log("dateFilter:", dateFilter);
+      // console.log("from:", from.toISOString());
+      // console.log("to:", to.toISOString());
+      // console.log("dateFilter:", dateFilter);
 
       const filteredLeads = leads.filter((item) => {
         const sentAt = new Date(item.sentAt);
@@ -266,7 +266,7 @@ const getLeadsBybrandId = async (req, res) => {
 
       leads = filteredLeads;
     }
-    
+
     const total = leads?.length;
     leads = leads?.slice(page * limit, page * limit + limit);
 
@@ -278,7 +278,7 @@ const getLeadsBybrandId = async (req, res) => {
     };
 
     return res.json(
-      new ApiResponse(200, { leads, pagination }, "data fetch successfully")
+      new ApiResponse(200, { leads, pagination }, "data fetch successfully"),
     );
   } catch (error) {
     return res.json(new ApiResponse(500, "Server error", error.message));

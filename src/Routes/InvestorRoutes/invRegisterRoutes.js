@@ -1,13 +1,19 @@
-import { Router } from 'express';
-import { createInvestor, deleteInvestor, deleteInvestorProfileImage, getAllInvestors, getInvestorByUUID,  updateInvestor} from '../../controller/InvestorsControllers/InvRegisterController.js';
-import { verifyJWT } from '../../Middleware/Authentication/authMiddleware.js';
-import upload from '../../utils/Uploads/multerConfig.js';
-
+import { Router } from "express";
+import {
+  createInvestor,
+  deleteInvestor,
+  deleteInvestorProfileImage,
+  getAllInvestors,
+  getInvestorByUUID,
+  updateInvestor,
+} from "../../controller/InvestorsControllers/InvRegisterController.js";
+import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
+import upload from "../../utils/Uploads/multerConfig.js";
 
 const InvestorRouter = Router();
 
 // Corrected method usage
-InvestorRouter.post('/v1/investor/createInvestor', createInvestor);
+InvestorRouter.post("/v1/investor/createInvestor", createInvestor);
 
 InvestorRouter.get('/v1/investor/getInvestor', getAllInvestors);
 
@@ -24,17 +30,26 @@ InvestorRouter.patch(
   updateInvestor
 );
 
+InvestorRouter.patch(
+  "/v1/investor/updateInvestor/:uuid",
+  upload.single("profileImage"),
+  verifyJWT,
+  updateInvestor,
+);
 
+InvestorRouter.delete("/v1/investor/deleteInvestor/:uuid", deleteInvestor);
+InvestorRouter.patch(
+  "/v1/investor/deleteInvestorProfileImage/:uuid",
+  verifyJWT,
+  deleteInvestorProfileImage,
+);
 
 // InvestorRouter.post('/investor_favbrands/likedbrands',verifyJWT,toggleFavoriteBrand)
-
 
 // InvestorRouter.get('/investor_favbrands/favbrands/:uuid',verifyJWT,getFavoriteBrandsLikedByInvestorID)
 
 // InvestorRouter.delete('/investor_favbrands/delete/:uuid',verifyJWT,deleteFavoriteBrand)
 
 // InvestorRouter.get('/investor_favbrands/getAllLikedAndUnlikedBrand/:uuid',verifyJWT,getAllLikedAndUnlikedBrand)
-
-
 
 export { InvestorRouter };

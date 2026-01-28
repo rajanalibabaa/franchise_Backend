@@ -8,17 +8,17 @@ const emailRecordSchema = new mongoose.Schema(
     investorMobile: { type: String, required: true },
     sentAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const monthlyRecordSchema = new mongoose.Schema(
   {
-    range: { type: String, required: true }, 
-    monthNumber: { type: Number, required: true }, 
+    range: { type: String, required: true },
+    monthNumber: { type: Number, required: true },
     count: { type: Number, default: 0 },
     leadsRecords: [emailRecordSchema],
   },
-  { _id: false }
+  { _id: false },
 );
 
 const categoryLocationMatchSchema = new mongoose.Schema(
@@ -51,14 +51,14 @@ const categoryLocationMatchSchema = new mongoose.Schema(
           },
           records: [monthlyRecordSchema],
         },
-        { _id: false }
+        { _id: false },
       ],
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const CategoryLocationMatch = mongoose.model(
   "CategoryLocationMatch",
-  categoryLocationMatchSchema
+  categoryLocationMatchSchema,
 );

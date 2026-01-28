@@ -1,6 +1,5 @@
-import { PostRequirement } from '../../model/Post Requirement/postRequirement.js';
-import {sendPostRequirementEmail} from '../../utils/Centralized Email/centralizedEmail.js'
-
+import { PostRequirement } from "../../model/Post Requirement/postRequirement.js";
+import { sendPostRequirementEmail } from "../../utils/Centralized Email/centralizedEmail.js";
 
 export const createPostRequirement = async (req, res) => {
   try {
@@ -25,13 +24,13 @@ export const createPostRequirement = async (req, res) => {
       name,
       address,
       country,
-      pincode, 
+      pincode,
       city,
       state,
       mobileNumber,
       whatsappNumber,
       email,
-      industryType, 
+      industryType,
       investmentRange,
       floorAreaRequirement,
       timelineToStart,
@@ -39,11 +38,31 @@ export const createPostRequirement = async (req, res) => {
     });
 
     await newRequirement.save();
-    
-     // Send email after successful save
-    await sendPostRequirementEmail(email,name,address,country,pincode,city,state,mobileNumber,whatsappNumber,industryType,investmentRange,floorAreaRequirement,timelineToStart,needLoan);
 
-    res.status(201).json({ message: 'PostRequirement created successfully', data: newRequirement });
+    // Send email after successful save
+    await sendPostRequirementEmail(
+      email,
+      name,
+      address,
+      country,
+      pincode,
+      city,
+      state,
+      mobileNumber,
+      whatsappNumber,
+      industryType,
+      investmentRange,
+      floorAreaRequirement,
+      timelineToStart,
+      needLoan,
+    );
+
+    res
+      .status(201)
+      .json({
+        message: "PostRequirement created successfully",
+        data: newRequirement,
+      });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -52,7 +71,12 @@ export const createPostRequirement = async (req, res) => {
 export const getAllPostRequirement = async (req, res) => {
   try {
     const allRequirements = await PostRequirement.find();
-    res.status(200).json({ message: 'PostRequirements fetched successfully', data: allRequirements });
+    res
+      .status(200)
+      .json({
+        message: "PostRequirements fetched successfully",
+        data: allRequirements,
+      });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -61,8 +85,14 @@ export const getAllPostRequirement = async (req, res) => {
 export const getPostRequirementById = async (req, res) => {
   try {
     const requirement = await PostRequirement.findById(req.params.id);
-    if (!requirement) return res.status(404).json({ error: 'PostRequirement not found' });
-    res.status(200).json({ message: 'PostRequirement fetched successfully', data: requirement });
+    if (!requirement)
+      return res.status(404).json({ error: "PostRequirement not found" });
+    res
+      .status(200)
+      .json({
+        message: "PostRequirement fetched successfully",
+        data: requirement,
+      });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -70,9 +100,17 @@ export const getPostRequirementById = async (req, res) => {
 
 export const getPostRequirementByUUID = async (req, res) => {
   try {
-    const requirement = await PostRequirement.findOne({ uuid: req.params.uuid });
-    if (!requirement) return res.status(404).json({ error: 'PostRequirement not found' });
-    res.status(200).json({ message: 'PostRequirement fetched successfully', data: requirement });
+    const requirement = await PostRequirement.findOne({
+      uuid: req.params.uuid,
+    });
+    if (!requirement)
+      return res.status(404).json({ error: "PostRequirement not found" });
+    res
+      .status(200)
+      .json({
+        message: "PostRequirement fetched successfully",
+        data: requirement,
+      });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -83,10 +121,16 @@ export const updatePostRequirement = async (req, res) => {
     const updatedRequirement = await PostRequirement.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-    if (!updatedRequirement) return res.status(404).json({ error: 'PostRequirement not found' });
-    res.status(200).json({ message: 'PostRequirement updated successfully', data: updatedRequirement });
+    if (!updatedRequirement)
+      return res.status(404).json({ error: "PostRequirement not found" });
+    res
+      .status(200)
+      .json({
+        message: "PostRequirement updated successfully",
+        data: updatedRequirement,
+      });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -94,9 +138,12 @@ export const updatePostRequirement = async (req, res) => {
 
 export const deletePostRequirement = async (req, res) => {
   try {
-    const deletedRequirement = await PostRequirement.findByIdAndDelete(req.params.id);
-    if (!deletedRequirement) return res.status(404).json({ error: 'PostRequirement not found' });
-    res.status(200).json({ message: 'PostRequirement deleted successfully' });
+    const deletedRequirement = await PostRequirement.findByIdAndDelete(
+      req.params.id,
+    );
+    if (!deletedRequirement)
+      return res.status(404).json({ error: "PostRequirement not found" });
+    res.status(200).json({ message: "PostRequirement deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -10,14 +10,13 @@ const IG_USER_ID = process.env.IG_USER_ID;
 const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
 const LINKEDIN_URN = process.env.LINKEDIN_URN;
 
-
 async function postToFacebook(message, mediaUrl) {
   try {
     if (!mediaUrl) {
       const res = await axios.post(
         `https://graph.facebook.com/v23.0/${FB_PAGE_ID}/feed`,
         null,
-        { params: { message, access_token: FB_PAGE_ACCESS_TOKEN } }
+        { params: { message, access_token: FB_PAGE_ACCESS_TOKEN } },
       );
       return res.data;
     }
@@ -34,7 +33,7 @@ async function postToFacebook(message, mediaUrl) {
           caption: message,
           access_token: FB_PAGE_ACCESS_TOKEN,
         },
-      }
+      },
     );
     return res.data;
   } catch (error) {
@@ -58,14 +57,19 @@ async function postToInstagram(message, mediaUrl) {
     const createRes = await axios.post(
       `https://graph.facebook.com/v23.0/${IG_USER_ID}/media`,
       null,
-      { params: { ...mediaParams, access_token: FB_PAGE_ACCESS_TOKEN } }
+      { params: { ...mediaParams, access_token: FB_PAGE_ACCESS_TOKEN } },
     );
 
     // Step 2: Publish
     const publishRes = await axios.post(
       `https://graph.facebook.com/v23.0/${IG_USER_ID}/media_publish`,
       null,
-      { params: { creation_id: createRes.data.id, access_token: FB_PAGE_ACCESS_TOKEN } }
+      {
+        params: {
+          creation_id: createRes.data.id,
+          access_token: FB_PAGE_ACCESS_TOKEN,
+        },
+      },
     );
 
     return publishRes.data;
@@ -101,13 +105,17 @@ async function postToLinkedIn(message, mediaUrl, title, description) {
       visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
     };
 
-    const res = await axios.post("https://api.linkedin.com/v2/ugcPosts", payload, {
-      headers: {
-        Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-        "X-Restli-Protocol-Version": "2.0.0",
+    const res = await axios.post(
+      "https://api.linkedin.com/v2/ugcPosts",
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+          "X-Restli-Protocol-Version": "2.0.0",
+        },
       },
-    });
+    );
 
     return res.data;
   } catch (error) {
@@ -118,7 +126,12 @@ async function postToLinkedIn(message, mediaUrl, title, description) {
 /* ============================
    Unified Function
 =============================== */
-export async function postToAllPlatforms({ message, mediaUrl, title, description }) {
+export async function postToAllPlatforms({
+  message,
+  mediaUrl,
+  title,
+  description,
+}) {
   return {
     facebook: await postToFacebook(message, mediaUrl),
     instagram: await postToInstagram(message, mediaUrl),

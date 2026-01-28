@@ -269,6 +269,7 @@ export const testgetAllBrands = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandDetails.brandName",
+          slug: "$brandDetails.slug",
           brandCategories: {
             $ifNull: ["$franchiseDetails.franchiseDetails.brandCategories", null]
           },
