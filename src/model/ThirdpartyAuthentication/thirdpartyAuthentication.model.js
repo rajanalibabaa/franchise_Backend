@@ -40,10 +40,9 @@ const thirdPartyAuthSchema = new mongoose.Schema(
     lastActive: {
       type: Date,
     },
-    
+
     loginPlatform: {
       type: String,
-      
     },
     newOtp: {
       type: String,
@@ -53,14 +52,14 @@ const thirdPartyAuthSchema = new mongoose.Schema(
     },
     userNewVerifyToken: {
       type: String,
-    }
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const ThirdPartyAuth = mongoose.model(
   "ThirdPartyAuth",
-  thirdPartyAuthSchema
+  thirdPartyAuthSchema,
 );

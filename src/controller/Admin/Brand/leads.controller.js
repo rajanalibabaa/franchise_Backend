@@ -5,16 +5,16 @@ import SystemConfig from "../../../model/NewIncomeInvestor/SystemConfigSchema.js
 
 export const getBatchEmailConfig = async (req, res) => {
   try {
-    console.log("=== GET BATCH EMAIL CONFIG STARTED ===");
+    // console.log("=== GET BATCH EMAIL CONFIG STARTED ===");
 
     // Check if SystemConfig model is available
-    console.log("SystemConfig model:", SystemConfig);
+    // console.log("SystemConfig model:", SystemConfig);
 
     const config = await SystemConfig.findOne();
-    console.log("Config found:", config);
+    // console.log("Config found:", config);
 
     if (!config) {
-      console.log("No config found, returning defaults");
+      // console.log("No config found, returning defaults");
       return res.json(
         new ApiResponse(
           200,
@@ -29,7 +29,7 @@ export const getBatchEmailConfig = async (req, res) => {
       );
     }
 
-    console.log("Returning config:", config);
+    // console.log("Returning config:", config);
     return res.json(
       new ApiResponse(
         200,
@@ -295,7 +295,7 @@ export const toggleleadPausedorPlayById = async (req, res) => {
       return res.json(new ApiResponse(404, {}, "Brand not found"));
     }
 
-    console.log(exists.brandDetails.isFreeLeadPaused);
+    // console.log(exists.brandDetails.isFreeLeadPaused);
 
     const data = await BrandDetails.findByIdAndUpdate(
       exists._id,
@@ -538,7 +538,7 @@ export const togglePaidleadPausedandPlayById = async (req, res) => {
       return res.json(new ApiResponse(404, {}, "Brand not found"));
     }
 
-    console.log(exists.brandDetails.isPaidBrandLeadPaused);
+    // console.log(exists.brandDetails.isPaidBrandLeadPaused);
 
     const data = await BrandDetails.findByIdAndUpdate(
       exists._id,

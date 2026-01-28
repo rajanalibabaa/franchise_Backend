@@ -3,7 +3,10 @@ import { format } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { twoMatchTypesleadcount } from "../../utils/AllLeads/instantApplyPaidLeads.js";
 import { sendInstantApplyLeadLocation } from "../../utils/Centralized Email/centralizedEmail.js";
 
-export const LocationInvestmentRangeMatchFunction = async (brand, investorData) => {
+export const LocationInvestmentRangeMatchFunction = async (
+  brand,
+  investorData,
+) => {
   const currentDate = new Date();
   const paymentPackage = brand.brandDetails?.paymentPackage;
 
@@ -17,7 +20,7 @@ export const LocationInvestmentRangeMatchFunction = async (brand, investorData) 
   const packageEndDate = new Date(packageStartDate);
   packageEndDate.setMonth(packageEndDate.getMonth() + totalMonths);
 
-  let totalLeadsendcount = await twoMatchTypesleadcount(brand)
+  let totalLeadsendcount = await twoMatchTypesleadcount(brand);
   let lastupdatedData = null;
 
   brand?.LocationInvestmentRangeMatchData?.forEach((r) => {
@@ -30,7 +33,7 @@ export const LocationInvestmentRangeMatchFunction = async (brand, investorData) 
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
-    console.log("===expired===")
+    console.log("===expired===");
     return;
   }
   const monthRanges = [];
@@ -52,25 +55,25 @@ export const LocationInvestmentRangeMatchFunction = async (brand, investorData) 
 
   const filterdata = monthRanges.filter((i) => i.isActive === true);
   const formattedRange = `${format(filterdata[0].startDate)} -> ${format(
-    filterdata[0].endDate
+    filterdata[0].endDate,
   )}`;
 
   let brandDoc = await LocationInvestmentRangeMatch.findOne({
     brandId: brand.uuid,
   });
 
- await sendInstantApplyLeadLocation(
-     investorData?.fullName,
-     investorData?.email,
-     investorData?.mobileNumber,
-     brand.brandDetails?.email,
-     brand.brandDetails?.companyName,
-     investorData?.category,
-     investorData?.location,
-     investorData?.investmentRange,
-     investorData?.planToInvest,
-     investorData?.readyToInvest
-   );
+  await sendInstantApplyLeadLocation(
+    investorData?.fullName,
+    investorData?.email,
+    investorData?.mobileNumber,
+    brand.brandDetails?.email,
+    brand.brandDetails?.companyName,
+    investorData?.category,
+    investorData?.location,
+    investorData?.investmentRange,
+    investorData?.planToInvest,
+    investorData?.readyToInvest,
+  );
 
   if (!brandDoc) {
     brandDoc = await LocationInvestmentRangeMatch.create({
@@ -136,7 +139,7 @@ export const LocationInvestmentRangeMatchFunction = async (brand, investorData) 
             ],
           },
         },
-      }
+      },
     );
 
     return;
@@ -182,7 +185,7 @@ export const LocationInvestmentRangeMatchFunction = async (brand, investorData) 
           [`locationInvestmentRangeMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
           [`locationInvestmentRangeMatchRecords.${lastIndex}.leadCount`]: 1,
         },
-      }
+      },
     );
 
     return;
@@ -214,7 +217,7 @@ export const LocationInvestmentRangeMatchFunction = async (brand, investorData) 
         $inc: {
           [`locationInvestmentRangeMatchRecords.${lastIndex}.leadCount`]: 1,
         },
-      }
+      },
     );
 
     return;

@@ -5,8 +5,6 @@ export const getIndustryCatTags = async (industryName) => {
     const filter = industryName ? { industry: industryName } : {};
     const industriesList = await IndustryManagement.find(filter);
 
-
-    
     return industriesList || [];
   } catch (error) {
     console.error("Error fetching industry categories and tags:", error);

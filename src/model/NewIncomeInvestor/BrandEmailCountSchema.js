@@ -1,5 +1,3 @@
-
-
 // new Emailaddress tracking schema
 
 import mongoose from "mongoose";
@@ -13,7 +11,7 @@ const emailRecordSchema = new mongoose.Schema(
     investorMobile: { type: String, required: true },
     sentAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // 🗓️ Schema for monthly record (used for both free & paid)
@@ -23,7 +21,7 @@ const monthlyRecordSchema = new mongoose.Schema(
     count: { type: Number, default: 0 }, // total sent in that month
     records: [emailRecordSchema],
   },
-  { _id: false }
+  { _id: false },
 );
 
 // 🏷️ Main BrandEmailCount Schema
@@ -58,7 +56,7 @@ const brandEmailCountSchema = new mongoose.Schema(
       default: [],
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("BrandEmailCount", brandEmailCountSchema);

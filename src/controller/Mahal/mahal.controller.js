@@ -18,7 +18,7 @@ export const createBooking = async (req, res) => {
 
     if (!name || !ph) {
       return res.json(
-        new ApiResponse(404, null, "Name and phone number are required.")
+        new ApiResponse(404, null, "Name and phone number are required."),
       );
     }
 
@@ -26,16 +26,13 @@ export const createBooking = async (req, res) => {
       $and: [{ startDate: startDate }, { mahal: mahal }],
     });
 
-    
-
     if (exist) {
       return res.json(
         new ApiResponse(
           404,
           null,
-          `${mahal} is already booked from ${startDate} ${exist?.startTime } to ${exist?.endDate} ${exist?.endTime}.`
-
-        )
+          `${mahal} is already booked from ${startDate} ${exist?.startTime} to ${exist?.endDate} ${exist?.endTime}.`,
+        ),
       );
     }
 
@@ -55,7 +52,7 @@ export const createBooking = async (req, res) => {
     });
 
     return res.json(
-      new ApiResponse(200, newMahal, "Mahal booking created successfully.")
+      new ApiResponse(200, newMahal, "Mahal booking created successfully."),
     );
   } catch (error) {
     console.error("Error creating Mahal:", error);
@@ -65,24 +62,18 @@ export const createBooking = async (req, res) => {
 
 export const getAllBooking = async (req, res) => {
   try {
-    const data = await Mahal.find({})
-      .sort({ createdAt: -1 })
-      .select("-_id");
+    const data = await Mahal.find({}).sort({ createdAt: -1 }).select("-_id");
 
     if (!data || data.length === 0) {
-      return res.json(
-        new ApiResponse(404, [], "No mahal bookings yet.")
-      );
+      return res.json(new ApiResponse(404, [], "No mahal bookings yet."));
     }
 
     return res.json(
-      new ApiResponse(200, data, "Mahal bookings fetched successfully.")
+      new ApiResponse(200, data, "Mahal bookings fetched successfully."),
     );
   } catch (error) {
     console.error("Error fetching Mahal bookings:", error);
-    res.json(
-      new ApiResponse(500, null, "Internal server error.")
-    );
+    res.json(new ApiResponse(500, null, "Internal server error."));
   }
 };
 
@@ -95,8 +86,8 @@ export const deleteBooking = async (req, res) => {
       new ApiResponse(
         404,
         null,
-        "Id don't exist or something went worng while deleting the data"
-      )
+        "Id don't exist or something went worng while deleting the data",
+      ),
     );
   }
   return res.json(new ApiResponse(200, findData, "Data deleted successfully"));
@@ -117,7 +108,6 @@ export const updateBooking = async (req, res) => {
       date,
     } = req.body;
 
-    console.log("Booking ID:", id);
 
     const existingBooking = await Mahal.findOne({ uuid: id });
 
@@ -138,7 +128,7 @@ export const updateBooking = async (req, res) => {
     await existingBooking.save();
 
     return res.json(
-      new ApiResponse(200, existingBooking, "Booking updated successfully.")
+      new ApiResponse(200, existingBooking, "Booking updated successfully."),
     );
   } catch (error) {
     console.error("Error updating booking:", error);

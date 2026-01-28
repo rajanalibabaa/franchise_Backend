@@ -18,6 +18,11 @@ const BrandDetailsSchema = new mongoose.Schema(
       whatsappNumber: String,
       companyName: String,
       brandName: String,
+      slug:{
+        type: String,
+        unique: true,
+        index: true
+      },
       tagLine: String,
       ceoName: String,
       ceoMobile: String,

@@ -14,26 +14,32 @@ const investmentRanges = [
   { value: "Rs.50L-1Cr", index: 7 },
   { value: "Rs.1Cr-2Cr", index: 8 },
   { value: "Rs.2Cr-5Cr", index: 9 },
-  { value: "Rs.5Cr-above", index: 10 }
+  { value: "Rs.5Cr-above", index: 10 },
 ];
 
 // Helper function to get all investment ranges that are less than or equal to the given range
 const getApplicableInvestmentRanges = (investmentRange) => {
-  const validRanges = investmentRanges.map(r => r.value);
+  const validRanges = investmentRanges.map((r) => r.value);
   if (!validRanges.includes(investmentRange)) {
-    throw new Error(`Invalid investment range provided. Valid ranges are: ${validRanges.join(', ')}`);
+    throw new Error(
+      `Invalid investment range provided. Valid ranges are: ${validRanges.join(", ")}`,
+    );
   }
-  
-  const rangeIndex = investmentRanges.findIndex(range => range.value === investmentRange);
-  return investmentRanges.slice(0, rangeIndex + 1).map(range => range.value);
+
+  const rangeIndex = investmentRanges.findIndex(
+    (range) => range.value === investmentRange,
+  );
+  return investmentRanges.slice(0, rangeIndex + 1).map((range) => range.value);
 };
 
 // Helper function to safely get brand categories
 const getBrandCategories = (brand) => {
   try {
     if (!brand?.franchiseDetails?.brandCategories) return [];
-    return Array.isArray(brand.franchiseDetails.brandCategories) 
-      ? brand.franchiseDetails.brandCategories.map(c => c.child).filter(Boolean)
+    return Array.isArray(brand.franchiseDetails.brandCategories)
+      ? brand.franchiseDetails.brandCategories
+          .map((c) => c.child)
+          .filter(Boolean)
       : [];
   } catch (error) {
     console.error("Error getting brand categories:", error);
@@ -42,7 +48,13 @@ const getBrandCategories = (brand) => {
 };
 
 // Helper function to build location query
-const buildLocationQuery = (locationType, preferredCountry, preferredState, preferredDistrict, preferredCity) => {
+const buildLocationQuery = (
+  locationType,
+  preferredCountry,
+  preferredState,
+  preferredDistrict,
+  preferredCity,
+) => {
   if (locationType === "domestic") {
     return {
       "expansionLocationData.expansionLocations.domestic.locations": {
@@ -51,22 +63,32 @@ const buildLocationQuery = (locationType, preferredCountry, preferredState, pref
           districts: {
             $elemMatch: {
               district: preferredDistrict,
-              cities: preferredCity
-            }
-          }
-        }
-      }
+              cities: preferredCity,
+            },
+          },
+        },
+      },
     };
   }
-  
+
   const internationalQuery = {
-    "expansionLocationData.expansionLocations.international.country": preferredCountry
+    "expansionLocationData.expansionLocations.international.country":
+      preferredCountry,
   };
-  
-  if (preferredState) internationalQuery["expansionLocationData.expansionLocations.international.states"] = preferredState;
-  if (preferredDistrict) internationalQuery["expansionLocationData.expansionLocations.international.district"] = preferredDistrict;
-  if (preferredCity) internationalQuery["expansionLocationData.expansionLocations.international.cities"] = preferredCity;
-  
+
+  if (preferredState)
+    internationalQuery[
+      "expansionLocationData.expansionLocations.international.states"
+    ] = preferredState;
+  if (preferredDistrict)
+    internationalQuery[
+      "expansionLocationData.expansionLocations.international.district"
+    ] = preferredDistrict;
+  if (preferredCity)
+    internationalQuery[
+      "expansionLocationData.expansionLocations.international.cities"
+    ] = preferredCity;
+
   return internationalQuery;
 };
 
@@ -79,11 +101,17 @@ export const newIncomerInvestorController = async (
   preferredState,
   preferredDistrict,
   preferredCity,
-  investmentRange
+  investmentRange,
 ) => {
   try {
     // Validate required fields
-    if (!email || !firstName || !category || !locationType || !investmentRange) {
+    if (
+      !email ||
+      !firstName ||
+      !category ||
+      !locationType ||
+      !investmentRange
+    ) {
       throw new Error("Required fields are missing");
     }
 
@@ -94,9 +122,11 @@ export const newIncomerInvestorController = async (
     }
 
     // Validate investment range
-    const validRanges = investmentRanges.map(r => r.value);
+    const validRanges = investmentRanges.map((r) => r.value);
     if (!validRanges.includes(investmentRange)) {
-      throw new Error(`Invalid investment range provided. Valid ranges are: ${validRanges.join(', ')}`);
+      throw new Error(
+        `Invalid investment range provided. Valid ranges are: ${validRanges.join(", ")}`,
+      );
     }
 
     // Validate category structure
@@ -120,7 +150,7 @@ export const newIncomerInvestorController = async (
       },
       locationType,
       investmentRange,
-      status: 'processing'
+      status: "processing",
     };
 
     // Save new investor lead
@@ -130,12 +160,11 @@ export const newIncomerInvestorController = async (
     const emailedBrands = new Set();
     const results = [];
 
-    
     const perfectMatchesData = [];
     const partialMatchesData = [];
 
     // Prepare category values for querying
-    const categoryValues = category.map(c => c.child).filter(Boolean);
+    const categoryValues = category.map((c) => c.child).filter(Boolean);
 
     // Build base location query
     const locationQuery = buildLocationQuery(
@@ -143,19 +172,21 @@ export const newIncomerInvestorController = async (
       preferredCountry,
       preferredState,
       preferredDistrict,
-      preferredCity
+      preferredCity,
     );
 
     // 1. Find PERFECT matches (category, location, and investment range <= investor's range)
     const perfectMatchQuery = {
       ...locationQuery,
       "brandDetails.email": { $ne: null },
-      "franchiseDetails.fico.investmentRange": { $in: applicableRanges }
+      "franchiseDetails.fico.investmentRange": { $in: applicableRanges },
     };
 
     // Add category filter only if we have valid categories
     if (categoryValues.length > 0) {
-      perfectMatchQuery["franchiseDetails.brandCategories.child"] = { $in: categoryValues };
+      perfectMatchQuery["franchiseDetails.brandCategories.child"] = {
+        $in: categoryValues,
+      };
     }
 
     const perfectMatches = await BrandListing.find(perfectMatchQuery).lean();
@@ -163,13 +194,15 @@ export const newIncomerInvestorController = async (
     // Process perfect matches
     for (const brand of perfectMatches) {
       const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
-      const brandCompanyName = brand.brandDetails?.brandName || "Unknown Company";
-  console.log(`Emailing match: ${brandCompanyName}`);
+      const brandCompanyName =
+        brand.brandDetails?.brandName || "Unknown Company";
+      // console.log(`Emailing match: ${brandCompanyName}`);
       if (!brandEmail || emailedBrands.has(brandEmail)) continue;
 
       try {
-        const emailSubject = 'An investor has been found who matches your "InvestmentRange", "Category", and "Location" preferences exactly. Time to connect';
-        console.log(`Emailing perfect match: ${brandCompanyName}`);
+        const emailSubject =
+          'An investor has been found who matches your "InvestmentRange", "Category", and "Location" preferences exactly. Time to connect';
+        // console.log(`Emailing perfect match: ${brandCompanyName}`);
         await sendBrandEmailPerfect(
           brandEmail,
           brandCompanyName,
@@ -177,17 +210,17 @@ export const newIncomerInvestorController = async (
           categoryValues.join(", "),
           `${preferredCity}, ${preferredDistrict}, ${preferredState}, ${preferredCountry}`,
           investmentRange,
-          emailSubject
+          emailSubject,
         );
 
         emailedBrands.add(brandEmail);
-        
+
         perfectMatchesData.push({
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
           emailSent: true,
-          emailSentAt: new Date()
+          emailSentAt: new Date(),
         });
 
         results.push({
@@ -197,7 +230,7 @@ export const newIncomerInvestorController = async (
           category: categoryValues.join(", "),
           investment: investmentRange,
           matchType: "perfect",
-          brandId: brand._id
+          brandId: brand._id,
         });
       } catch (error) {
         console.error(`Failed to email perfect match: ${brandEmail}`, error);
@@ -206,7 +239,7 @@ export const newIncomerInvestorController = async (
           companyName: brandCompanyName,
           brandId: brand._id,
           emailSent: false,
-          emailError: error.message
+          emailError: error.message,
         });
       }
     }
@@ -216,12 +249,14 @@ export const newIncomerInvestorController = async (
       ...locationQuery,
       "brandDetails.email": { $ne: null },
       "franchiseDetails.fico.investmentRange": { $in: applicableRanges },
-      "brandDetails.email": { $nin: Array.from(emailedBrands) }
+      "brandDetails.email": { $nin: Array.from(emailedBrands) },
     };
 
     // Add category exclusion only if we have valid categories
     if (categoryValues.length > 0) {
-      partialMatchQuery["franchiseDetails.brandCategories.child"] = { $nin: categoryValues };
+      partialMatchQuery["franchiseDetails.brandCategories.child"] = {
+        $nin: categoryValues,
+      };
     }
 
     const partialMatches = await BrandListing.find(partialMatchQuery).lean();
@@ -229,14 +264,16 @@ export const newIncomerInvestorController = async (
     // Process partial matches
     for (const brand of partialMatches) {
       const brandEmail = brand.brandDetails?.email?.toLowerCase()?.trim();
-      const brandCompanyName = brand.brandDetails?.brandName || "Unknown Company";
+      const brandCompanyName =
+        brand.brandDetails?.brandName || "Unknown Company";
       const brandCategories = getBrandCategories(brand);
       const brandCategoryStr = brandCategories.join(", ") || "Not specified";
       if (!brandEmail || emailedBrands.has(brandEmail)) continue;
-      
+
       try {
-        const emailSubject = 'We\'ve found an investor who matches your "InvestmentRange" and "Location" perfectly. The Category is slightly different, but this lead holds strong potential for your brand.';
-        console.log("Partial match:", brandCompanyName, brandEmail);
+        const emailSubject =
+          'We\'ve found an investor who matches your "InvestmentRange" and "Location" perfectly. The Category is slightly different, but this lead holds strong potential for your brand.';
+        // console.log("Partial match:", brandCompanyName, brandEmail);
         await sendBrandEmailPerfect(
           brandEmail,
           brandCompanyName,
@@ -244,17 +281,17 @@ export const newIncomerInvestorController = async (
           categoryValues.join(", "),
           `${preferredCity}, ${preferredDistrict}, ${preferredState}, ${preferredCountry}`,
           investmentRange,
-          emailSubject
+          emailSubject,
         );
 
         emailedBrands.add(brandEmail);
-        
+
         partialMatchesData.push({
           email: brandEmail,
           companyName: brandCompanyName,
           brandId: brand._id,
           emailSent: true,
-          emailSentAt: new Date()
+          emailSentAt: new Date(),
         });
 
         results.push({
@@ -264,7 +301,7 @@ export const newIncomerInvestorController = async (
           category: brandCategoryStr,
           investment: investmentRange,
           matchType: "partial",
-          brandId: brand._id
+          brandId: brand._id,
         });
       } catch (error) {
         console.error(`Failed to email partial match: ${brandEmail}`, error);
@@ -273,7 +310,7 @@ export const newIncomerInvestorController = async (
           companyName: brandCompanyName,
           brandId: brand._id,
           emailSent: false,
-          emailError: error.message
+          emailError: error.message,
         });
       }
     }
@@ -287,12 +324,12 @@ export const newIncomerInvestorController = async (
         partial: partialMatchesData.length,
         total: perfectMatchesData.length + partialMatchesData.length,
       },
-      status: 'matched',
+      status: "matched",
       emailStatus: {
         perfectMatchesSent: perfectMatchesData.length > 0,
         partialMatchesSent: partialMatchesData.length > 0,
-        lastEmailSentAt: new Date()
-      }
+        lastEmailSentAt: new Date(),
+      },
     };
 
     await InvestorLead.findByIdAndUpdate(newLead._id, { $set: updateData });
@@ -317,18 +354,18 @@ export const newIncomerInvestorController = async (
     }
   } catch (error) {
     console.error("Error in newIncomerInvestorController:", error);
-    
+
     // Update lead status to indicate failure if it was created
     if (newLead) {
-      await InvestorLead.findByIdAndUpdate(newLead._id, { 
-        $set: { 
-          status: 'closed',
+      await InvestorLead.findByIdAndUpdate(newLead._id, {
+        $set: {
+          status: "closed",
           emailStatus: {
             perfectMatchesSent: false,
             partialMatchesSent: false,
-            error: error.message
-          }
-        } 
+            error: error.message,
+          },
+        },
       });
     }
 

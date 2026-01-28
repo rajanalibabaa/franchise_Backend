@@ -48,7 +48,8 @@ const fields = {
     type: String,
   },
   brandLogo: {
-    type: String,  },
+    type: String,
+  },
   apply: {
     applyBy: {
       type: String,
@@ -89,7 +90,7 @@ const fields = {
   enquiryVia: {
     type: String,
     enum: ["portal", "expo", "telecall"],
-    default: "portal"
+    default: "portal",
   },
   noteByBrand: {
     type: String,
@@ -99,11 +100,9 @@ const fields = {
   },
 };
 
-
 const BaseSchema = new mongoose.Schema(fields, {
   timestamps: true,
 });
-
 
 const industries = [
   "FoodAndBeverageLeads",
@@ -124,8 +123,6 @@ const industries = [
   "SocialImpactAndNGOLeads",
   "PetCareAndOtherEmergingSectorsLeads",
 ];
-
-
 
 export const IndustryModels = industries.reduce((models, name) => {
   models[name] = mongoose.model(name, BaseSchema);

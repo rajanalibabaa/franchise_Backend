@@ -30,7 +30,6 @@ export const getInstantApplyInvestorsController = async (req, res) => {
       search
     } = req.query;
 
-    console.log("Received query params:", req.query);
 
     // Build filter object dynamically
     const filter = {};

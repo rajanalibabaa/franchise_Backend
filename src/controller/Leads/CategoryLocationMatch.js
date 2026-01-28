@@ -23,11 +23,11 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
 
   const { totalLeadsendcount, exists } = await twoMatchTypesleadcount(
     brand,
-    investorData
+    investorData,
   );
 
   if (exists) {
-    console.log("======stop=======");
+    // console.log("======stop=======");
     return exists;
   }
   let lastupdatedData = null;
@@ -42,7 +42,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   });
 
   if (totalLeadsendcount >= paymentPackage?.totalLeads) {
-    console.log("===expired===");
+    // console.log("===expired===");
     return;
   }
   // console.log("==== :",totalLeadsendcount)
@@ -82,7 +82,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
   // console.log("===filterdata=== :",format(filterdata[0].endDate))
 
   const formattedRange = `${format(filterdata[0].startDate)} -> ${format(
-    filterdata[0].endDate
+    filterdata[0].endDate,
   )}`;
 
   let brandDoc = await CategoryLocationMatch.findOne({
@@ -99,9 +99,9 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     investorData?.location,
     investorData?.investmentRange,
     investorData?.planToInvest,
-    investorData?.readyToInvest
+    investorData?.readyToInvest,
   );
-  await generateSentLeadsPercentage(brand,totalLeadsendcount)
+  await generateSentLeadsPercentage(brand, totalLeadsendcount);
 
   if (!brandDoc) {
     brandDoc = await CategoryLocationMatch.create({
@@ -167,7 +167,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
             ],
           },
         },
-      }
+      },
     );
 
     return;
@@ -215,7 +215,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
           [`categoryLocationMatchRecords.${lastIndex}.records.${innerLastIndex}.count`]: 1,
           [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
         },
-      }
+      },
     );
 
     return;
@@ -223,7 +223,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
     Number(filterdata[0]?.monthNumber) > Number(innerLastRecord?.monthNumber) &&
     paymentPackage?.totalMonths <= Number(filterdata[0]?.monthNumber)
   ) {
-    console.log("New month detected. Creating new month record...");
+    // console.log("New month detected. Creating new month record...");
 
     await CategoryLocationMatch.updateOne(
       { _id: brandDoc._id },
@@ -248,7 +248,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
         $inc: {
           [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
         },
-      }
+      },
     );
 
     return;
@@ -276,7 +276,7 @@ export const CategoryLocationMatchFunction = async (brand, investorData) => {
         $inc: {
           [`categoryLocationMatchRecords.${lastIndex}.leadCount`]: 1,
         },
-      }
+      },
     );
   }
 };
