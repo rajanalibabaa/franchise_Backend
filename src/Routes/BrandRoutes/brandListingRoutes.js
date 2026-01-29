@@ -5,7 +5,7 @@ import {
   createBrandListing,
   deleteBrandListingByUUID,
   getAllBrands,
-  // getBrandListingByUUID,
+  getBrandListingByUUID,
   getBrandListingSlug,
   reEntry,
   updateBrandListingByUUID,
@@ -67,6 +67,8 @@ router.post(
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
 router.get("/v1/brandlisting/getBrandListingSlug/:identifier", getBrandListingSlug);
 router.get("/v1/brandlisting/getBrandById/:id",  getBrandById);
+
+router.get("/v1/brandlisting/getBrandListingByUUID/:id", getBrandListingByUUID);
 // router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
 // router.get("/v1/brandlisting/getTopBeverageFranchise", getTopBeverageFranchise);
 // router.get("/v1/brandlisting/getTopLeadingFranchise", getTopLeadingFranchise);
