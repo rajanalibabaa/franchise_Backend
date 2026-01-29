@@ -1,29 +1,36 @@
-name: Deploy Next.js to VPS
+name: Deploy to Hostinger VPS
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "rajan" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          script: |
-            cd /root/mrfranchise_next_frontend
-            git pull origin main
-            cd mrfranchise
-            npm install
-            npm run build
-            pm2 restart mrfranchise-frontend
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+
+      - name: Deploy on VPS
+        run: |
+          ssh $VPS_USER@$VPS_HOST "
+          set -e
+          cd /root/franchise_Backend &&
+          git fetch origin &&
+          git reset --hard origin/rajan &&
+          npm install --production &&
+          pm2 restart franchise_backend --update-env || pm2 start index.js --name franchise_backend 
+          "
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
