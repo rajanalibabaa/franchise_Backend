@@ -616,7 +616,7 @@ const getBrandListingByUUID = async (req, res) => {
   const paymentHistory = req.query.paymentHistory || null;
 
   try {
-      const brandIdentifier = id.replace(/-/g, " ");
+      const brandIdentifier = String(id || "").replace(/-/g, " ");
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(userId);
     const aggregationPipeline = [
@@ -817,7 +817,7 @@ const getBrandListingSlug = async (req, res) => {
       if (!text) return "";
 
       // Lowercase and remove any leading/trailing spaces
-      const cleanText = text.toLowerCase().trim();
+      const cleanText = String(text).toLowerCase().trim();
 
       // Split the text into characters ignoring non-alphanumeric chars
       const letters = cleanText.replace(/[^a-z0-9]/g, "").split("");
@@ -826,7 +826,7 @@ const getBrandListingSlug = async (req, res) => {
       return letters.join("[-\\s]*");
     };
 
-
+    const sanitizedIdentifier = String(identifier || "");
 
     const aggregationPipeline = [
       {
@@ -835,13 +835,13 @@ const getBrandListingSlug = async (req, res) => {
             // 1️⃣ Primary: SLUG (SEO route)
             {
               "brandDetails.slug": {
-                $regex: `^${slugifyForRegex(identifier)}$`,
+                $regex: `^${slugifyForRegex(sanitizedIdentifier)}$`,
                 $options: "i",
               }
             },
 
             // 2️⃣ Fallback: UUID (old URLs / internal use)
-            { uuid: identifier },
+            { uuid: sanitizedIdentifier },
           ],
         },
       },
