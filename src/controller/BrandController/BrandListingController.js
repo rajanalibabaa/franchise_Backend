@@ -1046,6 +1046,9 @@ const updateBrandListingByUUID = async (req, res) => {
       return data; // already object
     };
 
+    const isInternationalExpansion  = safeParse(req.body.isInternationalExpansion) || req.body.isInternationalExpansion;
+    // console.log("isInternationalExpansion :", isInternationalExpansion)
+
     // ---------- Parse Expansion Location ----------
     const addExpansionLocationData =
       safeParse(req.body.addExpansionLocationData) ||
@@ -1063,18 +1066,23 @@ const updateBrandListingByUUID = async (req, res) => {
         id,
         addExpansionLocationData,
         removeExpansionLocationData,
+        isInternationalExpansion
       );
     }
 
     // ---------- Updates Container ----------
     const updates = { $set: {} };
 
+  
+
+    
+
     // ---------- Parse brand & franchise ----------
     const ParseBrandDetails = safeParse(req.body.brandDetails);
     const ParseFranchiseDetails = safeParse(req.body.franchiseDetails);
 
-    // console.log("ParseBrandDetails:", ParseBrandDetails);
-    // console.log("parseFranchiseDetails", ParseFranchiseDetails);
+    // console.log("BrandDetails:", ParseBrandDetails);
+    console.log("FranchiseDetails", ParseFranchiseDetails);
 
     // ---------- BrandDetails ----------
     if (ParseBrandDetails) {
@@ -1159,6 +1167,16 @@ const updateBrandListingByUUID = async (req, res) => {
         ParseFranchiseDetails.uniqueSellingPoints.forEach((item, index) => {
           updates.$set[`franchiseDetails.uniqueSellingPoints.${index}`] = item;
         });
+      }
+      if (Array.isArray(ParseFranchiseDetails.trainingSupport)) {
+
+        if (ParseFranchiseDetails.trainingSupport.length === 0) {
+          updates.$set[`franchiseDetails.trainingSupport`] = [];
+        } else {
+          ParseFranchiseDetails.trainingSupport.forEach((item, index) => {
+          updates.$set[`franchiseDetails.trainingSupport.${index}`] = item;
+        });
+        }
       }
 
       if (Array.isArray(ParseFranchiseDetails.fico)) {
@@ -1308,7 +1326,7 @@ const updateBrandListingByUUID = async (req, res) => {
   }
 };
 
-const expansionLocationData = async (id, add, remove) => {
+const expansionLocationData = async (id, add, remove,isInternationalExpansion) => {
   //  return add
   const oldExpansionLocationData = await BrandExpansionLocationData.findOne({
     brandOwnerId: id,
@@ -1972,6 +1990,8 @@ const expansionLocationData = async (id, add, remove) => {
           updatedExpansionLocations,
         "expansionLocationData.expansionLocations.international.locations":
           updatedInternationalExpansionLocations,
+        "expansionLocationData.isInternationalExpansion": String(isInternationalExpansion)
+          
       },
     },
     { new: true, runValidators: true },
