@@ -119,6 +119,9 @@ const createBrandListing = async (req, res) => {
     );
     const brandName = brandDetails?.brandName;
 
+    console.log("brandDetails :",brandDetails)
+    console.log("brandDetails.paymentPackage :",brandDetails.paymentPackage)
+
     if (!brandName) {
       return res.json(
         new ApiResponse(400, {}, "brandDetails.brandName is required")
@@ -150,7 +153,7 @@ const createBrandListing = async (req, res) => {
     brandDetails.slug = slug;
 
     
-    if (brandDetails.paymentPackage) {
+    if (brandDetails?.paymentPackage) {
       // brandDetails.paymentPackage = "basic" or "premium"
 
       const PaymentPackagesData = await PaymentPackages.findOne({}).lean();
@@ -158,7 +161,7 @@ const createBrandListing = async (req, res) => {
       const selectedPackageName = brandDetails.paymentPackage;
 
       // Find matching package from packages[]
-      const matched = PaymentPackagesData.packages.find(
+      const matched = PaymentPackagesData?.packages.find(
         (pkg) => pkg.packageName === selectedPackageName,
       );
       console.log("matched", matched);
