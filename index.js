@@ -21,6 +21,8 @@ import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
 import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
+import dns from "dns";
+
 
 dotenv.config(); // ✅ Load env FIRST
 
