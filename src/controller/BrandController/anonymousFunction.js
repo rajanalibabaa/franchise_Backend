@@ -1,3 +1,4 @@
+import { IndustryManagement } from "../../model/Admin/CMS/industryManagement.model.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandExpansionLocationData } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
 import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
@@ -357,42 +358,42 @@ export const testgetAllBrands = async (req, res) => {
   }
 };
 
-export const datafieldnewEntry = async (req, res) => {
-  try {
+// export const datafieldnewEntry = async (req, res) => {
+//   try {
 
-    const data = await BrandDetails.find();
-    const franchisedata = await BrandUploads.find();
+//     const data = await BrandDetails.find();
+//     const franchisedata = await BrandUploads.find();
 
-    // all brand uuids
-    const q_id = data.map(i => String(i.uuid).trim());
+//     // all brand uuids
+//     const q_id = data.map(i => String(i.uuid).trim());
 
-    // all franchise owner ids
-    const matchedFranchiseData = franchisedata.map(i =>
-      String(i.brandOwnerId).trim()
-    );
+//     // all franchise owner ids
+//     const matchedFranchiseData = franchisedata.map(i =>
+//       String(i.brandOwnerId).trim()
+//     );
 
-    // convert to Set for fast lookup
-    const qidSet = new Set(q_id);
+//     // convert to Set for fast lookup
+//     const qidSet = new Set(q_id);
 
-    // ❌ NOT MATCHED IDs
-    const notMatched = matchedFranchiseData.filter(
-      id => !qidSet.has(id)
-    );
+//     // ❌ NOT MATCHED IDs
+//     const notMatched = matchedFranchiseData.filter(
+//       id => !qidSet.has(id)
+//     );
 
-    console.log("Not matched IDs:", notMatched);
+//     console.log("Not matched IDs:", notMatched);
 
-    return res.json({
-      totalBrandUUID: q_id.length,
-      totalFranchise: matchedFranchiseData.length,
-      notMatchedCount: notMatched.length,
-      notMatched
-    });
+//     return res.json({
+//       totalBrandUUID: q_id.length,
+//       totalFranchise: matchedFranchiseData.length,
+//       notMatchedCount: notMatched.length,
+//       notMatched
+//     });
 
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "Server Error" });
+//   }
+// };
 
 // export const datafieldnewEntry = async (req, res) => {
 //   try {
@@ -1174,3 +1175,102 @@ export const datafieldnewEntry = async (req, res) => {
 //     };
 //   }); 
 // } 
+
+
+
+export const datafieldnewEntry = async (req, res) => {
+  try {
+    let exists = await IndustryManagement.find({})
+      .select("-__v -_id -categories -serviceTags -createdAt -uuid -updatedAt");
+
+    const newData = [];
+
+    for (const a of exists) {
+      for (const t of a.productTags) {
+        for (const data of t.tags) {
+
+          const brandsData = await BrandFranchiseDetails.aggregate([
+            {
+              $lookup: {
+                from: "branddetails",
+                localField: "brandOwnerId",
+                foreignField: "uuid",
+                as: "brandDetails",
+              },
+            },
+            {
+              $unwind: {
+                path: "$brandDetails",
+                preserveNullAndEmptyArrays: true, 
+              },
+            },
+            {
+              $match: {
+                "franchiseDetails.brandCategories.productTags": {
+                  $elemMatch: { tags: data.tag },
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                brandName: "$brandDetails.brandDetails.brandName",
+              },
+            },
+          ]);
+
+         
+          const brandNames =
+            brandsData.length > 0
+              ? brandsData.map(b => b.brandName).filter(Boolean)
+              : [""];
+
+          newData.push({
+            industry: a.industry,
+            tag: data.tag,
+            brands: brandNames,
+            count: brandsData.length,
+          });
+        }
+      }
+    }
+
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Data");
+
+    worksheet.columns = [
+      { header: "Industry", key: "industry", width: 25 },
+      { header: "Tag", key: "tag", width: 25 },
+      { header: "Brand Names", key: "brands", width: 40 },
+      { header: "Brand Count", key: "count", width: 15 }, 
+    ];
+
+   
+    newData.forEach(item => {
+      worksheet.addRow({
+        industry: item.industry,
+        tag: item.tag,
+        brands: item.brands.join(", "),
+        count: item.count || 0,
+      });
+    });
+
+  
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=Ayan.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
