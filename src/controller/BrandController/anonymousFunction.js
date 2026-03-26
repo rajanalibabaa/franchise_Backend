@@ -1180,7 +1180,7 @@ export const testgetAllBrands = async (req, res) => {
 
 export const datafieldnewEntry = async (req, res) => {
   try {
-    let exists = await IndustryManagement.find({})
+    const exists = await IndustryManagement.find({})
       .select("-__v -_id -categories -serviceTags -createdAt -uuid -updatedAt");
 
     const newData = [];
@@ -1201,13 +1201,17 @@ export const datafieldnewEntry = async (req, res) => {
             {
               $unwind: {
                 path: "$brandDetails",
-                preserveNullAndEmptyArrays: true, 
+                preserveNullAndEmptyArrays: true,
               },
             },
             {
               $match: {
+                "franchiseDetails.brandCategories.main": a.industry,
                 "franchiseDetails.brandCategories.productTags": {
-                  $elemMatch: { tags: data.tag },
+                  $elemMatch: {
+                    parent: t.parent,
+                    tags: data.tag,
+                  },
                 },
               },
             },
@@ -1219,7 +1223,6 @@ export const datafieldnewEntry = async (req, res) => {
             },
           ]);
 
-         
           const brandNames =
             brandsData.length > 0
               ? brandsData.map(b => b.brandName).filter(Boolean)
@@ -1227,6 +1230,7 @@ export const datafieldnewEntry = async (req, res) => {
 
           newData.push({
             industry: a.industry,
+            category: t.parent,
             tag: data.tag,
             brands: brandNames,
             count: brandsData.length,
@@ -1235,35 +1239,35 @@ export const datafieldnewEntry = async (req, res) => {
       }
     }
 
-  
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data");
 
+    console.log(workbook)
     worksheet.columns = [
       { header: "Industry", key: "industry", width: 25 },
+      { header: "Category", key: "category", width: 25 },
       { header: "Tag", key: "tag", width: 25 },
       { header: "Brand Names", key: "brands", width: 40 },
-      { header: "Brand Count", key: "count", width: 15 }, 
+      { header: "Brand Count", key: "count", width: 15 },
     ];
 
-   
     newData.forEach(item => {
       worksheet.addRow({
         industry: item.industry,
+        category: item.category,
         tag: item.tag,
         brands: item.brands.join(", "),
         count: item.count || 0,
       });
     });
 
-  
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     res.setHeader(
       "Content-Disposition",
-      "attachment; filename=Ayan.xlsx"
+      "attachment; filename=Ayan-00.xlsx"
     );
 
     await workbook.xlsx.write(res);
