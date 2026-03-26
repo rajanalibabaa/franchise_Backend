@@ -1268,7 +1268,7 @@ export const datafieldnewEntry = async (req, res) => {
     );
     res.setHeader(
       "Content-Disposition",
-      "attachment; filename=Ayan-00.xlsx"
+      `attachment; filename=${name}.xlsx`
     );
 
     await workbook.xlsx.write(res);
