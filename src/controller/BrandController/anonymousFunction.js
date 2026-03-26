@@ -1241,8 +1241,9 @@ export const datafieldnewEntry = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data");
+    const name = workbook.subject = "Industry-Category-Tag-Brand Data";
 
-    console.log(workbook)
+    console.log("workbook.subject :",name)
     worksheet.columns = [
       { header: "Industry", key: "industry", width: 25 },
       { header: "Category", key: "category", width: 25 },
