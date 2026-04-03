@@ -515,46 +515,62 @@ export const getAllBrandFiltersdata = async (req, res) => {
       return res.json(response);
     }
 
-    // Handle sub category child fetch
+    // Handle sub category tags fetch
     if (sub) {
-      const childcatData = await BrandFranchiseDetails.aggregate([
-        {
-          $match: {
-            "franchiseDetails.brandCategories.sub": sub,
-            ...(main && { "franchiseDetails.brandCategories.main": main }),
-          },
-        },
-        {
-          $project: {
-            childcat: "$franchiseDetails.brandCategories.child",
-          },
-        },
-        {
-          $unwind: {
-            path: "$childcat",
-            preserveNullAndEmptyArrays: false,
-          },
-        },
-        {
-          $match: {
-            childcat: { $ne: null, $ne: "" },
-          },
-        },
-        {
-          $group: {
-            _id: "$childcat",
-          },
-        },
-        {
-          $sort: { _id: 1 },
-        },
-      ]);
+      const industryName = main || industry;
+      const normalizedSub = (sub || "").trim().toLowerCase();
+      const tagQuery = ((req.query.tag || req.query.searchTerm || "").trim() || "").toLowerCase();
 
-      const childcatNames = childcatData.map((item) => item._id);
+      const industryFilter = industryName
+        ? { industry: industryName }
+        : {};
+
+      const industryData = await IndustryManagement.find(industryFilter)
+        .select({ _id: 0, productTags: 1, serviceTags: 1 })
+        .lean();
+
+      if (!industryData || industryData.length === 0) {
+        return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+      }
+
+      const productSet = new Set();
+      const serviceSet = new Set();
+
+      for (const industry of industryData) {
+        for (const ptItem of industry.productTags || []) {
+          const parent = (ptItem?.parent || "").toLowerCase();
+          if (normalizedSub === "all" || parent === normalizedSub) {
+            for (const tagObj of ptItem.tags || []) {
+              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              if (!tagValue) continue;
+              if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+                productSet.add(tagValue.trim());
+              }
+            }
+          }
+        }
+
+        for (const stItem of industry.serviceTags || []) {
+          const parent = (stItem?.parent || "").toLowerCase();
+          if (normalizedSub === "all" || parent === normalizedSub) {
+            for (const tagObj of stItem.tags || []) {
+              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              if (!tagValue) continue;
+              if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+                serviceSet.add(tagValue.trim());
+              }
+            }
+          }
+        }
+      }
+
       const response = new ApiResponse(
         200,
-        childcatNames,
-        "Child categories fetched successfully",
+        {
+          productTags: Array.from(productSet).sort(),
+          serviceTags: Array.from(serviceSet).sort(),
+        },
+        "Tags fetched successfully",
       );
 
       cache.set(cacheKey, response);

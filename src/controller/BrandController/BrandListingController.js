@@ -903,6 +903,7 @@ const getBrandListingSlug = async (req, res) => {
         tagLine: "$brandDetails.tagLine",
         state: "$brandDetails.state",
         city: "$brandDetails.city",
+        district: "$brandDetails.district",
         whatsappnumber: "$brandDetails.whatsappNumber",
         paymentPackage: "$brandDetails.paymentPackage",
         listingPackages: "$brandDetails.listingPackages",
