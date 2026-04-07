@@ -33,7 +33,6 @@ app.get("/api/image-proxy", async (req, res) => {
   try {
     const imageUrl = req.query.url;
 
-    console.log("Proxying image URL:", imageUrl);
 
     if (!imageUrl) {
       return res.status(400).send("Missing image URL");
