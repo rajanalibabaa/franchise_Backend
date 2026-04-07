@@ -7,7 +7,7 @@ import { likeandshortlist } from "../../controller/BrandController/BrandListingC
 export const overAllPlatformOnlyMainCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 12;
+    const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const id = req.query.id || null;
 
@@ -91,6 +91,8 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           isLiked: 1,
           isShortListed: 1,
           brandname: "$brandInfo.brandDetails.brandName",
+          state: "$brandInfo.brandDetails.state",
+          district: "$brandInfo.brandDetails.district",
           slug: "$brandInfo.brandDetails.slug",
           brandCategories: {
             $ifNull: ["$franchiseDetails.brandCategories", null],
