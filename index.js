@@ -29,6 +29,32 @@ dotenv.config(); // ✅ Load env FIRST
 const app = express();
 app.set("trust proxy", 1); // trust first proxy
 
+app.get("/api/image-proxy", async (req, res) => {
+  try {
+    const imageUrl = req.query.url;
+
+    console.log("Proxying image URL:", imageUrl);
+
+    if (!imageUrl) {
+      return res.status(400).send("Missing image URL");
+    }
+
+    const response = await fetch(imageUrl);
+
+    if (!response.ok) {
+      return res.status(500).send("Failed to fetch image");
+    }
+
+    const buffer = await response.arrayBuffer();
+
+    res.set("Content-Type", response.headers.get("content-type"));
+    res.set("Access-Control-Allow-Origin", "*");
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    res.status(500).send("Proxy error");
+  }
+});
+
 // Rate Limiter
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
