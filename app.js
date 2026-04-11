@@ -36,6 +36,7 @@ import { paymentRouter } from "./src/Routes/AdminRoutes/AdminBrandAccessRoutes/p
 import leadPackageRouter from "./src/Routes/LeadPackage/LeadPackage.js";
 import { brandleadsRouter } from "./src/Routes/Lead/brandLeadsRouter.js";
 import { industryManagementRouter } from "./src/Routes/AdminRoutes/CMS/industryManagement.routes.js";
+import paymentplanCMS from "./src/Routes/AdminRoutes/CMS/paymentPlans.js";
 import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
 
 const router = express.Router();
@@ -118,6 +119,8 @@ router.use(paymentRouter);
 
 //industryManagementRouter
 router.use(industryManagementRouter);
+
+router.use(paymentplanCMS);
 
 //searchRoutes
 router.use(searchRoutes);
