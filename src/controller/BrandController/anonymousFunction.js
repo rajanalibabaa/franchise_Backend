@@ -262,124 +262,124 @@ export const likeandshortlist = async (id) => {
 
 
 
-export const datafieldnewEntry = async (req, res) => {
-  try {
+// export const datafieldnewEntry = async (req, res) => {
+//   try {
 
-    const category = "Automobile";
-    const checkarray = [];
-    const changesLog = [];
-    const removedTagsLog = [];
+//     const category = "Automobile";
+//     const checkarray = [];
+//     const changesLog = [];
+//     const removedTagsLog = [];
 
-    const industry = await IndustryManagement.find({});
+//     const industry = await IndustryManagement.find({});
 
-    industry.forEach(ind => {
-      if (ind.industry === category) {
-        ind.productTags.forEach(data => {
-          checkarray.push({
-            parent: data.parent,
-            tags: data.tags
-          });
-        });
-      }
-    });
+//     industry.forEach(ind => {
+//       if (ind.industry === category) {
+//         ind.productTags.forEach(data => {
+//           checkarray.push({
+//             parent: data.parent,
+//             tags: data.tags
+//           });
+//         });
+//       }
+//     });
 
-    const tagParentMap = {};
-    checkarray.forEach(data => {
-      data.tags.forEach(t => {
-        tagParentMap[t.tag] = data.parent;
-      });
-    });
+//     const tagParentMap = {};
+//     checkarray.forEach(data => {
+//       data.tags.forEach(t => {
+//         tagParentMap[t.tag] = data.parent;
+//       });
+//     });
 
-    const brands = await BrandFranchiseDetails.find({
-      "franchiseDetails.brandCategories.main": category,
-    });
+//     const brands = await BrandFranchiseDetails.find({
+//       "franchiseDetails.brandCategories.main": category,
+//     });
 
-    if (!brands || brands.length === 0) {
-      return res.status(404).json({ message: "No matching brands found" });
-    }
+//     if (!brands || brands.length === 0) {
+//       return res.status(404).json({ message: "No matching brands found" });
+//     }
 
-    for (const brand of brands) {
+//     for (const brand of brands) {
 
-      const brandDetails = await BrandDetails.findOne({ uuid: brand.brandOwnerId });
-      const brandName = brandDetails?.brandDetails?.brandName || "Unknown";
+//       const brandDetails = await BrandDetails.findOne({ uuid: brand.brandOwnerId });
+//       const brandName = brandDetails?.brandDetails?.brandName || "Unknown";
 
-      brand.franchiseDetails.brandCategories.productTags.forEach(D => {
+//       brand.franchiseDetails.brandCategories.productTags.forEach(D => {
 
-        D.tags = D.tags.filter(tag => {
-          if (tagParentMap[tag]) {
-            return true;
-          } else {
-            removedTagsLog.push({
-              brandName,
-              removedTag: tag,
-              parent: D.parent
-            });
-            return false;
-          }
-        });
+//         D.tags = D.tags.filter(tag => {
+//           if (tagParentMap[tag]) {
+//             return true;
+//           } else {
+//             removedTagsLog.push({
+//               brandName,
+//               removedTag: tag,
+//               parent: D.parent
+//             });
+//             return false;
+//           }
+//         });
 
-        D.tags.forEach(tag => {
-          const newParent = tagParentMap[tag];
+//         D.tags.forEach(tag => {
+//           const newParent = tagParentMap[tag];
 
-          if (newParent && D.parent !== newParent) {
-            changesLog.push({
-              brandName,
-              tag,
-              oldParent: D.parent,
-              newParent
-            });
+//           if (newParent && D.parent !== newParent) {
+//             changesLog.push({
+//               brandName,
+//               tag,
+//               oldParent: D.parent,
+//               newParent
+//             });
 
-            D.parent = newParent;
-          }
-        });
+//             D.parent = newParent;
+//           }
+//         });
 
-      });
+//       });
 
-      await brand.save();
-    }
+//       await brand.save();
+//     }
 
-    // ✅ Create Excel
-    const workbook = new ExcelJS.Workbook();
+//     // ✅ Create Excel
+//     const workbook = new ExcelJS.Workbook();
 
-    // Sheet 1: Updated Parents
-    const sheet1 = workbook.addWorksheet("Updated Parents");
-    sheet1.columns = [
-      { header: "Brand Name", key: "brandName", width: 25 },
-      { header: "Tag", key: "tag", width: 25 },
-      { header: "Old Parent", key: "oldParent", width: 25 },
-      { header: "New Parent", key: "newParent", width: 25 },
-    ];
+//     // Sheet 1: Updated Parents
+//     const sheet1 = workbook.addWorksheet("Updated Parents");
+//     sheet1.columns = [
+//       { header: "Brand Name", key: "brandName", width: 25 },
+//       { header: "Tag", key: "tag", width: 25 },
+//       { header: "Old Parent", key: "oldParent", width: 25 },
+//       { header: "New Parent", key: "newParent", width: 25 },
+//     ];
 
-    changesLog.forEach(row => sheet1.addRow(row));
+//     changesLog.forEach(row => sheet1.addRow(row));
 
-    // Sheet 2: Removed Tags
-    // const sheet2 = workbook.addWorksheet("Removed Tags");
-    // sheet2.columns = [
-    //   { header: "Brand Name", key: "brandName", width: 25 },
-    //   { header: "Removed Tag", key: "removedTag", width: 25 },
-    //   { header: "Parent", key: "parent", width: 25 },
-    // ];
+//     // Sheet 2: Removed Tags
+//     // const sheet2 = workbook.addWorksheet("Removed Tags");
+//     // sheet2.columns = [
+//     //   { header: "Brand Name", key: "brandName", width: 25 },
+//     //   { header: "Removed Tag", key: "removedTag", width: 25 },
+//     //   { header: "Parent", key: "parent", width: 25 },
+//     // ];
 
-    // removedTagsLog.forEach(row => sheet2.addRow(row));
+//     // removedTagsLog.forEach(row => sheet2.addRow(row));
 
-    // ✅ Send as download
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${category}_parent_tag_changes.xlsx`
-    );
+//     // ✅ Send as download
+//     res.setHeader(
+//       "Content-Type",
+//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+//     );
+//     res.setHeader(
+//       "Content-Disposition",
+//       `attachment; filename=${category}_parent_tag_changes.xlsx`
+//     );
 
-    await workbook.xlsx.write(res);
-    res.end();
+//     await workbook.xlsx.write(res);
+//     res.end();
 
-  } catch (error) {
-    console.error("ERROR:", error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
+//   } catch (error) {
+//     console.error("ERROR:", error);
+//     return res.status(500).json({ message: "Server Error" });
+//   }
+// };
 
 
 export const testgetAllBrands = async (req, res) => {
@@ -1338,135 +1338,136 @@ export const testgetAllBrands = async (req, res) => {
 
 
 
-// export const datafieldnewEntry = async (req, res) => {
-//   try {
-//     const exists = await IndustryManagement.find({})
-//       .select("-__v -_id -categories -serviceTags -createdAt -uuid -updatedAt");
+export const datafieldnewEntry = async (req, res) => {
+  try {
+    const exists = await IndustryManagement.find({})
+      .select("-__v -_id -categories -serviceTags -createdAt -uuid -updatedAt");
 
-//     const newData = [];
+    const newData = [];
 
-//     for (const a of exists) {
-//       // console.log("Processing industry:", a.industry);
+    for (const a of exists) {
+      // console.log("Processing industry:", a.industry);
 
-//       for (const t of a.productTags) {
-//         console.log("  Category:", t);
+      for (const t of a.productTags) {
+        console.log("  Category:", t);
 
-//         for (const data of t.tags) {
-//           console.log("DATA:", data);
+        for (const data of t.tags) {
+          console.log("DATA:", data);
 
-//           const brandsData = await BrandFranchiseDetails.aggregate([
-//             {
-//               $lookup: {
-//                 from: "branddetails",
-//                 localField: "brandOwnerId",
-//                 foreignField: "uuid",
-//                 as: "brandDetails",
-//               },
-//             },
-//             {
-//               $unwind: {
-//                 path: "$brandDetails",
-//                 preserveNullAndEmptyArrays: true,
-//               },
-//             },
+          const brandsData = await BrandFranchiseDetails.aggregate([
+            {
+              $lookup: {
+                from: "branddetails",
+                localField: "brandOwnerId",
+                foreignField: "uuid",
+                as: "brandDetails",
+              },
+            },
+            {
+              $unwind: {
+                path: "$brandDetails",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
             
-//             {
-//               $match: {
-//                 "franchiseDetails.brandCategories.main": a.industry,
-//                 "franchiseDetails.brandCategories.productTags": {
-//                   $elemMatch: {
-//                     // parent: t.parent,
-//                     tags: data.tag, // ✅ correct match
-//                   },
-//                 },
-//               },
-//             },
-//             {
-//               $project: {
-//                 _id: 0,
-//                 brandName: "$brandDetails.brandDetails.brandName",
-//               },
-//             },
-//           ]);
+            {
+              $match: {
+                "franchiseDetails.brandCategories.main": a.industry,
+                "franchiseDetails.brandCategories.productTags": {
+                  $elemMatch: {
+                    // parent: t.parent,
+                    tags: data.tag, // ✅ correct match
+                  },
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                brandName: "$brandDetails.brandDetails.brandName",
+              },
+            },
+          ]);
 
-//           const brandNames = brandsData
-//             .map(b => b.brandName)
-//             .filter(Boolean);
+          const brandNames = brandsData
+            .map(b => b.brandName)
+            .filter(Boolean);
 
-//           newData.push({
-//             industry: a.industry,
-//             category: t.parent,
-//             tag: data.tag, // ✅ correct
-//             brands: brandNames,
-//             count: brandNames.length,
-//           });
-//         }
-//       }
-//     }
+          newData.push({
+            industry: a.industry,
+            category: t.parent,
+            tag: data.tag, // ✅ correct
+            brands: brandNames,
+            count: brandNames.length,
+          });
+        }
+      }
+    }
 
-//     // ✅ Excel Creation
-//     const workbook = new ExcelJS.Workbook();
-//     const worksheet = workbook.addWorksheet("Data");
+    // ✅ Excel Creation
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Data");
 
-//     workbook.subject = "Industry-Category-Tag-Brand Data";
+    workbook.subject = "Industry-Category-Tag-Brand Data";
 
-//     worksheet.columns = [
-//       { header: "Industry", key: "industry", width: 25 },
-//       { header: "Category", key: "category", width: 25 },
-//       { header: "Tag", key: "tag", width: 25 },
-//       { header: "Brand Names", key: "brands", width: 40 },
-//       { header: "Brand Count", key: "count", width: 15 },
-//     ];
+    worksheet.columns = [
+      { header: "Industry", key: "industry", width: 25 },
+      { header: "Category", key: "category", width: 25 },
+      { header: "Tag", key: "tag", width: 25 },
+      { header: "Brand Names", key: "brands", width: 40 },
+      { header: "Brand Count", key: "count", width: 15 },
+    ];
 
-//     newData.forEach(item => {
-//       worksheet.addRow({
-//         industry: item.industry,
-//         category: item.category,
-//         tag: item.tag,
-//         brands: item.brands.join(", "),
-//         count: item.count,
-//       });
-//     });
+    newData.forEach(item => {
+      worksheet.addRow({
+        industry: item.industry,
+        category: item.category,
+        tag: item.tag,
+        brands: item.brands.join(", "),
+        count: item.count,
+      });
+    });
 
-//     // ✅ Timestamp filename
-//     const now = new Date();
-//     const formattedDate =
-//       now.getFullYear() +
-//       "-" +
-//       String(now.getMonth() + 1).padStart(2, "0") +
-//       "-" +
-//       String(now.getDate()).padStart(2, "0") +
-//       "_" +
-//       String(now.getHours()).padStart(2, "0") +
-//       "-" +
-//       String(now.getMinutes()).padStart(2, "0") +
-//       "-" +
-//       String(now.getSeconds()).padStart(2, "0");
+    // ✅ Timestamp filename
+    const now = new Date();
+    const formattedDate =
+      now.getFullYear() +
+      "-" +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(now.getDate()).padStart(2, "0") +
+      "_" +
+      String(now.getHours()).padStart(2, "0") +
+      "-" +
+      String(now.getMinutes()).padStart(2, "0") +
+      "-" +
+      String(now.getSeconds()).padStart(2, "0");
 
-//     const fileName = `brand-Tag-Usage-Count_${formattedDate}.xlsx`;
+    const fileName = `brand-Tag-Usage-Count_${formattedDate}.xlsx`;
 
-//     res.setHeader(
-//       "Content-Type",
-//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-//     );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
 
-//     res.setHeader(
-//       "Content-Disposition",
-//       `attachment; filename=${fileName}`
-//     );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${fileName}`
+    );
 
-//     await workbook.xlsx.write(res);
-//     res.end();
+    await workbook.xlsx.write(res);
+    res.end();
 
-//   } catch (error) {
-//     console.error("ERROR:", error);
-//     return res.status(500).json({ message: "Server Error" });
-//   }
-// };
+  } catch (error) {
+    console.error("ERROR:", error);
+    return res.status(500).json({ message: "Server Error" });
+  }
+};
 
 
-
+  // Brand_Tag_Report
 // export const datafieldnewEntry = async (req, res) => {
+
 //   try {
 //     const brandsData = await BrandFranchiseDetails.aggregate([
 //       {
