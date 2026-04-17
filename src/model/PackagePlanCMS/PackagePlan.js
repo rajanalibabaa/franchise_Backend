@@ -2,9 +2,10 @@ import mongoose from "mongoose";
 
 
 const packageSchema = new mongoose.Schema({
-  investmentRange: {
+  investmentRangeLabel: {
     type: String
   },
+  investmentRange: [String],
   validityDays: {
     type: Number
   },
