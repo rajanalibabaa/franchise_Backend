@@ -1,34 +1,58 @@
 import mongoose from "mongoose";
 
-
-const packageSchema = new mongoose.Schema({
-  investmentRangeLabel: {
-    type: String
+/* individual package */
+const packageSchema = new mongoose.Schema(
+  {
+    investmentRangeLabel: String,
+    investmentRange: [String],
+    validityDays: Number,
+    amount: {
+      type: Number,
+      required: true
+    },
+    totalLeads: {
+      type: Number,
+      required: true
+    }
   },
-  investmentRange: [String],
-  validityDays: {
-    type: Number
+  { _id: false }
+);
+
+/* plan schema */
+const planSchema = new mongoose.Schema(
+  {
+    planName: {
+      type: String,
+      required: true
+    },
+    packages: [packageSchema]
   },
-  amount: {
-    type: Number,
-    required: true
+  { _id: false }
+);
+
+/* listing package schema */
+const listingPackageSchema = new mongoose.Schema(
+  {
+    amount: {
+      type: Number,
+      required: true
+    },
+    validityDays: {
+      type: Number,
+      required: true
+    }
   },
-  totalLeads: {
-    type: Number,
-    required: true
-  }
-   // dynamic states pricing
-}, { _id: false });
+  { _id: false }
+);
 
+/* main schema */
+const packagesSchema = new mongoose.Schema(
+  {
+    packagesPlan: [planSchema],
 
-const planSchema = new mongoose.Schema({
-  planName: {
-    type: String, // BASIC PLAN / ADVANCE PLAN / GROWTH PLAN
-    required: true
+    listingPackage: [listingPackageSchema] // multiple allowed
   },
+  { timestamps: true }
+);
 
-  packages: [packageSchema]
-}, { timestamps: true });
-
-
-export default mongoose.model("Plan", planSchema);
+export default mongoose.model("Packages", packagesSchema);
