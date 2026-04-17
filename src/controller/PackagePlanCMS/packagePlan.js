@@ -1,13 +1,5 @@
-import Plan from "../../model/PaymentPlanCMS/paymentPlan.js";
+import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
 
-// validate single package
-const validatePackage = (pkg) => {
-  if (!pkg.investmentRange || typeof pkg.investmentRange !== "string") return false;
-  if (typeof pkg.validityDays !== "number" || pkg.validityDays <= 0) return false;
-  if (typeof pkg.amount !== "number" || pkg.amount <= 0) return false;
-  if (typeof pkg.totalLeads !== "number" || pkg.totalLeads <= 0) return false;
-  return true;
-};
 
 
 export const createPlan = async (req, res) => {
@@ -22,25 +14,6 @@ export const createPlan = async (req, res) => {
       });
     }
 
-    // // packages validation
-    // if (!Array.isArray(packages) || packages.length === 0) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "packages must be a non-empty array",
-    //   });
-    // }
-
-    // // validate each package
-    // for (let i = 0; i < packages.length; i++) {
-    //   const pkg = packages[i];
-
-    //   if (!validatePackage(pkg)) {
-    //     return res.status(400).json({
-    //       success: false,
-    //       message: `Invalid package data at index ${i}`,
-    //     });
-    //   }
-    // }
 
     // create plan
     const newPlan = await Plan.create({
