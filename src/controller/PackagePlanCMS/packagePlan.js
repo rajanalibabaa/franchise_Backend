@@ -84,48 +84,58 @@ export const getAllPlans = async (req, res) => {
     });
   }
 };
+
 export const updatePlan = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { planName, packages, deletePackage, packageIndex } = req.body;
+    const { planIndex } = req.params;
+    const { planName, packageIndex, packageData, deletePackage } = req.body;
 
     const doc = await Packages.findOne();
-    if (!doc)
-      return res.status(404).json({ success: false, message: "Not found" });
+    if (!doc) return res.status(404).json({ success:false });
 
-    // delete single package
-    if (deletePackage) {
-      doc.packagesPlan[id].packages.splice(packageIndex, 1);
-    } 
-    // update full plan
-    else {
-      doc.packagesPlan[id] = {
-        planName,
-        packages,
-      };
+    const plan = doc.packagesPlan[planIndex];
+    if (!plan) return res.status(404).json({ success:false });
+
+    // delete
+    if (deletePackage && packageIndex !== undefined) {
+      plan.packages.splice(packageIndex, 1);
+    }
+
+    // update OR add
+    else if (packageIndex !== undefined && packageData) {
+      if (plan.packages[packageIndex]) {
+        plan.packages[packageIndex] = {
+          ...plan.packages[packageIndex]._doc,
+          ...packageData
+        };
+      } else {
+        plan.packages.push(packageData);
+      }
+    }
+
+    // plan name update
+    else if (planName) {
+      plan.planName = planName;
     }
 
     await doc.save();
 
-    res.json({
-      success: true,
-      message: "Plan updated",
-    });
+    res.json({ success:true });
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success:false });
   }
 };
-
 /* ================= DELETE PLAN ================= */
 export const deletePlan = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { planIndex } = req.params;
 
     const doc = await Packages.findOne();
     if (!doc) return res.status(404).json({ success: false });
 
-    doc.packagesPlan.splice(id, 1);
+    doc.packagesPlan.splice(planIndex, 1);
 
     await doc.save();
 
@@ -140,24 +150,39 @@ export const deletePlan = async (req, res) => {
 };
 
 
-/* ================= DELETE SINGLE PACKAGE ================= */
-export const deletePackage = async (req, res) => {
+
+
+
+export const createListing = async (req, res) => {
   try {
-    const { planIndex, packageIndex } = req.params;
+    const { name, amount, validityDays } = req.body;
 
-    const doc = await Packages.findOne();
-    if (!doc) return res.status(404).json({ success: false });
+    let doc = await Packages.findOne();
 
-    doc.packagesPlan[planIndex].packages.splice(packageIndex, 1);
+    if (!doc) {
+      doc = new Packages({
+        packagesPlan: [],
+        listingPackage: []
+      });
+    }
+
+    doc.listingPackage.push({
+      name,
+      amount,
+      validityDays
+    });
 
     await doc.save();
 
     res.json({
       success: true,
-      message: "Package deleted"
+      message: "Listing Package Created"
     });
 
   } catch (error) {
-    res.status(500).json({ success: false });
+    res.status(500).json({
+      success: false,
+      message: "Error creating listing"
+    });
   }
 };

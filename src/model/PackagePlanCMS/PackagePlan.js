@@ -33,6 +33,11 @@ const planSchema = new mongoose.Schema(
 /* listing package schema */
 const listingPackageSchema = new mongoose.Schema(
   {
+    name:
+  {
+      type: String,
+      required: true
+    },
     amount: {
       type: Number,
       required: true
