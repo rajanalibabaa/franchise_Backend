@@ -149,10 +149,6 @@ export const deletePlan = async (req, res) => {
   }
 };
 
-
-
-
-
 export const createListing = async (req, res) => {
   try {
     const { name, amount, validityDays } = req.body;
