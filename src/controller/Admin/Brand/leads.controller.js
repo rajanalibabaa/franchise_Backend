@@ -15,6 +15,7 @@ export const getBatchEmailConfig = async (req, res) => {
 
     if (!config) {
       // console.log("No config found, returning defaults");
+      
       return res.json(
         new ApiResponse(
           200,
