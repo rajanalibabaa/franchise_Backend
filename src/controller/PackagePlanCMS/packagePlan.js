@@ -1,10 +1,11 @@
 import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
 import Packages from "../../model/PackagePlanCMS/PackagePlan.js";
 
-/* ================= CREATE ================= */
+
 export const createPlan = async (req, res) => {
   try {
-    const { planName, packages } = req.body;
+    const { planName, packageType, packages } = req.body;
+    console.log("Received data:", req.body);
 
     const formattedPackages = packages?.map(pkg => ({
       investmentRangeLabel: pkg.investmentRangeLabel || "",
@@ -23,6 +24,7 @@ export const createPlan = async (req, res) => {
         packagesPlan: [
           {
             planName,
+            packageType,
             packages: formattedPackages
           }
         ]
@@ -31,6 +33,7 @@ export const createPlan = async (req, res) => {
       // push new plan
       doc.packagesPlan.push({
         planName,
+        packageType,
         packages: formattedPackages
       });
 
@@ -52,11 +55,8 @@ export const createPlan = async (req, res) => {
   }
 };
 
-
-/* ================= GET ALL ================= */
 export const getAllPlans = async (req, res) => {
   try {
-
     const doc = await Plan.findOne();
 
     if (!doc) {
@@ -66,9 +66,10 @@ export const getAllPlans = async (req, res) => {
       });
     }
 
-    const formatted = doc.packagesPlan.map((plan, index) => ({
-      _id: index, // frontend edit purpose
+    const formatted = doc.packagesPlan.map((plan) => ({
+      _id: plan._id, // ✅ REAL ID
       planName: plan.planName,
+      packageType: plan.packageType,
       packages: plan.packages
     }));
 
@@ -79,30 +80,51 @@ export const getAllPlans = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: "Server error"
+      success: false
     });
   }
 };
 
 export const updatePlan = async (req, res) => {
   try {
-    const { planIndex } = req.params;
-    const { planName, packageIndex, packageData, deletePackage } = req.body;
+    const { planId } = req.params;
+
+    const {
+      planName,
+      packageType,
+      packages,
+      packageIndex,
+      packageData,
+      deletePackage
+    } = req.body;
 
     const doc = await Packages.findOne();
-    if (!doc) return res.status(404).json({ success:false });
+    if (!doc) return res.status(404).json({ success: false });
 
-    const plan = doc.packagesPlan[planIndex];
-    if (!plan) return res.status(404).json({ success:false });
+    // ✅ find plan by _id
+    const plan = doc.packagesPlan.find(
+      (p) => p._id.toString() === planId
+    );
 
-    // delete
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Plan not found"
+      });
+    }
+
+    /* ================= FULL UPDATE ================= */
+    if (packages && Array.isArray(packages)) {
+      plan.packages = packages;
+    }
+
+    /* ================= DELETE PACKAGE ================= */
     if (deletePackage && packageIndex !== undefined) {
       plan.packages.splice(packageIndex, 1);
     }
 
-    // update OR add
-    else if (packageIndex !== undefined && packageData) {
+    /* ================= UPDATE SINGLE PACKAGE ================= */
+    if (packageIndex !== undefined && packageData) {
       if (plan.packages[packageIndex]) {
         plan.packages[packageIndex] = {
           ...plan.packages[packageIndex]._doc,
@@ -113,72 +135,66 @@ export const updatePlan = async (req, res) => {
       }
     }
 
-    // plan name update
-    else if (planName) {
+    /* ================= UPDATE PLAN DETAILS ================= */
+    if (planName !== undefined) {
       plan.planName = planName;
     }
 
-    await doc.save();
-
-    res.json({ success:true });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success:false });
-  }
-};
-/* ================= DELETE PLAN ================= */
-export const deletePlan = async (req, res) => {
-  try {
-    const { planIndex } = req.params;
-
-    const doc = await Packages.findOne();
-    if (!doc) return res.status(404).json({ success: false });
-
-    doc.packagesPlan.splice(planIndex, 1);
+    if (packageType !== undefined) {
+      plan.packageType = packageType;
+    }
 
     await doc.save();
 
     res.json({
       success: true,
-      message: "Plan deleted"
+      message: "Plan updated successfully"
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false });
   }
 };
 
-export const createListing = async (req, res) => {
+export const deletePlan = async (req, res) => {
   try {
-    const { name, amount, validityDays } = req.body;
+    const { planId } = req.params;
+    console.log("Deleting plan with ID:", planId);
 
-    let doc = await Packages.findOne();
-
+    const doc = await Packages.findOne();
     if (!doc) {
-      doc = new Packages({
-        packagesPlan: [],
-        listingPackage: []
+      return res.status(404).json({
+        success: false,
+        message: "Not found"
       });
     }
 
-    doc.listingPackage.push({
-      name,
-      amount,
-      validityDays
-    });
+    const beforeLength = doc.packagesPlan.length;
+
+    // ✅ delete using ObjectId
+    doc.packagesPlan = doc.packagesPlan.filter(
+      (plan) => plan._id.toString() !== planId
+    );
+
+    if (doc.packagesPlan.length === beforeLength) {
+      return res.status(400).json({
+        success: false,
+        message: "Plan not found"
+      });
+    }
 
     await doc.save();
 
     res.json({
       success: true,
-      message: "Listing Package Created"
+      message: "Plan deleted successfully"
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({
-      success: false,
-      message: "Error creating listing"
+      success: false
     });
   }
 };

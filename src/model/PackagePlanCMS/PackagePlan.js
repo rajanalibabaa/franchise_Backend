@@ -15,47 +15,31 @@ const packageSchema = new mongoose.Schema(
       required: true
     }
   },
-  { _id: false }
+  { _id: true }
 );
 
-/* plan schema */
 const planSchema = new mongoose.Schema(
-  {
+  { 
+    packageType: {
+      type: String,
+      enum: ["LISTING", "LEAD"],
+      default: "LEAD"
+    },
     planName: {
       type: String,
       required: true
     },
     packages: [packageSchema]
   },
-  { _id: false }
+
 );
 
-/* listing package schema */
-const listingPackageSchema = new mongoose.Schema(
-  {
-    name:
-  {
-      type: String,
-      required: true
-    },
-    amount: {
-      type: Number,
-      required: true
-    },
-    validityDays: {
-      type: Number,
-      required: true
-    }
-  },
-  { _id: false }
-);
+
 
 /* main schema */
 const packagesSchema = new mongoose.Schema(
   {
     packagesPlan: [planSchema],
-
-    listingPackage: [listingPackageSchema] // multiple allowed
   },
   { timestamps: true }
 );

@@ -2,77 +2,134 @@ import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.j
 
 export const createBrandPackage = async (req, res) => {
   try {
-    const { brandOwnerId, packages } = req.body;
+    const { brandOwnerId, packages, listingPackages } = req.body;
+
+    /* ================= VALIDATION ================= */
 
     if (!brandOwnerId) {
-      return res.status(400).json({ success: false, message: "brandOwnerId is required" });
+      return res.status(400).json({
+        success: false,
+        message: "brandOwnerId is required"
+      });
     }
 
-    if (!packages || !Array.isArray(packages) || packages.length === 0) {
-      return res.status(400).json({ success: false, message: "packages must be a non-empty array" });
+    /* ================= PREPARE MAIN PACKAGES ================= */
+
+    let preparedPackages = [];
+
+    if (packages && Array.isArray(packages) && packages.length > 0) {
+      preparedPackages = packages.map((pkg, i) => {
+        const {
+          planName,
+          investmentRange,
+          validityDays,
+          states,
+          totalLeads,
+          totalAmount
+        } = pkg;
+
+        if (
+          !planName ||
+          !investmentRange ||
+          !validityDays ||
+          !states ||
+          !Array.isArray(states) ||
+          states.length === 0 ||
+          totalLeads == null ||
+          totalAmount == null
+        ) {
+          throw new Error(`All fields are required in package index ${i}`);
+        }
+
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + validityDays);
+
+        return {
+          planName,
+          investmentRange,
+          validityDays,
+          states,
+          stateCount: states.length,
+          totalLeads,
+          remainingLeads: totalLeads,
+          totalAmount,
+          startDate,
+          endDate,
+          isExpired: false,
+          isActive: true
+        };
+      });
     }
 
-    /* ================= PREPARE PACKAGES ================= */
+    /* ================= PREPARE LISTING PACKAGES (OPTIONAL) ================= */
 
-    const preparedPackages = packages.map((pkg, i) => {
-      const {
-        planName,
-        investmentRange,
-        validityDays,
-        states,
-        totalLeads,
-        totalAmount
-      } = pkg;
+    let preparedListingPackages = [];
 
-      if (
-        !planName ||
-        !investmentRange ||
-        !validityDays ||
-        !states ||
-        !Array.isArray(states) ||
-        states.length === 0 ||
-        totalLeads == null ||
-        totalAmount == null
-      ) {
-        throw new Error(`All fields are required in package index ${i}`);
-      }
+    if (listingPackages && Array.isArray(listingPackages) && listingPackages.length > 0) {
+      preparedListingPackages = listingPackages.map((pkg, i) => {
+        const { name, amount, validityDays } = pkg;
 
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + validityDays);
+        if (!name || amount == null || !validityDays) {
+          throw new Error(`All fields are required in listing package index ${i}`);
+        }
 
-      return {
-        planName,
-        investmentRange,
-        validityDays,
-        states,
-        stateCount: states.length,
-        totalLeads,
-        remainingLeads: totalLeads,
-        totalAmount,
-        startDate,
-        endDate,
-        isExpired: false,
-        isActive: true
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + validityDays);
+
+        return {
+          name,
+          amount,
+          validityDays,
+          startDate,
+          endDate,
+          isExpired: false,
+          isActive: true
+        };
+      });
+    }
+
+    /* ================= BUILD UPDATE OBJECT ================= */
+
+    const updateQuery = {};
+
+    if (preparedPackages.length > 0) {
+      updateQuery.$push = {
+        ...(updateQuery.$push || {}),
+        packages: { $each: preparedPackages }
       };
-    });
+    }
 
-    /* ================= UPSERT (CREATE OR UPDATE) ================= */
+    if (preparedListingPackages.length > 0) {
+      updateQuery.$push = {
+        ...(updateQuery.$push || {}),
+        listingPackages: { $each: preparedListingPackages }
+      };
+    }
+
+    /* If nothing to insert */
+    if (!updateQuery.$push) {
+      return res.status(400).json({
+        success: false,
+        message: "Nothing to insert"
+      });
+    }
+
+    /* ================= UPSERT ================= */
 
     const brandPackages = await BrandPackages.findOneAndUpdate(
       { brandOwnerId },
-      {
-        $push: { packages: { $each: preparedPackages } }
-      },
+      updateQuery,
       {
         new: true,
-        upsert: true // if not exists → create
+        upsert: true
       }
     );
 
     return res.status(201).json({
       success: true,
-      message: "Packages created/added successfully",
+      message: "Packages stored successfully",
       data: brandPackages
     });
 
