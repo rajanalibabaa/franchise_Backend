@@ -1,131 +1,87 @@
-import { BrandPackages } from "../models/BrandPackages.js";
+import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 
 export const createBrandPackage = async (req, res) => {
   try {
     const { brandOwnerId, packages } = req.body;
 
     if (!brandOwnerId) {
-      return res.status(400).json({ message: "brandOwnerId is required" });
+      return res.status(400).json({ success: false, message: "brandOwnerId is required" });
     }
 
-    if (!packages || !Array.isArray(packages)) {
-      return res.status(400).json({ message: "packages must be array" });
+    if (!packages || !Array.isArray(packages) || packages.length === 0) {
+      return res.status(400).json({ success: false, message: "packages must be a non-empty array" });
     }
 
-    /* Prepare packages */
-    const preparedPackages = packages.map(pkg => {
-      const startDate = pkg.startDate ? new Date(pkg.startDate) : new Date();
+    /* ================= PREPARE PACKAGES ================= */
 
-      let endDate = pkg.endDate;
-      if (!endDate && pkg.validityDays) {
-        const end = new Date(startDate);
-        end.setDate(end.getDate() + pkg.validityDays);
-        endDate = end;
+    const preparedPackages = packages.map((pkg, i) => {
+      const {
+        planName,
+        investmentRange,
+        validityDays,
+        states,
+        totalLeads,
+        totalAmount
+      } = pkg;
+
+      if (
+        !planName ||
+        !investmentRange ||
+        !validityDays ||
+        !states ||
+        !Array.isArray(states) ||
+        states.length === 0 ||
+        totalLeads == null ||
+        totalAmount == null
+      ) {
+        throw new Error(`All fields are required in package index ${i}`);
       }
 
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + validityDays);
+
       return {
-        ...pkg,
+        planName,
+        investmentRange,
+        validityDays,
+        states,
+        stateCount: states.length,
+        totalLeads,
+        remainingLeads: totalLeads,
+        totalAmount,
         startDate,
         endDate,
-        stateCount: pkg.states ? pkg.states.length : 0,
-        remainingLeads: pkg.totalLeads
+        isExpired: false,
+        isActive: true
       };
     });
 
-    /* Check brand already exists */
-    let brandPackages = await BrandPackages.findOne({ brandOwnerId });
+    /* ================= UPSERT (CREATE OR UPDATE) ================= */
 
-    if (!brandPackages) {
-      /* Create new */
-      brandPackages = new BrandPackages({
-        brandOwnerId,
-        packages: preparedPackages
-      });
-    } else {
-      /* Push new packages */
-      brandPackages.packages.push(...preparedPackages);
-    }
+    const brandPackages = await BrandPackages.findOneAndUpdate(
+      { brandOwnerId },
+      {
+        $push: { packages: { $each: preparedPackages } }
+      },
+      {
+        new: true,
+        upsert: true // if not exists → create
+      }
+    );
 
-    await brandPackages.save();
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Packages created successfully",
+      message: "Packages created/added successfully",
       data: brandPackages
     });
 
   } catch (error) {
     console.error("createBrandPackage error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       success: false,
-      message: "Server error"
-    });
-  }
-};
-
-
-
-
-import { BrandPackages } from "../models/BrandPackages.js";
-
-export const createOrUpdateBrandPackage = async (req, res) => {
-  try {
-    const { brandOwnerId, packages } = req.body;
-
-    if (!brandOwnerId) {
-      return res.status(400).json({ message: "brandOwnerId is required" });
-    }
-
-    if (!packages || !Array.isArray(packages)) {
-      return res.status(400).json({ message: "packages must be array" });
-    }
-
-    let brandPackages = await BrandPackages.findOne({ brandOwnerId });
-
-    if (!brandPackages) {
-      brandPackages = new BrandPackages({
-        brandOwnerId,
-        packages: []
-      });
-    }
-
-    packages.forEach(newPkg => {
-
-      const existingPkg = brandPackages.packages.find(
-        p => p.investmentRange === newPkg.investmentRange
-      );
-
-      let finalRemainingLeads = newPkg.totalLeads;
-
-      /* if existing found -> add but DO NOT update existing */
-      if (existingPkg) {
-        finalRemainingLeads =
-          (existingPkg.remainingLeads || 0) + (newPkg.totalLeads || 0);
-      }
-
-      /* create only new package */
-      brandPackages.packages.push({
-        ...newPkg,
-        startDate: new Date(),
-        stateCount: newPkg.states ? newPkg.states.length : 0,
-        remainingLeads: finalRemainingLeads
-      });
-
-    });
-
-    await brandPackages.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Packages processed successfully",
-      data: brandPackages
-    });
-
-  } catch (error) {
-    console.error("createOrUpdateBrandPackage error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
+      message: error.message || "Server error"
     });
   }
 };
