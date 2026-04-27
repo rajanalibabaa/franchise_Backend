@@ -1,23 +1,34 @@
 import mongoose from "mongoose";
 
+/* ================= INVESTMENT RANGE ================= */
+const investmentRangeSchema = new mongoose.Schema(
+  { 
+    investmentRange: String,
+    states: [String],
+    statesCount: Number
+  },
+  { _id: true }
+);
+
 /* ================= PACKAGE SCHEMA ================= */
 const brandPackageSchema = new mongoose.Schema(
   {
+    PakageType: {
+      type: String,
+      enum: ["LISTING", "LEAD"],
+      required: true
+    },
+
     planName: {
       type: String,
       required: true
     },
 
-    investmentRange: String,
+    investmentRangeLabel: String,
+
+    individualInvestment: [investmentRangeSchema],
 
     validityDays: Number,
- 
-    states: [String],
-
-    stateCount: {
-      type: Number,
-      default: 0
-    },
 
     totalLeads: {
       type: Number,
@@ -34,18 +45,15 @@ const brandPackageSchema = new mongoose.Schema(
       required: true
     },
 
-    /* START DATE WITH TIME */
     startDate: {
       type: Date,
       default: () => new Date()
     },
 
-    /* END DATE WITH TIME */
     endDate: {
       type: Date
     },
 
-    /* OPTIONAL: AUTO EXPIRE FLAG */
     isExpired: {
       type: Boolean,
       default: false
@@ -60,47 +68,7 @@ const brandPackageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const listingPackagesSchema = new mongoose.Schema(
-  {
-    name:{
-      type: String,
-      required: true
-    },
-    amount: {
-      type: Number,
-      required: true
-    },
-    validityDays: {
-      type: Number,
-      required: true
-    },
-     /* START DATE WITH TIME */
-    startDate: {
-      type: Date,
-      default: () => new Date()
-    },
-    /* END DATE WITH TIME */
-    endDate: {
-      type: Date
-    },
-
-    /* OPTIONAL: AUTO EXPIRE FLAG */
-    isExpired: {
-      type: Boolean,
-      default: false
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true
-    }
-  },
-    
-  { timestamps: true },
-
-);
-
-/* ================= BRAND PACKAGES SCHEMA ================= */
+/* ================= MAIN SCHEMA ================= */
 
 const BrandPackagesSchema = new mongoose.Schema(
   {
@@ -111,9 +79,7 @@ const BrandPackagesSchema = new mongoose.Schema(
       required: true
     },
 
-    packages: [brandPackageSchema],
-    listingPackages: [listingPackagesSchema] 
-     
+    packages: [brandPackageSchema]
 
   },
   { timestamps: true }
