@@ -60,6 +60,45 @@ const brandPackageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const listingPackagesSchema = new mongoose.Schema(
+  {
+    name:{
+      type: String,
+      required: true
+    },
+    amount: {
+      type: Number,
+      required: true
+    },
+    validityDays: {
+      type: Number,
+      required: true
+    },
+     /* START DATE WITH TIME */
+    startDate: {
+      type: Date,
+      default: () => new Date()
+    },
+    /* END DATE WITH TIME */
+    endDate: {
+      type: Date
+    },
+
+    /* OPTIONAL: AUTO EXPIRE FLAG */
+    isExpired: {
+      type: Boolean,
+      default: false
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  },
+    
+  { timestamps: true },
+
+);
 
 /* ================= BRAND PACKAGES SCHEMA ================= */
 
@@ -72,7 +111,10 @@ const BrandPackagesSchema = new mongoose.Schema(
       required: true
     },
 
-    packages: [brandPackageSchema]
+    packages: [brandPackageSchema],
+    listingPackages: [listingPackagesSchema] 
+     
+
   },
   { timestamps: true }
 );
