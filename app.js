@@ -39,6 +39,7 @@ import { industryManagementRouter } from "./src/Routes/AdminRoutes/CMS/industryM
 import paymentplanCMS from "./src/Routes/AdminRoutes/CMS/packagePlan.js";
 import brandPackagePlansRouter from "./src/Routes/BrandPackagePlan/BrandPackagePlans.js";
 import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
+import paymentRoutes from "./src/Routes/LeadPackage/paymentRoutes.js";
 
 const router = express.Router();
 
@@ -127,6 +128,8 @@ router.use(brandPackagePlansRouter);
 
 //searchRoutes
 router.use(searchRoutes);
+
+router.use(paymentRoutes);  
 
 function getRoutes(router, basePath = "") {
   const routes = [];
