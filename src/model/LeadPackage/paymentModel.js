@@ -7,20 +7,24 @@ const paymentSchema = new mongoose.Schema(
     // User & Plan Information
 
     brandOwnerId: {
-      type: String,
-      ref: "BrandDetails",
-    },
-
+  type: String,
+  required: true,
+  index: true   // ✅ only index, NOT unique
+},
+customer: { 
+  brandID: String,
+  email: String,
+  phone: String,
+  name: String,
+},
     // Razorpay Identifiers
     orderId: {
       type: String,
-      // required: true,
-      unique: true,
+      required: true,
       index: true,
     },
     paymentId: {
       type: String,
-      unique: true,
       sparse: true,
       index: true,
     },
@@ -188,8 +192,7 @@ const paymentSchema = new mongoose.Schema(
   },
 );
 
-// Indexes for performance
-paymentSchema.index({ userId: 1, status: 1 });
+paymentSchema.index({ brandOwnerId: 1, status: 1 });
 paymentSchema.index({ createdAt: -1 });
 paymentSchema.index({ "settlement.settled": 1, status: 1 });
 paymentSchema.index({ "invoice.invoiceNumber": 1 }, { sparse: true });
@@ -206,13 +209,11 @@ paymentSchema.virtual("isSuccessful").get(function () {
 
 // Pre-save middleware for checksum
 paymentSchema.pre("save", function (next) {
-  if (this.isModified()) {
-    const dataString = `${this.orderId}|${this.amount}|${this.userId}`;
-    this.checksum = crypto
-      .createHash("sha256")
-      .update(dataString)
-      .digest("hex");
-  }
+  const dataString = `${this.orderId}|${this.amount}|${this.brandOwnerId}`;
+  this.checksum = crypto
+    .createHash("sha256")
+    .update(dataString)
+    .digest("hex");
   next();
 });
 

@@ -7,38 +7,31 @@ import crypto from "crypto";
 // ==============================
 export const createPayment = async (req, res) => {
   try {
-    const {brandOwnerId, amount,  packageName } = req.body;
+    const {
+      brandOwnerId,
+      amount,
+      packageName,
+      email,
+      phone,
+      name,
+      brandID,
+    } = req.body;
 
-    if ( !amount || !brandOwnerId || !packageName) {
+    if (!amount || !brandOwnerId || !packageName) {
       return res.status(400).json({
         success: false,
-        message: ("Missing required fields: " +
-          (!amount ? "amount " : "") +
-          (!brandOwnerId ? "brandOwnerId " : "") +
-          (!packageName ? "packageName" : "")).trim(),
+        message: "Missing required fields",
       });
     }
 
-    const idempotencyKey = req.headers["x-idempotency-key"];
-
-    // 🔁 Idempotency
-    if (idempotencyKey) {
-      const existing = await Payment.findOne({
-        "metadata.idempotencyKey": idempotencyKey,
-      });
-
-      if (existing) {
-        return res.json({ success: true, data: existing });
-      }
-    }
-
-    // 💳 Create Razorpay order
+    // ✅ Always create new Razorpay order
     const order = await razorpay.orders.create({
       amount: amount * 100,
       currency: "INR",
       receipt: `rcpt_${Date.now()}`,
     });
 
+    // ✅ Always create NEW DB record
     const payment = await Payment.create({
       brandOwnerId,
       packageName,
@@ -46,25 +39,39 @@ export const createPayment = async (req, res) => {
       amount,
       status: "initiated",
       paymentSuccess: false,
+      attemptCount: 1,
+      lastAttemptAt: new Date(),
+
+      customer: {
+        brandID,
+        email,
+        phone,
+        name,
+      },
+
       metadata: {
-        idempotencyKey,
         ipAddress: req.ip,
         userAgent: req.headers["user-agent"],
       },
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         orderId: order.id,
         key: process.env.RAZORPAY_KEY_ID,
-        amount: order.amount,
         currency: order.currency,
-        paymentDbId: payment._id,
+        amount: order.amount,
+        paymentId: payment._id,
       },
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("CREATE PAYMENT ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
