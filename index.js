@@ -23,7 +23,6 @@ import { mainSocket } from "./src/socket/mainSocket.js";
 import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 import dns from "dns";
 
-
 dotenv.config(); // ✅ Load env FIRST
 
 const app = express();
@@ -33,7 +32,6 @@ app.get("/api/image-proxy", async (req, res) => {
   try {
     const imageUrl = req.query.url;
 
-    console.log("Proxying image URL:", imageUrl);
 
     if (!imageUrl) {
       return res.status(400).send("Missing image URL");
@@ -183,7 +181,6 @@ const startServer = async () => {
 
     app.use("/api", limiter, allRouters);
     app.use("/api/v1/upload", limiter, s3Uploads);
-
     // ✅ This is for webhook verification
     app.get("/api/webhooks", webhookslimiter, (req, res) => {
       const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
