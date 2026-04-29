@@ -93,7 +93,7 @@ router.patch(
   ]),
   updateBrandListingByUUID,
 );
-router.patch(
+router.patch(  
   "/v1/brandlisting/updateBrandImageById/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },

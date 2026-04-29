@@ -27,8 +27,12 @@ export const getAllBrandsAndFilter = async (req, res) => {
       serchIndustry,
     } = req.query || {};
 
+    console.log("Received filters:", {
+      maincat,
+      subcat,
+    });
     const searchterm =
-      req.query.searchterm || req.query.searchTerm || req.query.serchterm;
+      req.query.searchterm || req.query.searchTerm || req.query.serchterm ;
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
@@ -457,6 +461,8 @@ const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry } = req.query;
 
+  console.log("query params:",req.query);
+
   // Generate cache key based on query params
   const cacheKey = JSON.stringify(req.query);
   const cachedData = cache.get(cacheKey);
@@ -517,6 +523,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
 
     // Handle sub category tags fetch
     if (sub) {
+
+      console.log("Fetching tags for sub:", sub);
       const industryName = main || industry;
       const normalizedSub = (sub || "").trim().toLowerCase();
       const tagQuery = ((req.query.tag || req.query.searchTerm || "").trim() || "").toLowerCase();
