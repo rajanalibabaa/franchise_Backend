@@ -121,7 +121,7 @@ export const upgradeBrandPackages = async (req, res) => {
     const { brandOwnerId, packages } = req.body;
 
     if (!brandOwnerId) {
-      return res.status(400).json({
+      return res.status(400).json({ 
         success: false,
         message: "brandOwnerId is required"
       

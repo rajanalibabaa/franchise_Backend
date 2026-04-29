@@ -1,3 +1,4 @@
+// import { number } from "joi";
 import mongoose from "mongoose";
 
 /* individual package */
@@ -10,10 +11,7 @@ const packageSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
-    totalLeads: {
-      type: Number,
-      required: true
-    }
+    totalLeads:[Number]
   },
   { _id: true }
 );
