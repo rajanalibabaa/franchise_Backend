@@ -20,7 +20,7 @@ const planSchema = new mongoose.Schema(
   { 
     packageType: {
       type: String,
-      enum: ["LISTING", "LEAD"],
+      enum: ["LISTING", "LEAD","FREE"],
       default: "LEAD"
     },
     planName: {
