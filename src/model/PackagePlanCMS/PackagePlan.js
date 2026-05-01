@@ -1,4 +1,4 @@
-// import { number } from "joi";
+
 import mongoose from "mongoose";
 
 /* individual package */
@@ -22,6 +22,14 @@ const planSchema = new mongoose.Schema(
       type: String,
       enum: ["LISTING", "LEAD","FREE"],
       default: "LEAD"
+    },
+    planUniqueId: {
+      type: String,
+      required: true
+    },
+    indexNumber: {
+      type: Number,
+      required: true
     },
     planName: {
       type: String,
