@@ -1,36 +1,35 @@
+import e from "express";
 import mongoose from "mongoose";
 
 /* ================= INVESTMENT RANGE ================= */
 const investmentRangeSchema = new mongoose.Schema(
-  { 
-    investmentRange: String,
-    states: [String],
-    statesCount: Number
+  {
+    selectedPlanInvestmetrange: {
+      type: String
+    },
+    selectedPlanState: [
+      {
+        type: String
+      }
+    ]
   },
   { _id: true }
 );
 
-/* ================= PACKAGE SCHEMA ================= */
-const brandPackageSchema = new mongoose.Schema(
+/* ================= INVESTMENT PACKAGE ================= */
+const investmetPackageSchema = new mongoose.Schema(
   {
-    PakageType: {
-      type: String,
-      enum: ["LISTING", "LEAD"],
-      required: true
+    InvestmetRageLabel: {
+      type: String
     },
 
-    planName: {
-      type: String,
-      required: true
+    investmentranges: [investmentRangeSchema],
+
+    Validity: {
+      type: String
     },
 
-    investmentRangeLabel: String,
-
-    individualInvestment: [investmentRangeSchema],
-
-    validityDays: Number,
-
-    totalLeads: {
+    TotalLeads: {
       type: Number,
       default: 0
     },
@@ -40,21 +39,20 @@ const brandPackageSchema = new mongoose.Schema(
       default: 0
     },
 
-    totalAmount: {
+    TotalAmount: {
       type: Number,
-      required: true
+      default: 0
     },
 
-    startDate: {
-      type: Date,
-      default: () => new Date()
-    },
-
-    endDate: {
+    StartDate: {
       type: Date
     },
 
-    isExpired: {
+    EndDate: {
+      type: Date
+    },
+
+    isExperied: {
       type: Boolean,
       default: false
     },
@@ -63,24 +61,49 @@ const brandPackageSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     }
-
   },
-  { timestamps: true }
+  { _id: true }
+);
+
+/* ================= PACKAGE ================= */
+const packageSchema = new mongoose.Schema(
+  {
+    packagesType: {
+      type: String,
+       enum: ["LISTING", "LEAD", "FREE"],
+       
+    },
+
+    packagesName: {
+      type: String
+    },
+
+    planId: {
+      type: String
+    },
+
+    InvestmetPackages: [investmetPackageSchema]
+  },
+  { _id: true }
 );
 
 /* ================= MAIN SCHEMA ================= */
-
 const BrandPackagesSchema = new mongoose.Schema(
   {
     brandOwnerId: {
       type: String,
-      unique: true,
-      ref: "BrandDetails",
       required: true
     },
 
-    packages: [brandPackageSchema]
+    Industry: {
+      type: String
+    },
 
+    Category: {
+      type: String
+    },
+
+    packages: [packageSchema]
   },
   { timestamps: true }
 );

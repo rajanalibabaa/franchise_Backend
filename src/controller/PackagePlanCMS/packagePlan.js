@@ -67,6 +67,7 @@ export const createPlan = async (req, res) => {
 export const getAllPlans = async (req, res) => {
   try {
     const doc = await Packages.findOne();
+console.log("docs",doc);
 
     if (!doc) {
       return res.status(200).json({
