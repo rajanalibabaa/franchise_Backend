@@ -25,6 +25,7 @@ import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
 import { createIntialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
 import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
+import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 
 export const likeandshortlist = async (id) => {
   let likedBrands = [];
@@ -512,37 +513,34 @@ const assignFreePlanToBrand = async (
     throw new Error("No FREE plan found");
   }
 
-  const freePackage = freePlan.packages?.[freePlan.packages.length - 1];
-
-  if (!freePackage) {
-    throw new Error("No FREE package found");
+  if (!freePlan.packages || freePlan.packages.length === 0) {
+    throw new Error("FREE plan has no packages");
   }
 
-  /* ================= BRAND DATA ================= */
+  const freePackage = freePlan.packages[0];
+
   const states = extractStatesFromExpansion(expansionLocationData);
   const brandRanges = extractInvestmentRanges(franchiseDetails);
 
-  if (brandRanges.length === 0) {
-    brandRanges.push("General"); // fallback
-  }
+  if (states.length === 0) states.push("All");
+  if (brandRanges.length === 0) brandRanges.push("General");
 
-  /* ================= LEADS ================= */
-  const totalLeadsValue = Array.isArray(freePackage.totalLeads)
-    ? Number(freePackage.totalLeads[0]) || 0
-    : Number(freePackage.totalLeads) || 0;
+  const totalLeadsValue = Number(
+    Array.isArray(freePackage.totalLeads)
+      ? freePackage.totalLeads[0]
+      : freePackage.totalLeads
+  ) || 0;
 
-  /* ================= BUILD RANGES ================= */
   const investmentranges = brandRanges.map((range) => ({
     selectedPlanInvestmetrange: range,
     selectedPlanState: states
   }));
 
-  /* ================= PACKAGE ================= */
   const packagesToAssign = [
     {
       packagesType: "FREE",
       packagesName: freePlan.planName,
-      planId: freePlan._id,
+      planId: freePlan.planUniqueId,
 
       InvestmetPackages: [
         {
@@ -559,7 +557,6 @@ const assignFreePlanToBrand = async (
           TotalAmount: 0,
 
           StartDate: new Date(),
-          EndDate: null,
 
           isExperied: false,
           isActive: true
@@ -568,22 +565,18 @@ const assignFreePlanToBrand = async (
     }
   ];
 
-  /* ================= SAVE ================= */
   const result = await createIntialPackages(
     brandOwnerId,
     packagesToAssign
   );
 
-  /* ================= ADD INDUSTRY + CATEGORY ================= */
-  await BrandPackages.updateOne(
-    { brandOwnerId },
-    {
-      $set: {
-        Industry,
-        Category
-      }
-    }
-  );
+  // ensure doc exists before update
+  if (result) {
+    await BrandPackages.updateOne(
+      { brandOwnerId },
+      { $set: { Industry, Category } }
+    );
+  }
 
   return result;
 };
