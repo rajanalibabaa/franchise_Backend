@@ -14,7 +14,7 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
 
   /* ================= PREPARE PACKAGES ================= */
   const preparedPackages = packages.map((pkg, i) => {
-    const { packagesType, packagesName, planId, InvestmetPackages } = pkg;
+    const { packagesType, packagesName, planUniqueId, InvestmetPackages } = pkg;
 
     if (!packagesType || !packagesName) {
       throw new Error(`Missing package fields at index ${i}`);
@@ -85,7 +85,7 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
     return {
       packagesType: type,
       packagesName,
-      planId: planId || "",
+      planUniqueId: planUniqueId || "",
       InvestmetPackages: processedInvestments
     };
   });
@@ -130,7 +130,7 @@ export const createBrandPackage = async (req, res) => {
     const formattedPackages = packages.map((pkg, i) => ({
       packagesType: pkg.packagesType || "",
       packagesName: pkg.packagesName || "",
-      planId: pkg.planId || "",
+      planUniqueId: pkg.planUniqueId || "",
 
       InvestmetPackages: (pkg.InvestmetPackages || []).map((inv, j) => {
         if (!inv) {

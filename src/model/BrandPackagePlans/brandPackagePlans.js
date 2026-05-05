@@ -78,7 +78,7 @@ const packageSchema = new mongoose.Schema(
       type: String
     },
 
-    planId: {
+    planUniqueId: {
       type: String
     },
 

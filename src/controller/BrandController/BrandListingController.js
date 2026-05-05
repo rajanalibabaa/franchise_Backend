@@ -540,7 +540,7 @@ const assignFreePlanToBrand = async (
     {
       packagesType: "FREE",
       packagesName: freePlan.planName,
-      planId: freePlan.planUniqueId,
+      planUniqueId: freePlan.planUniqueId,
 
       InvestmetPackages: [
         {
