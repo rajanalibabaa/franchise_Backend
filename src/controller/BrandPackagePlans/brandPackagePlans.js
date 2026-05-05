@@ -107,25 +107,152 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
   return result;
 };
 
+export const getBrandPackagesById = async (req, res) => {
+  try {
+    const { brandOwnerId } = req.params;
+    console.log("GET REQUEST for brandOwnerId:", brandOwnerId);
+
+    if (!brandOwnerId) {
+      return res.status(400).json({
+        success: false,
+        message: "brandOwnerId is required"
+      });
+    }
+
+    const data = await BrandPackages.findOne({ brandOwnerId }).lean();
+    console.log("GET DATA:", data);
 
 
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "No packages found for this brandOwnerId"
+      });
+    }
 
+    return res.status(200).json({
+      success: true,
+      data
+    });
 
+  } catch (error) {
+    console.error("GET ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
+export const upgradePlanController = async (req, res) => {
+  try {
+    const { brandOwnerId, packages } = req.body;
+    console.log("UPGRADE REQUEST:", { brandOwnerId, packages });
+
+    if (!brandOwnerId || !Array.isArray(packages)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid input"
+      });
+    }
+
+    // 🔍 Find brand
+    const brandDoc = await BrandPackages.findOne({ brandOwnerId });
+
+    if (!brandDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand not found"
+      });
+    }
+
+    // 🔁 Loop all incoming packages
+    for (const incomingPkg of packages) {
+      const {
+        packagesType,
+        packagesName,
+        planUniqueId,
+        InvestmetPackages = []
+      } = incomingPkg;
+
+      // 🔍 Check existing plan
+      const existingPlan = brandDoc.packages.find(
+        (pkg) => pkg.planUniqueId === planUniqueId
+      );
+
+      // =========================================
+      // ✅ CASE 1: PLAN EXISTS → PUSH INSIDE
+      // =========================================
+      if (existingPlan) {
+        const formattedPackages = InvestmetPackages.map((pkg) => ({
+          ...pkg,
+          remainingLeads: pkg.TotalLeads || 0,
+          StartDate: new Date(),
+          EndDate: new Date(
+            Date.now() + Number(pkg.Validity || 0) * 24 * 60 * 60 * 1000
+          ),
+          isExperied: false,
+          isActive: true
+        }));
+
+        existingPlan.InvestmetPackages.push(...formattedPackages);
+      }
+
+      // =========================================
+      // ✅ CASE 2: PLAN NOT EXISTS → CREATE NEW
+      // =========================================
+      else {
+        const formattedPackages = InvestmetPackages.map((pkg) => ({
+          ...pkg,
+          remainingLeads: pkg.TotalLeads || 0,
+          StartDate: new Date(),
+          EndDate: new Date(
+            Date.now() + Number(pkg.Validity || 0) * 24 * 60 * 60 * 1000
+          ),
+          isExperied: false,
+          isActive: true
+        }));
+
+        brandDoc.packages.push({
+          packagesType,
+          packagesName,
+          planUniqueId,
+          InvestmetPackages: formattedPackages
+        });
+      }
+    }
+
+    await brandDoc.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Packages upgraded successfully",
+      data: brandDoc
+    });
+
+  } catch (error) {
+    console.error("Upgrade Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
 
 
 export const updateBrandPackages = async (req, res) => {
   try {
     const {
       brandOwnerId,
-      planId,
+      planUniqueId,
       investmetPackageId,
       updates = [],
       newRanges = [],
       deleteRangeIds = []   // ✅ NEW
     } = req.body;
 
-    if (!brandOwnerId || !planId || !investmetPackageId) {
+    if (!brandOwnerId || !planUniqueId || !investmetPackageId) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
@@ -148,7 +275,7 @@ export const updateBrandPackages = async (req, res) => {
       const invRangeId = new mongoose.Types.ObjectId(investmentRangeId);
 
       const arrayFilters = [
-        { "pkg.planId": planId },
+        { "pkg.planUniqueId": planUniqueId },
         { "invPkg._id": investPkgId },
         { "invRange._id": invRangeId }
       ];
@@ -213,7 +340,7 @@ export const updateBrandPackages = async (req, res) => {
         },
         {
           arrayFilters: [
-            { "pkg.planId": planId },
+            { "pkg.planUniqueId": planUniqueId },
             { "invPkg._id": investPkgId }
           ]
         }
@@ -239,7 +366,7 @@ export const updateBrandPackages = async (req, res) => {
         },
         {
           arrayFilters: [
-            { "pkg.planId": planId },
+            { "pkg.planUniqueId": planUniqueId },
             { "invPkg._id": investPkgId }
           ]
         }
