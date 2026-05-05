@@ -1,5 +1,5 @@
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
-
+import mongoose from "mongoose";
 
 
 export const createIntialPackages = async (brandOwnerId, packages) => {
@@ -107,102 +107,158 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
   return result;
 };
 
-export const createBrandPackage = async (req, res) => {
+
+
+
+
+
+
+
+export const updateBrandPackages = async (req, res) => {
   try {
-    const { brandOwnerId, Industry, Category, packages } = req.body;
+    const {
+      brandOwnerId,
+      planId,
+      investmetPackageId,
+      updates = [],
+      newRanges = [],
+      deleteRangeIds = []   // ✅ NEW
+    } = req.body;
 
-    /* ========= BASIC VALIDATION ========= */
-    if (!brandOwnerId) {
+    if (!brandOwnerId || !planId || !investmetPackageId) {
       return res.status(400).json({
         success: false,
-        message: "brandOwnerId is required"
+        message: "Missing required fields"
       });
     }
 
-    if (!packages || !Array.isArray(packages) || packages.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "packages array is required"
-      });
+    const investPkgId = new mongoose.Types.ObjectId(investmetPackageId);
+
+    /* ================= UPDATE EXISTING ================= */
+    for (const item of updates) {
+      const {
+        investmentRangeId,
+        selectedPlanInvestmetrange,
+        addStates = [],
+        removeStates = []
+      } = item;
+
+      if (!investmentRangeId) continue;
+
+      const invRangeId = new mongoose.Types.ObjectId(investmentRangeId);
+
+      const arrayFilters = [
+        { "pkg.planId": planId },
+        { "invPkg._id": investPkgId },
+        { "invRange._id": invRangeId }
+      ];
+
+      // 1. update range
+      if (selectedPlanInvestmetrange) {
+        await BrandPackages.updateOne(
+          { brandOwnerId },
+          {
+            $set: {
+              "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanInvestmetrange":
+                selectedPlanInvestmetrange
+            }
+          },
+          { arrayFilters }
+        );
+      }
+
+      // 2. remove states
+      if (removeStates.length > 0) {
+        await BrandPackages.updateOne(
+          { brandOwnerId },
+          {
+            $pull: {
+              "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanState": {
+                $in: removeStates
+              }
+            }
+          },
+          { arrayFilters }
+        );
+      }
+
+      // 3. add states
+      if (addStates.length > 0) {
+        await BrandPackages.updateOne(
+          { brandOwnerId },
+          {
+            $addToSet: {
+              "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanState": {
+                $each: addStates
+              }
+            }
+          },
+          { arrayFilters }
+        );
+      }
     }
 
-    /* ========= FORMAT DATA (NO STRUCTURE CHANGE) ========= */
-    const formattedPackages = packages.map((pkg, i) => ({
-      packagesType: pkg.packagesType || "",
-      packagesName: pkg.packagesName || "",
-      planUniqueId: pkg.planUniqueId || "",
-
-      InvestmetPackages: (pkg.InvestmetPackages || []).map((inv, j) => {
-        if (!inv) {
-          throw new Error(`InvestmetPackages missing at package ${i}`);
+    /* ================= DELETE RANGES (NEW) ================= */
+    if (deleteRangeIds.length > 0) {
+      await BrandPackages.updateOne(
+        { brandOwnerId },
+        {
+          $pull: {
+            "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges": {
+              _id: {
+                $in: deleteRangeIds.map(id => new mongoose.Types.ObjectId(id))
+              }
+            }
+          }
+        },
+        {
+          arrayFilters: [
+            { "pkg.planId": planId },
+            { "invPkg._id": investPkgId }
+          ]
         }
-
-        return {
-          InvestmetRageLabel: inv.InvestmetRageLabel || "",
-
-          investmentranges: (inv.investmentranges || []).map((range) => ({
-            selectedPlanInvestmetrange:
-              range.selectedPlanInvestmetrange || "",
-            selectedPlanState: range.selectedPlanState || []
-          })),
-
-          /* ===== TYPE FIX ===== */
-          Validity: inv.Validity || "",
-
-          TotalLeads: Number(inv.TotalLeads) || 0,
-          remainingLeads: Number(inv.remainingLeads) || 0,
-          TotalAmount: Number(inv.TotalAmount) || 0,
-
-          StartDate: inv.StartDate ? new Date(inv.StartDate) : null,
-          EndDate: inv.EndDate ? new Date(inv.EndDate) : null,
-
-          isExperied: inv.isExperied || false,
-          isActive: inv.isActive ?? true
-        };
-      })
-    }));
-
-    /* ========= CHECK EXISTING ========= */
-    let existing = await BrandPackages.findOne({ brandOwnerId });
-
-    let result;
-
-    if (existing) {
-      // APPEND NEW PACKAGES
-      existing.Industry = Industry || existing.Industry;
-      existing.Category = Category || existing.Category;
-
-      existing.packages.push(...formattedPackages);
-
-      result = await existing.save();
-    } else {
-      // CREATE NEW
-      result = await BrandPackages.create({
-        brandOwnerId,
-        Industry,
-        Category,
-        packages: formattedPackages
-      });
+      );
     }
 
-    /* ========= RESPONSE ========= */
+    /* ================= ADD NEW RANGES ================= */
+    if (newRanges.length > 0) {
+      const formatted = newRanges.map(r => ({
+        _id: new mongoose.Types.ObjectId(),
+        selectedPlanInvestmetrange: r.selectedPlanInvestmetrange,
+        selectedPlanState: r.selectedPlanState || []
+      }));
+
+      await BrandPackages.updateOne(
+        { brandOwnerId },
+        {
+          $push: {
+            "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges": {
+              $each: formatted
+            }
+          }
+        },
+        {
+          arrayFilters: [
+            { "pkg.planId": planId },
+            { "invPkg._id": investPkgId }
+          ]
+        }
+      );
+    }
+
+    const updatedDoc = await BrandPackages.findOne({ brandOwnerId });
+
     return res.status(200).json({
       success: true,
-      message: existing
-        ? "Packages updated successfully"
-        : "Packages created successfully",
-      totalPackages: result.packages.length,
-      data: result
+      message: "Update / Add / Delete operations completed",
+      data: updatedDoc
     });
 
-  } catch (error) {
-    console.error("createBrandPackage error:", error);
-
+  } catch (err) {
+    console.error(err);
     return res.status(500).json({
       success: false,
-      message: "Something went wrong",
-      error: error.message
+      message: err.message
     });
   }
 };
-

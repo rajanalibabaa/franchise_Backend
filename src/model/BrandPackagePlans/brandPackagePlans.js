@@ -9,7 +9,8 @@ const investmentRangeSchema = new mongoose.Schema(
     },
     selectedPlanState: [
       {
-        type: String
+        type: String,
+          default: []
       }
     ]
   },
@@ -23,7 +24,10 @@ const investmetPackageSchema = new mongoose.Schema(
       type: String
     },
 
-    investmentranges: [investmentRangeSchema],
+     investmentranges: {
+      type: [investmentRangeSchema],
+      default: []
+    },
 
     Validity: {
       type: String
@@ -103,7 +107,10 @@ const BrandPackagesSchema = new mongoose.Schema(
       type: String
     },
 
-    packages: [packageSchema]
+   packages: {
+      type: [packageSchema],
+      default: []
+    }
   },
   { timestamps: true }
 );
