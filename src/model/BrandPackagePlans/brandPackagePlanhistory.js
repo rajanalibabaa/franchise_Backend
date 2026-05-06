@@ -92,7 +92,7 @@ const packageSchema = new mongoose.Schema(
 );
 
 /* ================= MAIN SCHEMA ================= */
-const BrandPackagesSchema = new mongoose.Schema(
+const BrandPackagesHistorySchema = new mongoose.Schema(
   {
     brandOwnerId: {
       type: String,
@@ -115,7 +115,7 @@ const BrandPackagesSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const BrandPackages = mongoose.model(
-  "BrandPackages",
-  BrandPackagesSchema
+export const BrandPackagesHistory = mongoose.model(
+  "BrandPackagesHistory",
+  BrandPackagesHistorySchema
 );
