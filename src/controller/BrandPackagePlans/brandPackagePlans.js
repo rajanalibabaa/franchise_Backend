@@ -107,8 +107,62 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
   return result;
 };
 
+export const upgradeBrandPackages = async (req, res) => {
+  try {
+    const { brandOwnerId, planUniqueId, InvestmetRageLabel } = req.body;
 
+    if (!brandOwnerId || !planUniqueId || !InvestmetRageLabel) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields"
+      });
+    }
 
+    const brand = await BrandPackages.findOne({ brandOwnerId });
+
+    if (!brand) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand not found"
+      });
+    }
+
+    let updated = false;
+
+    brand.packages.forEach(pkg => {
+      if (pkg.planUniqueId === planUniqueId) {
+        pkg.InvestmetPackages.forEach(inv => {
+          if (inv._id.toString() === investmetPackageId) {
+            inv.isActive = true;
+            inv.isExperied = false;
+            updated = true;
+          }
+        });
+      }
+    });
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Investment package not found"
+      });
+    }
+
+    await brand.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Package upgraded successfully",
+      data: brand
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
 
 
 
