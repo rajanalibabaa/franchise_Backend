@@ -465,15 +465,15 @@ const extractStatesFromExpansion = (expansionLocationData) => {
     expansionLocationData?.expansionLocations?.domestic?.locations || [];
 
   domestic.forEach((loc) => {
-    if (loc.state) states.add(loc.state);
-
-    (loc.districts || []).forEach((d) => {
-      if (d.district) states.add(d.district);
-    });
+    if (loc?.state) {
+      states.add(loc.state);
+    }
   });
 
   return Array.from(states);
 };
+
+
 const extractInvestmentRanges = (franchiseDetails) => {
   const ranges = new Set();
 
