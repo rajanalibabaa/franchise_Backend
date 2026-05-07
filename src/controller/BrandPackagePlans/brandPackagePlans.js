@@ -122,7 +122,7 @@ export const getBrandPackagesById = async (req, res) => {
     }
 
     const data = await BrandPackages.findOne({ brandOwnerId }).lean();
-    console.log("GET DATA:", data);
+    console.log("BrandPackages");
 
 
     if (!data) {
@@ -391,6 +391,43 @@ export const updateBrandPackages = async (req, res) => {
   }
 };
 
+export const getBrandPackagesHistoryById = async (req, res) => {
+  try {
+    const { brandOwnerId } = req.params;
+    console.log("GET REQUEST for brandOwnerId:", brandOwnerId);
+
+    if (!brandOwnerId) {
+      return res.status(400).json({
+        success: false,
+        message: "brandOwnerId is required"
+      });
+    }
+
+    const data = await BrandPackagesHistory.findOne({ brandOwnerId }).lean();
+console.log("brandPackagesHistory");
+
+// console.log("GET DATA:", data);
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "No packages found for this brandOwnerId"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+
+  } catch (error) {
+    console.error("GET ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 export const brandPackageHistory = async (req, res) => {
   try {
     const { brandOwnerId } = req.params;
@@ -499,7 +536,7 @@ export const brandPackageHistory = async (req, res) => {
 
 export const startBrandExpiryJob = () => {
   // ⏱️ Runs every day at 12:00 AM
-cron.schedule("*/10 * * * * *", async() => {
+cron.schedule("*/5 * * * *", async() => {
     console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
