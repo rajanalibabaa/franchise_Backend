@@ -534,9 +534,98 @@ export const brandPackageHistory = async (req, res) => {
   }
 };
 
+// export const startBrandExpiryJob = () => {
+//   // ⏱️ Runs every day at 12:00 AM
+// cron.schedule("*/5 * * * *", async() => {
+//     console.log("🔄 Running Brand Expiry Cron Job...");
+
+//     try {
+//       const brands = await BrandPackages.find();
+
+//       for (const brand of brands) {
+//         const expiredPackages = [];
+//         const updatedPackages = [];
+
+//         brand.packages.forEach((pkg) => {
+//           const expired = [];
+//           const active = [];
+
+//           pkg.InvestmetPackages.forEach((inv) => {
+//             if (inv.EndDate && new Date(inv.EndDate) < new Date()) {
+//               // ✅ Mark expired
+//               inv.isExperied = true;
+//               inv.isActive = false;
+
+//               expired.push(inv);
+//             } else {
+//               active.push(inv);
+//             }
+//           });
+
+//           // collect expired
+//           if (expired.length > 0) {
+//             expiredPackages.push({
+//               packagesType: pkg.packagesType,
+//               packagesName: pkg.packagesName,
+//               planUniqueId: pkg.planUniqueId,
+//               InvestmetPackages: expired,
+//             });
+//           }
+
+//           // keep active in main
+//           updatedPackages.push({
+//             ...pkg.toObject(),
+//             InvestmetPackages: active,
+//           });
+//         });
+
+//         if (expiredPackages.length === 0) continue;
+
+//         // 🔁 Handle history
+//         let historyDoc = await BrandPackagesHistory.findOne({
+//           brandOwnerId: brand.brandOwnerId,
+//         });
+
+//         if (!historyDoc) {
+//           await BrandPackagesHistory.create({
+//             brandOwnerId: brand.brandOwnerId,
+//             Industry: brand.Industry,
+//             Category: brand.Category,
+//             packages: expiredPackages,
+//           });
+//         } else {
+//           expiredPackages.forEach((newPkg) => {
+//             const existingPkg = historyDoc.packages.find(
+//               (p) => p.planUniqueId === newPkg.planUniqueId
+//             );
+
+//             if (existingPkg) {
+//               existingPkg.InvestmetPackages.push(
+//                 ...newPkg.InvestmetPackages
+//               );
+//             } else {
+//               historyDoc.packages.push(newPkg);
+//             }
+//           });
+
+//           await historyDoc.save();
+//         }
+
+//         // 🧹 Update main collection (remove expired)
+//         brand.packages = updatedPackages;
+//         await brand.save();
+//       }
+
+//       console.log("✅ Brand Expiry Cron Job Completed");
+//     } catch (error) {
+//       console.error("❌ Cron Job Error:", error);
+//     }
+//   });
+// };
+
 export const startBrandExpiryJob = () => {
-  // ⏱️ Runs every day at 12:00 AM
-cron.schedule("*/5 * * * *", async() => {
+  // ⏱️ Runs every 5 minutes
+  cron.schedule("*/5 * * * *", async () => {
     console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
@@ -551,18 +640,28 @@ cron.schedule("*/5 * * * *", async() => {
           const active = [];
 
           pkg.InvestmetPackages.forEach((inv) => {
-            if (inv.EndDate && new Date(inv.EndDate) < new Date()) {
-              // ✅ Mark expired
+
+            // ✅ ONLY CHECK remainingLeads
+            const isLeadFinished = inv.remainingLeads <= 0;
+
+            if (isLeadFinished) {
+
+              // ✅ Mark inactive & expired
               inv.isExperied = true;
               inv.isActive = false;
 
-              expired.push(inv);
+              expired.push({
+                ...inv.toObject(),
+                isExperied: true,
+                isActive: false,
+              });
+
             } else {
               active.push(inv);
             }
           });
 
-          // collect expired
+          // ✅ Push expired packages to history
           if (expired.length > 0) {
             expiredPackages.push({
               packagesType: pkg.packagesType,
@@ -572,51 +671,70 @@ cron.schedule("*/5 * * * *", async() => {
             });
           }
 
-          // keep active in main
+          // ✅ Keep only active packages
           updatedPackages.push({
             ...pkg.toObject(),
             InvestmetPackages: active,
           });
         });
 
+        // ⛔ Skip if no expired packages
         if (expiredPackages.length === 0) continue;
 
-        // 🔁 Handle history
+        /* ======================================================
+           SAVE INTO HISTORY COLLECTION
+        ====================================================== */
+
         let historyDoc = await BrandPackagesHistory.findOne({
           brandOwnerId: brand.brandOwnerId,
         });
 
         if (!historyDoc) {
+
           await BrandPackagesHistory.create({
             brandOwnerId: brand.brandOwnerId,
             Industry: brand.Industry,
             Category: brand.Category,
             packages: expiredPackages,
           });
+
         } else {
+
           expiredPackages.forEach((newPkg) => {
+
             const existingPkg = historyDoc.packages.find(
               (p) => p.planUniqueId === newPkg.planUniqueId
             );
 
             if (existingPkg) {
+
               existingPkg.InvestmetPackages.push(
                 ...newPkg.InvestmetPackages
               );
+
             } else {
+
               historyDoc.packages.push(newPkg);
+
             }
           });
 
           await historyDoc.save();
         }
 
-        // 🧹 Update main collection (remove expired)
-        brand.packages = updatedPackages;
+        /* ======================================================
+           REMOVE EXPIRED FROM MAIN COLLECTION
+        ====================================================== */
+
+        brand.packages = updatedPackages.filter(
+          (pkg) => pkg.InvestmetPackages.length > 0
+        );
+
         await brand.save();
       }
 
       console.log("✅ Brand Expiry Cron Job Completed");
+
     } catch (error) {
       console.error("❌ Cron Job Error:", error);
     }
