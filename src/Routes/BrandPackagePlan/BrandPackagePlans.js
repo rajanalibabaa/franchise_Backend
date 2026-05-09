@@ -1,6 +1,6 @@
 import express from "express";
 
-import {createIntialPackages,updateBrandPackages,getBrandPackagesById,upgradePlanController,brandPackageHistory,getBrandPackagesHistoryById} from "../../controller/BrandPackagePlans/brandPackagePlans.js";
+import {createIntialPackages,updateBrandPackages,getBrandPackagesById,upgradePlanController,brandPackageHistory,getBrandPackagesHistoryById,ActivePackageStatus} from "../../controller/BrandPackagePlans/brandPackagePlans.js";
 
 const brandPackagePlansRouter = express.Router();
 
@@ -11,4 +11,5 @@ brandPackagePlansRouter.patch("/v1/brand-packages-plans/upgrade", upgradePlanCon
 brandPackagePlansRouter.get("/v1/brand-packages-plans/get/:brandOwnerId", getBrandPackagesById);
 brandPackagePlansRouter.get("/v1/brand-packages-plans/update-history/:brandOwnerId", brandPackageHistory);
 brandPackagePlansRouter.get("/v1/brand-packages-plans/get-history/:brandOwnerId", getBrandPackagesHistoryById);
+brandPackagePlansRouter.post("/v1/brand-packages-plans/active-package-status", ActivePackageStatus);
 export default brandPackagePlansRouter;

@@ -1,6 +1,25 @@
 
 import mongoose from "mongoose";
 
+
+const pauseHistorySchema = new mongoose.Schema(
+  {
+    pausedDate: {
+      type: Date,
+    },
+
+    playDate: {
+      type: Date,
+    },
+
+    balanceDays: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: true },
+);
+
 /* ================= INVESTMENT RANGE ================= */
 const investmentRangeSchema = new mongoose.Schema(
   {
@@ -55,7 +74,14 @@ const investmetPackageSchema = new mongoose.Schema(
     EndDate: {
       type: Date
     },
-
+      isPaused: {
+      type: Boolean,
+      default: false,
+    },
+    pauseHistory: {
+      type: [pauseHistorySchema],
+      default: [],
+    },
     isExperied: {
       type: Boolean,
       default: false

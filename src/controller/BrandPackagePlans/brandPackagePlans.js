@@ -740,3 +740,315 @@ export const startBrandExpiryJob = () => {
     }
   });
 };
+
+export const pauseBrandPackage = async (req, res) => {
+  try {
+    const {
+      brandOwnerId,
+      packageId,
+      investmetPackageId
+    } = req.body;
+
+    if (!brandOwnerId || !packageId || !investmetPackageId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "brandOwnerId, packageId and investmetPackageId are required"
+      });
+    }
+
+    const brandPackage = await BrandPackages.findOne({
+      brandOwnerId
+    });
+
+    if (!brandPackage) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand package not found"
+      });
+    }
+
+    const packageData = brandPackage.packages.id(packageId);
+
+    if (!packageData) {
+      return res.status(404).json({
+        success: false,
+        message: "Package not found"
+      });
+    }
+
+    const investmentPackage =
+      packageData.InvestmetPackages.id(investmetPackageId);
+
+    if (!investmentPackage) {
+      return res.status(404).json({
+        success: false,
+        message: "Investment package not found"
+      });
+    }
+
+    /* already paused */
+    if (investmentPackage.isPaused) {
+      return res.status(400).json({
+        success: false,
+        message: "Package already paused"
+      });
+    }
+
+    const currentDate = new Date();
+
+    /* calculate remaining days */
+    const endDate = new Date(investmentPackage.EndDate);
+
+    const balanceMilliseconds = endDate - currentDate;
+
+    const balanceDays = Math.ceil(
+      balanceMilliseconds / (1000 * 60 * 60 * 24)
+    );
+
+    investmentPackage.isPaused = true;
+
+    investmentPackage.pauseHistory.push({
+      pausedDate: currentDate,
+      balanceDays:
+        balanceDays > 0 ? balanceDays : 0
+    });
+
+    await brandPackage.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Package paused successfully",
+      data: investmentPackage
+    });
+  } catch (error) {
+    console.log("pauseBrandPackage Error", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+export const resumeBrandPackage = async (req, res) => {
+  try {
+    const {
+      brandOwnerId,
+      packageId,
+      investmetPackageId
+    } = req.body;
+
+    if (!brandOwnerId || !packageId || !investmetPackageId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "brandOwnerId, packageId and investmetPackageId are required"
+      });
+    }
+
+    const brandPackage = await BrandPackages.findOne({
+      brandOwnerId
+    });
+
+    if (!brandPackage) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand package not found"
+      });
+    }
+
+    const packageData = brandPackage.packages.id(packageId);
+
+    if (!packageData) {
+      return res.status(404).json({
+        success: false,
+        message: "Package not found"
+      });
+    }
+
+    const investmentPackage =
+      packageData.InvestmetPackages.id(investmetPackageId);
+
+    if (!investmentPackage) {
+      return res.status(404).json({
+        success: false,
+        message: "Investment package not found"
+      });
+    }
+
+    if (!investmentPackage.isPaused) {
+      return res.status(400).json({
+        success: false,
+        message: "Package is not paused"
+      });
+    }
+
+    const currentDate = new Date();
+
+    /* get latest pause record */
+    const latestPause =
+      investmentPackage.pauseHistory[
+        investmentPackage.pauseHistory.length - 1
+      ];
+
+    if (!latestPause) {
+      return res.status(400).json({
+        success: false,
+        message: "Pause history not found"
+      });
+    }
+
+    latestPause.playDate = currentDate;
+
+    /* extend end date using balance days */
+    const newEndDate = new Date(currentDate);
+
+    newEndDate.setDate(
+      newEndDate.getDate() + latestPause.balanceDays
+    );
+
+    investmentPackage.EndDate = newEndDate;
+
+    investmentPackage.isPaused = false;
+
+    await brandPackage.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Package resumed successfully",
+      data: investmentPackage
+    });
+  } catch (error) {
+    console.log("resumeBrandPackage Error", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+import { t } from "i18next";
+
+
+export const ActivePackageStatus = async (req, res) => {
+  try {
+    const { brandOwnerId, plandata } = req.body;
+
+    /* ================= VALIDATION ================= */
+    if (!brandOwnerId) {
+      return res.status(400).json({
+        success: false,
+        message: "brandOwnerId is required",
+      });
+    }
+
+    if (!Array.isArray(plandata) || plandata.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "plandata must be a non-empty array",
+      });
+    }
+
+    /* ================= FIND BRAND ================= */
+    const brandPackage = await BrandPackages.findOne({
+      brandOwnerId,
+    });
+
+    if (!brandPackage) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand package not found",
+      });
+    }
+
+    /* ================= LOOP ================= */
+    for (const item of plandata) {
+      const {
+        PlanuniqueId,
+        _id,
+        isActive,
+      } = item;
+
+      /* _id must be array */
+      if (!Array.isArray(_id) || _id.length === 0) {
+        continue;
+      }
+
+      /* ================= FIND PACKAGE ================= */
+      const packageData = brandPackage.packages.find(
+        (pkg) => pkg.planUniqueId === PlanuniqueId
+      );
+
+      if (!packageData) continue;
+
+      /* ================= MULTIPLE IDS LOOP ================= */
+      for (const investmentId of _id) {
+
+        const investmentPackage =
+          packageData.InvestmetPackages.id(investmentId);
+
+        if (!investmentPackage) continue;
+
+        /* ================= UPDATE ACTIVE ================= */
+        investmentPackage.isActive = isActive;
+
+        /* ================= WHEN ACTIVE TRUE ================= */
+        if (isActive === true) {
+
+          investmentPackage.isVerified = true;
+
+          const currentDate = new Date();
+
+          investmentPackage.StartDate = currentDate;
+
+          /* validity days */
+          const validityDays = Number(
+            investmentPackage.Validity || 0
+          );
+
+          const endDate = new Date(currentDate);
+
+          endDate.setDate(
+            endDate.getDate() + validityDays
+          );
+
+          investmentPackage.EndDate = endDate;
+
+          investmentPackage.isExperied = false;
+        }
+
+        /* ================= WHEN ACTIVE FALSE ================= */
+        if (isActive === false) {
+
+          investmentPackage.isVerified = false;
+
+        }
+      }
+    }
+
+    /* ================= SAVE ================= */
+    await brandPackage.save();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Investment package status updated successfully",
+      data: brandPackage,
+    });
+
+  } catch (error) {
+
+    console.log(
+      "updateInvestmentPackageStatus Error",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
