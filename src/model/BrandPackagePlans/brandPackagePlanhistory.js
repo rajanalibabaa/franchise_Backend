@@ -1,6 +1,4 @@
-
 import mongoose from "mongoose";
-
 
 const pauseHistorySchema = new mongoose.Schema(
   {
@@ -24,57 +22,61 @@ const pauseHistorySchema = new mongoose.Schema(
 const investmentRangeSchema = new mongoose.Schema(
   {
     selectedPlanInvestmetrange: {
-      type: String
+      type: String,
     },
     selectedPlanState: [
       {
         type: String,
-          default: []
-      }
-    ]
+        default: [],
+      },
+    ],
   },
-  { _id: true }
+  { _id: true },
 );
 
 /* ================= INVESTMENT PACKAGE ================= */
 const investmetPackageSchema = new mongoose.Schema(
   {
     InvestmetRageLabel: {
-      type: String
+      type: String,
     },
 
-     investmentranges: {
+    investmentranges: {
       type: [investmentRangeSchema],
-      default: []
+      default: [],
     },
 
     Validity: {
-      type: String
+      type: String,
     },
 
     TotalLeads: {
       type: Number,
-      default: 0
+      default: 0,
     },
 
     remainingLeads: {
       type: Number,
-      default: 0
+      default: 0,
     },
 
     TotalAmount: {
       type: Number,
-      default: 0
+      default: 0,
     },
-
-    StartDate: {
-      type: Date
+    PackageStartDate: {
+      type: Date,
     },
-
-    EndDate: {
-      type: Date
+    PackageEndDate: {
+      type: Date,
     },
-      isPaused: {
+    CurrentDate: {
+      type: Date,
+    },
+    RenewalEndDate: {
+      type: Date,
+    },
+    isPaused: {
       type: Boolean,
       default: false,
     },
@@ -84,15 +86,15 @@ const investmetPackageSchema = new mongoose.Schema(
     },
     isExperied: {
       type: Boolean,
-      default: false
+      default: false,
     },
 
     isActive: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
-  { _id: true }
+  { _id: true },
 );
 
 /* ================= PACKAGE ================= */
@@ -100,21 +102,20 @@ const packageSchema = new mongoose.Schema(
   {
     packagesType: {
       type: String,
-       enum: ["LISTING", "LEAD", "FREE"],
-       
+      enum: ["LISTING", "LEAD", "FREE"],
     },
 
     packagesName: {
-      type: String
+      type: String,
     },
 
     planUniqueId: {
-      type: String
+      type: String,
     },
 
-    InvestmetPackages: [investmetPackageSchema]
+    InvestmetPackages: [investmetPackageSchema],
   },
-  { _id: true }
+  { _id: true },
 );
 
 /* ================= MAIN SCHEMA ================= */
@@ -122,26 +123,26 @@ const BrandPackagesHistorySchema = new mongoose.Schema(
   {
     brandOwnerId: {
       type: String,
-      required: true
+      required: true,
     },
 
     Industry: {
-      type: String
+      type: String,
     },
 
     Category: {
-      type: String
+      type: String,
     },
 
-   packages: {
+    packages: {
       type: [packageSchema],
-      default: []
-    }
+      default: [],
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const BrandPackagesHistory = mongoose.model(
   "BrandPackagesHistory",
-  BrandPackagesHistorySchema
+  BrandPackagesHistorySchema,
 );

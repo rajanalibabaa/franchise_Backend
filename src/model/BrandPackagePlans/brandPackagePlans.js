@@ -66,11 +66,16 @@ const investmetPackageSchema = new mongoose.Schema(
       default: 0,
     },
 
-    StartDate: {
+    PackageStartDate: {
       type: Date,
     },
-
-    EndDate: {
+    PackageEndDate: {
+      type: Date,
+    },
+    CurrentDate: {
+      type: Date,
+    },
+    RenewalEndDate: {
       type: Date,
     },
     isPaused: {
@@ -85,7 +90,6 @@ const investmetPackageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
     isActive: {
       type: Boolean,
       default: false,
