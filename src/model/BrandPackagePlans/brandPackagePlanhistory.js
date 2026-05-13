@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-/* ================= PAUSE HISTORY ================= */
 const pauseHistorySchema = new mongoose.Schema(
   {
     pausedDate: {
@@ -65,7 +64,6 @@ const investmetPackageSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
     PackageStartDate: {
       type: Date,
     },
@@ -90,14 +88,11 @@ const investmetPackageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
     isActive: {
       type: Boolean,
-      default: false,
+      default: true,
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    }
   },
   { _id: true },
 );
@@ -124,7 +119,7 @@ const packageSchema = new mongoose.Schema(
 );
 
 /* ================= MAIN SCHEMA ================= */
-const BrandPackagesSchema = new mongoose.Schema(
+const BrandPackagesHistorySchema = new mongoose.Schema(
   {
     brandOwnerId: {
       type: String,
@@ -147,7 +142,7 @@ const BrandPackagesSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export const BrandPackages = mongoose.model(
-  "BrandPackages",
-  BrandPackagesSchema,
+export const BrandPackagesHistory = mongoose.model(
+  "BrandPackagesHistory",
+  BrandPackagesHistorySchema,
 );
