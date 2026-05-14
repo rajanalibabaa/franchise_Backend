@@ -94,9 +94,9 @@ const investmetPackageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    isVerified: {
+    isPending: {
       type: Boolean,
-      default: false,
+      default: true,
     }
   },
   { _id: true },

@@ -91,8 +91,12 @@ const investmetPackageSchema = new mongoose.Schema(
 
     isActive: {
       type: Boolean,
-      default: true,
+      default: false,
     },
+      isPending: {
+      type: Boolean,
+      default: false ,
+    }
   },
   { _id: true },
 );

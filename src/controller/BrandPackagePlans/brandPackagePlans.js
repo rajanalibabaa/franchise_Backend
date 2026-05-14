@@ -77,6 +77,7 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
 
         isExperied: inv.isExperied || false,
         isActive: inv.isActive ?? true,
+        isPending: inv.isPending ?? false,
       };
     });
 
@@ -193,6 +194,7 @@ export const createBrandPackages = async (req, res) => {
           ),
           isExperied: false,
           isActive: false,
+          isPending: true,
         }));
 
         existingPlan.InvestmetPackages.push(...formattedPackages);
@@ -215,6 +217,7 @@ export const createBrandPackages = async (req, res) => {
           ),
           isExperied: false,
           isActive: false,
+          isPending: true,
         }));
 
         brandDoc.packages.push({
@@ -733,7 +736,7 @@ export const brandPackageHistory = async (req, res) => {
 
 export const startBrandExpiryJob = () => {
   // ⏱️ Every 5 minutes`
-  cron.schedule("*/5 * * * * *", async () => {
+  cron.schedule("*/5 * * * * ", async () => {
     console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
@@ -791,6 +794,7 @@ export const startBrandExpiryJob = () => {
                 ...inv.toObject(),
                 isExperied: true,
                 isActive: false,
+                isPending: false,
               });
             } else {
               activeInvestments.push(inv);
@@ -1106,7 +1110,7 @@ export const activePackageStatus = async (req, res) => {
 
         /* ================= WHEN ACTIVE TRUE ================= */
         if (isActive === true) {
-          investmentPackage.isVerified = true;
+          investmentPackage.isPending = false;
 
           const currentDate = new Date();
 
@@ -1126,7 +1130,7 @@ export const activePackageStatus = async (req, res) => {
 
         /* ================= WHEN ACTIVE FALSE ================= */
         if (isActive === false) {
-          investmentPackage.isVerified = false;
+          investmentPackage.isPending = true;
         }
       }
     }
@@ -1214,6 +1218,8 @@ export const upgradeBrandPackages = async (req, res) => {
 
           existingInvestmentPackage.isExperied = true;
 
+          existingInvestmentPackage.isPending = false;
+
           existingInvestmentPackage.RenewalEndDate =
             new Date();
         }
@@ -1277,9 +1283,9 @@ export const upgradeBrandPackages = async (req, res) => {
 
           isExperied: false,
 
-          isActive: true,
+          isActive: false,
 
-          isVerified: true,
+          isPending: true,
         };
       });
 
