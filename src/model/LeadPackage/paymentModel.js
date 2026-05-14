@@ -39,6 +39,8 @@ customer: {
       type: String,
       // required: true,
     },
+  
+    planId: String, // Reference to the package/plan purchased
     // Financial Details
     amount: {
       type: Number,
@@ -56,7 +58,6 @@ customer: {
     breakdown: {
       baseAmount: Number,
       tax: Number,
-      processingFee: Number,
       discount: Number,
       finalAmount: Number,
     },

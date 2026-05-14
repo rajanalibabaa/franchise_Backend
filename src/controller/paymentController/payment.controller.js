@@ -15,6 +15,7 @@ export const createPayment = async (req, res) => {
       brandOwnerId,
       baseAmount,
       packageName,
+      planId,
       email,
       phone,
       name,
@@ -26,12 +27,13 @@ export const createPayment = async (req, res) => {
     } = req.body;
 
     // Validation
-    if (!baseAmount || !brandOwnerId || !packageName) {
+    if (!baseAmount || !brandOwnerId || !packageName || !planId) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: baseAmount, brandOwnerId, packageName",
+        message: "Missing required fields: baseAmount, brandOwnerId, packageName, planId",
       });
     }
+console.log("base amount",baseAmount);
 
     if (baseAmount < 1 || baseAmount > 10000000) {
       return res.status(400).json({
@@ -50,20 +52,20 @@ export const createPayment = async (req, res) => {
     const finalAmount = gstBreakdown.finalAmount;
 
     // ✅ Processing Fee (optional - 2%)
-    const processingFee = parseFloat((finalAmount * 0.02).toFixed(2));
-    const totalAmount = finalAmount + processingFee;
+    // const processingFee = parseFloat((finalAmount * 0.02).toFixed(2));
+    const totalAmount = finalAmount 
 
     // ✅ Create Razorpay Order
     const order = await razorpay.orders.create({
       amount: Math.round(totalAmount * 100), // paise
       currency: "INR",
-      receipt: `rcpt_${brandOwnerId}_${Date.now()}`,
+      receipt: `rcpt_${Date.now()}`,
       notes: {
         packageName,
         brandOwnerId,
         gstNumber: gstNumber || 'N/A',
       },
-    });
+    }); 
 
     // ✅ Generate Invoice Number
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -72,6 +74,7 @@ export const createPayment = async (req, res) => {
     const payment = await Payment.create({
       brandOwnerId,
       packageName,
+      planId,
       orderId: order.id,
       amount: totalAmount,
       currency: "INR",
@@ -93,7 +96,6 @@ export const createPayment = async (req, res) => {
         cgst: gstBreakdown.cgst,
         sgst: gstBreakdown.sgst,
         igst: gstBreakdown.igst,
-        processingFee,
         discount: 0,
         finalAmount: totalAmount,
       },
@@ -137,6 +139,7 @@ export const createPayment = async (req, res) => {
         amount: order.amount, // in paise
         amountInRupees: totalAmount,
         paymentId: payment._id,
+        planId: payment.planId,
         invoiceNumber,
         gstBreakdown,
         breakdown: payment.breakdown,
