@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { GSTCalculator } from "./gstCalculator.js";
 // import { generateInvoice } from "../../utils/paymentsHandle/invoiceGenerator.js";
 import { encryptSensitiveData } from "../../utils/paymentsHandle/encryption.js";
-
+import Packages from "../../model/PackagePlanCMS/PackagePlan.js";
 // ==============================
 // ✅ CREATE PAYMENT WITH GST
 // ==============================
@@ -14,144 +14,293 @@ export const createPayment = async (req, res) => {
     const {
       brandOwnerId,
       baseAmount,
+
       packageName,
       planId,
+      planUniqueId,
+
+      investmentRangeLabel,
+      range,
+
+      totalStates,
+      uniqueStates,
+
       email,
       phone,
       name,
       brandID,
+
       gstNumber,
       pan,
-      billingState = 'TN', // Default Tamil Nadu
-      companyState = 'TN', // Default Tamil Nadu
+
+      billingState = "TN",
+      companyState = "TN",
     } = req.body;
 
-    // Validation
-    if (!baseAmount || !brandOwnerId || !packageName || !planId) {
+    // =========================
+    // VALIDATION
+    // =========================
+
+    if (
+      !brandOwnerId ||
+      !planId ||
+      !packageName ||
+      !investmentRangeLabel ||
+     !planUniqueId ||
+      !totalStates
+    ) {
+      console.log("fields", req.body);
+      
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: baseAmount, brandOwnerId, packageName, planId",
-      });
-    }
-console.log("base amount",baseAmount);
-
-    if (baseAmount < 1 || baseAmount > 10000000) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount must be between ₹1 and ₹1,00,00,000",
+        message: "Missing required fields",
+       
       });
     }
 
-    // ✅ GST Calculation
-    const gstBreakdown = GSTCalculator.calculate(
-      baseAmount,
-      companyState,
-      billingState
-    );
+    // =========================
+    // FIND PLAN
+    // =========================
 
-    const finalAmount = gstBreakdown.finalAmount;
-
-    // ✅ Processing Fee (optional - 2%)
-    // const processingFee = parseFloat((finalAmount * 0.02).toFixed(2));
-    const totalAmount = finalAmount 
-
-    // ✅ Create Razorpay Order
-    const order = await razorpay.orders.create({
-      amount: Math.round(totalAmount * 100), // paise
-      currency: "INR",
-      receipt: `rcpt_${Date.now()}`,
-      notes: {
-        packageName,
-        brandOwnerId,
-        gstNumber: gstNumber || 'N/A',
-      },
-    }); 
-
-    // ✅ Generate Invoice Number
-    const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-
-    // ✅ Create Payment Record
-    const payment = await Payment.create({
-      brandOwnerId,
-      packageName,
-      planId,
-      orderId: order.id,
-      amount: totalAmount,
-      currency: "INR",
-      status: "initiated",
-      paymentSuccess: false,
-      attemptCount: 1,
-      lastAttemptAt: new Date(),
-
-      customer: {
-        brandID,
-        email,
-        phone,
-        name,
-      },
-
-      breakdown: {
-        baseAmount: gstBreakdown.baseAmount,
-        tax: gstBreakdown.totalGST,
-        cgst: gstBreakdown.cgst,
-        sgst: gstBreakdown.sgst,
-        igst: gstBreakdown.igst,
-        discount: 0,
-        finalAmount: totalAmount,
-      },
-
-      invoice: {
-        invoiceNumber,
-        generatedAt: new Date(),
-      },
-
-      compliance: {
-        gstNumber: gstNumber || null,
-        pan: pan || null,
-        kycVerified: !!gstNumber,
-      },
-
-      metadata: {
-        ipAddress: req.ip || req.connection.remoteAddress,
-        userAgent: req.headers["user-agent"],
-        billingState,
-        companyState,
-      },
+    const packagesDoc = await Packages.findOne({
+      "packagesPlan._id": planId,
     });
-
-    // ✅ Encrypt Sensitive Data
-    if (gstNumber || pan) {
-      payment.encryptedData = encryptSensitiveData({
-        gst: gstNumber,
-        pan,
+console.log("packagesDoc", packagesDoc);
+    if (!packagesDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Plan document not found",
       });
     }
 
-    await payment.save();
+    // =========================
+    // MATCH PLAN
+    // =========================
+
+ const matchedPlan = packagesDoc.packagesPlan.find((p) => {
+  return (
+    String(p._id) === String(planId) &&
+    String(p.planUniqueId).trim() ===
+      String(planUniqueId).trim() &&
+
+    String(p.planName).trim().toLowerCase() ===
+      String(packageName).trim().toLowerCase()
+  );
+});
+
+console.log("MATCHED PLAN:", matchedPlan);
+
+
+if (!matchedPlan) {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid plan selected",
+  });
+}
+
+    // =========================
+    // MATCH PACKAGE
+    // =========================
+
+ const matchedPackage = matchedPlan.packages.find((pkg) => {
+  const labelMatch =
+    String(pkg.investmentRangeLabel)
+      .trim()
+      .toLowerCase() ===
+    String(investmentRangeLabel)
+      .trim()
+      .toLowerCase();
+
+  const rangeMatch = pkg.investmentRange.some(
+    (r) =>
+      String(r).trim().toLowerCase() ===
+      String(range).trim().toLowerCase()
+  );
+
+  console.log({
+    dbLabel: pkg.investmentRangeLabel,
+    frontLabel: investmentRangeLabel,
+
+    dbRange: pkg.investmentRange,
+    frontRange: range,
+
+    labelMatch,
+    rangeMatch,
+  });
+
+  return labelMatch && rangeMatch;
+});
+
+console.log("MATCHED PACKAGE:", matchedPackage);
+
+
+    if (!matchedPackage) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid investment range",
+      });
+    }
+
+    // =========================
+    // REAL DB VALUES
+    // =========================
+
+    const dbPricePerState =
+      Number(matchedPackage.amount);
+
+    const dbLeads =
+      matchedPackage.totalLeads?.[0] || 0;
+
+    // =========================
+    // CALCULATE
+    // =========================
+
+    const calculatedAmount =
+      dbPricePerState * Number(totalStates);
+
+    // =========================
+    // VALIDATE FRONTEND AMOUNT
+    // =========================
+
+    if (
+      Number(baseAmount) !== calculatedAmount
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount mismatch detected",
+
+        frontendAmount: Number(baseAmount),
+
+        backendAmount: calculatedAmount,
+      });
+    }
+
+    console.log("✅ Amount Validated");
+
+    // =========================
+    // GST
+    // =========================
+
+    const gstBreakdown =
+      GSTCalculator.calculate(
+        calculatedAmount,
+        companyState,
+        billingState
+      );
+
+    const finalAmount =
+      gstBreakdown.finalAmount;
+
+    // =========================
+    // RAZORPAY ORDER
+    // =========================
+
+    const order =
+      await razorpay.orders.create({
+        amount: Math.round(
+          finalAmount * 100
+        ),
+
+        currency: "INR",
+
+        receipt: `R${Date.now()}`,
+      });
+
+    // =========================
+    // SAVE PAYMENT
+    // =========================
+
+    const payment =
+      await Payment.create({
+        brandOwnerId,
+
+        packageName,
+        planId,
+
+        orderId: order.id,
+
+        amount: finalAmount,
+
+        customer: {
+          brandID,
+          email,
+          phone,
+          name,
+        },
+
+        packageDetails: {
+          investmentRangeLabel,
+          range,
+
+          totalStates,
+          uniqueStates,
+
+          dbPricePerState,
+          dbLeads,
+        },
+
+        breakdown: {
+          baseAmount:
+            calculatedAmount,
+
+          cgst: gstBreakdown.cgst,
+
+          sgst: gstBreakdown.sgst,
+
+          igst: gstBreakdown.igst,
+
+          tax:
+            gstBreakdown.totalGST,
+
+          finalAmount,
+        },
+      });
+console.log("payment",payment);
+
+    // =========================
+    // RESPONSE
+    // =========================
 
     return res.status(201).json({
       success: true,
-      message: "Payment order created successfully",
+
       data: {
         orderId: order.id,
-        key: process.env.RAZORPAY_KEY_ID,
-        currency: order.currency,
-        amount: order.amount, // in paise
-        amountInRupees: totalAmount,
+
+        key:
+          process.env
+            .RAZORPAY_KEY_ID,
+
+        amount: order.amount,
+
+        amountInRupees:
+          finalAmount,
+
         paymentId: payment._id,
-        planId: payment.planId,
-        invoiceNumber,
-        gstBreakdown,
-        breakdown: payment.breakdown,
+
+        calculations: {
+          totalStates,
+
+          dbPricePerState,
+
+          dbLeads,
+
+          calculatedAmount,
+
+          gstBreakdown,
+
+          finalAmount,
+        },
       },
     });
 
   } catch (err) {
-    console.error("❌ CREATE PAYMENT ERROR:", err);
-    res.status(500).json({
+    console.log(err);
+
+    return res.status(500).json({
       success: false,
-      message: "Payment creation failed",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      message:
+        "Payment creation failed",
     });
   }
 };
