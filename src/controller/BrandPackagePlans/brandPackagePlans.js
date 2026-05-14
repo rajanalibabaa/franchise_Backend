@@ -72,9 +72,10 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
         remainingLeads: remainingLeads,
         TotalAmount: totalAmount,
 
-        StartDate: startDate,
-        EndDate: endDate,
-
+        PackageStartDate: startDate,
+        PackageEndDate: endDate,
+        CurrentDate: new Date(),
+        RenewalEndDate: null,
         isExperied: inv.isExperied || false,
         isActive: inv.isActive ?? true,
         isPending: inv.isPending ?? false,
@@ -1084,7 +1085,7 @@ export const activePackageStatus = async (req, res) => {
 
     /* ================= LOOP ================= */
     for (const item of plandata) {
-      const { PlanuniqueId, _id, isActive } = item;
+      const { PlanuniqueId, _id,  } = item;
 
       /* _id must be array */
       if (!Array.isArray(_id) || _id.length === 0) {
@@ -1106,7 +1107,7 @@ export const activePackageStatus = async (req, res) => {
         if (!investmentPackage) continue;
 
         /* ================= UPDATE ACTIVE ================= */
-        investmentPackage.isActive = isActive;
+        investmentPackage.isActive = true;
 
         /* ================= WHEN ACTIVE TRUE ================= */
         if (isActive === true) {
