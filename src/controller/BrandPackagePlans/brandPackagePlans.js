@@ -72,11 +72,13 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
         remainingLeads: remainingLeads,
         TotalAmount: totalAmount,
 
-        StartDate: startDate,
-        EndDate: endDate,
-
+        PackageStartDate: startDate,
+        PackageEndDate: endDate,
+        CurrentDate: new Date(),
+        RenewalEndDate: null,
         isExperied: inv.isExperied || false,
         isActive: inv.isActive ?? true,
+        isPending: inv.isPending ?? false,
       };
     });
 
@@ -193,6 +195,7 @@ export const createBrandPackages = async (req, res) => {
           ),
           isExperied: false,
           isActive: false,
+          isPending: true,
         }));
 
         existingPlan.InvestmetPackages.push(...formattedPackages);
@@ -215,6 +218,7 @@ export const createBrandPackages = async (req, res) => {
           ),
           isExperied: false,
           isActive: false,
+          isPending: true,
         }));
 
         brandDoc.packages.push({
@@ -733,7 +737,7 @@ export const brandPackageHistory = async (req, res) => {
 
 export const startBrandExpiryJob = () => {
   // ⏱️ Every 5 minutes`
-  cron.schedule("*/5 * * * * *", async () => {
+  cron.schedule("*/5 * * * * ", async () => {
     console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
@@ -791,6 +795,7 @@ export const startBrandExpiryJob = () => {
                 ...inv.toObject(),
                 isExperied: true,
                 isActive: false,
+                isPending: false,
               });
             } else {
               activeInvestments.push(inv);
@@ -1080,7 +1085,7 @@ export const activePackageStatus = async (req, res) => {
 
     /* ================= LOOP ================= */
     for (const item of plandata) {
-      const { PlanuniqueId, _id, isActive } = item;
+      const { PlanuniqueId, _id,  } = item;
 
       /* _id must be array */
       if (!Array.isArray(_id) || _id.length === 0) {
@@ -1102,11 +1107,11 @@ export const activePackageStatus = async (req, res) => {
         if (!investmentPackage) continue;
 
         /* ================= UPDATE ACTIVE ================= */
-        investmentPackage.isActive = isActive;
+        investmentPackage.isActive = true;
 
         /* ================= WHEN ACTIVE TRUE ================= */
         if (isActive === true) {
-          investmentPackage.isVerified = true;
+          investmentPackage.isPending = false;
 
           const currentDate = new Date();
 
@@ -1126,7 +1131,7 @@ export const activePackageStatus = async (req, res) => {
 
         /* ================= WHEN ACTIVE FALSE ================= */
         if (isActive === false) {
-          investmentPackage.isVerified = false;
+          investmentPackage.isPending = true;
         }
       }
     }
@@ -1214,6 +1219,8 @@ export const upgradeBrandPackages = async (req, res) => {
 
           existingInvestmentPackage.isExperied = true;
 
+          existingInvestmentPackage.isPending = false;
+
           existingInvestmentPackage.RenewalEndDate =
             new Date();
         }
@@ -1277,9 +1284,9 @@ export const upgradeBrandPackages = async (req, res) => {
 
           isExperied: false,
 
-          isActive: true,
+          isActive: false,
 
-          isVerified: true,
+          isPending: true,
         };
       });
 

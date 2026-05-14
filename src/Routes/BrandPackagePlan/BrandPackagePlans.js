@@ -13,4 +13,4 @@ brandPackagePlansRouter.get("/v1/brand-packages-plans/update-history/:brandOwner
 brandPackagePlansRouter.get("/v1/brand-packages-plans/get-history/:brandOwnerId", getBrandPackagesHistoryById);
 brandPackagePlansRouter.post("/v1/brand-packages-plans/active-package-status", activePackageStatus);
 brandPackagePlansRouter.patch("/v1/brand-packages-plans/upgrade", upgradeBrandPackages);
-export default brandPackagePlansRouter;
+export default brandPackagePlansRouter;  
