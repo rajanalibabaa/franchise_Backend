@@ -21,6 +21,7 @@ export const createPayment = async (req, res) => {
 
       investmentRangeLabel,
       range,
+      selectedLeadCount,
 
       totalStates,
       uniqueStates,
@@ -46,26 +47,27 @@ export const createPayment = async (req, res) => {
       !planId ||
       !packageName ||
       !investmentRangeLabel ||
-     !planUniqueId ||
+      !planUniqueId ||
       !totalStates
     ) {
-      console.log("fields", req.body);
-      
+      console.log("Missing Fields:", req.body);
+
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
-       
       });
     }
 
     // =========================
-    // FIND PLAN
+    // FIND PACKAGE DOCUMENT
     // =========================
 
     const packagesDoc = await Packages.findOne({
       "packagesPlan._id": planId,
     });
-console.log("packagesDoc", packagesDoc);
+
+    console.log("packagesDoc", packagesDoc);
+
     if (!packagesDoc) {
       return res.status(404).json({
         success: false,
@@ -77,62 +79,74 @@ console.log("packagesDoc", packagesDoc);
     // MATCH PLAN
     // =========================
 
- const matchedPlan = packagesDoc.packagesPlan.find((p) => {
-  return (
-    String(p._id) === String(planId) &&
-    String(p.planUniqueId).trim() ===
-      String(planUniqueId).trim() &&
+    const matchedPlan = packagesDoc.packagesPlan.find((p) => {
+      return (
+        String(p._id) === String(planId) &&
+        String(p.planUniqueId).trim() ===
+          String(planUniqueId).trim() &&
+        String(p.planName).trim().toLowerCase() ===
+          String(packageName).trim().toLowerCase()
+      );
+    });
 
-    String(p.planName).trim().toLowerCase() ===
-      String(packageName).trim().toLowerCase()
-  );
-});
+    console.log("MATCHED PLAN:", matchedPlan);
 
-console.log("MATCHED PLAN:", matchedPlan);
-
-
-if (!matchedPlan) {
-  return res.status(400).json({
-    success: false,
-    message: "Invalid plan selected",
-  });
-}
+    if (!matchedPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid plan selected",
+      });
+    }
 
     // =========================
     // MATCH PACKAGE
     // =========================
 
- const matchedPackage = matchedPlan.packages.find((pkg) => {
-  const labelMatch =
-    String(pkg.investmentRangeLabel)
-      .trim()
-      .toLowerCase() ===
-    String(investmentRangeLabel)
-      .trim()
-      .toLowerCase();
+const matchedPackage =
+  matchedPlan.packages.find(
+    (pkg) => {
+      // LISTING PLAN
+      if (
+        String(
+          matchedPlan.packageType
+        ).toUpperCase() ===
+        "LISTING"
+      ) {
+        return true;
+      }
 
-  const rangeMatch = pkg.investmentRange.some(
-    (r) =>
-      String(r).trim().toLowerCase() ===
-      String(range).trim().toLowerCase()
+      // LEAD PLAN
+      const labelMatch =
+        String(
+          pkg.investmentRangeLabel
+        )
+          .trim()
+          .toLowerCase() ===
+        String(
+          investmentRangeLabel
+        )
+          .trim()
+          .toLowerCase();
+
+      const rangeMatch =
+        pkg.investmentRange.some(
+          (r) =>
+            String(r)
+              .trim()
+              .toLowerCase() ===
+            String(range)
+              .trim()
+              .toLowerCase()
+        );
+
+      return (
+        labelMatch &&
+        rangeMatch
+      );
+    }
   );
 
-  console.log({
-    dbLabel: pkg.investmentRangeLabel,
-    frontLabel: investmentRangeLabel,
-
-    dbRange: pkg.investmentRange,
-    frontRange: range,
-
-    labelMatch,
-    rangeMatch,
-  });
-
-  return labelMatch && rangeMatch;
-});
-
-console.log("MATCHED PACKAGE:", matchedPackage);
-
+    console.log("MATCHED PACKAGE:", matchedPackage);
 
     if (!matchedPackage) {
       return res.status(400).json({
@@ -142,28 +156,106 @@ console.log("MATCHED PACKAGE:", matchedPackage);
     }
 
     // =========================
-    // REAL DB VALUES
+    // PACKAGE VALUES
     // =========================
 
     const dbPricePerState =
-      Number(matchedPackage.amount);
+      Number(matchedPackage.amount) || 0;
 
-    const dbLeads =
-      matchedPackage.totalLeads?.[0] || 0;
+    // Example:
+    // totalLeads: [20,40,60]
+    // minimumLeadCount = 20
+
+    const minimumLeadCount =
+  String(
+    matchedPlan.packageType
+  ).toUpperCase() === "LISTING"
+    ? 0
+    : Math.min(
+        ...(matchedPackage.totalLeads || [1])
+      );
 
     // =========================
-    // CALCULATE
+    // PRICE PER LEAD
     // =========================
 
-    const calculatedAmount =
-      dbPricePerState * Number(totalStates);
+    // const amountPerLead =
+    //   dbPricePerState / minimumLeadCount;
+
+    // =========================
+    // FINAL CALCULATION
+    // Formula:
+    // (amount / minimumLeadCount)
+    // * totalStates
+    // * selectedLeadCount
+    // =========================
+
+    // const finalCalculatedAmount =
+    //   amountPerLead *
+    //   Number(totalStates || 1) *
+    //   Number(selectedLeadCount || 1);
+
+
+    let amountPerLead = 0;
+
+let finalCalculatedAmount = 0;
+
+// =========================
+// LISTING PLAN
+// =========================
+
+if (
+  String(
+    matchedPlan.packageType
+  ).toUpperCase() === "LISTING"
+) {
+  finalCalculatedAmount =
+    Number(dbPricePerState);
+
+  amountPerLead = 0;
+}
+
+// =========================
+// LEAD PLAN
+// =========================
+
+else {
+  amountPerLead =
+    Number(dbPricePerState) /
+    Number(minimumLeadCount);
+
+  finalCalculatedAmount =
+    amountPerLead *
+    Number(totalStates || 1) *
+    Number(selectedLeadCount || 1);
+}
+
+
+  console.log({
+  packageType:
+    matchedPlan.packageType,
+
+  packageAmount:
+    dbPricePerState,
+
+  minimumLeadCount,
+
+  amountPerLead,
+
+  totalStates,
+
+  selectedLeadCount,
+
+  finalCalculatedAmount,
+});
 
     // =========================
     // VALIDATE FRONTEND AMOUNT
     // =========================
 
     if (
-      Number(baseAmount) !== calculatedAmount
+      Number(baseAmount) !==
+      Number(finalCalculatedAmount)
     ) {
       return res.status(400).json({
         success: false,
@@ -171,19 +263,20 @@ console.log("MATCHED PACKAGE:", matchedPackage);
 
         frontendAmount: Number(baseAmount),
 
-        backendAmount: calculatedAmount,
+        backendAmount:
+          Number(finalCalculatedAmount),
       });
     }
 
     console.log("✅ Amount Validated");
 
     // =========================
-    // GST
+    // GST CALCULATION
     // =========================
 
     const gstBreakdown =
       GSTCalculator.calculate(
-        calculatedAmount,
+        finalCalculatedAmount,
         companyState,
         billingState
       );
@@ -192,7 +285,7 @@ console.log("MATCHED PACKAGE:", matchedPackage);
       gstBreakdown.finalAmount;
 
     // =========================
-    // RAZORPAY ORDER
+    // CREATE RAZORPAY ORDER
     // =========================
 
     const order =
@@ -216,6 +309,7 @@ console.log("MATCHED PACKAGE:", matchedPackage);
 
         packageName,
         planId,
+        planUniqueId,
 
         orderId: order.id,
 
@@ -226,6 +320,8 @@ console.log("MATCHED PACKAGE:", matchedPackage);
           email,
           phone,
           name,
+          gstNumber,
+          pan,
         },
 
         packageDetails: {
@@ -236,12 +332,17 @@ console.log("MATCHED PACKAGE:", matchedPackage);
           uniqueStates,
 
           dbPricePerState,
-          dbLeads,
+
+          minimumLeadCount,
+
+          selectedLeadCount,
+
+          amountPerLead,
         },
 
         breakdown: {
           baseAmount:
-            calculatedAmount,
+            finalCalculatedAmount,
 
           cgst: gstBreakdown.cgst,
 
@@ -255,7 +356,8 @@ console.log("MATCHED PACKAGE:", matchedPackage);
           finalAmount,
         },
       });
-console.log("payment",payment);
+
+    console.log("PAYMENT SAVED:", payment);
 
     // =========================
     // RESPONSE
@@ -268,8 +370,7 @@ console.log("payment",payment);
         orderId: order.id,
 
         key:
-          process.env
-            .RAZORPAY_KEY_ID,
+          process.env.RAZORPAY_KEY_ID,
 
         amount: order.amount,
 
@@ -279,13 +380,19 @@ console.log("payment",payment);
         paymentId: payment._id,
 
         calculations: {
+          packageAmount:
+            dbPricePerState,
+
+          minimumLeadCount,
+
+          amountPerLead,
+
           totalStates,
 
-          dbPricePerState,
+          selectedLeadCount,
 
-          dbLeads,
-
-          calculatedAmount,
+          baseAmount:
+            finalCalculatedAmount,
 
           gstBreakdown,
 
@@ -293,14 +400,13 @@ console.log("payment",payment);
         },
       },
     });
-
   } catch (err) {
-    console.log(err);
+    console.log("CREATE PAYMENT ERROR:", err);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Payment creation failed",
+      message: "Payment creation failed",
+      error: err.message,
     });
   }
 };
@@ -385,6 +491,9 @@ export const verifyPayment = async (req, res) => {
         message: "Payment record not found or already processed",
       });
     }
+
+   
+
 
     // ✅ Generate Invoice PDF
     // try {
