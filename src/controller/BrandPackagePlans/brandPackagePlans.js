@@ -72,11 +72,13 @@ export const createIntialPackages = async (brandOwnerId, packages) => {
         remainingLeads: remainingLeads,
         TotalAmount: totalAmount,
 
-        StartDate: startDate,
-        EndDate: endDate,
-
+        PackageStartDate: startDate,
+        PackageEndDate: endDate,
+        CurrentDate: new Date(),
+        RenewalEndDate: null,
         isExperied: inv.isExperied || false,
         isActive: inv.isActive ?? true,
+        isPending: inv.isPending ?? false,
       };
     });
 
@@ -143,17 +145,34 @@ export const getBrandPackagesById = async (req, res) => {
 export const createBrandPackages = async (req, res) => {
   try {
     const { brandOwnerId, packages } = req.body;
-    console.log("UPGRADE REQUEST:", { brandOwnerId, packages });
 
-    if (!brandOwnerId || !Array.isArray(packages)) {
+    console.log("UPGRADE REQUEST:", {
+      brandOwnerId,
+      packages,
+    });
+
+    // =========================
+    // VALIDATION
+    // =========================
+
+    if (
+      !brandOwnerId ||
+      !Array.isArray(packages)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid input",
       });
     }
 
-    // 🔍 Find brand
-    const brandDoc = await BrandPackages.findOne({ brandOwnerId });
+    // =========================
+    // FIND BRAND
+    // =========================
+
+    const brandDoc =
+      await BrandPackages.findOne({
+        brandOwnerId,
+      });
 
     if (!brandDoc) {
       return res.status(404).json({
@@ -162,7 +181,45 @@ export const createBrandPackages = async (req, res) => {
       });
     }
 
-    // 🔁 Loop all incoming packages
+    // =====================================================
+    // ✅ DISABLE ONLY ACTIVE FREE PACKAGE
+    // =====================================================
+
+    brandDoc.packages.forEach((plan) => {
+      const isFreePlan =
+        String(plan.packagesType)
+          .trim()
+          .toUpperCase() === "FREE" ||
+        String(plan.packagesName)
+          .trim()
+          .toUpperCase() === "FREE";
+
+      if (isFreePlan) {
+        plan.InvestmetPackages.forEach(
+          (pkg) => {
+            // ONLY ACTIVE FREE PACKAGE
+            if (pkg.isActive === true) {
+              pkg.isActive = false;
+
+              pkg.isPending = false;
+
+              pkg.isExperied = true;
+
+              pkg.RenewalEndDate =
+                new Date();
+
+              pkg.CurrentDate =
+                new Date();
+            }
+          }
+        );
+      }
+    });
+
+    // =====================================================
+    // LOOP NEW PACKAGES
+    // =====================================================
+
     for (const incomingPkg of packages) {
       const {
         packagesType,
@@ -171,70 +228,110 @@ export const createBrandPackages = async (req, res) => {
         InvestmetPackages = [],
       } = incomingPkg;
 
-      // 🔍 Check existing plan
-      const existingPlan = brandDoc.packages.find(
-        (pkg) => pkg.planUniqueId === planUniqueId,
-      );
+      // =====================================================
+      // CHECK EXISTING PLAN
+      // =====================================================
 
-      // =========================================
-      // ✅ CASE 1: PLAN EXISTS → PUSH INSIDE
-      // =========================================
-      if (existingPlan) {
-        const formattedPackages = InvestmetPackages.map((pkg) => ({
+      const existingPlan =
+        brandDoc.packages.find(
+          (pkg) =>
+            String(pkg.planUniqueId) ===
+            String(planUniqueId)
+        );
+
+      // =====================================================
+      // FORMAT PACKAGE DATA
+      // =====================================================
+
+      const formattedPackages =
+        InvestmetPackages.map((pkg) => ({
           ...pkg,
-          remainingLeads: pkg.TotalLeads || 0,
-          PackageStartDate: new Date(),
-          PackageEndDate: new Date(
-            Date.now() + Number(pkg.Validity || 0) * 24 * 60 * 60 * 1000,
-          ),
-          CurrentDate: new Date(),
-          RenewalEndDate: new Date(
-            Date.now() + Number(pkg.Validity || 0) * 24 * 60 * 60 * 1000,
-          ),
+
+          remainingLeads:
+            pkg.TotalLeads || 0,
+
+          PackageStartDate:
+            new Date(),
+
+          PackageEndDate:
+            new Date(
+              Date.now() +
+                Number(
+                  pkg.Validity || 0
+                ) *
+                  24 *
+                  60 *
+                  60 *
+                  1000
+            ),
+
+          CurrentDate:
+            new Date(),
+
+          RenewalEndDate:
+            new Date(
+              Date.now() +
+                Number(
+                  pkg.Validity || 0
+                ) *
+                  24 *
+                  60 *
+                  60 *
+                  1000
+            ),
+
           isExperied: false,
-          isActive: false,
+
+          // ✅ PAID PACKAGE ACTIVE
+          isActive: true,
+
+          isPending: false,
         }));
 
-        existingPlan.InvestmetPackages.push(...formattedPackages);
+      // =====================================================
+      // EXISTING PLAN
+      // =====================================================
+
+      if (existingPlan) {
+        existingPlan.InvestmetPackages.push(
+          ...formattedPackages
+        );
       }
 
-      // =========================================
-      // ✅ CASE 2: PLAN NOT EXISTS → CREATE NEW
-      // =========================================
-      else {
-        const formattedPackages = InvestmetPackages.map((pkg) => ({
-          ...pkg,
-          remainingLeads: pkg.TotalLeads || 0,
-          PackageStartDate: new Date(),
-          PackageEndDate: new Date(
-            Date.now() + Number(pkg.Validity || 0) * 24 * 60 * 60 * 1000,
-          ),
-          CurrentDate: new Date(),
-          RenewalEndDate: new Date(
-            Date.now() + Number(pkg.Validity || 0) * 24 * 60 * 60 * 1000,
-          ),
-          isExperied: false,
-          isActive: false,
-        }));
+      // =====================================================
+      // NEW PLAN
+      // =====================================================
 
+      else {
         brandDoc.packages.push({
           packagesType,
           packagesName,
           planUniqueId,
-          InvestmetPackages: formattedPackages,
+
+          InvestmetPackages:
+            formattedPackages,
         });
       }
     }
+
+    // =====================================================
+    // SAVE
+    // =====================================================
 
     await brandDoc.save();
 
     return res.status(200).json({
       success: true,
-      message: "Packages upgraded successfully",
+      message:
+        "Packages upgraded successfully",
       data: brandDoc,
     });
   } catch (error) {
-    console.error("Upgrade Error:", error);
+    console.error(
+      "Upgrade Error:",
+      error
+    );
+
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -733,7 +830,7 @@ export const brandPackageHistory = async (req, res) => {
 
 export const startBrandExpiryJob = () => {
   // ⏱️ Every 5 minutes`
-  cron.schedule("*/5 * * * * *", async () => {
+  cron.schedule("*/5 * * * * ", async () => {
     console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
@@ -791,6 +888,7 @@ export const startBrandExpiryJob = () => {
                 ...inv.toObject(),
                 isExperied: true,
                 isActive: false,
+                isPending: false,
               });
             } else {
               activeInvestments.push(inv);
@@ -1080,7 +1178,7 @@ export const activePackageStatus = async (req, res) => {
 
     /* ================= LOOP ================= */
     for (const item of plandata) {
-      const { PlanuniqueId, _id, isActive } = item;
+      const { PlanuniqueId, _id,  } = item;
 
       /* _id must be array */
       if (!Array.isArray(_id) || _id.length === 0) {
@@ -1102,11 +1200,11 @@ export const activePackageStatus = async (req, res) => {
         if (!investmentPackage) continue;
 
         /* ================= UPDATE ACTIVE ================= */
-        investmentPackage.isActive = isActive;
+        investmentPackage.isActive = true;
 
         /* ================= WHEN ACTIVE TRUE ================= */
         if (isActive === true) {
-          investmentPackage.isVerified = true;
+          investmentPackage.isPending = false;
 
           const currentDate = new Date();
 
@@ -1126,7 +1224,7 @@ export const activePackageStatus = async (req, res) => {
 
         /* ================= WHEN ACTIVE FALSE ================= */
         if (isActive === false) {
-          investmentPackage.isVerified = false;
+          investmentPackage.isPending = true;
         }
       }
     }
@@ -1214,6 +1312,8 @@ export const upgradeBrandPackages = async (req, res) => {
 
           existingInvestmentPackage.isExperied = true;
 
+          existingInvestmentPackage.isPending = false;
+
           existingInvestmentPackage.RenewalEndDate =
             new Date();
         }
@@ -1277,9 +1377,9 @@ export const upgradeBrandPackages = async (req, res) => {
 
           isExperied: false,
 
-          isActive: true,
+          isActive: false,
 
-          isVerified: true,
+          isPending: true,
         };
       });
 
