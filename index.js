@@ -22,7 +22,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { mainSocket } from "./src/socket/mainSocket.js";
 import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 import dns from "dns";
-
+import { startBrandExpiryJob } from "./src/controller/BrandPackagePlans/brandPackagePlans.js";
 
 dotenv.config(); // ✅ Load env FIRST
 
@@ -139,7 +139,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 configureGoogleStrategy();
 configureFacebookStrategy();
-
+startBrandExpiryJob();
 // Global rate limit
 app.use("/uploads", express.static(path.resolve("./uploads")));
 // Connect to DB (ensure DB is connected before listening)
@@ -182,7 +182,6 @@ const startServer = async () => {
 
     app.use("/api", limiter, allRouters);
     app.use("/api/v1/upload", limiter, s3Uploads);
-
     // ✅ This is for webhook verification
     app.get("/api/webhooks", webhookslimiter, (req, res) => {
       const VERIFY_TOKEN = "IG_VERIFY_TOKEN"; // <-- you define this
@@ -217,3 +216,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+

@@ -1,0 +1,174 @@
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import { BrandDetails } from "../src/model/Brand/Brand.model/BrandDetails.model.js";
+import { BrandFranchiseDetails } from "../src/model/Brand/Brand.model/FranchiseDetails.model.js";
+import { BrandExpansionLocationData } from "../src/model/Brand/Brand.model/ExpansionLocation.model.js";
+import { BrandPackages } from "../src/model/BrandPackagePlans/brandPackagePlans.js";
+import Plan from "../src/model/PackagePlanCMS/PackagePlan.js";
+ 
+dotenv.config({ path: "../.env" });
+ 
+const MONGODB_URI = process.env.DB_URL;
+ 
+const extractStatesFromExpansion = (expansionLocationData) => {
+  const states = new Set();
+ 
+  const domestic =
+    expansionLocationData?.expansionLocations?.domestic?.locations || [];
+ 
+  domestic.forEach((loc) => {
+    if (loc?.state) states.add(loc.state);
+  });
+ 
+  return Array.from(states);
+};
+ 
+const extractInvestmentRanges = (franchiseDetails) => {
+  const ranges = new Set();
+ 
+  const data =
+    franchiseDetails?.investmentRange ||
+    franchiseDetails?.fico?.[0]?.investmentRange ||
+    [];
+ 
+  if (Array.isArray(data)) {
+    data.forEach((r) => r && ranges.add(r));
+  } else if (typeof data === "string") {
+    ranges.add(data);
+  }
+ 
+  return Array.from(ranges);
+};
+ 
+/* ================= MAIN SCRIPT ================= */
+ 
+async function assignFreePackagesToAllBrands() {
+  try {
+    console.log("🔌 Connecting DB...");
+    await mongoose.connect(MONGODB_URI);
+ 
+    console.log("✅ Connected");
+ 
+    const planDoc = await Plan.findOne();
+ 
+    if (!planDoc) throw new Error("Plan document not found");
+ 
+    const freePlan = planDoc.packagesPlan.find(
+      (p) => p.packageType === "FREE"
+    );
+ 
+    if (!freePlan) throw new Error("FREE plan not found");
+ 
+    const freePackage = freePlan.packages[0];
+ 
+    const brands = await BrandDetails.find({}, { uuid: 1 });
+ 
+    console.log(`📦 Total Brands: ${brands.length}`);
+ 
+    let created = 0;
+    let skipped = 0;
+ 
+    for (const brand of brands) {
+      const brandOwnerId = brand.uuid;
+ 
+      // 🔹 Skip if already has FREE package
+      const exists = await BrandPackages.findOne({
+        brandOwnerId,
+        "packages.packagesType": "FREE",
+      });
+ 
+      if (exists) {
+        skipped++;
+        continue;
+      }
+ 
+      // 🔹 Fetch related data
+      const [franchiseDoc, expansionDoc] = await Promise.all([
+        BrandFranchiseDetails.findOne({ brandOwnerId }),
+        BrandExpansionLocationData.findOne({ brandOwnerId }),
+      ]);
+ 
+      const franchiseDetails = franchiseDoc?.franchiseDetails || {};
+      const expansionLocationData =
+        expansionDoc?.expansionLocationData || {};
+ 
+      const states = extractStatesFromExpansion(expansionLocationData);
+      const ranges = extractInvestmentRanges(franchiseDetails);
+ 
+      if (states.length === 0) states.push("All");
+      if (ranges.length === 0) ranges.push("General");
+ 
+      const totalLeads = Number(freePackage.totalLeads) || 0;
+ 
+      const investmentranges = ranges.map((range) => ({
+        selectedPlanInvestmetrange: range,
+        selectedPlanState: states,
+      }));
+ 
+      const packagesToAssign = [
+        {
+          packagesType: "FREE",
+          packagesName: freePlan.planName,
+          planUniqueId: freePlan.planUniqueId,
+ 
+          InvestmetPackages: [
+            {
+              InvestmetRageLabel:
+                freePackage.investmentRangeLabel || "",
+ 
+              investmentranges,
+ 
+              Validity: String(freePackage.validityDays || 30),
+ 
+              TotalLeads: totalLeads,
+              remainingLeads: totalLeads,
+              PackageStartDate: new Date(),
+              PackageEndDate: new Date(),
+              CurrentDate: new Date(),
+              RenewalEndDate: null,
+              TotalAmount: 0,
+              StartDate: new Date(),
+              isExperied: false,
+              isActive: true,
+              isPending: false,
+            },
+          ],
+        },
+      ];
+ 
+      // 🔹 Create package
+      await BrandPackages.findOneAndUpdate(
+        { brandOwnerId },
+        {
+          $set: {
+            Industry:
+              franchiseDetails?.brandCategories?.main || "",
+            Category:
+              franchiseDetails?.brandCategories?.sub || "",
+          },
+          $push: {
+            packages: { $each: packagesToAssign },
+          },
+        },
+        { upsert: true }
+      );
+ 
+      created++;
+ 
+      if (created % 50 === 0) {
+        console.log(`🚀 Processed: ${created}`);
+      }
+    }
+ 
+    console.log("\n✅ DONE");
+    console.log(`✔ Created: ${created}`);
+    console.log(`⏭ Skipped: ${skipped}`);
+  } catch (err) {
+    console.error("❌ Error:", err.message);
+  } finally {
+    await mongoose.disconnect();
+    console.log("🔌 Disconnected");
+  }
+}
+ 
+assignFreePackagesToAllBrands();

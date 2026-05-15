@@ -1,0 +1,152 @@
+import mongoose from "mongoose";
+
+const pauseHistorySchema = new mongoose.Schema(
+  {
+    pausedDate: {
+      type: Date,
+    },
+
+    playDate: {
+      type: Date,
+    },
+
+    balanceDays: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: true },
+);
+
+/* ================= INVESTMENT RANGE ================= */
+const investmentRangeSchema = new mongoose.Schema(
+  {
+    selectedPlanInvestmetrange: {
+      type: String,
+    },
+    selectedPlanState: [
+      {
+        type: String,
+        default: [],
+      },
+    ],
+  },
+  { _id: true },
+);
+
+/* ================= INVESTMENT PACKAGE ================= */
+const investmetPackageSchema = new mongoose.Schema(
+  {
+    InvestmetRageLabel: {
+      type: String,
+    },
+
+    investmentranges: {
+      type: [investmentRangeSchema],
+      default: [],
+    },
+
+    Validity: {
+      type: String,
+    },
+
+    TotalLeads: {
+      type: Number,
+      default: 0,
+    },
+
+    remainingLeads: {
+      type: Number,
+      default: 0,
+    },
+
+    TotalAmount: {
+      type: Number,
+      default: 0,
+    },
+    PackageStartDate: {
+      type: Date,
+    },
+    PackageEndDate: {
+      type: Date,
+    },
+    CurrentDate: {
+      type: Date,
+    },
+    RenewalEndDate: {
+      type: Date,
+    },
+    isPaused: {
+      type: Boolean,
+      default: false,
+    },
+    pauseHistory: {
+      type: [pauseHistorySchema],
+      default: [],
+    },
+    isExperied: {
+      type: Boolean,
+      default: false,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+      isPending: {
+      type: Boolean,
+      default: false ,
+    }
+  },
+  { _id: true },
+);
+
+/* ================= PACKAGE ================= */
+const packageSchema = new mongoose.Schema(
+  {
+    packagesType: {
+      type: String,
+      enum: ["LISTING", "LEAD", "FREE"],
+    },
+
+    packagesName: {
+      type: String,
+    },
+
+    planUniqueId: {
+      type: String,
+    },
+
+    InvestmetPackages: [investmetPackageSchema],
+  },
+  { _id: true },
+);
+
+/* ================= MAIN SCHEMA ================= */
+const BrandPackagesHistorySchema = new mongoose.Schema(
+  {
+    brandOwnerId: {
+      type: String,
+      required: true,
+    },
+
+    Industry: {
+      type: String,
+    },
+
+    Category: {
+      type: String,
+    },
+
+    packages: {
+      type: [packageSchema],
+      default: [],
+    },
+  },
+  { timestamps: true },
+);
+
+export const BrandPackagesHistory = mongoose.model(
+  "BrandPackagesHistory",
+  BrandPackagesHistorySchema,
+);

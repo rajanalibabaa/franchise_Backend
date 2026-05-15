@@ -44,7 +44,7 @@ const BrandDetailsSchema = new mongoose.Schema(
       specialFreeLeadCount: {
         type: Number,
       },
-      overAllLeads: {
+      overAllLeads: {  
         type: Number,
         default: 0,
       },
