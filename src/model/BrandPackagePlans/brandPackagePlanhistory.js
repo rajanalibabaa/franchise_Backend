@@ -24,10 +24,12 @@ const investmentRangeSchema = new mongoose.Schema(
     selectedPlanInvestmetrange: {
       type: String,
     },
-    selectedPlanState: [
+    selectedPlanStateAndDistrict: [
       {
-        type: String,
-        default: [],
+        state: {
+          type: String,
+        },
+        district: [String],
       },
     ],
   },
@@ -37,6 +39,14 @@ const investmentRangeSchema = new mongoose.Schema(
 /* ================= INVESTMENT PACKAGE ================= */
 const investmetPackageSchema = new mongoose.Schema(
   {
+    packagesName: {
+      type: String,
+    },
+
+    planUniqueId: {
+      type: String,
+    },
+
     InvestmetRageLabel: {
       type: String,
     },
@@ -54,7 +64,14 @@ const investmetPackageSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+    sendingLeads: {
+      type: Number,
+      default: 0,
+    },
+    sendingPercentage: {
+      type: Number,
+      default: 0,
+    },
     remainingLeads: {
       type: Number,
       default: 0,
@@ -93,10 +110,10 @@ const investmetPackageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-      isPending: {
+    isPending: {
       type: Boolean,
-      default: false ,
-    }
+      default: false,
+    },
   },
   { _id: true },
 );
@@ -108,15 +125,6 @@ const packageSchema = new mongoose.Schema(
       type: String,
       enum: ["LISTING", "LEAD", "FREE"],
     },
-
-    packagesName: {
-      type: String,
-    },
-
-    planUniqueId: {
-      type: String,
-    },
-
     InvestmetPackages: [investmetPackageSchema],
   },
   { _id: true },

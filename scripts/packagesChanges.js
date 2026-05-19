@@ -122,13 +122,15 @@ async function assignFreePackagesToAllBrands() {
 
               TotalLeads: totalLeads,
               remainingLeads: totalLeads,
-
+              PackageStartDate: new Date(),
+              PackageEndDate: new Date(),
+              CurrentDate: new Date(),
+              RenewalEndDate: null,
               TotalAmount: 0,
-
               StartDate: new Date(),
-
               isExperied: false,
               isActive: true,
+              isPending: false,
             },
           ],
         },
