@@ -31,8 +31,11 @@ export const getAllBrandsAndFilter = async (req, res) => {
       maincat,
       subcat,
     });
-    const searchterm =
-      req.query.searchterm || req.query.searchTerm || req.query.serchterm ;
+    let searchterm =
+      req.query.searchterm || req.query.searchTerm || req.query.serchterm;
+    
+    // Ensure searchterm is a string and not empty
+    searchterm = searchterm ? String(searchterm).trim() : null;
 
     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
 
@@ -528,6 +531,11 @@ export const getAllBrandFiltersdata = async (req, res) => {
       const industryName = main || industry;
       const normalizedSub = (sub || "").trim().toLowerCase();
       const tagQuery = ((req.query.tag || req.query.searchTerm || "").trim() || "").toLowerCase();
+      
+      // Ensure tagQuery is a string for validation
+      if (tagQuery && typeof tagQuery !== "string") {
+        return res.json(new ApiResponse(400, {}, "Invalid search term"));
+      }
 
       const industryFilter = industryName
         ? { industry: industryName }
