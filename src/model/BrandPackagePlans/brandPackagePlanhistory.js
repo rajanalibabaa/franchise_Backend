@@ -47,7 +47,7 @@ const investmetPackageSchema = new mongoose.Schema(
       type: String,
     },
 
-    InvestmetRageLabel: {
+    investmetRageLabel: {
       type: String,
     },
 
@@ -56,11 +56,11 @@ const investmetPackageSchema = new mongoose.Schema(
       default: [],
     },
 
-    Validity: {
+    validity: {
       type: String,
     },
 
-    TotalLeads: {
+    totalLeads: {
       type: Number,
       default: 0,
     },
@@ -77,20 +77,20 @@ const investmetPackageSchema = new mongoose.Schema(
       default: 0,
     },
 
-    TotalAmount: {
+    totalAmount: {
       type: Number,
       default: 0,
     },
-    PackageStartDate: {
+    packageStartDate: {
       type: Date,
     },
-    PackageEndDate: {
+    packageEndDate: {
       type: Date,
     },
-    CurrentDate: {
+    currentDate: {
       type: Date,
     },
-    RenewalEndDate: {
+    renewalEndDate: {
       type: Date,
     },
     isPaused: {
@@ -125,7 +125,7 @@ const packageSchema = new mongoose.Schema(
       type: String,
       enum: ["LISTING", "LEAD", "FREE"],
     },
-    InvestmetPackages: [investmetPackageSchema],
+    investmetPackages: [investmetPackageSchema],
   },
   { _id: true },
 );
@@ -138,11 +138,11 @@ const BrandPackagesHistorySchema = new mongoose.Schema(
       required: true,
     },
 
-    Industry: {
+    industry: {
       type: String,
     },
 
-    Category: {
+    category: {
       type: String,
     },
     brandName: {
