@@ -84,7 +84,7 @@ export const createIntialPackages = async (req, res) => {
 
           planUniqueId: inv.planId || "",
 
-          InvestmetRageLabel: inv.InvestmetRageLabel || "",
+          investmetRageLabel: inv.investmetRageLabel || "",
 
           /* =========================================
          STORE STATE + DISTRICT PROPERLY
@@ -102,33 +102,33 @@ export const createIntialPackages = async (req, res) => {
             })),
           })),
 
-          Validity: validityString,
+          validity: validityString,
 
           /* =========================================
          LEADS
       ========================================= */
 
-          TotalLeads: Number(inv.TotalLeads) || 0,
+          totalLeads: Number(inv.totalLeads) || 0,
 
           sendingLeads: 0,
 
           sendingPercentage: 0,
 
-          remainingLeads: Number(inv.TotalLeads) || 0,
+          remainingLeads: Number(inv.remainingLeads) || 0,
 
-          TotalAmount: Number(inv.TotalAmount) || 0,
+          totalAmount: Number(inv.totalAmount) || 0,
 
           /* =========================================
          DATES
       ========================================= */
 
-          PackageStartDate: startDate,
+          packageStartDate: startDate,
 
-          PackageEndDate: endDate,
+          packageEndDate: endDate,
 
-          CurrentDate: new Date(),
+          currentDate: new Date(),
 
-          RenewalEndDate: endDate,
+          renewalEndDate: endDate,
 
           /* =========================================
          STATUS
@@ -154,9 +154,9 @@ export const createIntialPackages = async (req, res) => {
     const newBrandPackage = new BrandPackages({
       brandOwnerId,
 
-      Industry: Industry || "",
+      industry: Industry || "",
 
-      Category: Category || "",
+      category: Category || "",
 
       brandName: brandName || "",
 
@@ -164,7 +164,7 @@ export const createIntialPackages = async (req, res) => {
         {
           packagesType: "FREE",
 
-          InvestmetPackages: processedInvestments,
+          investmetPackages: processedInvestments,
         },
       ],
     });
@@ -266,7 +266,7 @@ export const createBrandPackages = async (req, res) => {
     ===================================================== */
 
     for (const incomingPkg of packages) {
-      const { packagesType, InvestmetPackages = [] } = incomingPkg;
+      const { packagesType, investmetPackages = [] } = incomingPkg;
 
       if (!packagesType) {
         continue;
@@ -285,8 +285,8 @@ export const createBrandPackages = async (req, res) => {
          FORMAT INVESTMENT PACKAGES
       ===================================================== */
 
-      const formattedPackages = InvestmetPackages.map((pkg) => {
-        const validityDays = Number(pkg.Validity) || 0;
+      const formattedPackages = investmetPackages.map((pkg) => {
+        const validityDays = Number(pkg.validity) || 0;
 
         const startDate = new Date();
 
@@ -294,7 +294,7 @@ export const createBrandPackages = async (req, res) => {
 
         endDate.setDate(endDate.getDate() + validityDays);
 
-        let totalLeads = Number(pkg.TotalLeads) || 0;
+        let totalLeads = Number(pkg.totalLeads) || 0;
 
         let remainingLeads = Number(pkg.remainingLeads) || totalLeads;
 
@@ -302,7 +302,7 @@ export const createBrandPackages = async (req, res) => {
 
         let sendingPercentage = Number(pkg.sendingPercentage) || 0;
 
-        let totalAmount = Number(pkg.TotalAmount) || 0;
+        let totalAmount = Number(pkg.totalAmount) || 0;
 
         /* =========================================
              TYPE BASED LOGIC
@@ -324,7 +324,7 @@ export const createBrandPackages = async (req, res) => {
 
           planUniqueId: pkg.planUniqueId || "",
 
-          InvestmetRageLabel: pkg.InvestmetRageLabel || "",
+          investmetRageLabel: pkg.investmetRageLabel || "",
 
           investmentranges: (pkg.investmentranges || []).map((range) => ({
             selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
@@ -338,9 +338,9 @@ export const createBrandPackages = async (req, res) => {
             })),
           })),
 
-          Validity: String(validityDays),
+          validity: String(validityDays),
 
-          TotalLeads: totalLeads,
+          totalLeads: totalLeads,
 
           sendingLeads: sendingLeads,
 
@@ -348,15 +348,15 @@ export const createBrandPackages = async (req, res) => {
 
           remainingLeads: remainingLeads,
 
-          TotalAmount: totalAmount,
+          totalAmount: totalAmount,
 
-          PackageStartDate: startDate,
+          packageStartDate: startDate,
 
-          PackageEndDate: endDate,
+          packageEndDate: endDate,
 
-          CurrentDate: startDate,
+          currentDate: startDate,
 
-          RenewalEndDate: endDate,
+          renewalEndDate: endDate,
 
           isPaused: false,
 
