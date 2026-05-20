@@ -3,26 +3,32 @@ import { BrandPackagesHistory } from "../../model/BrandPackagePlans/brandPackage
 import cron from "node-cron";
 import mongoose from "mongoose";
 
-export const createIntialPackages = async (req, res) => {
+export const createInitialPackages = async ({
+  brandOwnerId,
+  Industry,
+  Category,
+  brandName,
+  packages,
+}) => {
   try {
-    const { brandOwnerId, Industry, Category, brandName, packages } = req.body;
-
     /* =====================================================
        VALIDATION
     ===================================================== */
 
     if (!brandOwnerId) {
-      return res.status(400).json({
+      return {
         success: false,
+        statusCode: 400,
         message: "brandOwnerId is required",
-      });
+      };
     }
 
     if (!packages || !Array.isArray(packages) || packages.length === 0) {
-      return res.status(400).json({
+      return {
         success: false,
+        statusCode: 400,
         message: "packages array is required",
-      });
+      };
     }
 
     /* =====================================================
@@ -30,23 +36,25 @@ export const createIntialPackages = async (req, res) => {
     ===================================================== */
 
     if (packages.length > 1) {
-      return res.status(400).json({
+      return {
         success: false,
+        statusCode: 400,
         message: "Initially only one FREE package can be created",
-      });
+      };
     }
 
     const packageData = packages[0];
 
     if (packageData.packagesType?.toUpperCase() !== "FREE") {
-      return res.status(400).json({
+      return {
         success: false,
+        statusCode: 400,
         message: "Initially only FREE package is allowed",
-      });
+      };
     }
 
     /* =====================================================
-       CHECK EXISTING BRAND
+       CHECK EXISTING BRAND PACKAGE
     ===================================================== */
 
     const existingBrand = await BrandPackages.findOne({
@@ -54,98 +62,111 @@ export const createIntialPackages = async (req, res) => {
     });
 
     if (existingBrand) {
-      return res.status(400).json({
+      return {
         success: false,
+        statusCode: 400,
         message: "Initial package already created",
-      });
+      };
     }
 
     /* =====================================================
-       PROCESS FREE PACKAGE
+       PROCESS INVESTMENT PACKAGES
     ===================================================== */
-    const processedInvestments = (packageData.InvestmetPackages || []).map(
-      (inv, index) => {
-        const validityString = inv.Validity || "0";
+
+    const processedInvestments = (
+      packageData.investmetPackages || []
+    ).map((inv) => {
+      const validityString = inv.validity || "0";
+
+      /* =========================================
+         EXTRACT DAYS FROM VALIDITY
+         Example: "60 Days"
+      ========================================= */
+
+      const validityDays = parseInt(validityString) || 0;
+
+      const startDate = new Date();
+
+      const endDate = new Date(startDate);
+
+      endDate.setDate(startDate.getDate() + validityDays);
+
+      return {
+        packagesName: inv.packagesName || "",
+
+        planUniqueId: inv.planId || "",
+
+        investmetRageLabel: inv.investmetRageLabel || "",
 
         /* =========================================
-       EXTRACT NUMBER FROM "60 Days"
-    ========================================= */
+           STORE STATE + DISTRICT
+        ========================================= */
 
-        const validityDays = parseInt(validityString) || 0;
+        investmentranges: (inv.investmentranges || []).map((range) => ({
+          selectedPlanInvestmetrange:
+            range.selectedPlanInvestmetrange || "",
 
-        const startDate = new Date();
+          selectedPlanStateAndDistrict: (
+            range.selectedPlanStateAndDistrict || []
+          ).map((item) => ({
+            state: item.state || "",
 
-        const endDate = new Date(startDate);
-
-        endDate.setDate(startDate.getDate() + validityDays);
-
-        return {
-          packagesName: inv.packagesName || "",
-
-          planUniqueId: inv.planId || "",
-
-          investmetRageLabel: inv.investmetRageLabel || "",
-
-          /* =========================================
-         STORE STATE + DISTRICT PROPERLY
-      ========================================= */
-
-          investmentranges: (inv.investmentranges || []).map((range) => ({
-            selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
-
-            selectedPlanStateAndDistrict: (
-              range.selectedPlanStateAndDistrict || []
-            ).map((item) => ({
-              state: item.state || "",
-
-              district: Array.isArray(item.district) ? item.district : [],
-            })),
+            district: Array.isArray(item.district)
+              ? item.district
+              : [],
           })),
+        })),
 
-          validity: validityString,
+        /* =========================================
+           VALIDITY
+        ========================================= */
 
-          /* =========================================
-         LEADS
-      ========================================= */
+        validity: validityString,
 
-          totalLeads: Number(inv.totalLeads) || 0,
+        /* =========================================
+           LEADS
+        ========================================= */
 
-          sendingLeads: 0,
+        totalLeads: Number(inv.totalLeads) || 0,
 
-          sendingPercentage: 0,
+        sendingLeads: 0,
 
-          remainingLeads: Number(inv.remainingLeads) || 0,
+        sendingPercentage: 0,
 
-          totalAmount: Number(inv.totalAmount) || 0,
+        remainingLeads:
+          Number(inv.remainingLeads) ||
+          Number(inv.totalLeads) ||
+          0,
 
-          /* =========================================
-         DATES
-      ========================================= */
+        totalAmount: Number(inv.totalAmount) || 0,
 
-          packageStartDate: startDate,
+        /* =========================================
+           DATES
+        ========================================= */
 
-          packageEndDate: endDate,
+        packageStartDate: startDate,
 
-          currentDate: new Date(),
+        packageEndDate: endDate,
 
-          renewalEndDate: endDate,
+        currentDate: new Date(),
 
-          /* =========================================
-         STATUS
-      ========================================= */
+        renewalEndDate: endDate,
 
-          isPaused: false,
+        /* =========================================
+           STATUS
+        ========================================= */
 
-          pauseHistory: [],
+        isPaused: false,
 
-          isExperied: false,
+        pauseHistory: [],
 
-          isActive: true,
+        isExperied: false,
 
-          isPending: false,
-        };
-      },
-    );
+        isActive: true,
+
+        isPending: false,
+      };
+    });
 
     /* =====================================================
        CREATE DOCUMENT
@@ -172,22 +193,24 @@ export const createIntialPackages = async (req, res) => {
     await newBrandPackage.save();
 
     /* =====================================================
-       RESPONSE
+       SUCCESS RESPONSE
     ===================================================== */
 
-    return res.status(201).json({
+    return {
       success: true,
+      statusCode: 201,
       message: "Initial FREE package created successfully",
       data: newBrandPackage,
-    });
+    };
   } catch (error) {
-    console.error("createIntialPackages Error:", error);
+    console.error("createInitialPackages Error:", error);
 
-    return res.status(500).json({
+    return {
       success: false,
+      statusCode: 500,
       message: "Internal server error",
       error: error.message,
-    });
+    };
   }
 };
 
@@ -264,6 +287,10 @@ export const createBrandPackages = async (req, res) => {
 
     const brandDoc = await BrandPackages.findOne({
       brandOwnerId,
+      industry: franchiseDetails?.brandCategories?.main || "",
+      category: franchiseDetails?.brandCategories?.sub || "",
+      brandName: brand?.brandDetails?.brandName || "",
+      
     });
 
     if (!brandDoc) {
