@@ -3,18 +3,9 @@ import { BrandPackagesHistory } from "../../model/BrandPackagePlans/brandPackage
 import cron from "node-cron";
 import mongoose from "mongoose";
 
-
-export const createIntialPackages = async (
-  req,
-  res,
-) => {
+export const createIntialPackages = async (req, res) => {
   try {
-    const {
-      brandOwnerId,
-      Industry,
-      Category,
-      packages,
-    } = req.body;
+    const { brandOwnerId, Industry, Category, brandName, packages } = req.body;
 
     /* =====================================================
        VALIDATION
@@ -23,20 +14,14 @@ export const createIntialPackages = async (
     if (!brandOwnerId) {
       return res.status(400).json({
         success: false,
-        message:
-          "brandOwnerId is required",
+        message: "brandOwnerId is required",
       });
     }
 
-    if (
-      !packages ||
-      !Array.isArray(packages) ||
-      packages.length === 0
-    ) {
+    if (!packages || !Array.isArray(packages) || packages.length === 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "packages array is required",
+        message: "packages array is required",
       });
     }
 
@@ -47,21 +32,16 @@ export const createIntialPackages = async (
     if (packages.length > 1) {
       return res.status(400).json({
         success: false,
-        message:
-          "Initially only one FREE package can be created",
+        message: "Initially only one FREE package can be created",
       });
     }
 
     const packageData = packages[0];
 
-    if (
-      packageData.packagesType
-        ?.toUpperCase() !== "FREE"
-    ) {
+    if (packageData.packagesType?.toUpperCase() !== "FREE") {
       return res.status(400).json({
         success: false,
-        message:
-          "Initially only FREE package is allowed",
+        message: "Initially only FREE package is allowed",
       });
     }
 
@@ -69,169 +49,125 @@ export const createIntialPackages = async (
        CHECK EXISTING BRAND
     ===================================================== */
 
-    const existingBrand =
-      await BrandPackages.findOne({
-        brandOwnerId,
-      });
+    const existingBrand = await BrandPackages.findOne({
+      brandOwnerId,
+    });
 
     if (existingBrand) {
       return res.status(400).json({
         success: false,
-        message:
-          "Initial package already created",
+        message: "Initial package already created",
       });
     }
 
     /* =====================================================
        PROCESS FREE PACKAGE
     ===================================================== */
-const processedInvestments =
-  (
-    packageData.InvestmetPackages ||
-    []
-  ).map((inv, index) => {
-    const validityString =
-      inv.Validity || "0";
+    const processedInvestments = (packageData.InvestmetPackages || []).map(
+      (inv, index) => {
+        const validityString = inv.Validity || "0";
 
-    /* =========================================
+        /* =========================================
        EXTRACT NUMBER FROM "60 Days"
     ========================================= */
 
-    const validityDays =
-      parseInt(validityString) ||
-      0;
+        const validityDays = parseInt(validityString) || 0;
 
-    const startDate = new Date();
+        const startDate = new Date();
 
-    const endDate = new Date(
-      startDate,
-    );
+        const endDate = new Date(startDate);
 
-    endDate.setDate(
-      startDate.getDate() +
-        validityDays,
-    );
+        endDate.setDate(startDate.getDate() + validityDays);
 
-    return {
-      packagesName:
-        inv.packagesName || "",
+        return {
+          packagesName: inv.packagesName || "",
 
-      planUniqueId:
-        inv.planId || "",
+          planUniqueId: inv.planId || "",
 
-      InvestmetRageLabel:
-        inv.InvestmetRageLabel ||
-        "",
+          InvestmetRageLabel: inv.InvestmetRageLabel || "",
 
-      /* =========================================
+          /* =========================================
          STORE STATE + DISTRICT PROPERLY
       ========================================= */
 
-      investmentranges: (
-        inv.investmentranges || []
-      ).map((range) => ({
-        selectedPlanInvestmetrange:
-          range.selectedPlanInvestmetrange ||
-          "",
+          investmentranges: (inv.investmentranges || []).map((range) => ({
+            selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
 
-        selectedPlanStateAndDistrict:
-          (
-            range.selectedPlanStateAndDistrict ||
-            []
-          ).map((item) => ({
-            state:
-              item.state || "",
+            selectedPlanStateAndDistrict: (
+              range.selectedPlanStateAndDistrict || []
+            ).map((item) => ({
+              state: item.state || "",
 
-            district:
-              Array.isArray(
-                item.district,
-              )
-                ? item.district
-                : [],
+              district: Array.isArray(item.district) ? item.district : [],
+            })),
           })),
-      })),
 
-      Validity:
-        validityString,
+          Validity: validityString,
 
-      /* =========================================
+          /* =========================================
          LEADS
       ========================================= */
 
-      TotalLeads:
-        Number(
-          inv.TotalLeads,
-        ) || 0,
+          TotalLeads: Number(inv.TotalLeads) || 0,
 
-      sendingLeads: 0,
+          sendingLeads: 0,
 
-      sendingPercentage: 0,
+          sendingPercentage: 0,
 
-      remainingLeads:
-        Number(
-          inv.TotalLeads,
-        ) || 0,
+          remainingLeads: Number(inv.TotalLeads) || 0,
 
-      TotalAmount:
-        Number(
-          inv.TotalAmount,
-        ) || 0,
+          TotalAmount: Number(inv.TotalAmount) || 0,
 
-      /* =========================================
+          /* =========================================
          DATES
       ========================================= */
 
-      PackageStartDate:
-        startDate,
+          PackageStartDate: startDate,
 
-      PackageEndDate:
-        endDate,
+          PackageEndDate: endDate,
 
-      CurrentDate:
-        new Date(),
+          CurrentDate: new Date(),
 
-      RenewalEndDate:
-        endDate,
+          RenewalEndDate: endDate,
 
-      /* =========================================
+          /* =========================================
          STATUS
       ========================================= */
 
-      isPaused: false,
+          isPaused: false,
 
-      pauseHistory: [],
+          pauseHistory: [],
 
-      isExperied: false,
+          isExperied: false,
 
-      isActive: true,
+          isActive: true,
 
-      isPending: false,
-    };
-  });
+          isPending: false,
+        };
+      },
+    );
 
     /* =====================================================
        CREATE DOCUMENT
     ===================================================== */
 
-    const newBrandPackage =
-      new BrandPackages({
-        brandOwnerId,
+    const newBrandPackage = new BrandPackages({
+      brandOwnerId,
 
-        Industry:
-          Industry || "",
+      Industry: Industry || "",
 
-        Category:
-          Category || "",
+      Category: Category || "",
 
-        packages: [
-          {
-            packagesType: "FREE",
+      brandName: brandName || "",
 
-            InvestmetPackages:
-              processedInvestments,
-          },
-        ],
-      });
+      packages: [
+        {
+          packagesType: "FREE",
+
+          InvestmetPackages: processedInvestments,
+        },
+      ],
+    });
 
     await newBrandPackage.save();
 
@@ -241,20 +177,15 @@ const processedInvestments =
 
     return res.status(201).json({
       success: true,
-      message:
-        "Initial FREE package created successfully",
+      message: "Initial FREE package created successfully",
       data: newBrandPackage,
     });
   } catch (error) {
-    console.error(
-      "createIntialPackages Error:",
-      error,
-    );
+    console.error("createIntialPackages Error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Internal server error",
+      message: "Internal server error",
       error: error.message,
     });
   }
@@ -347,10 +278,7 @@ export const createBrandPackages = async (req, res) => {
     ===================================================== */
 
     for (const incomingPkg of packages) {
-      const {
-        packagesType,
-        InvestmetPackages = [],
-      } = incomingPkg;
+      const { packagesType, InvestmetPackages = [] } = incomingPkg;
 
       if (!packagesType) {
         continue;
@@ -361,137 +289,98 @@ export const createBrandPackages = async (req, res) => {
          NOW CHECKING packagesType ONLY
       ===================================================== */
 
-      const existingPackageType =
-        brandDoc.packages.find(
-          (pkg) =>
-            pkg.packagesType ===
-            packagesType.toUpperCase(),
-        );
+      const existingPackageType = brandDoc.packages.find(
+        (pkg) => pkg.packagesType === packagesType.toUpperCase(),
+      );
 
       /* =====================================================
          FORMAT INVESTMENT PACKAGES
       ===================================================== */
 
-      const formattedPackages =
-        InvestmetPackages.map((pkg) => {
-          const validityDays =
-            Number(pkg.Validity) || 0;
+      const formattedPackages = InvestmetPackages.map((pkg) => {
+        const validityDays = Number(pkg.Validity) || 0;
 
-          const startDate = new Date();
+        const startDate = new Date();
 
-          const endDate = new Date();
+        const endDate = new Date();
 
-          endDate.setDate(
-            endDate.getDate() +
-              validityDays,
-          );
+        endDate.setDate(endDate.getDate() + validityDays);
 
-          let totalLeads =
-            Number(pkg.TotalLeads) || 0;
+        let totalLeads = Number(pkg.TotalLeads) || 0;
 
-          let remainingLeads =
-            Number(pkg.remainingLeads) ||
-            totalLeads;
+        let remainingLeads = Number(pkg.remainingLeads) || totalLeads;
 
-          let sendingLeads =
-            Number(pkg.sendingLeads) || 0;
+        let sendingLeads = Number(pkg.sendingLeads) || 0;
 
-          let sendingPercentage =
-            Number(pkg.sendingPercentage) || 0;
+        let sendingPercentage = Number(pkg.sendingPercentage) || 0;
 
-          let totalAmount =
-            Number(pkg.TotalAmount) || 0;
+        let totalAmount = Number(pkg.TotalAmount) || 0;
 
-          /* =========================================
+        /* =========================================
              TYPE BASED LOGIC
           ========================================= */
 
-          if (
-            packagesType.toUpperCase() ===
-            "LISTING"
-          ) {
-            totalLeads = 0;
-            remainingLeads = 0;
-            sendingLeads = 0;
-            sendingPercentage = 0;
-          }
+        if (packagesType.toUpperCase() === "LISTING") {
+          totalLeads = 0;
+          remainingLeads = 0;
+          sendingLeads = 0;
+          sendingPercentage = 0;
+        }
 
-          if (
-            packagesType.toUpperCase() ===
-            "FREE"
-          ) {
-            totalAmount = 0;
-          }
+        if (packagesType.toUpperCase() === "FREE") {
+          totalAmount = 0;
+        }
 
-          return {
-            packagesName:
-              pkg.packagesName || "",
+        return {
+          packagesName: pkg.packagesName || "",
 
-            planUniqueId:
-              pkg.planUniqueId || "",
+          planUniqueId: pkg.planUniqueId || "",
 
-            InvestmetRageLabel:
-              pkg.InvestmetRageLabel || "",
+          InvestmetRageLabel: pkg.InvestmetRageLabel || "",
 
-            investmentranges: (
-              pkg.investmentranges || []
-            ).map((range) => ({
-              selectedPlanInvestmetrange:
-                range.selectedPlanInvestmetrange ||
-                "",
+          investmentranges: (pkg.investmentranges || []).map((range) => ({
+            selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
 
-              selectedPlanStateAndDistrict:
-                (
-                  range.selectedPlanStateAndDistrict ||
-                  []
-                ).map((stateObj) => ({
-                  state:
-                    stateObj.state || "",
+            selectedPlanStateAndDistrict: (
+              range.selectedPlanStateAndDistrict || []
+            ).map((stateObj) => ({
+              state: stateObj.state || "",
 
-                  district:
-                    stateObj.district || [],
-                })),
+              district: stateObj.district || [],
             })),
+          })),
 
-            Validity:
-              String(validityDays),
+          Validity: String(validityDays),
 
-            TotalLeads: totalLeads,
+          TotalLeads: totalLeads,
 
-            sendingLeads:
-              sendingLeads,
+          sendingLeads: sendingLeads,
 
-            sendingPercentage:
-              sendingPercentage,
+          sendingPercentage: sendingPercentage,
 
-            remainingLeads:
-              remainingLeads,
+          remainingLeads: remainingLeads,
 
-            TotalAmount: totalAmount,
+          TotalAmount: totalAmount,
 
-            PackageStartDate:
-              startDate,
+          PackageStartDate: startDate,
 
-            PackageEndDate:
-              endDate,
+          PackageEndDate: endDate,
 
-            CurrentDate:
-              startDate,
+          CurrentDate: startDate,
 
-            RenewalEndDate:
-              endDate,
+          RenewalEndDate: endDate,
 
-            isPaused: false,
+          isPaused: false,
 
-            pauseHistory: [],
+          pauseHistory: [],
 
-            isExperied: false,
+          isExperied: false,
 
-            isActive: false,
+          isActive: false,
 
-            isPending: true,
-          };
-        });
+          isPending: true,
+        };
+      });
 
       /* =====================================================
          CASE 1
@@ -500,23 +389,17 @@ export const createBrandPackages = async (req, res) => {
       ===================================================== */
 
       if (existingPackageType) {
-        existingPackageType.InvestmetPackages.push(
-          ...formattedPackages,
-        );
-      }
+        existingPackageType.InvestmetPackages.push(...formattedPackages);
+      } else {
 
       /* =====================================================
          CASE 2
          CREATE NEW PACKAGE TYPE
       ===================================================== */
-
-      else {
         brandDoc.packages.push({
-          packagesType:
-            packagesType.toUpperCase(),
+          packagesType: packagesType.toUpperCase(),
 
-          InvestmetPackages:
-            formattedPackages,
+          InvestmetPackages: formattedPackages,
         });
       }
     }
@@ -529,15 +412,11 @@ export const createBrandPackages = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message:
-        "Packages created successfully",
+      message: "Packages created successfully",
       data: brandDoc,
     });
   } catch (error) {
-    console.error(
-      "createBrandPackages Error:",
-      error,
-    );
+    console.error("createBrandPackages Error:", error);
 
     return res.status(500).json({
       success: false,
@@ -636,9 +515,7 @@ export const updateBrandPackages = async (req, res) => {
       // 4. add new state objects
       if (addStates.length > 0) {
         const newStateEntries = addStates.map((entry) =>
-          typeof entry === "string"
-            ? { state: entry, district: [] }
-            : entry,
+          typeof entry === "string" ? { state: entry, district: [] } : entry,
         );
 
         await BrandPackages.updateOne(
@@ -967,12 +844,10 @@ export const getBrandPackagesHistoryById = async (req, res) => {
 //         brand.packages.forEach((pkg) => {
 //           const expired = [];
 //           const active = [];
-  
+
 //           pkg.InvestmetPackages.forEach((inv) => {
 //             // ✅ ONLY CHECK remainingLeads
 //             const isLeadFinished = inv.remainingLeads <= 0;
-
-            
 
 //             if (isLeadFinished) {
 //               // ✅ Mark inactive & expired
@@ -1089,17 +964,20 @@ export const startBrandExpiryJob = () => {
                remainingLeads <= 0
             ====================================================== */
 
+            if (pkg.packagesType !== "LISTING" && inv.remainingLeads <= 0) {
+              shouldExpire = true;
+            }
+
             if (
-              pkg.packagesType !== "LISTING" &&
-              inv.remainingLeads <= 0
+              pkg.packagesType === "LISTING" &&
+              inv.RenewalEndDate &&
+              new Date(inv.RenewalEndDate) <= currentDate
             ) {
               shouldExpire = true;
             }
 
-        
-
             if (
-              pkg.packagesType === "LISTING" &&
+              pkg.packagesType === "FREE" &&
               inv.RenewalEndDate &&
               new Date(inv.RenewalEndDate) <= currentDate
             ) {
@@ -1171,13 +1049,11 @@ export const startBrandExpiryJob = () => {
         } else {
           expiredPackages.forEach((newPkg) => {
             const existingPkg = historyDoc.packages.find(
-              (p) => p.planUniqueId === newPkg.planUniqueId
+              (p) => p.planUniqueId === newPkg.planUniqueId,
             );
 
             if (existingPkg) {
-              existingPkg.InvestmetPackages.push(
-                ...newPkg.InvestmetPackages
-              );
+              existingPkg.InvestmetPackages.push(...newPkg.InvestmetPackages);
             } else {
               historyDoc.packages.push(newPkg);
             }
@@ -1191,7 +1067,7 @@ export const startBrandExpiryJob = () => {
         ====================================================== */
 
         brand.packages = updatedPackages.filter(
-          (pkg) => pkg.InvestmetPackages.length > 0
+          (pkg) => pkg.InvestmetPackages.length > 0,
         );
 
         await brand.save();
@@ -1408,7 +1284,7 @@ export const activePackageStatus = async (req, res) => {
 
     /* ================= LOOP ================= */
     for (const item of plandata) {
-      const { PlanuniqueId, _id,  } = item;
+      const { PlanuniqueId, _id } = item;
 
       /* _id must be array */
       if (!Array.isArray(_id) || _id.length === 0) {
@@ -1439,7 +1315,7 @@ export const activePackageStatus = async (req, res) => {
           const currentDate = new Date();
 
           investmentPackage.PackageStartDate = currentDate;
-          
+
           /* validity days */
           const validityDays = Number(investmentPackage.Validity || 0);
 
@@ -1448,7 +1324,7 @@ export const activePackageStatus = async (req, res) => {
           endDate.setDate(endDate.getDate() + validityDays);
 
           investmentPackage.PackageEndDate = endDate;
-      
+
           investmentPackage.isExperied = false;
         }
 
@@ -1525,15 +1401,13 @@ export const upgradeBrandPackages = async (req, res) => {
 
     for (const pkg of brandPackage.packages) {
       if (pkg.planUniqueId === planUniqueId) {
-        const existingInvestmentPackage =
-          pkg.InvestmetPackages.id(_id);
+        const existingInvestmentPackage = pkg.InvestmetPackages.id(_id);
 
         if (existingInvestmentPackage) {
           existingFound = true;
 
           // store old remaining leads
-          oldRemainingLeads =
-            existingInvestmentPackage.remainingLeads || 0;
+          oldRemainingLeads = existingInvestmentPackage.remainingLeads || 0;
 
           // expire old package
           existingInvestmentPackage.remainingLeads = 0;
@@ -1544,8 +1418,7 @@ export const upgradeBrandPackages = async (req, res) => {
 
           existingInvestmentPackage.isPending = false;
 
-          existingInvestmentPackage.RenewalEndDate =
-            new Date();
+          existingInvestmentPackage.RenewalEndDate = new Date();
         }
       }
     }
@@ -1564,64 +1437,56 @@ export const upgradeBrandPackages = async (req, res) => {
 
     const currentDate = new Date();
 
-    const newInvestmentPackages =
-      Package.InvestmetPackages.map((item) => {
-        const validityDays = Number(item.Validity || 0);
+    const newInvestmentPackages = Package.InvestmetPackages.map((item) => {
+      const validityDays = Number(item.Validity || 0);
 
-        const endDate = new Date(currentDate);
+      const endDate = new Date(currentDate);
 
-        endDate.setDate(
-          endDate.getDate() + validityDays
-        );
+      endDate.setDate(endDate.getDate() + validityDays);
 
-        const newTotalLeads =
-          (item.TotalLeads || 0) + oldRemainingLeads;
+      const newTotalLeads = (item.TotalLeads || 0) + oldRemainingLeads;
 
-        return {
-          InvestmetRageLabel:
-            item.InvestmetRageLabel,
+      return {
+        InvestmetRageLabel: item.InvestmetRageLabel,
 
-          investmentranges:
-            item.investmentranges || [],
+        investmentranges: item.investmentranges || [],
 
-          Validity: item.Validity,
+        Validity: item.Validity,
 
-          TotalLeads: newTotalLeads,
+        TotalLeads: newTotalLeads,
 
-          // old remaining leads added
-          remainingLeads: newTotalLeads,
+        // old remaining leads added
+        remainingLeads: newTotalLeads,
 
-          TotalAmount: item.TotalAmount || 0,
+        TotalAmount: item.TotalAmount || 0,
 
-          PackageStartDate: currentDate,
+        PackageStartDate: currentDate,
 
-          PackageEndDate: endDate,
+        PackageEndDate: endDate,
 
-          CurrentDate: currentDate,
+        CurrentDate: currentDate,
 
-          RenewalEndDate: endDate,
+        RenewalEndDate: endDate,
 
-          isPaused: false,
+        isPaused: false,
 
-          pauseHistory: [],
+        pauseHistory: [],
 
-          isExperied: false,
+        isExperied: false,
 
-          isActive: false,
+        isActive: false,
 
-          isPending: true,
-        };
-      });
+        isPending: true,
+      };
+    });
 
     /* ======================================================
        CHECK NEW PLAN UNIQUE ID EXISTS
     ====================================================== */
 
-    const existingMainPackage =
-      brandPackage.packages.find(
-        (pkg) =>
-          pkg.planUniqueId === Package.planUniqueId
-      );
+    const existingMainPackage = brandPackage.packages.find(
+      (pkg) => pkg.planUniqueId === Package.planUniqueId,
+    );
 
     if (existingMainPackage) {
       /* ==============================================
@@ -1629,9 +1494,7 @@ export const upgradeBrandPackages = async (req, res) => {
          PUSH NEW INVESTMENT PACKAGE
       ============================================== */
 
-      existingMainPackage.InvestmetPackages.push(
-        ...newInvestmentPackages
-      );
+      existingMainPackage.InvestmetPackages.push(...newInvestmentPackages);
     } else {
       /* ==============================================
          NEW planUniqueId
@@ -1661,10 +1524,7 @@ export const upgradeBrandPackages = async (req, res) => {
       data: brandPackage,
     });
   } catch (error) {
-    console.error(
-      "upgradeBrandPackage Error:",
-      error
-    );
+    console.error("upgradeBrandPackage Error:", error);
 
     return res.status(500).json({
       success: false,

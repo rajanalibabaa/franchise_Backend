@@ -145,7 +145,9 @@ const BrandPackagesHistorySchema = new mongoose.Schema(
     Category: {
       type: String,
     },
-
+    brandName: {
+      type: String,
+    },
     packages: {
       type: [packageSchema],
       default: [],
