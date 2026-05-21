@@ -1289,9 +1289,22 @@ export const getBrandPackagesHistoryById = async (req, res) => {
 // };
 
 export const startBrandExpiryJob = () => {
-  // ⏱️ Every 5 minutes`
-  cron.schedule("*/5 * * * * * ", async () => {
-    console.log("🔄 Running Brand Expiry Cron Job...");
+  // ⏱️ Every 5 minutes
+  cron.schedule(
+    "*/5 * * * *",
+    async () => {
+      if (
+        mongoose.connection.readyState !== 1 ||
+        !mongoose.connection.db
+      ) {
+        console.warn(
+          "⚠️ Skipping Brand Expiry Cron Job because MongoDB is not connected. readyState=",
+          mongoose.connection.readyState,
+        );
+        return;
+      }
+
+      console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
       const brands = await BrandPackages.find();
