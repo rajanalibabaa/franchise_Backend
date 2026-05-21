@@ -1287,7 +1287,7 @@ export const startBrandExpiryJob = () => {
                remainingLeads <= 0
             ====================================================== */
 
-            if (pkg.packagesType !== "LISTING" && inv.remainingLeads <= 0) {
+            if (pkg.packagesType === "LEAD" && inv.remainingLeads <= 0) {
               shouldExpire = true;
             }
 
