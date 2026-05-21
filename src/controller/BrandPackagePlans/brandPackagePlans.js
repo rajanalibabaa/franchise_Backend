@@ -3,108 +3,215 @@ import { BrandPackagesHistory } from "../../model/BrandPackagePlans/brandPackage
 import cron from "node-cron";
 import mongoose from "mongoose";
 
-export const createIntialPackages = async (brandOwnerId, packages) => {
-  /* ================= VALIDATION ================= */
-  if (!brandOwnerId) {
-    throw new Error("brandOwnerId is required");
-  }
+export const createInitialPackages = async ({
+  brandOwnerId,
+  Industry,
+  Category,
+  brandName,
+  packages,
+}) => {
+  try {
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
 
-  if (!packages || !Array.isArray(packages) || packages.length === 0) {
-    throw new Error("packages array is required");
-  }
-
-  /* ================= PREPARE PACKAGES ================= */
-  const preparedPackages = packages.map((pkg, i) => {
-    const { packagesType, packagesName, planUniqueId, InvestmetPackages } = pkg;
-
-    if (!packagesType || !packagesName) {
-      throw new Error(`Missing package fields at index ${i}`);
+    if (!brandOwnerId) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: "brandOwnerId is required",
+      };
     }
 
-    /* ===== VALIDATE TYPE ===== */
-    const type = packagesType.toUpperCase();
-    if (!["FREE", "LEAD", "LISTING"].includes(type)) {
-      throw new Error(`Invalid packagesType at index ${i}`);
+    if (!packages || !Array.isArray(packages) || packages.length === 0) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: "packages array is required",
+      };
     }
 
-    /* ===== PROCESS INVESTMENT PACKAGES ===== */
-    const processedInvestments = (InvestmetPackages || []).map((inv, j) => {
-      if (!inv) {
-        throw new Error(`InvestmetPackages missing at index ${i}-${j}`);
-      }
+    /* =====================================================
+       ONLY SINGLE FREE PACKAGE ALLOWED
+    ===================================================== */
 
-      const validityDays = Number(inv.Validity) || 0;
+    if (packages.length > 1) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: "Initially only one FREE package can be created",
+      };
+    }
 
-      const startDate = inv.StartDate ? new Date(inv.StartDate) : new Date();
+    const packageData = packages[0];
+
+    if (packageData.packagesType?.toUpperCase() !== "FREE") {
+      return {
+        success: false,
+        statusCode: 400,
+        message: "Initially only FREE package is allowed",
+      };
+    }
+
+    /* =====================================================
+       CHECK EXISTING BRAND PACKAGE
+    ===================================================== */
+
+    const existingBrand = await BrandPackages.findOne({
+      brandOwnerId,
+    });
+
+    if (existingBrand) {
+      return {
+        success: false,
+        statusCode: 400,
+        message: "Initial package already created",
+      };
+    }
+
+    /* =====================================================
+       PROCESS INVESTMENT PACKAGES
+    ===================================================== */
+
+    const processedInvestments = (
+      packageData.investmetPackages || []
+    ).map((inv) => {
+      const validityString = inv.validity || "0";
+
+      /* =========================================
+         EXTRACT DAYS FROM VALIDITY
+         Example: "60 Days"
+      ========================================= */
+
+      const validityDays = parseInt(validityString) || 0;
+
+      const startDate = new Date();
 
       const endDate = new Date(startDate);
+
       endDate.setDate(startDate.getDate() + validityDays);
 
-      /* ===== TYPE BASED LOGIC ===== */
-      let totalLeads = Number(inv.TotalLeads) || 0;
-      let remainingLeads = Number(inv.remainingLeads) || totalLeads;
-      let totalAmount = Number(inv.TotalAmount) || 0;
-
-      if (type === "FREE") {
-        totalAmount = 0;
-      }
-
-      if (type === "LISTING") {
-        totalLeads = 0;
-        remainingLeads = 0;
-      }
-
-      if (type === "LEAD" && totalLeads === 0) {
-        throw new Error(`totalLeads required for LEAD at index ${i}-${j}`);
-      }
-
       return {
-        InvestmetRageLabel: inv.InvestmetRageLabel || "",
+        packagesName: inv.packagesName || "",
+
+        planUniqueId: inv.planId || "",
+
+        investmetRageLabel: inv.investmetRageLabel || "",
+
+        /* =========================================
+           STORE STATE + DISTRICT
+        ========================================= */
 
         investmentranges: (inv.investmentranges || []).map((range) => ({
-          selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
-          selectedPlanState: range.selectedPlanState || [],
+          selectedPlanInvestmetrange:
+            range.selectedPlanInvestmetrange || "",
+
+          selectedPlanStateAndDistrict: (
+            range.selectedPlanStateAndDistrict || []
+          ).map((item) => ({
+            state: item.state || "",
+
+            district: Array.isArray(item.district)
+              ? item.district
+              : [],
+          })),
         })),
 
-        Validity: String(validityDays),
+        /* =========================================
+           VALIDITY
+        ========================================= */
 
-        TotalLeads: totalLeads,
-        remainingLeads: remainingLeads,
-        TotalAmount: totalAmount,
+        validity: validityString,
 
-        PackageStartDate: startDate,
-        PackageEndDate: endDate,
-        CurrentDate: new Date(),
-        RenewalEndDate: null,
-        isExperied: inv.isExperied || false,
-        isActive: inv.isActive ?? true,
-        isPending: inv.isPending ?? false,
+        /* =========================================
+           LEADS
+        ========================================= */
+
+        totalLeads: Number(inv.totalLeads) || 0,
+
+        sendingLeads: 0,
+
+        sendingPercentage: 0,
+
+        remainingLeads:
+          Number(inv.remainingLeads) ||
+          Number(inv.totalLeads) ||
+          0,
+
+        totalAmount: Number(inv.totalAmount) || 0,
+
+        /* =========================================
+           DATES
+        ========================================= */
+
+        packageStartDate: startDate,
+
+        packageEndDate: endDate,
+
+        currentDate: new Date(),
+
+        renewalEndDate: endDate,
+
+        /* =========================================
+           STATUS
+        ========================================= */
+
+        isPaused: false,
+
+        pauseHistory: [],
+
+        isExperied: false,
+
+        isActive: true,
+
+        isPending: false,
       };
     });
 
+    /* =====================================================
+       CREATE DOCUMENT
+    ===================================================== */
+
+    const newBrandPackage = new BrandPackages({
+      brandOwnerId,
+
+      industry: Industry || "",
+
+      category: Category || "",
+
+      brandName: brandName || "",
+
+      packages: [
+        {
+          packagesType: "FREE",
+
+          investmetPackages: processedInvestments,
+        },
+      ],
+    });
+
+    await newBrandPackage.save();
+
+    /* =====================================================
+       SUCCESS RESPONSE
+    ===================================================== */
+
     return {
-      packagesType: type,
-      packagesName,
-      planUniqueId: planUniqueId || "",
-      InvestmetPackages: processedInvestments,
+      success: true,
+      statusCode: 201,
+      message: "Initial FREE package created successfully",
+      data: newBrandPackage,
     };
-  });
+  } catch (error) {
+    console.error("createInitialPackages Error:", error);
 
-  /* ================= CREATE OR APPEND ================= */
-  const result = await BrandPackages.findOneAndUpdate(
-    { brandOwnerId },
-    {
-      $push: {
-        packages: { $each: preparedPackages },
-      },
-    },
-    {
-      new: true,
-      upsert: true,
-    },
-  );
-
-  return result;
+    return {
+      success: false,
+      statusCode: 500,
+      message: "Internal server error",
+      error: error.message,
+    };
+  }
 };
 
 export const getBrandPackagesById = async (req, res) => {
@@ -146,6 +253,15 @@ export const createBrandPackages = async (req, res) => {
   try {
     const { brandOwnerId, packages } = req.body;
 
+    console.log("CREATE PACKAGE REQUEST:", {
+      brandOwnerId,
+      packages,
+    });
+
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
     console.log("UPGRADE REQUEST:", {
       brandOwnerId,
       packages,
@@ -161,18 +277,21 @@ export const createBrandPackages = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Invalid input",
+        message: "brandOwnerId and packages are required",
       });
     }
 
-    // =========================
-    // FIND BRAND
-    // =========================
+    /* =====================================================
+       FIND BRAND
+    ===================================================== */
 
-    const brandDoc =
-      await BrandPackages.findOne({
-        brandOwnerId,
-      });
+    const brandDoc = await BrandPackages.findOne({
+      brandOwnerId,
+      industry: franchiseDetails?.brandCategories?.main || "",
+      category: franchiseDetails?.brandCategories?.sub || "",
+      brandName: brand?.brandDetails?.brandName || "",
+      
+    });
 
     if (!brandDoc) {
       return res.status(404).json({
@@ -181,156 +300,150 @@ export const createBrandPackages = async (req, res) => {
       });
     }
 
-    // =====================================================
-    // ✅ DISABLE ONLY ACTIVE FREE PACKAGE
-    // =====================================================
-
-    brandDoc.packages.forEach((plan) => {
-      const isFreePlan =
-        String(plan.packagesType)
-          .trim()
-          .toUpperCase() === "FREE" ||
-        String(plan.packagesName)
-          .trim()
-          .toUpperCase() === "FREE";
-
-      if (isFreePlan) {
-        plan.InvestmetPackages.forEach(
-          (pkg) => {
-            // ONLY ACTIVE FREE PACKAGE
-            if (pkg.isActive === true) {
-              pkg.isActive = false;
-
-              pkg.isPending = false;
-
-              pkg.isExperied = true;
-
-              pkg.RenewalEndDate =
-                new Date();
-
-              pkg.CurrentDate =
-                new Date();
-            }
-          }
-        );
-      }
-    });
-
-    // =====================================================
-    // LOOP NEW PACKAGES
-    // =====================================================
+    /* =====================================================
+       LOOP PACKAGES
+    ===================================================== */
 
     for (const incomingPkg of packages) {
-      const {
-        packagesType,
-        packagesName,
-        planUniqueId,
-        InvestmetPackages = [],
-      } = incomingPkg;
+      const { packagesType, investmetPackages = [] } = incomingPkg;
 
-      // =====================================================
-      // CHECK EXISTING PLAN
-      // =====================================================
+      if (!packagesType) {
+        continue;
+      }
 
-      const existingPlan =
-        brandDoc.packages.find(
-          (pkg) =>
-            String(pkg.planUniqueId) ===
-            String(planUniqueId)
-        );
+      /* =====================================================
+         FIND EXISTING PACKAGE TYPE
+         NOW CHECKING packagesType ONLY
+      ===================================================== */
 
-      // =====================================================
-      // FORMAT PACKAGE DATA
-      // =====================================================
+      const existingPackageType = brandDoc.packages.find(
+        (pkg) => pkg.packagesType === packagesType.toUpperCase(),
+      );
 
-      const formattedPackages =
-        InvestmetPackages.map((pkg) => ({
-          ...pkg,
+      /* =====================================================
+         FORMAT INVESTMENT PACKAGES
+      ===================================================== */
 
-          remainingLeads:
-            pkg.TotalLeads || 0,
+      const formattedPackages = investmetPackages.map((pkg) => {
+        const validityDays = Number(pkg.validity) || 0;
 
-          PackageStartDate:
-            new Date(),
+        const startDate = new Date();
 
-          PackageEndDate:
-            new Date(
-              Date.now() +
-                Number(
-                  pkg.Validity || 0
-                ) *
-                  24 *
-                  60 *
-                  60 *
-                  1000
-            ),
+        const endDate = new Date();
 
-          CurrentDate:
-            new Date(),
+        endDate.setDate(endDate.getDate() + validityDays);
 
-          RenewalEndDate:
-            new Date(
-              Date.now() +
-                Number(
-                  pkg.Validity || 0
-                ) *
-                  24 *
-                  60 *
-                  60 *
-                  1000
-            ),
+        let totalLeads = Number(pkg.totalLeads) || 0;
+
+        let remainingLeads = Number(pkg.remainingLeads) || totalLeads;
+
+        let sendingLeads = Number(pkg.sendingLeads) || 0;
+
+        let sendingPercentage = Number(pkg.sendingPercentage) || 0;
+
+        let totalAmount = Number(pkg.totalAmount) || 0;
+
+        /* =========================================
+             TYPE BASED LOGIC
+          ========================================= */
+
+        if (packagesType.toUpperCase() === "LISTING") {
+          totalLeads = 0;
+          remainingLeads = 0;
+          sendingLeads = 0;
+          sendingPercentage = 0;
+        }
+
+        if (packagesType.toUpperCase() === "FREE") {
+          totalAmount = 0;
+        }
+
+        return {
+          packagesName: pkg.packagesName || "",
+
+          planUniqueId: pkg.planUniqueId || "",
+
+          investmetRageLabel: pkg.investmetRageLabel || "",
+
+          investmentranges: (pkg.investmentranges || []).map((range) => ({
+            selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
+
+            selectedPlanStateAndDistrict: (
+              range.selectedPlanStateAndDistrict || []
+            ).map((stateObj) => ({
+              state: stateObj.state || "",
+
+              district: stateObj.district || [],
+            })),
+          })),
+
+          validity: String(validityDays),
+
+          totalLeads: totalLeads,
+
+          sendingLeads: sendingLeads,
+
+          sendingPercentage: sendingPercentage,
+
+          remainingLeads: remainingLeads,
+
+          totalAmount: totalAmount,
+
+          packageStartDate: startDate,
+
+          packageEndDate: endDate,
+
+          currentDate: startDate,
+
+          renewalEndDate: endDate,
+
+          isPaused: false,
+
+          pauseHistory: [],
 
           isExperied: false,
 
-          // ✅ PAID PACKAGE ACTIVE
-          isActive: true,
+          isActive: false,
 
-          isPending: false,
-        }));
+          isPending: true,
+        };
+      });
 
-      // =====================================================
-      // EXISTING PLAN
-      // =====================================================
+      /* =====================================================
+         CASE 1
+         EXISTING PACKAGE TYPE FOUND
+         PUSH INVESTMENT PACKAGES
+      ===================================================== */
 
-      if (existingPlan) {
-        existingPlan.InvestmetPackages.push(
-          ...formattedPackages
-        );
-      }
+      if (existingPackageType) {
+        existingPackageType.InvestmetPackages.push(...formattedPackages);
+      } else {
 
-      // =====================================================
-      // NEW PLAN
-      // =====================================================
-
-      else {
+      /* =====================================================
+         CASE 2
+         CREATE NEW PACKAGE TYPE
+      ===================================================== */
         brandDoc.packages.push({
-          packagesType,
-          packagesName,
-          planUniqueId,
+          packagesType: packagesType.toUpperCase(),
 
-          InvestmetPackages:
-            formattedPackages,
+          InvestmetPackages: formattedPackages,
         });
       }
     }
 
-    // =====================================================
-    // SAVE
-    // =====================================================
+    /* =====================================================
+       SAVE
+    ===================================================== */
 
     await brandDoc.save();
 
     return res.status(200).json({
       success: true,
-      message:
-        "Packages upgraded successfully",
+      message: "Packages created successfully",
       data: brandDoc,
     });
   } catch (error) {
-    console.error(
-      "Upgrade Error:",
-      error
-    );
+    console.error("createBrandPackages Error:", error);
 
     return res.status(500).json({
       success: false,
@@ -344,147 +457,500 @@ export const updateBrandPackages = async (req, res) => {
   try {
     const {
       brandOwnerId,
-      planUniqueId,
+      planType, // FREE | LEAD | LISTING
       investmetPackageId,
+
       updates = [],
       newRanges = [],
-      deleteRangeIds = [], // ✅ NEW
+      deleteRangeIds = [],
     } = req.body;
 
-    if (!brandOwnerId || !planUniqueId || !investmetPackageId) {
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
+    if (
+      !brandOwnerId ||
+      !planType ||
+      !investmetPackageId
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message:
+          "brandOwnerId, planType, investmetPackageId are required",
       });
     }
 
-    const investPkgId = new mongoose.Types.ObjectId(investmetPackageId);
+    const investPkgId =
+      new mongoose.Types.ObjectId(
+        investmetPackageId,
+      );
 
-    /* ================= UPDATE EXISTING ================= */
+    /* =====================================================
+       CHECK BRAND EXISTS
+    ===================================================== */
+
+    const brandData =
+      await BrandPackages.findOne({
+        brandOwnerId,
+      });
+
+    if (!brandData) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Brand package not found",
+      });
+    }
+
+    /* =====================================================
+       COMMON ARRAY FILTERS
+    ===================================================== */
+
+    const commonFilters = [
+      {
+        "pkg.packagesType":
+          planType,
+      },
+      {
+        "invPkg._id": investPkgId,
+      },
+    ];
+
+    /* =====================================================
+       UPDATE EXISTING RANGES
+    ===================================================== */
+
     for (const item of updates) {
       const {
         investmentRangeId,
+
+        // update range label
         selectedPlanInvestmetrange,
+
+        // full replace
+        selectedPlanStateAndDistrict,
+
+        // full state ops
         addStates = [],
         removeStates = [],
+
+        // district ops
+        addDistricts = [],
+        removeDistricts = [],
       } = item;
 
-      if (!investmentRangeId) continue;
+      if (!investmentRangeId)
+        continue;
 
-      const invRangeId = new mongoose.Types.ObjectId(investmentRangeId);
+      const invRangeId =
+        new mongoose.Types.ObjectId(
+          investmentRangeId,
+        );
 
       const arrayFilters = [
-        { "pkg.planUniqueId": planUniqueId },
-        { "invPkg._id": investPkgId },
-        { "invRange._id": invRangeId },
+        ...commonFilters,
+        {
+          "invRange._id":
+            invRangeId,
+        },
       ];
 
-      // 1. update range
-      if (selectedPlanInvestmetrange) {
+      /* =====================================================
+         1. UPDATE RANGE LABEL
+      ===================================================== */
+
+      if (
+        selectedPlanInvestmetrange
+      ) {
         await BrandPackages.updateOne(
-          { brandOwnerId },
+          {
+            brandOwnerId,
+          },
           {
             $set: {
-              "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanInvestmetrange":
+              "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanInvestmetrange":
                 selectedPlanInvestmetrange,
             },
           },
-          { arrayFilters },
+          {
+            arrayFilters,
+          },
         );
       }
 
-      // 2. remove states
+      /* =====================================================
+         2. FULL REPLACE STATE + DISTRICT
+      ===================================================== */
+
+      if (
+        selectedPlanStateAndDistrict
+      ) {
+        await BrandPackages.updateOne(
+          {
+            brandOwnerId,
+          },
+          {
+            $set: {
+              "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanStateAndDistrict":
+                selectedPlanStateAndDistrict,
+            },
+          },
+          {
+            arrayFilters,
+          },
+        );
+      }
+
+      /* =====================================================
+         3. REMOVE FULL STATE
+         -> districts auto removed
+      ===================================================== */
+
       if (removeStates.length > 0) {
         await BrandPackages.updateOne(
-          { brandOwnerId },
+          {
+            brandOwnerId,
+          },
           {
             $pull: {
-              "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanState":
+              "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanStateAndDistrict":
                 {
-                  $in: removeStates,
+                  state: {
+                    $in: removeStates,
+                  },
                 },
             },
           },
-          { arrayFilters },
+          {
+            arrayFilters,
+          },
         );
       }
 
-      // 3. add states
-      if (addStates.length > 0) {
+      /* =====================================================
+         4. ADD NEW STATE + DISTRICTS
+      ===================================================== */
+
+      // if (addStates.length > 0) {
+      //   const formattedStates =
+      //     addStates.map((obj) => {
+      //       if (
+      //         typeof obj ===
+      //         "string"
+      //       ) {
+      //         return {
+      //           state: obj,
+      //           district: [],
+      //         };
+      //       }
+
+      //       return {
+      //         state: obj.state,
+      //         district:
+      //           obj.district ||
+      //           [],
+      //       };
+      //     });
+
+      //   await BrandPackages.updateOne(
+      //     {
+      //       brandOwnerId,
+      //     },
+      //     {
+      //       $addToSet: {
+      //         "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanStateAndDistrict":
+      //           {
+      //             $each:
+      //               formattedStates,
+      //           },
+      //       },
+      //     },
+      //     {
+      //       arrayFilters,
+      //     },
+      //   );
+      // }
+      /* =====================================================
+   4. ADD NEW STATE + DISTRICTS
+   -> DO NOT ADD IF STATE ALREADY EXISTS
+===================================================== */
+
+if (addStates.length > 0) {
+  // get current document
+  const existingDoc =
+    await BrandPackages.findOne({
+      brandOwnerId,
+    });
+
+  if (existingDoc) {
+    const packageData =
+      existingDoc.packages.find(
+        (pkg) =>
+          pkg.packagesType ===
+          planType,
+      );
+
+    const investmentPackage =
+      packageData?.investmetPackages.find(
+        (inv) =>
+          inv._id.toString() ===
+          investPkgId.toString(),
+      );
+
+    const investmentRange =
+      investmentPackage?.investmentranges.find(
+        (range) =>
+          range._id.toString() ===
+          invRangeId.toString(),
+      );
+
+    if (investmentRange) {
+      const existingStates =
+        investmentRange.selectedPlanStateAndDistrict.map(
+          (s) =>
+            s.state.toLowerCase(),
+        );
+
+      // filter only new states
+      const filteredStates =
+        addStates.filter((obj) => {
+          const stateName =
+            (
+              typeof obj ===
+              "string"
+                ? obj
+                : obj.state
+            ).toLowerCase();
+
+          return !existingStates.includes(
+            stateName,
+          );
+        });
+
+      if (
+        filteredStates.length > 0
+      ) {
+        const formattedStates =
+          filteredStates.map(
+            (obj) => {
+              if (
+                typeof obj ===
+                "string"
+              ) {
+                return {
+                  state: obj,
+                  district: [],
+                };
+              }
+
+              return {
+                state: obj.state,
+                district:
+                  obj.district ||
+                  [],
+              };
+            },
+          );
+
         await BrandPackages.updateOne(
-          { brandOwnerId },
+          {
+            brandOwnerId,
+          },
+          {
+            $push: {
+              "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanStateAndDistrict":
+                {
+                  $each:
+                    formattedStates,
+                },
+            },
+          },
+          {
+            arrayFilters,
+          },
+        );
+      }
+    }
+  }
+}
+
+      /* =====================================================
+         5. REMOVE PARTICULAR DISTRICT
+      =====================================================
+
+         FORMAT:
+
+         removeDistricts: [
+           {
+             state: "Tamil Nadu",
+             districts: ["Chennai"]
+           }
+         ]
+
+      ===================================================== */
+
+      for (const distObj of removeDistricts) {
+        await BrandPackages.updateOne(
+          {
+            brandOwnerId,
+          },
+          {
+            $pull: {
+              "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanStateAndDistrict.$[stateObj].district":
+                {
+                  $in:
+                    distObj.districts ||
+                    [],
+                },
+            },
+          },
+          {
+            arrayFilters: [
+              ...arrayFilters,
+              {
+                "stateObj.state":
+                  distObj.state,
+              },
+            ],
+          },
+        );
+      }
+
+      /* =====================================================
+         6. ADD DISTRICT INSIDE EXISTING STATE
+      =====================================================
+
+         FORMAT:
+
+         addDistricts: [
+           {
+             state: "Tamil Nadu",
+             districts: [
+               "Erode",
+               "Salem"
+             ]
+           }
+         ]
+
+      ===================================================== */
+
+      for (const distObj of addDistricts) {
+        await BrandPackages.updateOne(
+          {
+            brandOwnerId,
+          },
           {
             $addToSet: {
-              "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanState":
+              "packages.$[pkg].investmetPackages.$[invPkg].investmentranges.$[invRange].selectedPlanStateAndDistrict.$[stateObj].district":
                 {
-                  $each: addStates,
+                  $each:
+                    distObj.districts ||
+                    [],
                 },
             },
           },
-          { arrayFilters },
+          {
+            arrayFilters: [
+              ...arrayFilters,
+              {
+                "stateObj.state":
+                  distObj.state,
+              },
+            ],
+          },
         );
       }
     }
 
-    /* ================= DELETE RANGES (NEW) ================= */
+    /* =====================================================
+       DELETE FULL INVESTMENT RANGE
+    ===================================================== */
+
     if (deleteRangeIds.length > 0) {
       await BrandPackages.updateOne(
-        { brandOwnerId },
+        {
+          brandOwnerId,
+        },
         {
           $pull: {
-            "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges": {
-              _id: {
-                $in: deleteRangeIds.map(
-                  (id) => new mongoose.Types.ObjectId(id),
-                ),
+            "packages.$[pkg].investmetPackages.$[invPkg].investmentranges":
+              {
+                _id: {
+                  $in:
+                    deleteRangeIds.map(
+                      (id) =>
+                        new mongoose.Types.ObjectId(
+                          id,
+                        ),
+                    ),
+                },
               },
-            },
           },
         },
         {
-          arrayFilters: [
-            { "pkg.planUniqueId": planUniqueId },
-            { "invPkg._id": investPkgId },
-          ],
+          arrayFilters:
+            commonFilters,
         },
       );
     }
 
-    /* ================= ADD NEW RANGES ================= */
+    /* =====================================================
+       ADD NEW INVESTMENT RANGE
+    ===================================================== */
+
     if (newRanges.length > 0) {
-      const formatted = newRanges.map((r) => ({
-        _id: new mongoose.Types.ObjectId(),
-        selectedPlanInvestmetrange: r.selectedPlanInvestmetrange,
-        selectedPlanState: r.selectedPlanState || [],
-      }));
+      const formattedRanges =
+        newRanges.map((r) => ({
+          _id:
+            new mongoose.Types.ObjectId(),
+
+          selectedPlanInvestmetrange:
+            r.selectedPlanInvestmetrange,
+
+          selectedPlanStateAndDistrict:
+            r.selectedPlanStateAndDistrict ||
+            [],
+        }));
 
       await BrandPackages.updateOne(
-        { brandOwnerId },
+        {
+          brandOwnerId,
+        },
         {
           $push: {
-            "packages.$[pkg].InvestmetPackages.$[invPkg].investmentranges": {
-              $each: formatted,
-            },
+            "packages.$[pkg].investmetPackages.$[invPkg].investmentranges":
+              {
+                $each:
+                  formattedRanges,
+              },
           },
         },
         {
-          arrayFilters: [
-            { "pkg.planUniqueId": planUniqueId },
-            { "invPkg._id": investPkgId },
-          ],
+          arrayFilters:
+            commonFilters,
         },
       );
     }
 
-    const updatedDoc = await BrandPackages.findOne({ brandOwnerId });
+    /* =====================================================
+       GET UPDATED DATA
+    ===================================================== */
+
+    const updatedData =
+      await BrandPackages.findOne({
+        brandOwnerId,
+      });
 
     return res.status(200).json({
       success: true,
-      message: "Update / Add / Delete operations completed",
-      data: updatedDoc,
+      message:
+        "Brand package updated successfully",
+      data: updatedData,
     });
   } catch (err) {
     console.error(err);
+
     return res.status(500).json({
       success: false,
       message: err.message,
@@ -528,110 +994,110 @@ export const getBrandPackagesHistoryById = async (req, res) => {
   }
 };
 
-export const brandPackageHistory = async (req, res) => {
-  try {
-    const { brandOwnerId } = req.params;
+// export const brandPackageHistory = async (req, res) => {
+//   try {
+//     const { brandOwnerId } = req.params;
 
-    if (!brandOwnerId) {
-      return res.status(400).json({
-        success: false,
-        message: "brandOwnerId is required",
-      });
-    }
+//     if (!brandOwnerId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "brandOwnerId is required",
+//       });
+//     }
 
-    // ✅ 1. Get original document
-    const brand = await BrandPackages.findOne({ brandOwnerId });
+//     // ✅ 1. Get original document
+//     const brand = await BrandPackages.findOne({ brandOwnerId });
 
-    if (!brand) {
-      return res.status(404).json({
-        success: false,
-        message: "Brand not found",
-      });
-    }
+//     if (!brand) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Brand not found",
+//       });
+//     }
 
-    // ✅ 2. Extract inactive + rebuild active data
-    const inactivePackages = [];
-    const updatedPackages = [];
+//     // ✅ 2. Extract inactive + rebuild active data
+//     const inactivePackages = [];
+//     const updatedPackages = [];
 
-    brand.packages.forEach((pkg) => {
-      const inactive = [];
-      const active = [];
+//     brand.packages.forEach((pkg) => {
+//       const inactive = [];
+//       const active = [];
 
-      pkg.InvestmetPackages.forEach((inv) => {
-        if (inv.isActive === false) {
-          inactive.push(inv);
-        } else {
-          active.push(inv);
-        }
-      });
+//       pkg.InvestmetPackages.forEach((inv) => {
+//         if (inv.isActive === false) {
+//           inactive.push(inv);
+//         } else {
+//           active.push(inv);
+//         }
+//       });
 
-      // 👉 Collect inactive for history
-      if (inactive.length > 0) {
-        inactivePackages.push({
-          packagesType: pkg.packagesType,
-          packagesName: pkg.packagesName,
-          planUniqueId: pkg.planUniqueId,
-          InvestmetPackages: inactive,
-        });
-      }
+//       // 👉 Collect inactive for history
+//       if (inactive.length > 0) {
+//         inactivePackages.push({
+//           packagesType: pkg.packagesType,
+//           packagesName: pkg.packagesName,
+//           planUniqueId: pkg.planUniqueId,
+//           InvestmetPackages: inactive,
+//         });
+//       }
 
-      // 👉 Keep only active in original
-      updatedPackages.push({
-        ...pkg.toObject(),
-        InvestmetPackages: active,
-      });
-    });
+//       // 👉 Keep only active in original
+//       updatedPackages.push({
+//         ...pkg.toObject(),
+//         InvestmetPackages: active,
+//       });
+//     });
 
-    if (inactivePackages.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No inactive data found",
-      });
-    }
+//     if (inactivePackages.length === 0) {
+//       return res.status(200).json({
+//         success: true,
+//         message: "No inactive data found",
+//       });
+//     }
 
-    // ✅ 3. Handle History (create or update)
-    let historyDoc = await BrandPackagesHistory.findOne({ brandOwnerId });
+//     // ✅ 3. Handle History (create or update)
+//     let historyDoc = await BrandPackagesHistory.findOne({ brandOwnerId });
 
-    if (!historyDoc) {
-      historyDoc = await BrandPackagesHistory.create({
-        brandOwnerId: brand.brandOwnerId,
-        Industry: brand.Industry,
-        Category: brand.Category,
-        packages: inactivePackages,
-      });
-    } else {
-      inactivePackages.forEach((newPkg) => {
-        const existingPkg = historyDoc.packages.find(
-          (p) => p.planUniqueId === newPkg.planUniqueId,
-        );
+//     if (!historyDoc) {
+//       historyDoc = await BrandPackagesHistory.create({
+//         brandOwnerId: brand.brandOwnerId,
+//         Industry: brand.Industry,
+//         Category: brand.Category,
+//         packages: inactivePackages,
+//       });
+//     } else {
+//       inactivePackages.forEach((newPkg) => {
+//         const existingPkg = historyDoc.packages.find(
+//           (p) => p.planUniqueId === newPkg.planUniqueId,
+//         );
 
-        if (existingPkg) {
-          existingPkg.InvestmetPackages.push(...newPkg.InvestmetPackages);
-        } else {
-          historyDoc.packages.push(newPkg);
-        }
-      });
+//         if (existingPkg) {
+//           existingPkg.InvestmetPackages.push(...newPkg.InvestmetPackages);
+//         } else {
+//           historyDoc.packages.push(newPkg);
+//         }
+//       });
 
-      await historyDoc.save();
-    }
+//       await historyDoc.save();
+//     }
 
-    // ✅ 4. UPDATE original (REMOVE inactive data)
-    brand.packages = updatedPackages;
-    await brand.save();
+//     // ✅ 4. UPDATE original (REMOVE inactive data)
+//     brand.packages = updatedPackages;
+//     await brand.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Inactive data moved to history and removed from main",
-      data: historyDoc,
-    });
-  } catch (error) {
-    console.error("History Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
-  }
-};
+//     return res.status(200).json({
+//       success: true,
+//       message: "Inactive data moved to history and removed from main",
+//       data: historyDoc,
+//     });
+//   } catch (error) {
+//     console.error("History Error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
 
 // export const startBrandExpiryJob = () => {
 //   // ⏱️ Runs every day at 12:00 AM
@@ -737,12 +1203,10 @@ export const brandPackageHistory = async (req, res) => {
 //         brand.packages.forEach((pkg) => {
 //           const expired = [];
 //           const active = [];
-  
+
 //           pkg.InvestmetPackages.forEach((inv) => {
 //             // ✅ ONLY CHECK remainingLeads
 //             const isLeadFinished = inv.remainingLeads <= 0;
-
-            
 
 //             if (isLeadFinished) {
 //               // ✅ Mark inactive & expired
@@ -830,7 +1294,7 @@ export const brandPackageHistory = async (req, res) => {
 
 export const startBrandExpiryJob = () => {
   // ⏱️ Every 5 minutes`
-  cron.schedule("*/5 * * * * ", async () => {
+  cron.schedule("*/5 * * * * * ", async () => {
     console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
@@ -846,11 +1310,14 @@ export const startBrandExpiryJob = () => {
            LOOP PACKAGES
         ====================================================== */
 
-        brand.packages.forEach((pkg) => {
+        const brandPackages = Array.isArray(brand.packages) ? brand.packages : [];
+
+        brandPackages.forEach((pkg) => {
           const expiredInvestments = [];
           const activeInvestments = [];
+          const investments = pkg.investmetPackages ?? pkg.InvestmetPackages ?? [];
 
-          pkg.InvestmetPackages.forEach((inv) => {
+          investments.forEach((inv) => {
             let shouldExpire = false;
 
             /* ======================================================
@@ -859,17 +1326,20 @@ export const startBrandExpiryJob = () => {
                remainingLeads <= 0
             ====================================================== */
 
+            if (pkg.packagesType !== "LISTING" && inv.remainingLeads <= 0) {
+              shouldExpire = true;
+            }
+
             if (
-              pkg.packagesType !== "LISTING" &&
-              inv.remainingLeads <= 0
+              pkg.packagesType === "LISTING" &&
+              inv.RenewalEndDate &&
+              new Date(inv.RenewalEndDate) <= currentDate
             ) {
               shouldExpire = true;
             }
 
-        
-
             if (
-              pkg.packagesType === "LISTING" &&
+              pkg.packagesType === "FREE" &&
               inv.RenewalEndDate &&
               new Date(inv.RenewalEndDate) <= currentDate
             ) {
@@ -904,7 +1374,7 @@ export const startBrandExpiryJob = () => {
               packagesType: pkg.packagesType,
               packagesName: pkg.packagesName,
               planUniqueId: pkg.planUniqueId,
-              InvestmetPackages: expiredInvestments,
+              investmetPackages: expiredInvestments,
             });
           }
 
@@ -914,7 +1384,7 @@ export const startBrandExpiryJob = () => {
 
           updatedPackages.push({
             ...pkg.toObject(),
-            InvestmetPackages: activeInvestments,
+            investmetPackages: activeInvestments,
           });
         });
 
@@ -934,20 +1404,18 @@ export const startBrandExpiryJob = () => {
         if (!historyDoc) {
           historyDoc = await BrandPackagesHistory.create({
             brandOwnerId: brand.brandOwnerId,
-            Industry: brand.Industry,
-            Category: brand.Category,
+            industry: brand.industry,
+            category: brand.category,
             packages: expiredPackages,
           });
         } else {
           expiredPackages.forEach((newPkg) => {
             const existingPkg = historyDoc.packages.find(
-              (p) => p.planUniqueId === newPkg.planUniqueId
+              (p) => p.planUniqueId === newPkg.planUniqueId,
             );
 
             if (existingPkg) {
-              existingPkg.InvestmetPackages.push(
-                ...newPkg.InvestmetPackages
-              );
+              existingPkg.investmetPackages.push(...newPkg.investmetPackages);
             } else {
               historyDoc.packages.push(newPkg);
             }
@@ -961,7 +1429,7 @@ export const startBrandExpiryJob = () => {
         ====================================================== */
 
         brand.packages = updatedPackages.filter(
-          (pkg) => pkg.InvestmetPackages.length > 0
+          (pkg) => (pkg.investmetPackages ?? []).length > 0,
         );
 
         await brand.save();
@@ -1178,7 +1646,7 @@ export const activePackageStatus = async (req, res) => {
 
     /* ================= LOOP ================= */
     for (const item of plandata) {
-      const { PlanuniqueId, _id,  } = item;
+      const { PlanuniqueId, _id } = item;
 
       /* _id must be array */
       if (!Array.isArray(_id) || _id.length === 0) {
@@ -1209,7 +1677,7 @@ export const activePackageStatus = async (req, res) => {
           const currentDate = new Date();
 
           investmentPackage.PackageStartDate = currentDate;
-          
+
           /* validity days */
           const validityDays = Number(investmentPackage.Validity || 0);
 
@@ -1218,7 +1686,7 @@ export const activePackageStatus = async (req, res) => {
           endDate.setDate(endDate.getDate() + validityDays);
 
           investmentPackage.PackageEndDate = endDate;
-      
+
           investmentPackage.isExperied = false;
         }
 
@@ -1247,65 +1715,108 @@ export const activePackageStatus = async (req, res) => {
   }
 };
 
-export const upgradeBrandPackages = async (req, res) => {
+export const upgradeBrandPackages = async (
+  req,
+  res,
+) => {
   try {
-    const { brandOwnerId, Existing, Package } = req.body;
-
-    /* ======================================================
-       VALIDATION
-    ====================================================== */
-
-    if (!brandOwnerId || !Existing || !Package) {
-      return res.status(400).json({
-        success: false,
-        message: "brandOwnerId, Existing and Package are required",
-      });
-    }
-
-    const { planUniqueId, _id } = Existing;
-
-    if (!planUniqueId || !_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Existing planUniqueId and _id are required",
-      });
-    }
-
-    /* ======================================================
-       FIND BRAND PACKAGE
-    ====================================================== */
-
-    const brandPackage = await BrandPackages.findOne({
+    const {
       brandOwnerId,
-    });
+
+      // OLD PACKAGE
+      Existing,
+
+      // NEW PACKAGE
+      Package,
+    } = req.body;
+
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
+    if (
+      !brandOwnerId ||
+      !Existing ||
+      !Package
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "brandOwnerId, Existing and Package are required",
+      });
+    }
+
+    const {
+      packagesType,
+      investmetPackageId,
+    } = Existing;
+
+    if (
+      !packagesType ||
+      !investmetPackageId
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Existing packagesType and investmetPackageId are required",
+      });
+    }
+
+    /* =====================================================
+       FIND BRAND
+    ===================================================== */
+
+    const brandPackage =
+      await BrandPackages.findOne({
+        brandOwnerId,
+      });
 
     if (!brandPackage) {
       return res.status(404).json({
         success: false,
-        message: "Brand package not found",
+        message:
+          "Brand package not found",
       });
     }
 
-    /* ======================================================
-       FIND EXISTING PACKAGE
-    ====================================================== */
+    /* =====================================================
+       FIND EXISTING PACKAGE USING packageType
+    ===================================================== */
 
     let oldRemainingLeads = 0;
-    let existingFound = false;
+
+    let existingPackageFound =
+      false;
 
     for (const pkg of brandPackage.packages) {
-      if (pkg.planUniqueId === planUniqueId) {
+      // check package type
+      if (
+        pkg.packagesType ===
+        packagesType
+      ) {
+        // find investment package
         const existingInvestmentPackage =
-          pkg.InvestmetPackages.id(_id);
+          pkg.investmetPackages.id(
+            investmetPackageId,
+          );
 
-        if (existingInvestmentPackage) {
-          existingFound = true;
+        if (
+          existingInvestmentPackage
+        ) {
+          existingPackageFound = true;
 
-          // store old remaining leads
+          /* =========================================
+             STORE OLD REMAINING LEADS
+          ========================================= */
+
           oldRemainingLeads =
-            existingInvestmentPackage.remainingLeads || 0;
+            existingInvestmentPackage.remainingLeads ||
+            0;
 
-          // expire old package
+          /* =========================================
+             EXPIRE OLD PACKAGE
+          ========================================= */
+
           existingInvestmentPackage.remainingLeads = 0;
 
           existingInvestmentPackage.isActive = false;
@@ -1314,131 +1825,173 @@ export const upgradeBrandPackages = async (req, res) => {
 
           existingInvestmentPackage.isPending = false;
 
-          existingInvestmentPackage.RenewalEndDate =
+          existingInvestmentPackage.packageEndDate =
+            new Date();
+
+          existingInvestmentPackage.renewalEndDate =
             new Date();
         }
       }
     }
 
-    if (!existingFound) {
+    if (!existingPackageFound) {
       return res.status(404).json({
         success: false,
-        message: "Existing investment package not found",
+        message:
+          "Existing investment package not found",
       });
     }
 
-    /* ======================================================
+    /* =====================================================
        CREATE NEW INVESTMENT PACKAGE
-       ADD OLD REMAINING LEADS
-    ====================================================== */
+    ===================================================== */
 
-    const currentDate = new Date();
+    const currentDate =
+      new Date();
 
     const newInvestmentPackages =
-      Package.InvestmetPackages.map((item) => {
-        const validityDays = Number(item.Validity || 0);
+      Package.investmetPackages.map(
+        (item) => {
+          const validityDays =
+            Number(
+              item.validity || 0,
+            );
 
-        const endDate = new Date(currentDate);
+          const endDate =
+            new Date(
+              currentDate,
+            );
 
-        endDate.setDate(
-          endDate.getDate() + validityDays
-        );
+          endDate.setDate(
+            endDate.getDate() +
+              validityDays,
+          );
 
-        const newTotalLeads =
-          (item.TotalLeads || 0) + oldRemainingLeads;
+          /* =========================================
+             ADD OLD REMAINING LEADS
+          ========================================= */
 
-        return {
-          InvestmetRageLabel:
-            item.InvestmetRageLabel,
+          const totalLeads =
+            Number(
+              item.totalLeads || 0,
+            ) +
+            oldRemainingLeads;
 
-          investmentranges:
-            item.investmentranges || [],
+          return {
+            packagesName:
+              item.packagesName,
 
-          Validity: item.Validity,
+            planUniqueId:
+              item.planUniqueId,
 
-          TotalLeads: newTotalLeads,
+            investmetRageLabel:
+              item.investmetRageLabel,
 
-          // old remaining leads added
-          remainingLeads: newTotalLeads,
+            investmentranges:
+              item.investmentranges ||
+              [],
 
-          TotalAmount: item.TotalAmount || 0,
+            validity:
+              item.validity,
 
-          PackageStartDate: currentDate,
+            totalLeads:
+              totalLeads,
 
-          PackageEndDate: endDate,
+            sendingLeads: 0,
 
-          CurrentDate: currentDate,
+            sendingPercentage: 0,
 
-          RenewalEndDate: endDate,
+            remainingLeads:
+              totalLeads,
 
-          isPaused: false,
+            totalAmount:
+              item.totalAmount || 0,
 
-          pauseHistory: [],
+            packageStartDate:
+              currentDate,
 
-          isExperied: false,
+            packageEndDate:
+              endDate,
 
-          isActive: false,
+            currentDate:
+              currentDate,
 
-          isPending: true,
-        };
-      });
+            renewalEndDate:
+              endDate,
 
-    /* ======================================================
-       CHECK NEW PLAN UNIQUE ID EXISTS
-    ====================================================== */
+            isPaused: false,
+
+            pauseHistory: [],
+
+            isExperied: false,
+
+            isActive: false,
+
+            isPending: true,
+          };
+        },
+      );
+
+    /* =====================================================
+       CHECK SAME packageType EXISTS
+    ===================================================== */
 
     const existingMainPackage =
       brandPackage.packages.find(
         (pkg) =>
-          pkg.planUniqueId === Package.planUniqueId
+          pkg.packagesType ===
+          Package.packagesType,
       );
 
     if (existingMainPackage) {
-      /* ==============================================
-         SAME planUniqueId EXISTS
+      /* ===============================================
+         SAME PACKAGE TYPE EXISTS
          PUSH NEW INVESTMENT PACKAGE
-      ============================================== */
+      =============================================== */
 
-      existingMainPackage.InvestmetPackages.push(
-        ...newInvestmentPackages
+      existingMainPackage.investmetPackages.push(
+        ...newInvestmentPackages,
       );
     } else {
-      /* ==============================================
-         NEW planUniqueId
-         CREATE NEW PACKAGE OBJECT
-      ============================================== */
+      /* ===============================================
+         NEW PACKAGE TYPE
+      =============================================== */
 
       brandPackage.packages.push({
-        packagesType: Package.packagesType,
+        packagesType:
+          Package.packagesType,
 
-        packagesName: Package.packagesName,
-
-        planUniqueId: Package.planUniqueId,
-
-        InvestmetPackages: newInvestmentPackages,
+        investmetPackages:
+          newInvestmentPackages,
       });
     }
 
-    /* ======================================================
+    /* =====================================================
        SAVE
-    ====================================================== */
+    ===================================================== */
 
     await brandPackage.save();
 
+    /* =====================================================
+       RESPONSE
+    ===================================================== */
+
     return res.status(200).json({
       success: true,
-      message: "Package upgraded successfully",
+      message:
+        "Package upgraded successfully",
       data: brandPackage,
     });
   } catch (error) {
     console.error(
-      "upgradeBrandPackage Error:",
-      error
+      "upgradeBrandPackages Error:",
+      error,
     );
 
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
+      message:
+        "Internal server error",
       error: error.message,
     });
   }

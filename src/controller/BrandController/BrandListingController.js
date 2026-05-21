@@ -23,9 +23,10 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 // import NewIncomingBrands from "../../model/Brand/newIncomigBrands.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
-import { createIntialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
+// import { createInitialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
 import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
+import { createInitialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
 
 export const likeandshortlist = async (id) => {
   let likedBrands = [];
@@ -459,18 +460,16 @@ const slugify = (text) => {
 
 
 const extractStatesFromExpansion = (expansionLocationData) => {
-  const states = new Set();
-
-  const domestic =
+  const locations =
     expansionLocationData?.expansionLocations?.domestic?.locations || [];
 
-  domestic.forEach((loc) => {
-    if (loc?.state) {
-      states.add(loc.state);
-    }
-  });
-
-  return Array.from(states);
+  return locations.map((loc) => ({
+    state: loc?.state || "",
+    district:
+      (loc?.districts || [])
+        .map((d) => d?.district)
+        .filter(Boolean) || [],
+  }));
 };
 
 
@@ -497,13 +496,22 @@ const assignFreePlanToBrand = async (
   expansionLocationData,
   franchiseDetails,
   Industry,
-  Category
+  Category,
+  brandName
 ) => {
+  /* =====================================================
+     GET PLAN DOCUMENT
+  ===================================================== */
+
   const planDoc = await Plan.findOne();
 
   if (!planDoc?.packagesPlan?.length) {
     throw new Error("No package plans found");
   }
+
+  /* =====================================================
+     FIND FREE PLAN
+  ===================================================== */
 
   const freePlan = planDoc.packagesPlan.find(
     (plan) => plan.packageType === "FREE"
@@ -519,64 +527,103 @@ const assignFreePlanToBrand = async (
 
   const freePackage = freePlan.packages[0];
 
-  const states = extractStatesFromExpansion(expansionLocationData);
-  const brandRanges = extractInvestmentRanges(franchiseDetails);
+  /* =====================================================
+     EXTRACT STATES + INVESTMENT RANGES
+  ===================================================== */
 
-  if (states.length === 0) states.push("All");
-  if (brandRanges.length === 0) brandRanges.push("General");
+  const stateDistrictData = extractStatesFromExpansion(
+    expansionLocationData
+  );
 
-  const totalLeadsValue = Number(
-    Array.isArray(freePackage.totalLeads)
-      ? freePackage.totalLeads[0]
-      : freePackage.totalLeads
-  ) || 0;
+  const brandRanges = extractInvestmentRanges(
+    franchiseDetails
+  );
 
-  const investmentranges = brandRanges.map((range) => ({
-    selectedPlanInvestmetrange: range,
-    selectedPlanState: states
-  }));
+if (stateDistrictData.length === 0) {
+  stateDistrictData.push({
+    state: "All",
+    district: [],
+  });
+}
+  if (brandRanges.length === 0) {
+    brandRanges.push("General");
+  }
+
+  /* =====================================================
+     TOTAL LEADS
+  ===================================================== */
+
+  const totalLeadsValue =
+    Number(
+      Array.isArray(freePackage.totalLeads)
+        ? freePackage.totalLeads[0]
+        : freePackage.totalLeads
+    ) || 0;
+
+  /* =====================================================
+     INVESTMENT RANGE STRUCTURE
+  ===================================================== */
+
+ const investmentranges = brandRanges.map((range) => ({
+  brandName,
+
+  selectedPlanInvestmetrange: range,
+
+  selectedPlanStateAndDistrict:
+    stateDistrictData.map((item) => ({
+      state: item.state,
+
+      district: item.district || [],
+    })),
+}));
+  /* =====================================================
+     PACKAGE DATA
+  ===================================================== */
 
   const packagesToAssign = [
     {
       packagesType: "FREE",
-      packagesName: freePlan.planName,
-      planUniqueId: freePlan.planUniqueId,
 
-      InvestmetPackages: [
+      investmetPackages: [
         {
-          InvestmetRageLabel:
+          packagesName: freePlan.planName || "",
+
+          planId: freePlan.planUniqueId || "",
+
+          investmetRageLabel:
             freePackage.investmentRangeLabel || "",
 
           investmentranges,
 
-          Validity: String(freePackage.validityDays || 30),
+          validity: String(
+            freePackage.validityDays || 30
+          ),
 
-          TotalLeads: totalLeadsValue,
+          totalLeads: totalLeadsValue,
+
           remainingLeads: totalLeadsValue,
 
-          TotalAmount: 0,
-
-          StartDate: new Date(),
-
-          isExperied: false,
-          isActive: true
-        }
-      ]
-    }
+          totalAmount: 0,
+        },
+      ],
+    },
   ];
 
-  const result = await createIntialPackages(
-    brandOwnerId,
-    packagesToAssign
-  );
+  /* =====================================================
+     CREATE INITIAL PACKAGE
+  ===================================================== */
 
-  // ensure doc exists before update
-  if (result) {
-    await BrandPackages.updateOne(
-      { brandOwnerId },
-      { $set: { Industry, Category } }
-    );
-  }
+  const result = await createInitialPackages({
+    brandOwnerId,
+
+    Industry,
+
+    Category,
+
+    brandName,
+
+    packages: packagesToAssign,
+  });
 
   return result;
 };
@@ -842,7 +889,8 @@ brandPackageResult = await assignFreePlanToBrand(
   expansionLocationData,
   franchiseDetails,
   franchiseDetails?.brandCategories?.main,
-  franchiseDetails?.brandCategories?.sub
+  franchiseDetails?.brandCategories?.sub,
+  brandName
 );    } catch (pkgError) {
       // Don't fail the whole request if package assignment fails
       // Brand is already created - log and continue
