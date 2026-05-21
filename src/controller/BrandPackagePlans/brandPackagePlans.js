@@ -287,10 +287,6 @@ export const createBrandPackages = async (req, res) => {
 
     const brandDoc = await BrandPackages.findOne({
       brandOwnerId,
-      industry: franchiseDetails?.brandCategories?.main || "",
-      category: franchiseDetails?.brandCategories?.sub || "",
-      brandName: brand?.brandDetails?.brandName || "",
-      
     });
 
     if (!brandDoc) {
