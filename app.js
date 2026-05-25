@@ -40,6 +40,7 @@ import paymentplanCMS from "./src/Routes/AdminRoutes/CMS/packagePlan.js";
 import brandPackagePlansRouter from "./src/Routes/BrandPackagePlan/BrandPackagePlans.js";
 import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
 import paymentRoutes from "./src/Routes/LeadPackage/paymentRoutes.js";
+import leadMatchCMS from "./src/Routes/AdminRoutes/CMS/leadMatch.js";
 
 const router = express.Router();
 
@@ -123,6 +124,8 @@ router.use(paymentRouter);
 router.use(industryManagementRouter);
 
 router.use(paymentplanCMS);
+
+router.use(leadMatchCMS)
 
 router.use(brandPackagePlansRouter);
 

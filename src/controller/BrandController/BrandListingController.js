@@ -24,7 +24,7 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
 import { createIntialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
-import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
+import Plan from "../../model/CMS/PackagePlan.js";
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 
 export const likeandshortlist = async (id) => {
