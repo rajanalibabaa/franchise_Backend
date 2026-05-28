@@ -1,33 +1,21 @@
-import { IndustryModels } from "../../model/Leads/leadsModels.js";
+// import { getIndustryModel } from "../../model/Leads/leadsModels.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 import uuid from "../../utils/uuid.js";
-
-export const industryMapping = {
-  "Food & Beverages": "FoodAndBeverageLeads",
-  "Education & Training": "EducationAndTrainingLeads",
-  "Health, Beauty & Wellness": "HealthBeautyAndWellnessLeads",
-  "Retails & Fashion": "RetailAndFashionLeads",
-  Automotive: "AutomotiveLeads",
-  "Home Services & Maintenance": "HomeServicesAndMaintenanceLeads",
-  "Real Estate & Property Services": "RealEstateAndPropertyServicesLeads",
-  "Business & Professional Services": "BusinessAndProfessionalServicesLeads",
-  "Hospitality & Travel": "HospitalityAndTravelLeads",
-  "Manufacturing & Industrial": "ManufacturingAndIndustrialLeads",
-  "Agriculture & Organic Business": "AgricultureAndOrganicBusinessLeads",
-  "E-Commerce & Technology": "ECommerceAndTechnologyLeads",
-  "Entertainment & Recreation": "EntertainmentAndRecreationLeads",
-  "Logistics & Transportation": "LogisticsAndTransportationLeads",
-  "Clean Tech & Environment": "CleanTechAndEnvironmentLeads",
-  "Social Impact & NGO": "SocialImpactAndNGOLeads",
-  "Pet Care & Other Emerging Sectors": "PetCareAndOtherEmergingSectorsLeads",
-};
 
 export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
   // console.log('leads creation',body);
 
   try {
     const selectedIndustry =
-      exist.franchiseDetails.franchiseDetails.brandCategories.main;
+      exist?.franchiseDetails?.franchiseDetails?.brandCategories?.main;
+
+    if (!selectedIndustry) {
+      return new ApiResponse(
+        400,
+        null,
+        "Unable to create lead: industry category is missing",
+      );
+    }
 
     const generateUUID = uuid();
 
@@ -56,21 +44,32 @@ export const leadsCreateFunction = async (body, exist, applyBy, applyId) => {
         applyId,
       },
     };
-    const modelName = industryMapping[selectedIndustry.trim()];
-    const model = IndustryModels[modelName];
+const model =
+  await getIndustryModel(
+    selectedIndustry
+  );
 
-    const data = await model.create(fields);
-    if (!data) {
-      new ApiResponse(
-        500,
-        null,
-        "Something went wrong while newSubmission saving in database",
-      );
-    }
+const data = await model.create(fields);
+
+console.log("Model Name:", model.modelName);
+console.log("Fields:", fields);
+
+
+if (!data) {
+  return new ApiResponse(
+    500,
+    null,
+    "Something went wrong while saving lead"
+  );
+}
 
     return new ApiResponse(200, data, "Application submitted successfully");
   } catch (error) {
-    console.error("Error in instaApplyBrandFormController:", error);
-    return new ApiResponse(500, {}, "Internal server error");
+    console.error("Error in leadsCreateFunction:", error);
+    return new ApiResponse(
+      500,
+      null,
+      error?.message || "Internal server error",
+    );
   }
 };
