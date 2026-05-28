@@ -13,18 +13,11 @@ export const createPayment = async (req, res) => {
   try {
     const {
       brandOwnerId,
-      baseAmount,
 
-      packageName,
-      planId,
-      planUniqueId,
+      totalAmount,
+      totalLeads,
 
-      investmentRangeLabel,
-      range,
-      selectedLeadCount,
-
-      totalStates,
-      uniqueStates,
+      packages = [],
 
       email,
       phone,
@@ -38,245 +31,526 @@ export const createPayment = async (req, res) => {
       companyState = "TN",
     } = req.body;
 
-    // =========================
+    console.log(
+      "requestbodydata from front end",
+      JSON.stringify(req.body, null, 2)
+    );
+
+    // =====================================================
     // VALIDATION
-    // =========================
+    // =====================================================
 
     if (
       !brandOwnerId ||
-      !planId ||
-      !packageName ||
-      !investmentRangeLabel ||
-      !planUniqueId ||
-      !totalStates
+      !Array.isArray(packages) ||
+      packages.length === 0
     ) {
-      console.log("Missing Fields:", req.body);
-
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message:
+          "Missing required fields",
       });
     }
 
-    // =========================
-    // FIND PACKAGE DOCUMENT
-    // =========================
+    // =====================================================
+    // GLOBAL TOTALS
+    // =====================================================
 
-    const packagesDoc = await Packages.findOne({
-      "packagesPlan._id": planId,
-    });
+    let grandCalculatedAmount = 0;
 
-    console.log("packagesDoc", packagesDoc);
+    const processedPackages = [];
 
-    if (!packagesDoc) {
-      return res.status(404).json({
-        success: false,
-        message: "Plan document not found",
-      });
-    }
+    // =====================================================
+    // LOOP ALL PACKAGES
+    // =====================================================
 
-    // =========================
-    // MATCH PLAN
-    // =========================
-
-    const matchedPlan = packagesDoc.packagesPlan.find((p) => {
-      return (
-        String(p._id) === String(planId) &&
-        String(p.planUniqueId).trim() ===
-          String(planUniqueId).trim() &&
-        String(p.planName).trim().toLowerCase() ===
-          String(packageName).trim().toLowerCase()
+    for (const pkg of packages) {
+      console.log(
+        "🔄 PROCESSING PACKAGE:",
+        JSON.stringify(pkg, null, 2)
       );
-    });
 
-    console.log("MATCHED PLAN:", matchedPlan);
+      const {
+        packagesType,
 
-    if (!matchedPlan) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid plan selected",
-      });
-    }
+        packageName,
 
-    // =========================
-    // MATCH PACKAGE
-    // =========================
+        planId,
+        planUniqueId,
 
-const matchedPackage =
-  matchedPlan.packages.find(
-    (pkg) => {
-      // LISTING PLAN
-      if (
-        String(
-          matchedPlan.packageType
-        ).toUpperCase() ===
-        "LISTING"
-      ) {
-        return true;
+        investmentRangeLabel,
+
+        totalStates,
+
+        uniqueStates = [],
+
+        amount: frontendAmount,
+
+        selectedLeads,
+
+        validityDays = 0,
+      } = pkg;
+
+      // =====================================================
+      // FIND PACKAGE DOC
+      // =====================================================
+
+      const packagesDoc =
+        await Packages.findOne({
+          "packagesPlan._id": planId,
+        });
+
+      console.log(
+        "📦 PACKAGE DOC FOUND:",
+        packagesDoc?._id
+      );
+
+      if (!packagesDoc) {
+        return res.status(404).json({
+          success: false,
+          message: `Plan document not found for ${planId}`,
+        });
       }
 
-      // LEAD PLAN
-      const labelMatch =
-        String(
-          pkg.investmentRangeLabel
-        )
-          .trim()
-          .toLowerCase() ===
-        String(
-          investmentRangeLabel
-        )
-          .trim()
-          .toLowerCase();
+      // =====================================================
+      // MATCH PLAN
+      // =====================================================
 
-      const rangeMatch =
-        pkg.investmentRange.some(
-          (r) =>
-            String(r)
-              .trim()
-              .toLowerCase() ===
-            String(range)
-              .trim()
-              .toLowerCase()
+      const matchedPlan =
+        packagesDoc.packagesPlan.find(
+          (p) => {
+            return (
+              String(p._id) ===
+                String(planId) &&
+              String(
+                p.planUniqueId
+              )
+                .trim()
+                .toLowerCase() ===
+                String(
+                  planUniqueId
+                )
+                  .trim()
+                  .toLowerCase() &&
+              String(p.planName)
+                .trim()
+                .toLowerCase() ===
+                String(packageName)
+                  .trim()
+                  .toLowerCase()
+            );
+          }
         );
 
-      return (
-        labelMatch &&
-        rangeMatch
+      console.log(
+        "✅ MATCHED PLAN:",
+        matchedPlan?.planName
       );
-    }
-  );
 
-    console.log("MATCHED PACKAGE:", matchedPackage);
+      if (!matchedPlan) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid plan selected",
+        });
+      }
 
-    if (!matchedPackage) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid investment range",
+      // =====================================================
+      // UNIQUE STATES COUNT
+      // =====================================================
+
+      const uniqueStateCount =
+        Array.isArray(uniqueStates)
+          ? uniqueStates.length
+          : 0;
+
+      // =====================================================
+      // LISTING FLOW
+      // =====================================================
+
+      if (
+        String(packagesType).toUpperCase() ===
+        "LISTING"
+      ) {
+        console.log(
+          "📦 LISTING FLOW STARTED"
+        );
+
+        // =====================================================
+        // ALL RANGES
+        // =====================================================
+
+        const listingRanges =
+          Array.isArray(
+            investmentRangeLabel
+          )
+            ? investmentRangeLabel
+            : [investmentRangeLabel];
+
+        // =====================================================
+        // FIXED PACKAGE
+        // =====================================================
+
+        const matchedPackage =
+          matchedPlan.packages?.[0];
+
+        console.log(
+          "📋 LISTING PACKAGE:",
+          matchedPackage
+        );
+
+        if (!matchedPackage) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "Listing package not found",
+          });
+        }
+
+        // =====================================================
+        // FIXED LISTING AMOUNT
+        // =====================================================
+
+        const finalCalculatedAmount =
+          Number(
+            matchedPackage.amount ||
+              frontendAmount ||
+              0
+          );
+
+        // =====================================================
+        // PROCESS EVERY RANGE
+        // =====================================================
+
+        for (const rangeLabel of listingRanges) {
+          console.log(
+            "📌 PROCESSING RANGE:",
+            rangeLabel
+          );
+
+          // =====================================================
+          // STATES DATA
+          // =====================================================
+
+          const statesData =
+            uniqueStates.map(
+              (stateObj) => ({
+                state:
+                  stateObj.state,
+
+                district:
+                  stateObj.district ||
+                  [],
+              })
+            );
+
+          // =====================================================
+          // STORE PACKAGE
+          // =====================================================
+
+          processedPackages.push({
+            packagesType,
+
+            packageName,
+
+            planId,
+
+            planUniqueId,
+
+            investmentRangeLabel:
+              rangeLabel,
+
+            totalStates:
+              uniqueStateCount,
+
+            uniqueStates:
+              statesData,
+
+            validityDays,
+
+            dbPricePerState:
+              finalCalculatedAmount,
+
+            finalCalculatedAmount: 0,
+          });
+        }
+
+        // =====================================================
+        // ADD TOTAL ONLY ONCE
+        // =====================================================
+
+        grandCalculatedAmount +=
+          finalCalculatedAmount;
+
+        // =====================================================
+        // VALIDATE
+        // =====================================================
+
+        if (
+          Number(frontendAmount) !==
+          Number(
+            finalCalculatedAmount
+          )
+        ) {
+          return res.status(400).json({
+            success: false,
+
+            message:
+              "Listing amount mismatch",
+
+            frontendAmount:
+              Number(frontendAmount),
+
+            backendAmount:
+              Number(
+                finalCalculatedAmount
+              ),
+          });
+        }
+
+        console.log(
+          "✅ LISTING VALIDATED"
+        );
+
+        continue;
+      }
+
+      // =====================================================
+      // LEAD FLOW
+      // =====================================================
+
+      console.log(
+        "📦 LEAD FLOW STARTED"
+      );
+
+      // =====================================================
+      // MATCH PACKAGE
+      // =====================================================
+
+      const matchedPackage =
+        matchedPlan.packages.find(
+          (dbPkg) => {
+            return (
+              String(
+                dbPkg.investmentRangeLabel
+              )
+                .trim()
+                .toLowerCase() ===
+              String(
+                investmentRangeLabel
+              )
+                .trim()
+                .toLowerCase()
+            );
+          }
+        );
+
+      console.log(
+        "📋 MATCHED PACKAGE:",
+        matchedPackage?.investmentRangeLabel
+      );
+
+      if (!matchedPackage) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid investment range selected",
+        });
+      }
+
+      // =====================================================
+      // DB VALUES
+      // =====================================================
+
+      const dbPricePerState =
+        Number(
+          matchedPackage.amount
+        ) || 0;
+
+      const minimumLeadCount =
+        Math.min(
+          ...(
+            matchedPackage.totalLeads || [
+              1,
+            ]
+          )
+        );
+
+      const selectedLeadCount =
+        Number(
+          selectedLeads ||
+            totalLeads ||
+            0
+        );
+
+      // =====================================================
+      // CALCULATE
+      // =====================================================
+
+      const amountPerLead =
+        Number(dbPricePerState) /
+        Number(minimumLeadCount);
+
+      let finalCalculatedAmount =
+        amountPerLead *
+        Number(
+          uniqueStateCount || 1
+        ) *
+        Number(
+          selectedLeadCount || 1
+        );
+
+      finalCalculatedAmount =
+        Number(
+          finalCalculatedAmount.toFixed(
+            2
+          )
+        );
+
+      console.log(
+        "💰 FINAL CALCULATION:",
+        {
+          dbPricePerState,
+
+          minimumLeadCount,
+
+          amountPerLead,
+
+          uniqueStateCount,
+
+          selectedLeadCount,
+
+          finalCalculatedAmount,
+        }
+      );
+
+      // =====================================================
+      // ADD TOTAL
+      // =====================================================
+
+      grandCalculatedAmount +=
+        finalCalculatedAmount;
+
+      // =====================================================
+      // STORE PACKAGE
+      // =====================================================
+
+      processedPackages.push({
+        packagesType,
+
+        packageName,
+
+        planId,
+
+        planUniqueId,
+
+        investmentRangeLabel,
+
+        totalStates:
+          uniqueStateCount,
+
+        uniqueStates,
+
+        validityDays,
+
+        dbPricePerState,
+
+        minimumLeadCount,
+
+        selectedLeadCount,
+
+        amountPerLead,
+
+        finalCalculatedAmount,
       });
+
+      // =====================================================
+      // VALIDATE PACKAGE
+      // =====================================================
+
+      if (
+        Number(frontendAmount) !==
+        Number(
+          finalCalculatedAmount
+        )
+      ) {
+        console.log(
+          "❌ PACKAGE AMOUNT MISMATCH"
+        );
+
+        return res.status(400).json({
+          success: false,
+
+          message:
+            "Package amount mismatch detected",
+
+          packageName,
+
+          investmentRangeLabel,
+
+          frontendAmount:
+            Number(frontendAmount),
+
+          backendAmount:
+            Number(
+              finalCalculatedAmount
+            ),
+        });
+      }
     }
 
-    // =========================
-    // PACKAGE VALUES
-    // =========================
+    // =====================================================
+    // ROUND TOTAL
+    // =====================================================
 
-    const dbPricePerState =
-      Number(matchedPackage.amount) || 0;
-
-    // Example:
-    // totalLeads: [20,40,60]
-    // minimumLeadCount = 20
-
-    const minimumLeadCount =
-  String(
-    matchedPlan.packageType
-  ).toUpperCase() === "LISTING"
-    ? 0
-    : Math.min(
-        ...(matchedPackage.totalLeads || [1])
+    grandCalculatedAmount =
+      Number(
+        grandCalculatedAmount.toFixed(
+          2
+        )
       );
 
-    // =========================
-    // PRICE PER LEAD
-    // =========================
-
-    // const amountPerLead =
-    //   dbPricePerState / minimumLeadCount;
-
-    // =========================
-    // FINAL CALCULATION
-    // Formula:
-    // (amount / minimumLeadCount)
-    // * totalStates
-    // * selectedLeadCount
-    // =========================
-
-    // const finalCalculatedAmount =
-    //   amountPerLead *
-    //   Number(totalStates || 1) *
-    //   Number(selectedLeadCount || 1);
-
-
-    let amountPerLead = 0;
-
-let finalCalculatedAmount = 0;
-
-// =========================
-// LISTING PLAN
-// =========================
-
-if (
-  String(
-    matchedPlan.packageType
-  ).toUpperCase() === "LISTING"
-) {
-  finalCalculatedAmount =
-    Number(dbPricePerState);
-
-  amountPerLead = 0;
-}
-
-// =========================
-// LEAD PLAN
-// =========================
-
-else {
-  amountPerLead =
-    Number(dbPricePerState) /
-    Number(minimumLeadCount);
-
-  finalCalculatedAmount =
-    amountPerLead *
-    Number(totalStates || 1) *
-    Number(selectedLeadCount || 1);
-}
-
-
-  console.log({
-  packageType:
-    matchedPlan.packageType,
-
-  packageAmount:
-    dbPricePerState,
-
-  minimumLeadCount,
-
-  amountPerLead,
-
-  totalStates,
-
-  selectedLeadCount,
-
-  finalCalculatedAmount,
-});
-
-    // =========================
-    // VALIDATE FRONTEND AMOUNT
-    // =========================
+    // =====================================================
+    // VALIDATE GRAND TOTAL
+    // =====================================================
 
     if (
-      Number(baseAmount) !==
-      Number(finalCalculatedAmount)
+      Number(totalAmount) !==
+      Number(
+        grandCalculatedAmount
+      )
     ) {
+      console.log(
+        "❌ TOTAL AMOUNT MISMATCH"
+      );
+
       return res.status(400).json({
         success: false,
-        message: "Amount mismatch detected",
 
-        frontendAmount: Number(baseAmount),
+        message:
+          "Total amount mismatch detected",
+
+        frontendAmount:
+          Number(totalAmount),
 
         backendAmount:
-          Number(finalCalculatedAmount),
+          Number(
+            grandCalculatedAmount
+          ),
       });
     }
 
-    console.log("✅ Amount Validated");
+    console.log(
+      "✅ Amount Validated"
+    );
 
-    // =========================
-    // GST CALCULATION
-    // =========================
+    // =====================================================
+    // GST
+    // =====================================================
 
     const gstBreakdown =
       GSTCalculator.calculate(
-        finalCalculatedAmount,
+        grandCalculatedAmount,
         companyState,
         billingState
       );
@@ -284,9 +558,9 @@ else {
     const finalAmount =
       gstBreakdown.finalAmount;
 
-    // =========================
-    // CREATE RAZORPAY ORDER
-    // =========================
+    // =====================================================
+    // CREATE ORDER
+    // =====================================================
 
     const order =
       await razorpay.orders.create({
@@ -299,17 +573,13 @@ else {
         receipt: `R${Date.now()}`,
       });
 
-    // =========================
+    // =====================================================
     // SAVE PAYMENT
-    // =========================
+    // =====================================================
 
     const payment =
       await Payment.create({
         brandOwnerId,
-
-        packageName,
-        planId,
-        planUniqueId,
 
         orderId: order.id,
 
@@ -317,38 +587,33 @@ else {
 
         customer: {
           brandID,
+
           email,
+
           phone,
+
           name,
+
           gstNumber,
+
           pan,
         },
 
-        packageDetails: {
-          investmentRangeLabel,
-          range,
-
-          totalStates,
-          uniqueStates,
-
-          dbPricePerState,
-
-          minimumLeadCount,
-
-          selectedLeadCount,
-
-          amountPerLead,
-        },
+        packageDetails:
+          processedPackages,
 
         breakdown: {
           baseAmount:
-            finalCalculatedAmount,
+            grandCalculatedAmount,
 
-          cgst: gstBreakdown.cgst,
+          cgst:
+            gstBreakdown.cgst,
 
-          sgst: gstBreakdown.sgst,
+          sgst:
+            gstBreakdown.sgst,
 
-          igst: gstBreakdown.igst,
+          igst:
+            gstBreakdown.igst,
 
           tax:
             gstBreakdown.totalGST,
@@ -357,11 +622,14 @@ else {
         },
       });
 
-    console.log("PAYMENT SAVED:", payment);
+    console.log(
+      "✅ PAYMENT SAVED:",
+      payment._id
+    );
 
-    // =========================
+    // =====================================================
     // RESPONSE
-    // =========================
+    // =====================================================
 
     return res.status(201).json({
       success: true,
@@ -370,7 +638,8 @@ else {
         orderId: order.id,
 
         key:
-          process.env.RAZORPAY_KEY_ID,
+          process.env
+            .RAZORPAY_KEY_ID,
 
         amount: order.amount,
 
@@ -380,36 +649,40 @@ else {
         paymentId: payment._id,
 
         calculations: {
-          packageAmount:
-            dbPricePerState,
+          totalPackages:
+            processedPackages.length,
 
-          minimumLeadCount,
-
-          amountPerLead,
-
-          totalStates,
-
-          selectedLeadCount,
+          totalLeads,
 
           baseAmount:
-            finalCalculatedAmount,
+            grandCalculatedAmount,
 
           gstBreakdown,
 
           finalAmount,
+
+          packages:
+            processedPackages,
         },
       },
     });
   } catch (err) {
-    console.log("CREATE PAYMENT ERROR:", err);
+    console.log(
+      "❌ CREATE PAYMENT ERROR:",
+      err
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Payment creation failed",
+
+      message:
+        "Payment creation failed",
+
       error: err.message,
     });
   }
 };
+
 
 // ==============================
 // ✅ VERIFY PAYMENT
@@ -425,7 +698,15 @@ export const verifyPayment = async (req, res) => {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ 
         success: false, 
-        message: "Missing required parameters" 
+        message: "Missing required parameters: razorpay_order_id, razorpay_payment_id, razorpay_signature" 
+      });
+    }
+
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      console.error("❌ VERIFY PAYMENT ERROR: Missing RAZORPAY_KEY_SECRET environment variable");
+      return res.status(500).json({ 
+        success: false, 
+        message: "Payment verification failed: missing server configuration" 
       });
     }
 
@@ -693,6 +974,141 @@ export const webhookHandler = async (req, res) => {
     });
   }
 };
+
+
+
+
+export const getallPaymentHistory = async (
+  req,
+  res
+) => {
+  try {
+    const {
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    // =====================================================
+    // QUERY
+    // =====================================================
+
+    const query = {
+      isDeleted: false,
+    };
+
+    // =====================================================
+    // STATUS FILTER
+    // =====================================================
+
+    if (status) {
+      query.status = status;
+    }
+
+    // =====================================================
+    // DATE FILTER
+    // =====================================================
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+
+      if (startDate) {
+        query.createdAt.$gte =
+          new Date(startDate);
+      }
+
+      if (endDate) {
+        query.createdAt.$lte =
+          new Date(endDate);
+      }
+    }
+
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const currentPage =
+      parseInt(page) || 1;
+
+    const perPage =
+      parseInt(limit) || 20;
+
+    const skip =
+      (currentPage - 1) * perPage;
+
+    // =====================================================
+    // GET PAYMENTS
+    // =====================================================
+
+    const [payments, total] =
+      await Promise.all([
+        Payment.find(query)
+
+          .select(
+            "-razorpaySignature -encryptedData -webhookEvents.payload"
+          )
+
+          .sort({
+            createdAt: -1,
+          })
+
+          .skip(skip)
+
+          .limit(perPage)
+
+          .lean(),
+
+        Payment.countDocuments(
+          query
+        ),
+      ]);
+
+    // =====================================================
+    // RESPONSE
+    // =====================================================
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        "All payment history fetched successfully",
+
+      total,
+
+      page: currentPage,
+
+      limit: perPage,
+
+      totalPages: Math.ceil(
+        total / perPage
+      ),
+
+      data: payments,
+    });
+  } catch (err) {
+    console.error(
+      "GET PAYMENT HISTORY ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      success: false,
+
+      message:
+        "Failed to fetch payment history",
+
+      error: err.message,
+    });
+  }
+};
+
+
+
+
+
+
 
 // ==============================
 // ✅ GET PAYMENT HISTORY

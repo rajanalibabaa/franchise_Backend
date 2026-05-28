@@ -139,7 +139,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 configureGoogleStrategy();
 configureFacebookStrategy();
-startBrandExpiryJob();
+// Do not start cron jobs until DB connection is established
 // Global rate limit
 app.use("/uploads", express.static(path.resolve("./uploads")));
 // Connect to DB (ensure DB is connected before listening)
@@ -174,6 +174,13 @@ const startServer = async () => {
   try {
     await connectDatabase();
     console.log("✅ Database connected");
+    // Start scheduled jobs only after DB is connected
+    try {
+      startBrandExpiryJob();
+      console.log("⏱️ Brand expiry cron job started");
+    } catch (cronErr) {
+      console.error("Failed to start Brand expiry cron job:", cronErr);
+    }
 
     // Routes
     app.get("/", (req, res) => {
