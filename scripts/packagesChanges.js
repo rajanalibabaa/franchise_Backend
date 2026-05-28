@@ -23,20 +23,78 @@ const extractStatesFromExpansion = (expansionLocationData) => {
   }));
 };
  
-const extractInvestmentRanges = (franchiseDetails) => {
+const extractInvestmentRanges = (
+  franchiseDetails
+) => {
+
   const ranges = new Set();
- 
-  const data =
-    franchiseDetails?.investmentRange ||
-    franchiseDetails?.fico?.[0]?.investmentRange ||
-    [];
- 
-  if (Array.isArray(data)) {
-    data.forEach((r) => r && ranges.add(r));
-  } else if (typeof data === "string") {
-    ranges.add(data);
+
+  // =====================================================
+  // DIRECT investmentRange
+  // =====================================================
+
+  const directRanges =
+    franchiseDetails?.investmentRange;
+
+  if (
+    Array.isArray(directRanges)
+  ) {
+
+    directRanges.forEach((range) => {
+
+      if (range) {
+        ranges.add(range);
+      }
+    });
+
+  } else if (
+    typeof directRanges === "string" &&
+    directRanges
+  ) {
+
+    ranges.add(directRanges);
   }
- 
+
+  // =====================================================
+  // FICO ARRAY investmentRange
+  // =====================================================
+
+  const ficoData =
+    Array.isArray(
+      franchiseDetails?.fico
+    )
+      ? franchiseDetails.fico
+      : [];
+
+  for (const ficoItem of ficoData) {
+
+    const ficoRanges =
+      ficoItem?.investmentRange;
+
+    if (
+      Array.isArray(ficoRanges)
+    ) {
+
+      ficoRanges.forEach((range) => {
+
+        if (range) {
+          ranges.add(range);
+        }
+      });
+
+    } else if (
+      typeof ficoRanges === "string" &&
+      ficoRanges
+    ) {
+
+      ranges.add(ficoRanges);
+    }
+  }
+
+  // =====================================================
+  // RETURN ALL UNIQUE RANGES
+  // =====================================================
+
   return Array.from(ranges);
 };
  
@@ -92,6 +150,7 @@ async function assignFreePackagesToAllBrands() {
       ]);
  
       const franchiseDetails = franchiseDoc?.franchiseDetails || {};
+
       const expansionLocationData =
         expansionDoc?.expansionLocationData || {};
  
@@ -108,15 +167,46 @@ async function assignFreePackagesToAllBrands() {
  
       const totalLeads = Number(freePackage.totalLeads) || 0;
  
-      const investmentranges = ranges.map((range) => ({
-        brandName: brand?.brandDetails?.brandName || "",
-        selectedPlanInvestmetrange: range,
-        selectedPlanStateAndDistrict: stateDistrictData.map((item) => ({
-          state: item.state || "",
-          district: item.district || [],
-        })),
-      }));
- 
+    const investmentranges = [];
+
+// =====================================================
+// ALL INVESTMENT RANGES
+// =====================================================
+
+for (const range of ranges) {
+
+  investmentranges.push({
+
+    brandName:
+      brand?.brandDetails?.brandName || "",
+
+    // SINGLE INVESTMENT RANGE
+    selectedPlanInvestmetrange:
+      range,
+
+    // ALL STATES + DISTRICTS
+    selectedPlanStateAndDistrict:
+      stateDistrictData.map((item) => ({
+
+        state:
+          item?.state || "",
+
+        district:
+          Array.isArray(item?.district)
+            ? item.district
+            : [],
+      })),
+  });
+}
+
+// console.log(
+//   "FINAL investmentranges:",
+//   JSON.stringify(
+//     investmentranges,
+//     null,
+//     2
+//   )
+// );
       const startDate = new Date();
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + Number(freePackage.validityDays || 30));

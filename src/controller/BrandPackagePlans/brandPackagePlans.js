@@ -1,5 +1,7 @@
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 import { BrandPackagesHistory } from "../../model/BrandPackagePlans/brandPackagePlanhistory.js";
+import { BrandExpansionLocationData  } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
+import PackagePlanCMS    from "../../model/PackagePlanCMS/PackagePlan.js";
 import cron from "node-cron";
 import mongoose from "mongoose";
 
@@ -253,41 +255,35 @@ export const createBrandPackages = async (req, res) => {
   try {
     const { brandOwnerId, packages } = req.body;
 
-    console.log("CREATE PACKAGE REQUEST:", {
-      brandOwnerId,
-      packages,
-    });
+    console.log(
+      "CREATE PACKAGE REQUEST:",
+      JSON.stringify(req.body, null, 2)
+    );
 
-    /* =====================================================
-       VALIDATION
-    ===================================================== */
-
-    console.log("UPGRADE REQUEST:", {
-      brandOwnerId,
-      packages,
-    });
-
-    // =========================
+    // =====================================================
     // VALIDATION
-    // =========================
+    // =====================================================
 
     if (
       !brandOwnerId ||
-      !Array.isArray(packages)
+      !Array.isArray(packages) ||
+      packages.length === 0
     ) {
       return res.status(400).json({
         success: false,
-        message: "brandOwnerId and packages are required",
+        message:
+          "brandOwnerId and packages array are required",
       });
     }
 
-    /* =====================================================
-       FIND BRAND
-    ===================================================== */
+    // =====================================================
+    // FIND BRAND DOC
+    // =====================================================
 
-    const brandDoc = await BrandPackages.findOne({
-      brandOwnerId,
-    });
+    const brandDoc =
+      await BrandPackages.findOne({
+        brandOwnerId,
+      });
 
     if (!brandDoc) {
       return res.status(404).json({
@@ -296,150 +292,473 @@ export const createBrandPackages = async (req, res) => {
       });
     }
 
-    /* =====================================================
-       LOOP PACKAGES
-    ===================================================== */
+    // =====================================================
+    // LOOP MAIN PACKAGES
+    // =====================================================
 
     for (const incomingPkg of packages) {
-      const { packagesType, investmetPackages = [] } = incomingPkg;
 
-      if (!packagesType) {
+      // =====================================================
+      // PACKAGE TYPE
+      // =====================================================
+
+      const packagesType = String(
+        incomingPkg.packagesType || ""
+      ).toUpperCase();
+
+      if (!packagesType) continue;
+
+      // =====================================================
+      // FIND CMS PLAN
+      // =====================================================
+
+      const cmsDoc =
+        await PackagePlanCMS.findOne({
+          "packagesPlan.planUniqueId":
+            incomingPkg.planUniqueId,
+        });
+
+      if (!cmsDoc) {
+        console.log(
+          "CMS PLAN NOT FOUND"
+        );
         continue;
       }
 
-      /* =====================================================
-         FIND EXISTING PACKAGE TYPE
-         NOW CHECKING packagesType ONLY
-      ===================================================== */
+      const matchedPlan =
+        cmsDoc.packagesPlan.find(
+          (p) =>
+            String(p.planUniqueId) ===
+            String(
+              incomingPkg.planUniqueId
+            )
+        );
 
-      const existingPackageType = brandDoc.packages.find(
-        (pkg) => pkg.packagesType === packagesType.toUpperCase(),
-      );
+      if (!matchedPlan) {
+        console.log(
+          "MATCHED PLAN NOT FOUND"
+        );
+        continue;
+      }
 
-      /* =====================================================
-         FORMAT INVESTMENT PACKAGES
-      ===================================================== */
+      // =====================================================
+      // FIND EXISTING PACKAGE TYPE
+      // =====================================================
 
-      const formattedPackages = investmetPackages.map((pkg) => {
-        const validityDays = Number(pkg.validity) || 0;
+      let existingPackageType =
+        brandDoc.packages.find(
+          (pkg) =>
+            String(
+              pkg.packagesType
+            ).toUpperCase() ===
+            packagesType
+        );
+
+      // =====================================================
+      // CREATE PACKAGE TYPE
+      // =====================================================
+
+      if (!existingPackageType) {
+        brandDoc.packages.push({
+          packagesType,
+          investmetPackages: [],
+        });
+
+        existingPackageType =
+          brandDoc.packages[
+            brandDoc.packages.length - 1
+          ];
+      }
+
+      // =====================================================
+      // RAW PACKAGES
+      // =====================================================
+
+      const rawPackages =
+        incomingPkg.investmetPackages ||
+        incomingPkg.InvestmetPackages ||
+        [];
+
+      if (
+        !Array.isArray(rawPackages) ||
+        rawPackages.length === 0
+      ) {
+        console.log(
+          "RAW PACKAGES EMPTY"
+        );
+        continue;
+      }
+
+      // =====================================================
+      // LOOP RAW PACKAGES
+      // =====================================================
+
+      for (const pkg of rawPackages) {
+
+        // =====================================================
+        // VALIDITY + DATES
+        // =====================================================
+
+        const validity = Number(
+          pkg.validity ||
+          pkg.Validity ||
+          0
+        );
 
         const startDate = new Date();
 
-        const endDate = new Date();
+        const endDate = new Date(
+          startDate
+        );
 
-        endDate.setDate(endDate.getDate() + validityDays);
+        endDate.setDate(
+          startDate.getDate() +
+            validity
+        );
 
-        let totalLeads = Number(pkg.totalLeads) || 0;
+        // =====================================================
+        // FINAL INVESTMENT RANGES
+        // =====================================================
 
-        let remainingLeads = Number(pkg.remainingLeads) || totalLeads;
+        let finalInvestmentRanges =
+          [];
 
-        let sendingLeads = Number(pkg.sendingLeads) || 0;
+        // =====================================================
+        // LISTING PACKAGE LOGIC
+        // =====================================================
 
-        let sendingPercentage = Number(pkg.sendingPercentage) || 0;
+        if (
+          packagesType === "LISTING"
+        ) {
 
-        let totalAmount = Number(pkg.totalAmount) || 0;
+          const originalRanges =
+            Array.isArray(
+              pkg.investmentranges
+            )
+              ? pkg.investmentranges
+              : [];
 
-        /* =========================================
-             TYPE BASED LOGIC
-          ========================================= */
+          for (const range of originalRanges) {
 
-        if (packagesType.toUpperCase() === "LISTING") {
-          totalLeads = 0;
-          remainingLeads = 0;
-          sendingLeads = 0;
-          sendingPercentage = 0;
+            // LABEL ARRAY
+            const labels =
+              Array.isArray(
+                range.selectedPlanInvestmetrange
+              )
+                ? range.selectedPlanInvestmetrange
+                : [];
+
+            // STATES ARRAY
+            const states =
+              Array.isArray(
+                range.selectedPlanState
+              )
+                ? range.selectedPlanState
+                : [];
+
+            // CREATE SEPARATE OBJECT
+            for (const label of labels) {
+
+              finalInvestmentRanges.push({
+                selectedPlanInvestmetrange:
+                  label,
+
+                selectedPlanStateAndDistrict:
+                  states.map(
+                    (stateObj) => ({
+                      state:
+                        stateObj.state ||
+                        "",
+
+                      district:
+                        Array.isArray(
+                          stateObj.district
+                        )
+                          ? stateObj.district
+                          : [],
+                    })
+                  ),
+              });
+            }
+          }
         }
 
-        if (packagesType.toUpperCase() === "FREE") {
-          totalAmount = 0;
+        // =====================================================
+        // LEAD / FREE PACKAGE LOGIC
+        // =====================================================
+
+        else {
+
+          const originalRanges =
+            Array.isArray(
+              pkg.investmentranges
+            )
+              ? pkg.investmentranges
+              : [];
+
+          finalInvestmentRanges =
+            originalRanges.map(
+              (range) => ({
+
+                selectedPlanInvestmetrange:
+                  range.selectedPlanInvestmetrange ||
+                  "",
+
+                selectedPlanStateAndDistrict:
+
+                  // FORMAT 1
+                  Array.isArray(
+                    range.selectedPlanStateAndDistrict
+                  )
+
+                    ? range.selectedPlanStateAndDistrict.map(
+                        (stateObj) => ({
+                          state:
+                            stateObj.state ||
+                            "",
+
+                          district:
+                            Array.isArray(
+                              stateObj.district
+                            )
+                              ? stateObj.district
+                              : [],
+                        })
+                      )
+
+                    // FORMAT 2
+                    : Array.isArray(
+                        range.selectedPlanState
+                      )
+
+                    ? range.selectedPlanState.map(
+                        (stateObj) => ({
+                          state:
+                            stateObj.state ||
+                            "",
+
+                          district:
+                            Array.isArray(
+                              stateObj.district
+                            )
+                              ? stateObj.district
+                              : [],
+                        })
+                      )
+
+                    : [],
+              })
+            );
         }
 
-        return {
-          packagesName: pkg.packagesName || "",
+        console.log(
+          "FINAL INVESTMENT RANGES:",
+          JSON.stringify(
+            finalInvestmentRanges,
+            null,
+            2
+          )
+        );
 
-          planUniqueId: pkg.planUniqueId || "",
+        // =====================================================
+        // INVESTMENT RANGE LABEL
+        // =====================================================
 
-          investmetRageLabel: pkg.investmetRageLabel || "",
+        let finalInvestmentLabel =
+          "";
 
-          investmentranges: (pkg.investmentranges || []).map((range) => ({
-            selectedPlanInvestmetrange: range.selectedPlanInvestmetrange || "",
+        if (
+          packagesType === "LISTING"
+        ) {
 
-            selectedPlanStateAndDistrict: (
-              range.selectedPlanStateAndDistrict || []
-            ).map((stateObj) => ({
-              state: stateObj.state || "",
+          finalInvestmentLabel =
+            matchedPlan.packages
+              .map(
+                (p) =>
+                  p.investmentRangeLabel
+              )
+              .filter(Boolean)
+              .join(", ");
+        } else {
 
-              district: stateObj.district || [],
-            })),
-          })),
+          finalInvestmentLabel =
+            pkg.investmetRageLabel ||
+            pkg.InvestmetRageLabel ||
+            "";
+        }
 
-          validity: String(validityDays),
+        // =====================================================
+        // CREATE PACKAGE
+        // =====================================================
 
-          totalLeads: totalLeads,
+        const formattedPackage = {
 
-          sendingLeads: sendingLeads,
+          packagesName:
+            incomingPkg.packagesName ||
+            incomingPkg.packageName ||
+            matchedPlan.planName ||
+            "",
 
-          sendingPercentage: sendingPercentage,
+          planUniqueId:
+            incomingPkg.planUniqueId ||
+            matchedPlan.planUniqueId ||
+            "",
 
-          remainingLeads: remainingLeads,
+          investmetRageLabel:
+            finalInvestmentLabel,
 
-          totalAmount: totalAmount,
+          investmentranges:
+            finalInvestmentRanges,
 
-          packageStartDate: startDate,
+          validity:
+            String(validity),
 
-          packageEndDate: endDate,
+          totalLeads:
+            Number(
+              pkg.totalLeads ||
+              pkg.TotalLeads ||
+              0
+            ),
 
-          currentDate: startDate,
+          remainingLeads:
+            Number(
+              pkg.remainingLeads ||
+              pkg.TotalLeads ||
+              0
+            ),
 
-          renewalEndDate: endDate,
+          sendingLeads: 0,
 
-          isPaused: false,
+          sendingPercentage: 0,
 
-          pauseHistory: [],
+          totalAmount:
+            Number(
+              pkg.totalAmount ||
+              pkg.TotalAmount ||
+              0
+            ),
 
-          isExperied: false,
+          packageStartDate:
+            pkg.packageStartDate ||
+            pkg.PackageStartDate ||
+            startDate,
 
-          isActive: false,
+          packageEndDate:
+            pkg.packageEndDate ||
+            pkg.PackageEndDate ||
+            endDate,
 
-          isPending: true,
+          currentDate:
+            pkg.currentDate ||
+            pkg.CurrentDate ||
+            startDate,
+
+          renewalEndDate:
+            pkg.renewalEndDate ||
+            pkg.RenewalEndDate ||
+            endDate,
+
+          isPaused:
+            pkg.isPaused || false,
+
+          pauseHistory:
+            pkg.pauseHistory || [],
+
+          isExperied:
+            pkg.isExperied || false,
+
+          isActive:
+            pkg.isActive || false,
+
+          isPending:
+            pkg.isPending ?? true,
+
+          paymentId:
+            pkg.paymentId || "",
+
+          orderId:
+            pkg.orderId || "",
         };
-      });
 
-      /* =====================================================
-         CASE 1
-         EXISTING PACKAGE TYPE FOUND
-         PUSH INVESTMENT PACKAGES
-      ===================================================== */
+        console.log(
+          "FORMATTED PACKAGE:",
+          JSON.stringify(
+            formattedPackage,
+            null,
+            2
+          )
+        );
 
-      if (existingPackageType) {
-        existingPackageType.InvestmetPackages.push(...formattedPackages);
-      } else {
+        // =====================================================
+        // DUPLICATE CHECK
+        // =====================================================
 
-      /* =====================================================
-         CASE 2
-         CREATE NEW PACKAGE TYPE
-      ===================================================== */
-        brandDoc.packages.push({
-          packagesType: packagesType.toUpperCase(),
+        const alreadyExists =
+          existingPackageType.investmetPackages.some(
+            (existingPkg) =>
 
-          InvestmetPackages: formattedPackages,
-        });
+              String(
+                existingPkg.planUniqueId
+              ) ===
+                String(
+                  formattedPackage.planUniqueId
+                ) &&
+
+              String(
+                existingPkg.investmetRageLabel
+              ) ===
+                String(
+                  formattedPackage.investmetRageLabel
+                )
+          );
+
+        if (alreadyExists) {
+
+          console.log(
+            "PACKAGE ALREADY EXISTS"
+          );
+
+          continue;
+        }
+
+        // =====================================================
+        // PUSH PACKAGE
+        // =====================================================
+
+        existingPackageType.investmetPackages.push(
+          formattedPackage
+        );
       }
     }
 
-    /* =====================================================
-       SAVE
-    ===================================================== */
+    // =====================================================
+    // SAVE
+    // =====================================================
+
+    console.log(
+      "FINAL BRAND DOC:",
+      JSON.stringify(
+        brandDoc,
+        null,
+        2
+      )
+    );
 
     await brandDoc.save();
 
     return res.status(200).json({
       success: true,
-      message: "Packages created successfully",
+      message:
+        "Packages created successfully",
       data: brandDoc,
     });
+
   } catch (error) {
-    console.error("createBrandPackages Error:", error);
+
+    console.error(
+      "createBrandPackages Error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -448,6 +767,7 @@ export const createBrandPackages = async (req, res) => {
     });
   }
 };
+
 
 export const updateBrandPackages = async (req, res) => {
   try {
@@ -1290,21 +1610,15 @@ export const getBrandPackagesHistoryById = async (req, res) => {
 
 export const startBrandExpiryJob = () => {
   // ⏱️ Every 5 minutes
-  cron.schedule(
-    "*/5 * * * *",
-    async () => {
-      if (
-        mongoose.connection.readyState !== 1 ||
-        !mongoose.connection.db
-      ) {
-        console.warn(
-          "⚠️ Skipping Brand Expiry Cron Job because MongoDB is not connected. readyState=",
-          mongoose.connection.readyState,
-        );
-        return;
-      }
+  cron.schedule("*/5 * * * *", async () => {
+    console.log("🔄 Running Brand Expiry Cron Job...");
 
-      console.log("🔄 Running Brand Expiry Cron Job...");
+    if (mongoose.connection.readyState !== 1) {
+      console.warn(
+        "⛔ Cron skipped: MongoDB is not connected",
+      );
+      return;
+    }
 
     try {
       const brands = await BrandPackages.find();
@@ -1335,7 +1649,7 @@ export const startBrandExpiryJob = () => {
                remainingLeads <= 0
             ====================================================== */
 
-            if (pkg.packagesType === "LEAD" && inv.remainingLeads <= 0) {
+            if (pkg.packagesType !== "LISTING" && inv.remainingLeads <= 0) {
               shouldExpire = true;
             }
 

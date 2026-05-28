@@ -11,6 +11,7 @@ import {
   verifyPayment,
   webhookHandler,
   initiateRefund,
+  getallPaymentHistory,
 } from "../../controller/paymentController/payment.controller.js";
 
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
@@ -83,6 +84,12 @@ router.post(
 // 🔒 PROTECTED ROUTES (Authentication Required)
 // ====================================
 
+
+router.get(
+  "/v1/payment/allpayment/history",
+  // verifyJWT,
+  getallPaymentHistory
+);
 /**
  * @route   GET /v1/payment/history
  * @desc    Get paginated payment history for a brand owner
@@ -91,7 +98,7 @@ router.post(
  */
 router.get(
   "/v1/payment/history",
-  verifyJWT,
+  // verifyJWT,
   getPaymentHistory
 );
 
