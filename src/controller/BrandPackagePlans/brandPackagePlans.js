@@ -1,6 +1,10 @@
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 import { BrandPackagesHistory } from "../../model/BrandPackagePlans/brandPackagePlanhistory.js";
 import { BrandExpansionLocationData  } from "../../model/Brand/Brand.model/ExpansionLocation.model.js";
+import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
+import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
+import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
+
 import PackagePlanCMS    from "../../model/PackagePlanCMS/PackagePlan.js";
 import cron from "node-cron";
 import mongoose from "mongoose";
@@ -247,6 +251,125 @@ export const getBrandPackagesById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+export const getAllBrandPackages = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      industry,
+      category,
+      packagesType,
+    } = req.query;
+
+    const filter = {};
+
+    if (industry) filter.industry = industry;
+    if (category) filter.category = category;
+
+    if (packagesType) {
+      const typesArray = packagesType
+        .split(",")
+        .map((t) => t.trim().toUpperCase());
+      filter["packages.packagesType"] = { $in: typesArray };
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [data, total] = await Promise.all([
+      BrandPackages.find(filter)
+        .lean()
+        .skip(skip)
+        .limit(Number(limit))
+        .sort({ createdAt: -1 }),
+      BrandPackages.countDocuments(filter),
+    ]);
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No brand packages found",
+      });
+    }
+
+    /* =====================================================
+       STRIP FREE PACKAGES
+    ===================================================== */
+
+    const filteredData = data.map((brand) => ({
+      ...brand,
+      packages: brand.packages.filter((pkg) =>
+        ["LEAD", "LISTING"].includes(pkg.packagesType)
+      ),
+    }));
+
+    /* =====================================================
+       FETCH LOGO + CATEGORY + INVESTMENT RANGE
+       FOR EACH BRAND USING brandOwnerId
+    ===================================================== */
+
+    const brandOwnerIds = filteredData.map((b) => b.brandOwnerId);
+
+    const [uploadsData, franchiseData] = await Promise.all([
+      BrandUploads.find({ brandOwnerId: { $in: brandOwnerIds } }).lean(),
+      BrandFranchiseDetails.find({ brandOwnerId: { $in: brandOwnerIds } }).lean(),
+    ]);
+
+    /* =====================================================
+       MAP INTO LOOKUP OBJECTS FOR FAST ACCESS
+    ===================================================== */
+
+    const uploadsMap = {};
+    uploadsData.forEach((u) => {
+      uploadsMap[u.brandOwnerId] = u;
+    });
+
+    const franchiseMap = {};
+    franchiseData.forEach((f) => {
+      franchiseMap[f.brandOwnerId] = f;
+    });
+
+    /* =====================================================
+       MERGE LOGO + FRANCHISE DATA INTO RESPONSE
+    ===================================================== */
+
+    const enrichedData = filteredData.map((brand) => {
+      const uploads = uploadsMap[brand.brandOwnerId];
+      const franchise = franchiseMap[brand.brandOwnerId];
+
+      const logo = uploads?.uploads?.brandLogo?.[0] || null;
+
+      const brandCategories =
+        franchise?.franchiseDetails?.brandCategories || null;
+
+      const investmentRange =
+        franchise?.franchiseDetails?.fico?.[0]?.investmentRange || null;
+
+      return {
+        ...brand,
+        logo,
+        brandCategories,
+        fico: { investmentRange },
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / Number(limit)),
+      data: enrichedData,
+    });
+
+  } catch (error) {
+    console.error("getAllBrandPackages Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
