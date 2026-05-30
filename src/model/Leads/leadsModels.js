@@ -150,22 +150,22 @@ const InvestorEnquirySchema = new mongoose.Schema(
     investorId: {
       type: String,
       ref: "InstantApplyInvestor",
-      required: true,
+      // required: true,
     },
 
     investorName: {
       type: String,
-      required: true,
+      // required: true,
     },
 
     investorEmail: {
       type: String,
-      required: true,
+      // required: true,
     },
 
     investorPhone: {
       type: String,
-      required: true,
+      // required: true,
     },
 
     state: String,
@@ -188,7 +188,7 @@ const InvestorEnquirySchema = new mongoose.Schema(
 
     brandId: {
       type: String,
-      required: true,
+      // required: true,
     },
     brandName: String,
     brandsSent: [

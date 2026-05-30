@@ -581,7 +581,7 @@
 
 import InvestorEnquiry from "../../model/Leads/leadsModels.js";
 import { InvsRegister } from "../../model/Investor/invsRegister.js";
-
+import  {BrandFranchiseDetails} from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
 export const createInvestorEnquiry = async (req, res) => {
   try {
     const {
@@ -592,53 +592,110 @@ export const createInvestorEnquiry = async (req, res) => {
       readyToInvest,
       brandId,
       brandName,
+      state,
+      
     } = req.body;
 
+    console.log("Received enquiry data:", req.body);
     const investor = await InvsRegister.findOne({
       uuid: applyId,
     });
 
-    if (!investor) {
-      return res.status(404).json({
-        success: false,
-        message: "Investor not found",
-      });
-    }
+    const franchiseDetails = await BrandFranchiseDetails.findOne({
+      brandOwnerId: brandId,
+    });
+
+    const brandCategories =
+  franchiseDetails?.franchiseDetails?.brandCategories || {};
+
+    //   if (!franchiseDetails) {
+    //     return res.status(404).json({
+    //       success: false,
+    //       message: "Franchise details not found for the given brandId",
+    //     });
+    // }
+    // if (!investor) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "Investor not found",
+    //   });
+    // }
 
     const preference = investor?.preferences?.[0] || {};
     const categoryData = preference?.category?.[0] || {};
 
-    const enquiry = await InvestorEnquiry.create({
-      investorId: investor.uuid,
+const enquiry = await InvestorEnquiry.create({
+  investorId: investor?.uuid || applyId || "",
 
-      investorName: investor.firstName,
+  investorName:
+    investor?.firstName ||
+    req.body.fullName ||
+    "",
 
-      investorEmail: investor.email,
+  investorEmail:
+    investor?.email ||
+    req.body.email ||
+    "",
 
-      investorPhone: investor.mobileNumber,
+  investorPhone:
+    investor?.mobileNumber ||
+    req.body.mobileNumber ||
+    "",
 
-      state: investor.state,
+  state:
+    state ||
+    req.body.state ||
+    "",
 
-      district,
+  district:
+    district ||
+    req.body.district ||
+    "",
 
-      city: investor.city,
+  city:
+    investor?.city ||
+    req.body.city ||
+    "",
 
-      investmentRange,
+  investmentRange:
+    investmentRange ||
+    req.body.investmentRange ||
+    "",
 
-      planToInvest,
+  planToInvest:
+    planToInvest ||
+    req.body.planToInvest ||
+    "",
 
-      readyToInvest,
+  readyToInvest:
+    readyToInvest ||
+    req.body.readyToInvest ||
+    "",
 
-      brandId,
+  brandId:
+    brandId ||
+    "",
 
-      brandName,
+  brandName:
+    brandName ||
 
-      industry: categoryData.main || "",
+    "",
 
-      category: categoryData.sub || "",
+  industry:
+    brandCategories?.main ||
+   req.body.categories[0]?.main ||
+    "",
 
-      subCategory: categoryData.child || "",
-    });
+  category:
+    brandCategories?.sub ||
+    req.body.categories[0]?.sub ||
+    "",
+
+  subCategory:
+    brandCategories?.child ||
+    req.body.categories[0]?.child ||
+    "",
+});
 
     return res.status(201).json({
       success: true,

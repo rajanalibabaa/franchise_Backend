@@ -9,6 +9,118 @@ import PackagePlanCMS    from "../../model/PackagePlanCMS/PackagePlan.js";
 import cron from "node-cron";
 import mongoose from "mongoose";
 
+const buildStateDistrictMap = (
+  expansionLocationData,
+) => {
+  const locations = [
+    ...(expansionLocationData?.expansionLocations?.domestic?.locations || []),
+    ...(expansionLocationData?.currentOutletLocations?.domestic?.locations || []),
+  ];
+
+  const map = new Map();
+
+  locations.forEach((loc) => {
+    const state = String(loc?.state || "").trim();
+    if (!state) return;
+
+    if (map.has(state.toLowerCase())) return;
+
+    const districts = (loc?.districts || [])
+      .map((d) => d?.district)
+      .filter(Boolean);
+
+    map.set(state.toLowerCase(), districts);
+  });
+
+  return map;
+};
+
+const normalizeStateAndDistrict = (
+  stateSource,
+  stateDistrictMap = new Map(),
+) => {
+  const getStateDistricts = (state) => {
+    if (!state) return [];
+    return (
+      stateDistrictMap.get(String(state).trim().toLowerCase()) || []
+    );
+  };
+
+  const normalizeItem = (item) => {
+    const state =
+      typeof item === "string"
+        ? item
+        : item?.state || item?.name || "";
+
+    if (!state) {
+      return {
+        state: "",
+        district: [],
+      };
+    }
+
+    const explicitDistricts =
+      Array.isArray(item?.district)
+        ? item.district
+        : Array.isArray(item?.districts)
+        ? item.districts
+        : [];
+
+    return {
+      state,
+      district:
+        explicitDistricts.length > 0
+          ? explicitDistricts
+          : getStateDistricts(state),
+    };
+  };
+
+  if (!stateSource) return [];
+
+  if (Array.isArray(stateSource)) {
+    return stateSource.map(normalizeItem);
+  }
+
+  return [normalizeItem(stateSource)];
+};
+
+const normalizeInvestmentRanges = (
+  ranges,
+  stateDistrictMap = new Map(),
+) => {
+  const normalizedRanges = Array.isArray(ranges) ? ranges : [];
+
+  return normalizedRanges.map((range) => {
+    const primaryStateAndDistrict = normalizeStateAndDistrict(
+      range?.selectedPlanStateAndDistrict,
+      stateDistrictMap,
+    );
+    const secondaryStateAndDistrict =
+      primaryStateAndDistrict.length > 0
+        ? primaryStateAndDistrict
+        : normalizeStateAndDistrict(
+            range?.selectedPlanState,
+            stateDistrictMap,
+          );
+    const finalStateAndDistrict =
+      secondaryStateAndDistrict.length > 0
+        ? secondaryStateAndDistrict
+        : normalizeStateAndDistrict(
+            range?.states,
+            stateDistrictMap,
+          );
+
+    return {
+      selectedPlanInvestmetrange:
+        range?.selectedPlanInvestmetrange ||
+        range?.investmentRangeLabel ||
+        range?.range ||
+        "",
+      selectedPlanStateAndDistrict: finalStateAndDistrict,
+    };
+  });
+};
+
 export const createInitialPackages = async ({
   brandOwnerId,
   Industry,
@@ -75,6 +187,16 @@ export const createInitialPackages = async ({
       };
     }
 
+    const expansionLocDoc =
+      await BrandExpansionLocationData.findOne({
+        brandOwnerId,
+      }).lean();
+
+    const expansionStateDistrictMap =
+      buildStateDistrictMap(
+        expansionLocDoc?.expansionLocationData,
+      );
+
     /* =====================================================
        PROCESS INVESTMENT PACKAGES
     ===================================================== */
@@ -106,22 +228,13 @@ export const createInitialPackages = async ({
 
         /* =========================================
            STORE STATE + DISTRICT
-        ========================================= */
+        =========================================
+        */
 
-        investmentranges: (inv.investmentranges || []).map((range) => ({
-          selectedPlanInvestmetrange:
-            range.selectedPlanInvestmetrange || "",
-
-          selectedPlanStateAndDistrict: (
-            range.selectedPlanStateAndDistrict || []
-          ).map((item) => ({
-            state: item.state || "",
-
-            district: Array.isArray(item.district)
-              ? item.district
-              : [],
-          })),
-        })),
+        investmentranges: normalizeInvestmentRanges(
+          inv.investmentranges || inv.items || [],
+          expansionStateDistrictMap,
+        ),
 
         /* =========================================
            VALIDITY
@@ -255,27 +368,77 @@ export const getBrandPackagesById = async (req, res) => {
   }
 };
 
+
+
 export const getAllBrandPackages = async (req, res) => {
   try {
     const {
       page = 1,
       limit = 10,
+      search = "",
       industry,
       category,
       packagesType,
     } = req.query;
 
-    const filter = {};
+const filter = {
+  $and: [],
+};
 
-    if (industry) filter.industry = industry;
-    if (category) filter.category = category;
+if (search) {
+  filter.$and.push({
+    $or: [
+      {
+        brandName: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+      {
+        category: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+      {
+        industry: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+    ],
+  });
+}
 
-    if (packagesType) {
-      const typesArray = packagesType
-        .split(",")
-        .map((t) => t.trim().toUpperCase());
-      filter["packages.packagesType"] = { $in: typesArray };
-    }
+if (industry) {
+  filter.$and.push({
+    industry,
+  });
+}
+
+if (category) {
+  filter.$and.push({
+    category,
+  });
+}
+
+if (packagesType) {
+  const typesArray = packagesType
+    .split(",")
+    .map((item) =>
+      item.trim().toUpperCase()
+    );
+
+  filter.$and.push({
+    "packages.packagesType": {
+      $in: typesArray,
+    },
+  });
+}
+
+if (filter.$and.length === 0) {
+  delete filter.$and;
+}
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -302,7 +465,7 @@ export const getAllBrandPackages = async (req, res) => {
     const filteredData = data.map((brand) => ({
       ...brand,
       packages: brand.packages.filter((pkg) =>
-        ["LEAD", "LISTING"].includes(pkg.packagesType)
+        ["LEAD", "LISTING","FREE"].includes(pkg.packagesType)
       ),
     }));
 
@@ -342,17 +505,17 @@ export const getAllBrandPackages = async (req, res) => {
 
       const logo = uploads?.uploads?.brandLogo?.[0] || null;
 
-      const brandCategories =
-        franchise?.franchiseDetails?.brandCategories || null;
+      // const brandCategories =
+      //   franchise?.franchiseDetails?.brandCategories || null;
 
-      const investmentRange =
-        franchise?.franchiseDetails?.fico?.[0]?.investmentRange || null;
+      // const investmentRange =
+      //   franchise?.franchiseDetails?.fico?.[0]?.investmentRange || null;
 
       return {
         ...brand,
         logo,
-        brandCategories,
-        fico: { investmentRange },
+        // brandCategories,
+        // fico: { investmentRange },
       };
     });
 
@@ -373,6 +536,45 @@ export const getAllBrandPackages = async (req, res) => {
     });
   }
 };
+
+
+
+export const updateBrandPackagecms = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const updatedPackage =
+      await BrandPackages.findByIdAndUpdate(
+        id,
+        req.body,
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!updatedPackage) {
+      return res.status(404).json({
+        success: false,
+        message: "Package not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Package updated successfully",
+      data: updatedPackage,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 
 export const createBrandPackages = async (req, res) => {
   try {
@@ -414,6 +616,16 @@ export const createBrandPackages = async (req, res) => {
         message: "Brand not found",
       });
     }
+
+    const expansionLocDoc =
+      await BrandExpansionLocationData.findOne({
+        brandOwnerId,
+      }).lean();
+
+    const expansionStateDistrictMap =
+      buildStateDistrictMap(
+        expansionLocDoc?.expansionLocationData,
+      );
 
     // =====================================================
     // LOOP MAIN PACKAGES
@@ -559,48 +771,39 @@ export const createBrandPackages = async (req, res) => {
               pkg.investmentranges
             )
               ? pkg.investmentranges
+              : Array.isArray(pkg.items)
+              ? pkg.items
               : [];
 
           for (const range of originalRanges) {
+            const labels = Array.isArray(
+              range.selectedPlanInvestmetrange,
+            )
+              ? range.selectedPlanInvestmetrange
+              : typeof range.selectedPlanInvestmetrange === "string"
+              ? [range.selectedPlanInvestmetrange]
+              : [];
 
-            // LABEL ARRAY
-            const labels =
-              Array.isArray(
-                range.selectedPlanInvestmetrange
-              )
-                ? range.selectedPlanInvestmetrange
-                : [];
-
-            // STATES ARRAY
-            const states =
-              Array.isArray(
-                range.selectedPlanState
-              )
+            const stateSource =
+              Array.isArray(range.selectedPlanStateAndDistrict)
+                ? range.selectedPlanStateAndDistrict
+                : Array.isArray(range.selectedPlanState)
                 ? range.selectedPlanState
+                : Array.isArray(range.states)
+                ? range.states
                 : [];
 
-            // CREATE SEPARATE OBJECT
-            for (const label of labels) {
+            const normalizedStates = normalizeStateAndDistrict(
+              stateSource,
+              expansionStateDistrictMap,
+            );
 
+            for (const label of labels) {
               finalInvestmentRanges.push({
                 selectedPlanInvestmetrange:
                   label,
-
                 selectedPlanStateAndDistrict:
-                  states.map(
-                    (stateObj) => ({
-                      state:
-                        stateObj.state ||
-                        "",
-
-                      district:
-                        Array.isArray(
-                          stateObj.district
-                        )
-                          ? stateObj.district
-                          : [],
-                    })
-                  ),
+                  normalizedStates,
               });
             }
           }
@@ -617,60 +820,14 @@ export const createBrandPackages = async (req, res) => {
               pkg.investmentranges
             )
               ? pkg.investmentranges
+              : Array.isArray(pkg.items)
+              ? pkg.items
               : [];
 
           finalInvestmentRanges =
-            originalRanges.map(
-              (range) => ({
-
-                selectedPlanInvestmetrange:
-                  range.selectedPlanInvestmetrange ||
-                  "",
-
-                selectedPlanStateAndDistrict:
-
-                  // FORMAT 1
-                  Array.isArray(
-                    range.selectedPlanStateAndDistrict
-                  )
-
-                    ? range.selectedPlanStateAndDistrict.map(
-                        (stateObj) => ({
-                          state:
-                            stateObj.state ||
-                            "",
-
-                          district:
-                            Array.isArray(
-                              stateObj.district
-                            )
-                              ? stateObj.district
-                              : [],
-                        })
-                      )
-
-                    // FORMAT 2
-                    : Array.isArray(
-                        range.selectedPlanState
-                      )
-
-                    ? range.selectedPlanState.map(
-                        (stateObj) => ({
-                          state:
-                            stateObj.state ||
-                            "",
-
-                          district:
-                            Array.isArray(
-                              stateObj.district
-                            )
-                              ? stateObj.district
-                              : [],
-                        })
-                      )
-
-                    : [],
-              })
+            normalizeInvestmentRanges(
+              originalRanges,
+              expansionStateDistrictMap,
             );
         }
 
