@@ -39,9 +39,6 @@ const planSchema = new mongoose.Schema(
   },
 
 );
-
-
-
 /* main schema */
 const packagesSchema = new mongoose.Schema(
   {
