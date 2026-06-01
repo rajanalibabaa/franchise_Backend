@@ -113,7 +113,7 @@ async (req, res) => {
           success: false,
           message:
             `${matchType} : category requires industry`,
-        });
+        }); 
       }
 
       /* =========================
@@ -230,3 +230,159 @@ async (req, res) => {
     });
   }
 };
+
+
+
+
+export const updateLeadMatchCMS =
+  async (req, res) => {
+    try {
+      const {
+        packageType,
+        selectedMatchTypes,
+      } = req.body;
+
+      console.log(
+        "updateLeadMatchCMS req.body:",
+        req.body,
+      );
+
+      /* =====================================
+         VALIDATION
+      ===================================== */
+
+      if (!packageType) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "packageType is required",
+        });
+      }
+
+      if (
+        !Array.isArray(
+          selectedMatchTypes,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "selectedMatchTypes must be array",
+        });
+      }
+
+      /* =====================================
+         FIND DOCUMENT
+      ===================================== */
+
+      const leadMatch =
+        await LeadMatchingRule.findOne();
+
+      if (!leadMatch) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Lead match rules not found",
+        });
+      }
+
+      /* =====================================
+         LOOP RULES
+      ===================================== */
+
+      leadMatch.rules.forEach((rule) => {
+        /* =====================================
+           FIND CURRENT PACKAGE
+        ===================================== */
+
+        const packagePlan =
+          rule.packagePlans.find(
+            (pkg) =>
+              pkg.packageType ===
+              packageType,
+          );
+
+        if (!packagePlan) return;
+
+        /* =====================================
+           FIND SELECTED MATCH
+        ===================================== */
+
+        const selectedMatch =
+          selectedMatchTypes.find(
+            (item) =>
+              item.matchType ===
+              rule.matchType,
+          );
+
+        /* =====================================
+           IF MATCH FOUND
+        ===================================== */
+
+        if (selectedMatch) {
+          packagePlan.isActive = true;
+
+        
+        }
+
+      
+        else {
+          packagePlan.isActive = false;
+        
+        }
+      });
+
+      /* =====================================
+         SORT RULES BY PRIORITY
+      ===================================== */
+
+      leadMatch.rules.sort((a, b) => {
+        const packageA =
+          a.packagePlans.find(
+            (pkg) =>
+              pkg.packageType ===
+              packageType,
+          );
+
+        const packageB =
+          b.packagePlans.find(
+            (pkg) =>
+              pkg.packageType ===
+              packageType,
+          );
+
+        const priorityA =
+          packageA?.priority || 9999;
+
+        const priorityB =
+          packageB?.priority || 9999;
+
+        return priorityA - priorityB;
+      });
+
+      /* =====================================
+         SAVE
+      ===================================== */
+
+      await leadMatch.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Lead match updated successfully",
+        data: leadMatch,
+      });
+    } catch (error) {
+      console.log(
+        "updateLeadMatchCMS error:",
+        error,
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Internal server error",
+        error: error.message,
+      });
+    }
+  };
