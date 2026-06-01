@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { GSTCalculator } from "./gstCalculator.js";
 // import { generateInvoice } from "../../utils/paymentsHandle/invoiceGenerator.js";
 import { encryptSensitiveData } from "../../utils/paymentsHandle/encryption.js";
-import Packages from "../../model/PackagePlanCMS/PackagePlan.js";
+import Packages from "../../model/CMS/PackagePlan.js";
 // ==============================
 // ✅ CREATE PAYMENT WITH GST
 // ==============================

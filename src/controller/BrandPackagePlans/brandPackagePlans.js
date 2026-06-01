@@ -5,7 +5,7 @@ import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
 
-import PackagePlanCMS    from "../../model/PackagePlanCMS/PackagePlan.js";
+import PackagePlanCMS    from "../../model/CMS/PackagePlan.js";
 import cron from "node-cron";
 import mongoose from "mongoose";
 
