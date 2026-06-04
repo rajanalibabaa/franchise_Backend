@@ -691,10 +691,7 @@ const enquiry = await InvestorEnquiry.create({
     req.body.categories[0]?.sub ||
     "",
 
-  subCategory:
-    brandCategories?.child ||
-    req.body.categories[0]?.child ||
-    "",
+
 });
 
     return res.status(201).json({
@@ -710,6 +707,7 @@ const enquiry = await InvestorEnquiry.create({
     });
   }
 };
+
 
 export const getAllInvestorEnquiries = async (
   req,
@@ -778,6 +776,7 @@ export const getAllInvestorEnquiries = async (
       success: true,
       total,
       page: Number(page),
+      limit: Number(limit),
       data,
     });
   } catch (error) {

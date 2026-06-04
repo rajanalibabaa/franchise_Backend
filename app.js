@@ -40,6 +40,7 @@ import paymentplanCMS from "./src/Routes/AdminRoutes/CMS/packagePlan.js";
 import brandPackagePlansRouter from "./src/Routes/BrandPackagePlan/BrandPackagePlans.js";
 import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
 import paymentRoutes from "./src/Routes/LeadPackage/paymentRoutes.js";
+import leadGenerationMatchingnewleadUpdate from "./src/Routes/leadGenerationMatchingnewleadUpdateRoutes/leadGenerationMatchingnewleadRoutes.js";
 
 const router = express.Router();
 
@@ -130,6 +131,7 @@ router.use(brandPackagePlansRouter);
 router.use(searchRoutes);
 
 router.use(paymentRoutes);  
+router.use( leadGenerationMatchingnewleadUpdate);
 
 function getRoutes(router, basePath = "") {
   const routes = [];

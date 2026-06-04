@@ -1,4 +1,8 @@
 import { sendEmail } from "./emailService.js";
+import { sendEmailNewLeadGeneration } from "./sendEmailNewLeadGenerations.js";
+import InvestorModel from "../../model/Leads/leadsModels.js";
+
+
 
 export const sendBrandEmailPerfect = async (
   recipientEmail,
@@ -28,31 +32,26 @@ export const sendBrandEmailPerfect = async (
   }
 };
 
-export const sendInstantApplyEmail = async (
-  fullName,
+
+
+
+export const sendInstantApplyEmail = async ({
+  brandOwnerId,
+  InvstorId,
+   fullName,
   email,
   mobileNumber,
   brandName,
   brandEmail,
-  categories,
-  location,
+  category,
+  industry,
+  state,
+  district,
   investmentRange,
   planToInvest,
   readyToInvest,
-) => {
-  console.log(
-    "req.body :",
-    fullName,
-    email,
-    mobileNumber,
-    brandName,
-    brandEmail,
-    categories,
-    location,
-    investmentRange,
-    planToInvest,
-    readyToInvest,
-  );
+}  ) => {
+ 
   try {
     // Dummy data for testing
     const emailSubject =
@@ -61,25 +60,72 @@ export const sendInstantApplyEmail = async (
       "You Have A Good News, New Instant Applier Details Here..! ";
     const emailTemplateName = "instantApply_template"; // Ensure this matches the template file name in the 'templates' folder
     const emailData = {
+      brandOwnerId: brandOwnerId,
+      InvstorId: InvstorId,
       brandName: brandName,
+      brandEmail: brandEmail,
       name: fullName,
       email: email,
       mobileNumber: mobileNumber,
-      categories: categories,
-      location: location,
+      category: category,
+      industry: industry,
+      state: state,
+      district: district,
       emailSubject: emailSubject,
       investmentRange: investmentRange,
       planToInvest: planToInvest,
       readyToInvest: readyToInvest,
     };
 
-    // console.log(" ============== :",emailData)
+    console.log(" ============== :",emailData)
+    
     // Call the sendEmail function
-    await sendEmail(brandEmail, subject, emailTemplateName, emailData);
-  } catch (error) {
+ const emailResponse =
+      await sendEmailNewLeadGeneration(
+        brandEmail,
+        subject,
+        emailTemplateName,
+        emailData
+      );
+    
+ await InvestorModel.findOneAndUpdate(
+      { uuid: InvstorId },
+      {
+        $push: {
+          brandsSent: {
+            brandId: brandOwnerId,
+            brandName: brandName,
+            brandEmail: brandEmail,
+            emailSent: true,
+            emailSentAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+          return {
+      success: true,
+      brandName,
+      brandEmail,
+      emailResponse,
+      message: "Email sent successfully",
+    };
+    
+    
+    } catch (error) {
     console.error("Failed to send test email:", error);
+
+      return {
+      success: false,
+      brandName,
+      brandEmail,
+      message: error.message,
+      error,
+    };
   }
 };
+
 
 export const sendInstantApplyLeadLocation = async (
   fullName,
@@ -124,6 +170,10 @@ export const sendInstantApplyLeadLocation = async (
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
 };
 
+
+
+
+
 export const paidLeadInstantApplyEmail = async (
   fullName,
   email,
@@ -156,6 +206,11 @@ export const paidLeadInstantApplyEmail = async (
   // Call the sendEmail function
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
 };
+
+
+
+
+
 
 export const sendPremiumPackageOfferEmail = async (
   fullName,
@@ -192,6 +247,9 @@ export const sendPremiumPackageOfferEmail = async (
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
 };
 
+
+
+
 export const sendInstantApplyPerAndPar = async (
   fullName,
   email,
@@ -225,6 +283,9 @@ export const sendInstantApplyPerAndPar = async (
   // Call the sendEmail function
   await sendEmail(brandEmail, subject, emailTemplateName, emailData);
 };
+
+
+
 
 export const sendPostRequirementEmail = async (
   email,
@@ -268,6 +329,9 @@ export const sendPostRequirementEmail = async (
     console.error("Failed to send test email:", error);
   }
 };
+
+
+
 
 export const sendEmailOTP = async (email, otp) => {
   try {
