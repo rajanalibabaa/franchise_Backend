@@ -23,6 +23,7 @@ import { mainSocket } from "./src/socket/mainSocket.js";
 import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 import dns from "dns";
 import { startBrandExpiryJob } from "./src/controller/BrandPackagePlans/brandPackagePlans.js";
+// import { createLeadRulesForAllBrands } from "./src/controller/CMS/LeadDistributionAdminAccess/leadMatchingRulePerBrand.js";
 
 dotenv.config(); // ✅ Load env FIRST
 
@@ -177,6 +178,7 @@ const startServer = async () => {
     // Start scheduled jobs only after DB is connected
     try {
       startBrandExpiryJob();
+      // await createLeadRulesForAllBrands();
       console.log("⏱️ Brand expiry cron job started");
     } catch (cronErr) {
       console.error("Failed to start Brand expiry cron job:", cronErr);

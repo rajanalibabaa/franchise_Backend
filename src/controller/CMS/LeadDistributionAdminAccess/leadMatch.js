@@ -1,4 +1,4 @@
-import LeadMatchingRule from "../../model/CMS/leadMatch.js";
+import LeadMatchingRule from "../../../model/CMS/LeadDistributionAdminAccess/leadMatch.js";
 
 export const createLeadMatchCMS =
 async (req, res) => {
@@ -38,14 +38,7 @@ async (req, res) => {
          matchName
       ========================= */
 
-      if (!matchName) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "matchName is required",
-        });
-      }
-
+  
       /* =========================
          matchType
       ========================= */
@@ -180,7 +173,6 @@ async (req, res) => {
   }
 };
 
-
 export const getLeadMatchCMS =
 async (req, res) => {
   try {
@@ -230,9 +222,6 @@ async (req, res) => {
     });
   }
 };
-
-
-
 
 export const updateLeadMatchCMS =
   async (req, res) => {

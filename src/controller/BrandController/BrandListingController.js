@@ -27,6 +27,7 @@ import { createInitialPackages } from "../BrandPackagePlans/brandPackagePlans.js
 import Plan from "../../model/CMS/PackagePlan.js";
 
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
+import { cloneLeadMatchingRuleForBrand } from "../CMS/LeadDistributionAdminAccess/leadMatchingRulePerBrand.js";
 
 
 export const likeandshortlist = async (id) => {
@@ -588,6 +589,8 @@ brandPackageResult = await assignFreePlanToBrand(
         pkgError.message
       );
     }
+
+   await cloneLeadMatchingRuleForBrand(id, brandDetails?.brandName);
 
     /* ================= SUCCESS RESPONSE ================= */
     return res.json(

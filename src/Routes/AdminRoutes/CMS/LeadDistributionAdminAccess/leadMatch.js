@@ -1,5 +1,5 @@
 import express from "express";
-import { createLeadMatchCMS ,getLeadMatchCMS,updateLeadMatchCMS} from "../../../controller/CMS/leadMatch.js";
+import { createLeadMatchCMS ,getLeadMatchCMS,updateLeadMatchCMS} from "../../../../controller/CMS/LeadDistributionAdminAccess/leadMatch.js";
 
 const leadMatchCMS = express.Router();
 

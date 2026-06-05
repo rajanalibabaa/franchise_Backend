@@ -41,8 +41,9 @@ import brandPackagePlansRouter from "./src/Routes/BrandPackagePlan/BrandPackageP
 import { searchRoutes } from "./src/Routes/search/searchRoutes.js";
 import paymentRoutes from "./src/Routes/LeadPackage/paymentRoutes.js";
 import leadGenerationMatchingnewleadUpdate from "./src/Routes/leadGenerationMatchingnewleadUpdateRoutes/leadGenerationMatchingnewleadRoutes.js";
-import leadMatchCMS from "./src/Routes/AdminRoutes/CMS/leadMatch.js";
 
+import leadMatchCMS from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAccess/leadMatch.js";
+import leadMatchingRulePerBrand from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAccess/LeadMatchingRulePerBrand.js";
 const router = express.Router();
 
 router.use(thirdPartyAuthRouter);
@@ -127,6 +128,8 @@ router.use(industryManagementRouter);
 router.use(paymentplanCMS);
 
 router.use(leadMatchCMS)
+
+router.use(leadMatchingRulePerBrand)
 
 router.use(brandPackagePlansRouter);
 
