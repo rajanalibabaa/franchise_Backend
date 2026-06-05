@@ -5,7 +5,7 @@ import { BrandUploads } from "../../model/Brand/Brand.model/Uploads.model.js";
 import { BrandDetails } from "../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
 
-import PackagePlanCMS    from "../../model/PackagePlanCMS/PackagePlan.js";
+import PackagePlanCMS    from "../../model/CMS/PackagePlan.js";
 import cron from "node-cron";
 import mongoose from "mongoose";
 
@@ -1889,160 +1889,185 @@ export const getBrandPackagesHistoryById = async (req, res) => {
 // };
 
 export const startBrandExpiryJob = () => {
+  
   // ⏱️ Every 5 minutes
-  cron.schedule("*/5 * * * *", async () => {
-    console.log("🔄 Running Brand Expiry Cron Job...");
+  cron.schedule(
+    "*/5 * * * *",
+    async () => {
+      if (
+        mongoose.connection.readyState !== 1 ||
+        !mongoose.connection.db
+      ) {
+        console.warn(
+          "⚠️ Skipping Brand Expiry Cron Job because MongoDB is not connected. readyState=",
+          mongoose.connection.readyState,
+        );
+        return;
+      }
 
-    if (mongoose.connection.readyState !== 1) {
-      console.warn(
-        "⛔ Cron skipped: MongoDB is not connected",
-      );
-      return;
-    }
+      console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
       const brands = await BrandPackages.find();
 
-      const currentDate = new Date();
+        const currentDate = new Date();
 
-      for (const brand of brands) {
-        const expiredPackages = [];
-        const updatedPackages = [];
-
-        /* ======================================================
-           LOOP PACKAGES
-        ====================================================== */
-
-        const brandPackages = Array.isArray(brand.packages) ? brand.packages : [];
-
-        brandPackages.forEach((pkg) => {
-          const expiredInvestments = [];
-          const activeInvestments = [];
-          const investments = pkg.investmetPackages ?? pkg.InvestmetPackages ?? [];
-
-          investments.forEach((inv) => {
-            let shouldExpire = false;
-
-            /* ======================================================
-               CONDITION 1
-               packagesType !== LISTING
-               remainingLeads <= 0
-            ====================================================== */
-
-            if (pkg.packagesType !== "LISTING" && inv.remainingLeads <= 0) {
-              shouldExpire = true;
-            }
-
-            if (
-              pkg.packagesType === "LISTING" &&
-              inv.RenewalEndDate &&
-              new Date(inv.RenewalEndDate) <= currentDate
-            ) {
-              shouldExpire = true;
-            }
-
-            if (
-              pkg.packagesType === "FREE" &&
-              inv.RenewalEndDate &&
-              new Date(inv.RenewalEndDate) <= currentDate
-            ) {
-              shouldExpire = true;
-            }
-
-            /* ======================================================
-               EXPIRE PACKAGE
-            ====================================================== */
-
-            if (shouldExpire) {
-              inv.isExperied = true;
-              inv.isActive = false;
-
-              expiredInvestments.push({
-                ...inv.toObject(),
-                isExperied: true,
-                isActive: false,
-                isPending: false,
-              });
-            } else {
-              activeInvestments.push(inv);
-            }
-          });
+        for (const brand of brands) {
+          const expiredPackages = [];
+          const updatedPackages = [];
 
           /* ======================================================
-             PUSH EXPIRED PACKAGE
+             LOOP PACKAGES
           ====================================================== */
 
-          if (expiredInvestments.length > 0) {
-            expiredPackages.push({
-              packagesType: pkg.packagesType,
-              packagesName: pkg.packagesName,
-              planUniqueId: pkg.planUniqueId,
-              investmetPackages: expiredInvestments,
+          const brandPackages = Array.isArray(brand.packages) ? brand.packages : [];
+
+          brandPackages.forEach((pkg) => {
+            const expiredInvestments = [];
+            const activeInvestments = [];
+            const investments = pkg.investmetPackages ?? pkg.InvestmetPackages ?? [];
+
+            investments.forEach((inv) => {
+              let shouldExpire = false;
+
+              /* ======================================================
+                 CONDITION 1
+                 packagesType !== LISTING
+                 remainingLeads <= 0
+              ====================================================== */
+
+            if (pkg.packagesType === "LEAD" && inv.remainingLeads <= 0) {
+              shouldExpire = true;
+            }
+
+              if (
+                pkg.packagesType === "LISTING" &&
+                inv.RenewalEndDate &&
+                new Date(inv.RenewalEndDate) <= currentDate
+              ) {
+                shouldExpire = true;
+              }
+
+              if (
+                pkg.packagesType === "FREE" &&
+                inv.RenewalEndDate &&
+                new Date(inv.RenewalEndDate) <= currentDate
+              ) {
+                shouldExpire = true;
+              }
+
+              /* ======================================================
+                 EXPIRE PACKAGE
+              ====================================================== */
+
+              if (shouldExpire) {
+                try {
+                  if (typeof inv.toObject === "function") {
+                    expiredInvestments.push({
+                      ...inv.toObject(),
+                      isExperied: true,
+                      isActive: false,
+                      isPending: false,
+                    });
+                  } else {
+                    expiredInvestments.push({
+                      ...inv,
+                      isExperied: true,
+                      isActive: false,
+                      isPending: false,
+                    });
+                  }
+                } catch (e) {
+                  expiredInvestments.push({
+                    ...inv,
+                    isExperied: true,
+                    isActive: false,
+                    isPending: false,
+                  });
+                }
+              } else {
+                activeInvestments.push(inv);
+              }
             });
+
+            /* ======================================================
+               PUSH EXPIRED PACKAGE
+            ====================================================== */
+
+            if (expiredInvestments.length > 0) {
+              expiredPackages.push({
+                packagesType: pkg.packagesType,
+                packagesName: pkg.packagesName,
+                planUniqueId: pkg.planUniqueId,
+                investmetPackages: expiredInvestments,
+              });
+            }
+
+            /* ======================================================
+               KEEP ACTIVE PACKAGE
+            ====================================================== */
+
+            updatedPackages.push({
+              ...pkg.toObject?.() ?? { ...pkg },
+              investmetPackages: activeInvestments,
+            });
+          });
+
+          // ⛔ Skip if nothing expired
+          if (expiredPackages.length === 0) {
+            continue;
           }
 
           /* ======================================================
-             KEEP ACTIVE PACKAGE
+             SAVE HISTORY
           ====================================================== */
 
-          updatedPackages.push({
-            ...pkg.toObject(),
-            investmetPackages: activeInvestments,
-          });
-        });
-
-        // ⛔ Skip if nothing expired
-        if (expiredPackages.length === 0) {
-          continue;
-        }
-
-        /* ======================================================
-           SAVE HISTORY
-        ====================================================== */
-
-        let historyDoc = await BrandPackagesHistory.findOne({
-          brandOwnerId: brand.brandOwnerId,
-        });
-
-        if (!historyDoc) {
-          historyDoc = await BrandPackagesHistory.create({
+          let historyDoc = await BrandPackagesHistory.findOne({
             brandOwnerId: brand.brandOwnerId,
-            industry: brand.industry,
-            category: brand.category,
-            packages: expiredPackages,
-          });
-        } else {
-          expiredPackages.forEach((newPkg) => {
-            const existingPkg = historyDoc.packages.find(
-              (p) => p.planUniqueId === newPkg.planUniqueId,
-            );
-
-            if (existingPkg) {
-              existingPkg.investmetPackages.push(...newPkg.investmetPackages);
-            } else {
-              historyDoc.packages.push(newPkg);
-            }
           });
 
-          await historyDoc.save();
+          if (!historyDoc) {
+            historyDoc = await BrandPackagesHistory.create({
+              brandOwnerId: brand.brandOwnerId,
+              industry: brand.industry,
+              category: brand.category,
+              packages: expiredPackages,
+            });
+          } else {
+            expiredPackages.forEach((newPkg) => {
+              const existingPkg = historyDoc.packages.find(
+                (p) => p.planUniqueId === newPkg.planUniqueId,
+              );
+
+              if (existingPkg) {
+                existingPkg.investmetPackages.push(...newPkg.investmetPackages);
+              } else {
+                historyDoc.packages.push(newPkg);
+              }
+            });
+
+            await historyDoc.save();
+          }
+
+          /* ======================================================
+             REMOVE EXPIRED FROM MAIN COLLECTION
+          ====================================================== */
+
+          brand.packages = updatedPackages.filter(
+            (pkg) => (pkg.investmetPackages ?? []).length > 0,
+          );
+
+          await brand.save();
         }
 
-        /* ======================================================
-           REMOVE EXPIRED FROM MAIN COLLECTION
-        ====================================================== */
-
-        brand.packages = updatedPackages.filter(
-          (pkg) => (pkg.investmetPackages ?? []).length > 0,
-        );
-
-        await brand.save();
+        console.log("✅ Brand Expiry Cron Job Completed");
+      } catch (error) {
+        console.error("❌ Cron Job Error:", error);
+      } finally {
+        jobRunning = false;
       }
-
-      console.log("✅ Brand Expiry Cron Job Completed");
-    } catch (error) {
-      console.error("❌ Cron Job Error:", error);
-    }
-  });
+    },
+  );
 };
 
 export const pauseBrandPackage = async (req, res) => {

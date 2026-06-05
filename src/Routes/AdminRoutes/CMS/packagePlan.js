@@ -7,7 +7,7 @@ import {
  
 
 
-} from "../../../controller/PackagePlanCMS/packagePlan.js";
+} from "../../../controller/CMS/packagePlan.js";
 
 const paymentplanCMS = express.Router();
 

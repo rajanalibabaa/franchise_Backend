@@ -1,5 +1,5 @@
-import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
-import Packages from "../../model/PackagePlanCMS/PackagePlan.js";
+import Plan from "../../model/CMS/PackagePlan.js";
+import Packages from "../../model/CMS/PackagePlan.js";
 
 const formatPackages = (packages = []) => {
   return packages.map(pkg => ({
