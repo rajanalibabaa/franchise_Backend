@@ -165,6 +165,135 @@ export const getLeadMatchPerBrand =
   };
 
 
+  export const getAllBrandActiveMatchRules =
+  async (planName) => {
+
+
+    const brands =
+      await LeadMatchingRulePerBrand.find(
+        {},
+        {
+          brandOwnerId: 1,
+          brandName: 1,
+          rules: 1,
+        }
+      ).lean();
+
+    return brands.map((brand) => ({
+      brandOwnerId: brand.brandOwnerId,
+      brandName: brand.brandName,
+      rules: brand.rules
+        .flatMap((rule) => {
+          const activePlan =
+            rule.packagePlans.find(
+              (plan) =>
+                plan.packageType ===
+                  planName &&
+                plan.isActive === true
+            );
+
+          if (!activePlan) {
+            return [];
+          }
+
+          return {
+            matchType: rule.matchType,
+            matchFields:
+              rule.matchFields,
+            priority:
+              activePlan.priority,
+          };
+        })
+        .sort(
+          (a, b) =>
+            a.priority - b.priority
+        ),
+    }));
+  };
+
+
+
+export const getAllBrandActiveMatchRuless =
+  async (req, res) => {
+    try {
+      const { planName } = req.params;
+
+      if (!planName) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "planName is required",
+        });
+      }
+
+      const brands =
+        await LeadMatchingRulePerBrand.find(
+          {},
+          {
+            brandOwnerId: 1,
+            brandName: 1,
+            rules: 1,
+          }
+        ).lean();
+
+      const result = brands.map(
+        (brand) => ({
+          brandOwnerId:
+            brand.brandOwnerId,
+          brandName:
+            brand.brandName,
+          rules: brand.rules
+            .flatMap((rule) => {
+              const activePlan =
+                rule.packagePlans.find(
+                  (plan) =>
+                    plan.packageType.toLowerCase() ===
+                      planName.toLowerCase() &&
+                    plan.isActive === true
+                );
+
+              if (!activePlan) {
+                return [];
+              }
+
+              return {
+                matchType:
+                  rule.matchType,
+                matchFields:
+                  rule.matchFields,
+                priority:
+                  activePlan.priority,
+              };
+            })
+            .sort(
+              (a, b) =>
+                a.priority -
+                b.priority
+            ),
+        })
+      );
+
+      return res.status(200).json({
+        success: true,
+        count: result.length,
+        data: result,
+      });
+    } catch (error) {
+      console.error(
+        "Error fetching matching rules:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Internal Server Error",
+        error: error.message,
+      });
+    }
+  };
+
+
 // export const createLeadRulesForAllBrands =
 //   async () => {
 //     try {
