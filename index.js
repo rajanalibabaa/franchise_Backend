@@ -24,7 +24,7 @@ import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 import dns from "dns";
 import { startBrandExpiryJob } from "./src/controller/BrandPackagePlans/brandPackagePlans.js";
 // import { createLeadRulesForAllBrands } from "./src/controller/CMS/LeadDistributionAdminAccess/leadMatchingRulePerBrand.js";
-
+// import {createContactMappingsForExistingBrands} from "./src/controller/BrandController/DomesticContactMapping/DomesticContactMapping.js";
 dotenv.config(); // ✅ Load env FIRST
 
 const app = express();
@@ -179,6 +179,7 @@ const startServer = async () => {
     try {
       startBrandExpiryJob();
       // await createLeadRulesForAllBrands();
+      // await createContactMappingsForExistingBrands();
  
 
 

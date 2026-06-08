@@ -24,6 +24,7 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
 import { createInitialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
+import { createBrandContactMappingDomestic } from "../BrandController/DomesticContactMapping/DomesticContactMapping.js";
 import Plan from "../../model/CMS/PackagePlan.js";
 
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
@@ -591,6 +592,12 @@ brandPackageResult = await assignFreePlanToBrand(
     }
 
    await cloneLeadMatchingRuleForBrand(id, brandDetails?.brandName);
+   await createBrandContactMappingDomestic(
+  id,
+   brandDetails.brandName,
+  brandDetails,
+  expansionLocationData
+);
 
     /* ================= SUCCESS RESPONSE ================= */
     return res.json(
