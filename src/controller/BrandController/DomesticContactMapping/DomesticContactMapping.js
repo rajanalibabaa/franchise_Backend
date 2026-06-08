@@ -1,5 +1,6 @@
 import BrandContactMapping from "../../../model/Brand/DomesticContactMapping/DomesticContactMapping.js";
-
+import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
+import { BrandExpansionLocationData } from "../../../model/Brand/Brand.model/ExpansionLocation.model.js";
 
 export const createBrandContactMappingDomestic = async (
   brandOwnerId,
@@ -68,12 +69,7 @@ export const createBrandContactMappingDomestic = async (
   }
 };
 
-
-
-import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
-import { BrandExpansionLocationData } from "../../../model/Brand/Brand.model/ExpansionLocation.model.js";
-// import BrandContactMapping from "../models/BrandContactMapping.js";
-
+// All brands contact mapping creation for domestic locations
 export const createContactMappingsForExistingBrands =
   async () => {
     try {
