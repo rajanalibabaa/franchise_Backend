@@ -163,8 +163,6 @@ export const getLeadMatchPerBrand =
       });
     }
   };
-
-
   export const getAllBrandActiveMatchRules =
   async (planName) => {
 
@@ -210,9 +208,6 @@ export const getLeadMatchPerBrand =
         ),
     }));
   };
-
-
-
 export const getAllBrandActiveMatchRuless =
   async (req, res) => {
     try {
