@@ -29,7 +29,7 @@ import Plan from "../../model/CMS/PackagePlan.js";
 
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 import { cloneLeadMatchingRuleForBrand } from "../CMS/LeadDistributionAdminAccess/leadMatchingRulePerBrand.js";
-
+import{updateBrandContactMappingDomestic} from "../BrandController/DomesticContactMapping/DomesticContactMapping.js";
 
 export const likeandshortlist = async (id) => {
   let likedBrands = [];
@@ -2180,6 +2180,18 @@ const expansionLocationData = async (id, add, remove, isInternationalExpansion) 
     },
     { new: true, runValidators: true },
   );
+
+  const brand =
+  await BrandDetails.findOne({
+    uuid: id,
+  });
+
+await updateBrandContactMappingDomestic(
+  id,
+  add,
+  remove,
+  brand.brandDetails
+);
 
   // Return updated data
   return await BrandExpansionLocationData.findOne({ brandOwnerId: id });
