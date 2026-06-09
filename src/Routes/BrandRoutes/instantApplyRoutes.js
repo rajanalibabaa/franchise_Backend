@@ -1,5 +1,5 @@
 import express from "express";
-import {  createInvestorEnquiry,getInvestorEnquiryById,deleteInvestorEnquiry,getAllInvestorEnquiries,updateInvestorEnquiry   } from "../../controller/BrandController/instaApplyBrnadFormController.js";
+import {  createInvestorEnquiry,getInvestorEnquiryById,deleteInvestorEnquiry,getAllInvestorEnquiries,updateInvestorEnquiry ,getSentLeadsByBrandIdEnquires  } from "../../controller/BrandController/instaApplyBrnadFormController.js";
 import { verifyJWT } from "../../Middleware/Authentication/authMiddleware.js";
 import { leadsFreeAndPaidStopAndStart,getLeadStatus, toggleleadPausedorPlayById, getAllFreeLeadPauseBrand, postSpecialLeadCount } from "../../controller/Admin/Brand/leads.controller.js";
 import { getInstantApplyInvestorsController } from "../../controller/BrandController/InstantApplyFreeLeadData.js";
@@ -14,9 +14,14 @@ InstantApplyRouter.get(
   getAllInvestorEnquiries
 );
 
-InstantApplyRouter.get(
-  "/v1/instantapply/:uuid",
+InstantApplyRouter.post(
+  "/v1/instantapply",
   getInvestorEnquiryById
+);
+
+InstantApplyRouter.post(
+  "/v1/instantapply/getSentLeadsByBrandIdEnquires",
+  getSentLeadsByBrandIdEnquires
 );
 
 InstantApplyRouter.put(
