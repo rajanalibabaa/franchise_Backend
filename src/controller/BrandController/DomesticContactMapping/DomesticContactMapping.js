@@ -263,48 +263,301 @@ export const updateBrandContactMappingDomestic = async (
   }
 };
 
+export const getBrandContactStates =
+  async (req, res) => {
+    try {
+      const { brandOwnerId } =
+        req.params;
+        console.log("Fetching contact mapping for brandOwnerId:", brandOwnerId);
 
+      const result =
+        await BrandContactMapping.aggregate(
+          [
+            {
+              $match: {
+                brandOwnerId,
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                brandOwnerId: 1,
+                states: {
+                  $map: {
+                    input: "$states",
+                    as: "state",
+                    in: {
+                      state:
+                        "$$state.state",
+                      email:
+                        "$$state.email",
+                      mobileNumber:
+                        "$$state.mobileNumber",
+                      whatsappNumber:
+                        "$$state.whatsappNumber",
+                      districtCount: {
+                        $size: {
+                          $ifNull: [
+                            "$$state.districts",
+                            [],
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ]
+        );
 
+      if (!result.length) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Brand Contact Mapping not found",
+        });
+      }
 
-export const getBrandContactMappingById = async (
+      return res.status(200).json({
+        success: true,
+        data: result[0],
+      });
+    } catch (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Internal Server Error",
+        error: error.message,
+      });
+    }
+  };
+export const getDistrictsByState =
+  async (req, res) => {
+    try {
+      const {
+        brandOwnerId,
+        state,
+      } = req.params;
+      console.log(`Fetching districts for brandOwnerId: ${brandOwnerId}, state: ${state}` );
+
+      const result =
+        await BrandContactMapping.aggregate(
+          [
+            {
+              $match: {
+                brandOwnerId,
+              },
+            },
+            {
+              $unwind: "$states",
+            },
+            {
+              $match: {
+                "states.state":
+                  state,
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                state:
+                  "$states.state",
+                districts:
+                  "$states.districts",
+              },
+            },
+          ]
+        );
+
+      if (!result.length) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "State not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: result[0],
+      });
+    } catch (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Internal Server Error",
+        error: error.message,
+      });
+    }
+  };
+
+export const updateContactMapping = async (
   req,
   res
 ) => {
   try {
-    const { brandOwnerId } = req.params;
+    const {
+      brandOwnerId,
+      state,
+      district,
+      email,
+      mobileNumber,
+      whatsappNumber,
+    } = req.body;
 
-    const contactMapping =
-      await BrandContactMapping.findOne({
-        brandOwnerId,
-      }).lean();
-
-    if (!contactMapping) {
-      return res.status(404).json({
+    if (!brandOwnerId || !state) {
+      return res.status(400).json({
         success: false,
-        message: "Brand Contact Mapping not found",
+        message:
+          "brandOwnerId and state are required",
       });
     }
 
+    const brand =
+      await BrandContactMapping.findOne({
+        brandOwnerId,
+      });
+
+    if (!brand) {
+      return res.status(404).json({
+        success: false,
+        message: "Brand not found",
+      });
+    }
+
+    const stateObj = brand.states.find(
+      (s) => s.state === state
+    );
+
+    if (!stateObj) {
+      return res.status(404).json({
+        success: false,
+        message: "State not found",
+      });
+    }
+
+    // ==========================
+    // DISTRICT UPDATE
+    // ==========================
+    if (district) {
+      const districtObj =
+        stateObj.districts.find(
+          (d) => d.district === district
+        );
+
+      if (!districtObj) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "District not found in selected state",
+        });
+      }
+
+      if (email !== undefined) {
+        districtObj.email = email;
+      }
+
+      if (mobileNumber !== undefined) {
+        districtObj.mobileNumber =
+          mobileNumber;
+      }
+
+      if (
+        whatsappNumber !== undefined
+      ) {
+        districtObj.whatsappNumber =
+          whatsappNumber;
+      }
+
+      await brand.save();
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "District contact updated successfully",
+        data: districtObj,
+      });
+    }
+
+    // ==========================
+    // STATE UPDATE
+    // ==========================
+
+    const oldEmail = stateObj.email;
+    const oldMobile =
+      stateObj.mobileNumber;
+    const oldWhatsapp =
+      stateObj.whatsappNumber;
+
+    if (email !== undefined) {
+      stateObj.email = email;
+    }
+
+    if (mobileNumber !== undefined) {
+      stateObj.mobileNumber =
+        mobileNumber;
+    }
+
+    if (
+      whatsappNumber !== undefined
+    ) {
+      stateObj.whatsappNumber =
+        whatsappNumber;
+    }
+
+    // Update districts that still use state values
+    stateObj.districts.forEach(
+      (districtObj) => {
+        if (
+          email &&
+          districtObj.email === oldEmail
+        ) {
+          districtObj.email = email;
+        }
+
+        if (
+          mobileNumber &&
+          districtObj.mobileNumber ===
+            oldMobile
+        ) {
+          districtObj.mobileNumber =
+            mobileNumber;
+        }
+
+        if (
+          whatsappNumber &&
+          districtObj.whatsappNumber ===
+            oldWhatsapp
+        ) {
+          districtObj.whatsappNumber =
+            whatsappNumber;
+        }
+      }
+    );
+
+    await brand.save();
+
     return res.status(200).json({
       success: true,
-      data: contactMapping,
+      message:
+        "State contact updated successfully",
+      data: stateObj,
     });
   } catch (error) {
-    console.error(
-      "Error fetching Brand Contact Mapping:",
-      error
-    );
+    console.error(error);
 
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: error.message,
     });
   }
 };
-
-
-// All brands contact mapping creation for domestic locations
+// All brands contact mapping creation for domestic locations 
 
 // export const createContactMappingsForExistingBrands =
 //   async () => {
@@ -441,4 +694,3 @@ export const getBrandContactMappingById = async (
 //       throw error;
 //     }
 //   };
-

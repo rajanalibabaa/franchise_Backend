@@ -44,6 +44,7 @@ import leadGenerationMatchingnewleadUpdate from "./src/Routes/leadGenerationMatc
 
 import leadMatchCMS from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAccess/leadMatch.js";
 import leadMatchingRulePerBrand from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAccess/LeadMatchingRulePerBrand.js";
+import domesticContactMappingRouter from "./src/Routes/BrandRoutes/DomesticContactMapping/DomesticContactMapping.js";
 const router = express.Router();
 
 router.use(thirdPartyAuthRouter);
@@ -130,6 +131,8 @@ router.use(paymentplanCMS);
 router.use(leadMatchCMS)
 
 router.use(leadMatchingRulePerBrand)
+
+router.use(domesticContactMappingRouter);
 
 router.use(brandPackagePlansRouter);
 

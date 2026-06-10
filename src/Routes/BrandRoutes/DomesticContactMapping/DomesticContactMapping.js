@@ -2,10 +2,17 @@ import express from "express";
 
 const domesticContactMappingRouter = express.Router();
 
-import {getBrandContactMappingById} from "../../../controller/BrandController/DomesticContactMapping/DomesticContactMapping.js";
+import {getBrandContactStates,getDistrictsByState} from "../../../controller/BrandController/DomesticContactMapping/DomesticContactMapping.js";
 
 
+domesticContactMappingRouter.get(
+  "/v1/domestic-contact-mapping-states/:brandOwnerId",
+  getBrandContactStates
+);
 
-domesticContactMappingRouter.get("/v1/domestic-contact-mapping/:brandOwnerId", getBrandContactMappingById);
+domesticContactMappingRouter.get(
+  "/v1/domestic-contact-mapping/districts/:brandOwnerId/:state",
+  getDistrictsByState
+);
 
 export default domesticContactMappingRouter;
