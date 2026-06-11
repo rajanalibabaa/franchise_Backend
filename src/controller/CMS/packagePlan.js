@@ -1,5 +1,5 @@
-import Plan from "../../model/PackagePlanCMS/PackagePlan.js";
-import Packages from "../../model/PackagePlanCMS/PackagePlan.js";
+import Plan from "../../model/CMS/PackagePlan.js";
+import Packages from "../../model/CMS/PackagePlan.js";
 
 const formatPackages = (packages = []) => {
   return packages.map(pkg => ({
@@ -67,7 +67,6 @@ export const createPlan = async (req, res) => {
 export const getAllPlans = async (req, res) => {
   try {
     const doc = await Packages.findOne();
-console.log("docs",doc);
 
     if (!doc) {
       return res.status(200).json({

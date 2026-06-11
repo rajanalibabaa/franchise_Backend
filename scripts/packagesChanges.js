@@ -11,32 +11,90 @@ dotenv.config({ path: "../.env" });
 const MONGODB_URI = process.env.DB_URL;
  
 const extractStatesFromExpansion = (expansionLocationData) => {
-  const states = new Set();
- 
-  const domestic =
+  const locations =
     expansionLocationData?.expansionLocations?.domestic?.locations || [];
- 
-  domestic.forEach((loc) => {
-    if (loc?.state) states.add(loc.state);
-  });
- 
-  return Array.from(states);
+
+  return locations.map((loc) => ({
+    state: loc?.state || "",
+    district:
+      (loc?.districts || [])
+        .map((d) => d?.district)
+        .filter(Boolean) || [],
+  }));
 };
  
-const extractInvestmentRanges = (franchiseDetails) => {
+const extractInvestmentRanges = (
+  franchiseDetails
+) => {
+
   const ranges = new Set();
- 
-  const data =
-    franchiseDetails?.investmentRange ||
-    franchiseDetails?.fico?.[0]?.investmentRange ||
-    [];
- 
-  if (Array.isArray(data)) {
-    data.forEach((r) => r && ranges.add(r));
-  } else if (typeof data === "string") {
-    ranges.add(data);
+
+  // =====================================================
+  // DIRECT investmentRange
+  // =====================================================
+
+  const directRanges =
+    franchiseDetails?.investmentRange;
+
+  if (
+    Array.isArray(directRanges)
+  ) {
+
+    directRanges.forEach((range) => {
+
+      if (range) {
+        ranges.add(range);
+      }
+    });
+
+  } else if (
+    typeof directRanges === "string" &&
+    directRanges
+  ) {
+
+    ranges.add(directRanges);
   }
- 
+
+  // =====================================================
+  // FICO ARRAY investmentRange
+  // =====================================================
+
+  const ficoData =
+    Array.isArray(
+      franchiseDetails?.fico
+    )
+      ? franchiseDetails.fico
+      : [];
+
+  for (const ficoItem of ficoData) {
+
+    const ficoRanges =
+      ficoItem?.investmentRange;
+
+    if (
+      Array.isArray(ficoRanges)
+    ) {
+
+      ficoRanges.forEach((range) => {
+
+        if (range) {
+          ranges.add(range);
+        }
+      });
+
+    } else if (
+      typeof ficoRanges === "string" &&
+      ficoRanges
+    ) {
+
+      ranges.add(ficoRanges);
+    }
+  }
+
+  // =====================================================
+  // RETURN ALL UNIQUE RANGES
+  // =====================================================
+
   return Array.from(ranges);
 };
  
@@ -61,7 +119,10 @@ async function assignFreePackagesToAllBrands() {
  
     const freePackage = freePlan.packages[0];
  
-    const brands = await BrandDetails.find({}, { uuid: 1 });
+    const brands = await BrandDetails.find(
+      {},
+      { uuid: 1, "brandDetails.brandName": 1 }
+    );
  
     console.log(`📦 Total Brands: ${brands.length}`);
  
@@ -89,45 +150,88 @@ async function assignFreePackagesToAllBrands() {
       ]);
  
       const franchiseDetails = franchiseDoc?.franchiseDetails || {};
+
       const expansionLocationData =
         expansionDoc?.expansionLocationData || {};
  
-      const states = extractStatesFromExpansion(expansionLocationData);
+      const stateDistrictData = extractStatesFromExpansion(expansionLocationData);
       const ranges = extractInvestmentRanges(franchiseDetails);
  
-      if (states.length === 0) states.push("All");
+      if (stateDistrictData.length === 0) {
+        stateDistrictData.push({
+          state: "All",
+          district: [],
+        });
+      }
       if (ranges.length === 0) ranges.push("General");
  
       const totalLeads = Number(freePackage.totalLeads) || 0;
  
-      const investmentranges = ranges.map((range) => ({
-        selectedPlanInvestmetrange: range,
-        selectedPlanState: states,
-      }));
+    const investmentranges = [];
+
+// =====================================================
+// ALL INVESTMENT RANGES
+// =====================================================
+
+for (const range of ranges) {
+
+  investmentranges.push({
+
+    brandName:
+      brand?.brandDetails?.brandName || "",
+
+    // SINGLE INVESTMENT RANGE
+    selectedPlanInvestmetrange:
+      range,
+
+    // ALL STATES + DISTRICTS
+    selectedPlanStateAndDistrict:
+      stateDistrictData.map((item) => ({
+
+        state:
+          item?.state || "",
+
+        district:
+          Array.isArray(item?.district)
+            ? item.district
+            : [],
+      })),
+  });
+}
+
+// console.log(
+//   "FINAL investmentranges:",
+//   JSON.stringify(
+//     investmentranges,
+//     null,
+//     2
+//   )
+// );
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + Number(freePackage.validityDays || 30));
  
       const packagesToAssign = [
         {
           packagesType: "FREE",
-          packagesName: freePlan.planName,
-          planUniqueId: freePlan.planUniqueId,
- 
-          InvestmetPackages: [
+          investmetPackages: [
             {
-              InvestmetRageLabel:
-                freePackage.investmentRangeLabel || "",
- 
+              packagesName: freePlan.planName,
+              planUniqueId: freePlan.planUniqueId,
+              investmetRageLabel: freePackage.investmentRangeLabel || "",
               investmentranges,
- 
-              Validity: String(freePackage.validityDays || 30),
- 
-              TotalLeads: totalLeads,
+              validity: String(freePackage.validityDays || 30),
+              totalLeads: totalLeads,
+              sendingLeads: 0,
+              sendingPercentage: 0,
               remainingLeads: totalLeads,
-              PackageStartDate: new Date(),
-              PackageEndDate: new Date(),
-              CurrentDate: new Date(),
-              RenewalEndDate: null,
-              TotalAmount: 0,
-              StartDate: new Date(),
+              totalAmount: 0,
+              packageStartDate: startDate,
+              packageEndDate: endDate,
+              currentDate: startDate,
+              renewalEndDate: endDate,
+              isPaused: false,
+              pauseHistory: [],
               isExperied: false,
               isActive: true,
               isPending: false,
@@ -136,15 +240,13 @@ async function assignFreePackagesToAllBrands() {
         },
       ];
  
-      // 🔹 Create package
       await BrandPackages.findOneAndUpdate(
         { brandOwnerId },
         {
           $set: {
-            Industry:
-              franchiseDetails?.brandCategories?.main || "",
-            Category:
-              franchiseDetails?.brandCategories?.sub || "",
+            industry: franchiseDetails?.brandCategories?.main || "",
+            category: franchiseDetails?.brandCategories?.sub || "",
+            brandName: brand?.brandDetails?.brandName || "",
           },
           $push: {
             packages: { $each: packagesToAssign },

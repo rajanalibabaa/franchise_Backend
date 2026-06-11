@@ -25,10 +25,12 @@ const investmentRangeSchema = new mongoose.Schema(
     selectedPlanInvestmetrange: {
       type: String,
     },
-    selectedPlanState: [
+    selectedPlanStateAndDistrict: [
       {
-        type: String,
-        default: [],
+        state: {
+          type: String,
+        },
+        district: [String],
       },
     ],
   },
@@ -38,7 +40,14 @@ const investmentRangeSchema = new mongoose.Schema(
 /* ================= INVESTMENT PACKAGE ================= */
 const investmetPackageSchema = new mongoose.Schema(
   {
-    InvestmetRageLabel: {
+    packagesName: {
+      type: String,
+    },
+
+    planUniqueId: {
+      type: String,
+    },
+    investmetRageLabel: {
       type: String,
     },
 
@@ -47,35 +56,42 @@ const investmetPackageSchema = new mongoose.Schema(
       default: [],
     },
 
-    Validity: {
+    validity: {
       type: String,
     },
 
-    TotalLeads: {
+    totalLeads: {
       type: Number,
       default: 0,
     },
-
+    sendingLeads: {
+      type: Number,
+      default: 0,
+    },
+    sendingPercentage: {
+      type: Number,
+      default: 0,
+    },
     remainingLeads: {
       type: Number,
       default: 0,
     },
 
-    TotalAmount: {
+    totalAmount: {
       type: Number,
       default: 0,
     },
 
-    PackageStartDate: {
+    packageStartDate: {
       type: Date,
     },
-    PackageEndDate: {
+    packageEndDate: {
       type: Date,
     },
-    CurrentDate: {
+    currentDate: {
       type: Date,
     },
-    RenewalEndDate: {
+    renewalEndDate: {
       type: Date,
     },
     isPaused: {
@@ -97,7 +113,7 @@ const investmetPackageSchema = new mongoose.Schema(
     isPending: {
       type: Boolean,
       default: true,
-    }
+    },
   },
   { _id: true },
 );
@@ -109,16 +125,7 @@ const packageSchema = new mongoose.Schema(
       type: String,
       enum: ["LISTING", "LEAD", "FREE"],
     },
-
-    packagesName: {
-      type: String,
-    },
-
-    planUniqueId: {
-      type: String,
-    },
-
-    InvestmetPackages: [investmetPackageSchema],
+    investmetPackages: [investmetPackageSchema],
   },
   { _id: true },
 );
@@ -131,14 +138,16 @@ const BrandPackagesSchema = new mongoose.Schema(
       required: true,
     },
 
-    Industry: {
+    industry: {
       type: String,
     },
 
-    Category: {
+    category: {
       type: String,
     },
-
+    brandName: {
+      type: String,
+    },
     packages: {
       type: [packageSchema],
       default: [],
