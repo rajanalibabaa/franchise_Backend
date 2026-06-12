@@ -176,13 +176,13 @@ const startServer = async () => {
     await connectDatabase();
     console.log("✅ Database connected");
     // Start scheduled jobs only after DB is connected
-    try {
-      startBrandExpiryJob();
-      // await createLeadRulesForAllBrands();
-      console.log("⏱️ Brand expiry cron job started");
-    } catch (cronErr) {
-      console.error("Failed to start Brand expiry cron job:", cronErr);
-    }
+    // try {
+    //   startBrandExpiryJob();
+    //   // await createLeadRulesForAllBrands();
+    //   console.log("⏱️ Brand expiry cron job started");
+    // } catch (cronErr) {
+    //   console.error("Failed to start Brand expiry cron job:", cronErr);
+    // }
 
     // Routes
     app.get("/", (req, res) => {
