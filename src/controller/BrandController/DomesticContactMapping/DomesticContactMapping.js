@@ -1,5 +1,6 @@
 import BrandContactMapping from "../../../model/Brand/DomesticContactMapping/DomesticContactMapping.js";
 import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
+import { BrandFranchiseDetails } from "../../../model/Brand/Brand.model/FranchiseDetails.model.js";
 import { BrandExpansionLocationData } from "../../../model/Brand/Brand.model/ExpansionLocation.model.js";
 
   // When create or update brand details mapping for domestic contact mapping accordingly
@@ -334,6 +335,7 @@ export const getBrandContactStates =
       });
     }
   };
+
 export const getDistrictsByState =
   async (req, res) => {
     try {
@@ -557,6 +559,210 @@ export const updateContactMapping = async (
     });
   }
 };
+
+// export const updateFranchiseTypeByModelAndType = async (
+//   franchiseModel,
+//   franchiseType,
+//   newFranchiseTypeData
+// ) => {
+//   console.log("=================================================");
+//   console.log("Update Franchise Type Started");
+//   console.log("Franchise Model:", franchiseModel);
+//   console.log("Current Franchise Type:", franchiseType);
+//   console.log("New Franchise Type:", newFranchiseTypeData);
+//   console.log("=================================================");
+
+//   try {
+//     const modelRegex = new RegExp(
+//       `^\\s*${franchiseModel.trim()}\\s*$`,
+//       "i"
+//     );
+
+//     const typeRegex = new RegExp(
+//       `^\\s*${franchiseType.trim()}\\s*$`,
+//       "i"
+//     );
+
+//     const brands = await BrandFranchiseDetails.find({
+//       "franchiseDetails.fico": {
+//         $elemMatch: {
+//           franchiseModel: modelRegex,
+//           franchiseType: typeRegex,
+//         },
+//       },
+//     });
+
+//     console.log(`Found ${brands.length} matching brands`);
+
+//     if (!brands.length) {
+//       return {
+//         success: false,
+//         foundBrands: 0,
+//         updatedBrands: 0,
+//         message: "No matching brands found",
+//       };
+//     }
+
+//     let updatedBrands = 0;
+
+//     for (const brand of brands) {
+//       let modified = false;
+
+//       if (
+//         !brand?.franchiseDetails?.fico ||
+//         !Array.isArray(brand.franchiseDetails.fico)
+//       ) {
+//         continue;
+//       }
+
+//       for (const fico of brand.franchiseDetails.fico) {
+//         const dbModel = fico?.franchiseModel?.trim()?.toLowerCase();
+//         const dbType = fico?.franchiseType?.trim()?.toLowerCase();
+
+//         const incomingModel = franchiseModel
+//           ?.trim()
+//           ?.toLowerCase();
+
+//         const incomingType = franchiseType
+//           ?.trim()
+//           ?.toLowerCase();
+
+//         if (
+//           dbModel === incomingModel &&
+//           dbType === incomingType
+//         ) {
+//           console.log("\n====================================");
+//           console.log(
+//             "Brand Owner ID:",
+//             brand.brandOwnerId
+//           );
+//           console.log(
+//             "Matched Franchise Model:",
+//             fico.franchiseModel
+//           );
+//           console.log(
+//             "Old Franchise Type:",
+//             fico.franchiseType
+//           );
+//           console.log(
+//             "New Franchise Type:",
+//             newFranchiseTypeData
+//           );
+//           console.log("====================================");
+
+//           // Update only franchiseType
+//           fico.franchiseType = newFranchiseTypeData;
+
+//           modified = true;
+//         }
+//       }
+
+//       if (modified) {
+//         await brand.save();
+
+//         console.log(
+//           `Updated Brand: ${brand.brandOwnerId}`
+//         );
+
+//         updatedBrands++;
+//       }
+//     }
+
+//     console.log("\n=================================================");
+//     console.log(`Total Brands Found   : ${brands.length}`);
+//     console.log(`Total Brands Updated : ${updatedBrands}`);
+//     console.log("=================================================\n");
+
+//     return {
+//       success: true,
+//       foundBrands: brands.length,
+//       updatedBrands,
+//       message: `${updatedBrands} brands updated successfully`,
+//     };
+//   } catch (error) {
+//     console.error(
+//       "Error updating franchise type:",
+//       error
+//     );
+
+//     return {
+//       success: false,
+//       foundBrands: 0,
+//       updatedBrands: 0,
+//       message: error.message,
+//     };
+//   }
+// };
+
+
+
+export const findFranchiseTypeCounts = async () => {
+  try {
+    const brands = await BrandFranchiseDetails.find(
+      {},
+      {
+        "franchiseDetails.fico.franchiseType": 1,
+        brandOwnerId: 1,
+      }
+    );
+
+    const franchiseTypeCounts = {};
+
+    for (const brand of brands) {
+      const ficoList = brand?.franchiseDetails?.fico || [];
+
+      for (const fico of ficoList) {
+        if (!fico?.franchiseType) continue;
+
+        const franchiseType = fico.franchiseType
+          .trim()
+          .toLowerCase();
+
+        franchiseTypeCounts[franchiseType] =
+          (franchiseTypeCounts[franchiseType] || 0) + 1;
+      }
+    }
+
+    console.log("\n========== Franchise Type Counts ==========");
+
+    Object.entries(franchiseTypeCounts).forEach(
+      ([franchiseType, count]) => {
+        console.log(
+          `${franchiseType} => ${count} records`
+        );
+      }
+    );
+
+    console.log(
+      "\nTotal Unique Franchise Types:",
+      Object.keys(franchiseTypeCounts).length
+    );
+
+    console.log("\n========== Unique Values ==========");
+
+    Object.keys(franchiseTypeCounts).forEach(
+      (franchiseType) => {
+        console.log(franchiseType);
+      }
+    );
+
+    return {
+      success: true,
+      totalUniqueFranchiseTypes:
+        Object.keys(franchiseTypeCounts).length,
+      franchiseTypeCounts,
+    };
+  } catch (error) {
+    console.error(error);
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
+
 // All brands contact mapping creation for domestic locations 
 
 // export const createContactMappingsForExistingBrands =
