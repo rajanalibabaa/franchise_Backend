@@ -2,7 +2,7 @@ import express from "express";
 
 const domesticContactMappingRouter = express.Router();
 
-import {getBrandContactStates,getDistrictsByState,updateContactMapping} from "../../../controller/BrandController/DomesticContactMapping/DomesticContactMapping.js";
+import {getBrandContactStates,getDistrictsByState,updateContactMapping,exportBrandProductTagsReport} from "../../../controller/BrandController/DomesticContactMapping/DomesticContactMapping.js";
 
 
 domesticContactMappingRouter.get(
@@ -18,5 +18,6 @@ domesticContactMappingRouter.put(
   "/v1/domestic-contact-mapping-update",
   updateContactMapping
 );
+domesticContactMappingRouter.get("/v1/domestic-contact-mapping-export",exportBrandProductTagsReport)
 
 export default domesticContactMappingRouter;

@@ -1,3 +1,4 @@
+import XLSX from "xlsx";
 import BrandContactMapping from "../../../model/Brand/DomesticContactMapping/DomesticContactMapping.js";
 import { BrandDetails } from "../../../model/Brand/Brand.model/BrandDetails.model.js";
 import { BrandFranchiseDetails } from "../../../model/Brand/Brand.model/FranchiseDetails.model.js";
@@ -560,205 +561,238 @@ export const updateContactMapping = async (
   }
 };
 
-// export const updateFranchiseTypeByModelAndType = async (
-//   franchiseModel,
-//   franchiseType,
-//   newFranchiseTypeData
-// ) => {
-//   console.log("=================================================");
-//   console.log("Update Franchise Type Started");
-//   console.log("Franchise Model:", franchiseModel);
-//   console.log("Current Franchise Type:", franchiseType);
-//   console.log("New Franchise Type:", newFranchiseTypeData);
-//   console.log("=================================================");
-
-//   try {
-//     const modelRegex = new RegExp(
-//       `^\\s*${franchiseModel.trim()}\\s*$`,
-//       "i"
-//     );
-
-//     const typeRegex = new RegExp(
-//       `^\\s*${franchiseType.trim()}\\s*$`,
-//       "i"
-//     );
-
-//     const brands = await BrandFranchiseDetails.find({
-//       "franchiseDetails.fico": {
-//         $elemMatch: {
-//           franchiseModel: modelRegex,
-//           franchiseType: typeRegex,
-//         },
-//       },
-//     });
-
-//     console.log(`Found ${brands.length} matching brands`);
-
-//     if (!brands.length) {
-//       return {
-//         success: false,
-//         foundBrands: 0,
-//         updatedBrands: 0,
-//         message: "No matching brands found",
-//       };
-//     }
-
-//     let updatedBrands = 0;
-
-//     for (const brand of brands) {
-//       let modified = false;
-
-//       if (
-//         !brand?.franchiseDetails?.fico ||
-//         !Array.isArray(brand.franchiseDetails.fico)
-//       ) {
-//         continue;
-//       }
-
-//       for (const fico of brand.franchiseDetails.fico) {
-//         const dbModel = fico?.franchiseModel?.trim()?.toLowerCase();
-//         const dbType = fico?.franchiseType?.trim()?.toLowerCase();
-
-//         const incomingModel = franchiseModel
-//           ?.trim()
-//           ?.toLowerCase();
-
-//         const incomingType = franchiseType
-//           ?.trim()
-//           ?.toLowerCase();
-
-//         if (
-//           dbModel === incomingModel &&
-//           dbType === incomingType
-//         ) {
-//           console.log("\n====================================");
-//           console.log(
-//             "Brand Owner ID:",
-//             brand.brandOwnerId
-//           );
-//           console.log(
-//             "Matched Franchise Model:",
-//             fico.franchiseModel
-//           );
-//           console.log(
-//             "Old Franchise Type:",
-//             fico.franchiseType
-//           );
-//           console.log(
-//             "New Franchise Type:",
-//             newFranchiseTypeData
-//           );
-//           console.log("====================================");
-
-//           // Update only franchiseType
-//           fico.franchiseType = newFranchiseTypeData;
-
-//           modified = true;
-//         }
-//       }
-
-//       if (modified) {
-//         await brand.save();
-
-//         console.log(
-//           `Updated Brand: ${brand.brandOwnerId}`
-//         );
-
-//         updatedBrands++;
-//       }
-//     }
-
-//     console.log("\n=================================================");
-//     console.log(`Total Brands Found   : ${brands.length}`);
-//     console.log(`Total Brands Updated : ${updatedBrands}`);
-//     console.log("=================================================\n");
-
-//     return {
-//       success: true,
-//       foundBrands: brands.length,
-//       updatedBrands,
-//       message: `${updatedBrands} brands updated successfully`,
-//     };
-//   } catch (error) {
-//     console.error(
-//       "Error updating franchise type:",
-//       error
-//     );
-
-//     return {
-//       success: false,
-//       foundBrands: 0,
-//       updatedBrands: 0,
-//       message: error.message,
-//     };
-//   }
-// };
-
-
-
-export const findFranchiseTypeCounts = async () => {
+export const updateFicoByBrandCategory = async (req, res) => {
   try {
-    const brands = await BrandFranchiseDetails.find(
-      {},
-      {
-        "franchiseDetails.fico.franchiseType": 1,
-        brandOwnerId: 1,
-      }
-    );
+    const { brandCategory, newDataFico } = req.body;
 
-    const franchiseTypeCounts = {};
+    if (!brandCategory?.main || !brandCategory?.sub) {
+      return res.status(400).json({
+        success: false,
+        message: "Brand main and sub categories are required",
+      });
+    }
+
+    const filter = {
+      "franchiseDetails.brandCategories.main":
+        brandCategory.main,
+      "franchiseDetails.brandCategories.sub":
+        brandCategory.sub,
+    };
+
+    // Optional Product Tag Filter
+    if (
+      brandCategory?.productTag?.parent &&
+      brandCategory?.productTag?.tag
+    ) {
+      filter[
+        "franchiseDetails.brandCategories.productTags"
+      ] = {
+        $elemMatch: {
+          parent: brandCategory.productTag.parent,
+          tags: brandCategory.productTag.tag,
+        },
+      };
+    }
+
+    const brands = await BrandFranchiseDetails.find(filter);
+
+    if (!brands.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching brands found",
+      });
+    }
+
+    let updatedBrands = 0;
 
     for (const brand of brands) {
-      const ficoList = brand?.franchiseDetails?.fico || [];
+      if (
+        !brand.franchiseDetails?.fico ||
+        !brand.franchiseDetails.fico.length
+      ) {
+        continue;
+      }
 
-      for (const fico of ficoList) {
-        if (!fico?.franchiseType) continue;
+      brand.franchiseDetails.fico =
+        brand.franchiseDetails.fico.map((fico) => ({
+          ...fico.toObject(),
+          franchiseModel:
+            newDataFico?.franchiseModel ??
+            fico.franchiseModel,
+          franchiseType:
+            newDataFico?.franchiseType ??
+            fico.franchiseType,
+        }));
 
-        const franchiseType = fico.franchiseType
-          .trim()
-          .toLowerCase();
+      await brand.save();
+      updatedBrands++;
+    }
 
-        franchiseTypeCounts[franchiseType] =
-          (franchiseTypeCounts[franchiseType] || 0) + 1;
+    return res.status(200).json({
+      success: true,
+      message: "FICO updated successfully",
+      matchedBrands: brands.length,
+      updatedBrands,
+    });
+  } catch (error) {
+    console.error(
+      "updateFicoByBrandCategory Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+export const exportBrandProductTagsReport = async (req, res) => {
+  try {
+    // Get all brands
+    const brands = await BrandDetails.find({})
+      .select("uuid brandDetails.brandName")
+      .lean();
+
+    // Get all franchise details
+    const franchiseBrands =
+      await BrandFranchiseDetails.find({})
+        .select(
+          "brandOwnerId franchiseDetails.brandCategories"
+        )
+        .lean();
+
+    console.log("Total Brands:", brands.length);
+    console.log(
+      "Total Franchise Brands:",
+      franchiseBrands.length
+    );
+
+    // Create franchise map
+    const franchiseMap = {};
+
+    franchiseBrands.forEach((franchise) => {
+      franchiseMap[franchise.brandOwnerId] =
+        franchise;
+    });
+
+    const excelData = [];
+
+    for (const brand of brands) {
+      const brandName =
+        brand?.brandDetails?.brandName || "";
+
+      const brandOwnerId = brand.uuid;
+
+      const franchise =
+        franchiseMap[brandOwnerId];
+
+      // Brand exists but no franchise details
+      if (!franchise) {
+        excelData.push({
+          BrandName: brandName,
+          BrandOwnerId: brandOwnerId,
+          MainCategory: "",
+          SubCategory: "",
+          Parent: "",
+          TagsCount: 0,
+          Tags: "",
+        });
+
+        continue;
+      }
+
+      const brandCategories =
+        franchise?.franchiseDetails
+          ?.brandCategories || {};
+
+      const mainCategory =
+        brandCategories.main || "";
+
+      const subCategory =
+        brandCategories.sub || "";
+
+      const productTags =
+        brandCategories.productTags || [];
+
+      // Franchise exists but no product tags
+      if (!productTags.length) {
+        excelData.push({
+          BrandName: brandName,
+          BrandOwnerId: brandOwnerId,
+          MainCategory: mainCategory,
+          SubCategory: subCategory,
+          Parent: "",
+          TagsCount: 0,
+          Tags: "",
+        });
+
+        continue;
+      }
+
+      // One row per parent
+      for (const item of productTags) {
+        excelData.push({
+          BrandName: brandName,
+          BrandOwnerId: brandOwnerId,
+          MainCategory: mainCategory,
+          SubCategory: subCategory,
+          Parent: item?.parent || "",
+          TagsCount: item?.tags?.length || 0,
+          Tags: (item?.tags || []).join(", "),
+        });
       }
     }
 
-    console.log("\n========== Franchise Type Counts ==========");
+    const workbook = XLSX.utils.book_new();
 
-    Object.entries(franchiseTypeCounts).forEach(
-      ([franchiseType, count]) => {
-        console.log(
-          `${franchiseType} => ${count} records`
-        );
-      }
+    const worksheet =
+      XLSX.utils.json_to_sheet(excelData);
+
+    worksheet["!cols"] = [
+      { wch: 40 }, // BrandName
+      { wch: 30 }, // BrandOwnerId
+      { wch: 30 }, // MainCategory
+      { wch: 30 }, // SubCategory
+      { wch: 30 }, // Parent
+      { wch: 15 }, // TagsCount
+      { wch: 100 }, // Tags
+    ];
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Brand Product Tags"
     );
 
-    console.log(
-      "\nTotal Unique Franchise Types:",
-      Object.keys(franchiseTypeCounts).length
+    const buffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
-    console.log("\n========== Unique Values ==========");
-
-    Object.keys(franchiseTypeCounts).forEach(
-      (franchiseType) => {
-        console.log(franchiseType);
-      }
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=brand-product-tags-report-${Date.now()}.xlsx`
     );
 
-    return {
-      success: true,
-      totalUniqueFranchiseTypes:
-        Object.keys(franchiseTypeCounts).length,
-      franchiseTypeCounts,
-    };
+    return res.send(buffer);
   } catch (error) {
-    console.error(error);
+    console.error(
+      "exportBrandProductTagsReport Error:",
+      error
+    );
 
-    return {
+    return res.status(500).json({
       success: false,
       message: error.message,
-    };
+    });
   }
 };
 
