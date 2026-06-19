@@ -647,8 +647,171 @@ export const updateFicoByBrandCategory = async (req, res) => {
   }
 };
 
+// export const updateFicoByCategory = async (req, res) => {
+//   try {
+//     const {
+//       brandCategories,
+//       franchiseModel,
+//       franchiseType,
+//     } = req.body;
 
+//     console.log("updateFicoByCategory Request Body:", req.body);
 
+//     if (!brandCategories?.main || !brandCategories?.sub) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "brandCategories.main and brandCategories.sub are required",
+//       });
+//     }
+
+//     const filter = {
+//       "franchiseDetails.brandCategories.main":
+//         brandCategories.main,
+//       "franchiseDetails.brandCategories.sub":
+//         brandCategories.sub,
+//     };
+
+//     // Get matching franchise records before update
+//     const franchiseRecords = await BrandFranchiseDetails.find(filter)
+//       .select("brandOwnerId")
+//       .lean();
+
+//     const brandOwnerIds = franchiseRecords.map(
+//       (item) => item.brandOwnerId
+//     );
+
+//     const updateFields = {};
+
+//     if (franchiseModel) {
+//       updateFields[
+//         "franchiseDetails.fico.$[].franchiseModel"
+//       ] = franchiseModel;
+//     }
+
+//     if (franchiseType) {
+//       updateFields[
+//         "franchiseDetails.fico.$[].franchiseType"
+//       ] = franchiseType;
+//     }
+
+//     const result = await BrandFranchiseDetails.updateMany(
+//       filter,
+//       {
+//         $set: updateFields,
+//       }
+//     );
+
+//     // Fetch brand names
+//     const brands = await BrandDetails.find({
+//       uuid: { $in: brandOwnerIds },
+//     })
+//       .select(
+//         "uuid brandDetails.brandName brandDetails.companyName"
+//       )
+//       .lean();
+
+//     return res.status(200).json({
+//       success: true,
+//       matchedCount: result.matchedCount,
+//       modifiedCount: result.modifiedCount,
+//       updatedBrands: brands.map((brand) => ({
+//         uuid: brand.uuid,
+//         brandName: brand.brandDetails?.brandName,
+//         companyName: brand.brandDetails?.companyName,
+//       })),
+//     });
+//   } catch (error) {
+//     console.error("updateFicoByCategory Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+export const getAllBrandNames = async (req, res) => {
+  try {
+    const brands = await BrandDetails.aggregate([
+      {
+        $lookup: {
+          from: "brandfranchisedetails",
+          localField: "uuid",
+          foreignField: "brandOwnerId",
+          as: "franchiseData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$franchiseData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          BrandName: "$brandDetails.brandName",
+          MainCategory:
+            "$franchiseData.franchiseDetails.brandCategories.main",
+          SubCategory:
+            "$franchiseData.franchiseDetails.brandCategories.sub",
+        },
+      },
+      {
+        $sort: {
+          BrandName: 1,
+        },
+      },
+    ]);
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(brands);
+
+    // Set column widths
+    worksheet["!cols"] = [
+      { wch: 40 }, // Brand Name
+      { wch: 30 }, // Main Category
+      { wch: 30 }, // Sub Category
+    ];
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Brand Categories"
+    );
+
+    // Generate buffer
+    const excelBuffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+    });
+
+    const fileName = `Brand_Category_Report_${Date.now()}.xlsx`;
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${fileName}`
+    );
+
+    return res.send(excelBuffer);
+  } catch (error) {
+    console.error("Error exporting report:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to export report",
+      error: error.message,
+    });
+  }
+};
 export const exportBrandProductTagsReport = async (req, res) => {
   try {
     // Get all brands
