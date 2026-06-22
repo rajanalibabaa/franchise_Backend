@@ -24,11 +24,12 @@ import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import PaymentPackages from "../../model/Brand/AdvertigeHandlingModel.js";
 
 import { createInitialPackages } from "../BrandPackagePlans/brandPackagePlans.js";
+import { createBrandContactMappingDomestic } from "../BrandController/DomesticContactMapping/DomesticContactMapping.js";
 import Plan from "../../model/CMS/PackagePlan.js";
 
 import { BrandPackages } from "../../model/BrandPackagePlans/brandPackagePlans.js";
 import { cloneLeadMatchingRuleForBrand } from "../CMS/LeadDistributionAdminAccess/leadMatchingRulePerBrand.js";
-
+import{updateBrandContactMappingDomestic} from "../BrandController/DomesticContactMapping/DomesticContactMapping.js";
 
 export const likeandshortlist = async (id) => {
   let likedBrands = [];
@@ -591,6 +592,12 @@ brandPackageResult = await assignFreePlanToBrand(
     }
 
    await cloneLeadMatchingRuleForBrand(id, brandDetails?.brandName);
+   await createBrandContactMappingDomestic(
+  id,
+   brandDetails.brandName,
+  brandDetails,
+  expansionLocationData
+);
 
     /* ================= SUCCESS RESPONSE ================= */
     return res.json(
@@ -2173,6 +2180,18 @@ const expansionLocationData = async (id, add, remove, isInternationalExpansion) 
     },
     { new: true, runValidators: true },
   );
+
+  const brand =
+  await BrandDetails.findOne({
+    uuid: id,
+  });
+
+await updateBrandContactMappingDomestic(
+  id,
+  add,
+  remove,
+  brand.brandDetails
+);
 
   // Return updated data
   return await BrandExpansionLocationData.findOne({ brandOwnerId: id });

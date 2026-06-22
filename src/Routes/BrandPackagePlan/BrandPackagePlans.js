@@ -6,6 +6,7 @@ const brandPackagePlansRouter = express.Router();
 
 /* ================= CREATE PACKAGES ================= */
 brandPackagePlansRouter.post("/v1/brand-packages-plans/createInitial", createInitialPackages);
+
 brandPackagePlansRouter.put("/v1/brand-packages-plans/update", updateBrandPackages);
 brandPackagePlansRouter.put("/v1/brand-packages-plans/update-cms/:id", updateBrandPackagecms);
 brandPackagePlansRouter.patch("/v1/brand-packages-plans/create", createBrandPackages);

@@ -24,6 +24,7 @@ import { registerNotificationSocket } from "./src/socket/notificationSocket.js";
 import dns from "dns";
 import { startBrandExpiryJob } from "./src/controller/BrandPackagePlans/brandPackagePlans.js";
 // import { createLeadRulesForAllBrands } from "./src/controller/CMS/LeadDistributionAdminAccess/leadMatchingRulePerBrand.js";
+// import {createContactMappingsForExistingBrands} from "./src/controller/BrandController/DomesticContactMapping/DomesticContactMapping.js";
 
 dotenv.config(); // ✅ Load env FIRST
 
@@ -91,6 +92,7 @@ const allowedOrigins = [
   "http://localhost:5175",
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://thirumalthirumagal.com",
   "https://www.thirumalthirumagal.com",
 ];
 
@@ -159,6 +161,7 @@ const io = new SocketIOServer(httpServer, {
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
       "http://localhost:3001",
+      "https://thirumalthirumagal.com",
       "https://www.thirumalthirumagal.com",
     ],
     credentials: true,
@@ -173,16 +176,24 @@ app.set("io", io);
 // ✅ Start server
 const startServer = async () => {
   try {
-    await connectDatabase();
+    await connectDatabase();  
+
+
     console.log("✅ Database connected");
     // Start scheduled jobs only after DB is connected
-    // try {
-    //   startBrandExpiryJob();
-    //   // await createLeadRulesForAllBrands();
-    //   console.log("⏱️ Brand expiry cron job started");
-    // } catch (cronErr) {
-    //   console.error("Failed to start Brand expiry cron job:", cronErr);
-    // }
+    try {
+      // await updateFranchiseTypeByModelAndType("CHANNEL PARTNERS","Single Unit","CHANNEL PARTNERS");
+    
+      startBrandExpiryJob();
+      // await createLeadRulesForAllBrands();
+      // await createContactMappingsForExistingBrands();
+    
+
+
+      console.log("⏱️ Brand expiry cron job started");
+    } catch (cronErr) {
+      console.error("Failed to start Brand expiry cron job:", cronErr);
+    }
 
     // Routes
     app.get("/", (req, res) => {
