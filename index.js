@@ -91,6 +91,7 @@ const allowedOrigins = [
   "http://localhost:5175",
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://thirumalthirumagal.com",
   "https://www.thirumalthirumagal.com",
 ];
 
@@ -159,6 +160,7 @@ const io = new SocketIOServer(httpServer, {
       "https://admin.mrfranchise.in",
       "http://localhost:3000",
       "http://localhost:3001",
+      "https://thirumalthirumagal.com",
       "https://www.thirumalthirumagal.com",
     ],
     credentials: true,
@@ -176,13 +178,13 @@ const startServer = async () => {
     await connectDatabase();
     console.log("✅ Database connected");
     // Start scheduled jobs only after DB is connected
-    // try {
-    //   startBrandExpiryJob();
-    //   // await createLeadRulesForAllBrands();
-    //   console.log("⏱️ Brand expiry cron job started");
-    // } catch (cronErr) {
-    //   console.error("Failed to start Brand expiry cron job:", cronErr);
-    // }
+    try {
+      startBrandExpiryJob();
+      // await createLeadRulesForAllBrands();
+      console.log("⏱️ Brand expiry cron job started");
+    } catch (cronErr) {
+      console.error("Failed to start Brand expiry cron job:", cronErr);
+    }
 
     // Routes
     app.get("/", (req, res) => {
