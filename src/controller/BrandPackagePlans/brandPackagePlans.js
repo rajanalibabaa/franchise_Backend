@@ -9,6 +9,8 @@ import PackagePlanCMS    from "../../model/CMS/PackagePlan.js";
 import cron from "node-cron";
 import mongoose from "mongoose";
 
+let brandExpiryJobRunning = false;
+
 const buildStateDistrictMap = (
   expansionLocationData,
 ) => {
@@ -1608,6 +1610,14 @@ export const startBrandExpiryJob = () => {
         return;
       }
 
+      if (brandExpiryJobRunning) {
+        console.warn(
+          "⚠️ Skipping Brand Expiry Cron Job because a previous run is still active.",
+        );
+        return;
+      }
+
+      brandExpiryJobRunning = true;
       console.log("🔄 Running Brand Expiry Cron Job...");
 
     try {
@@ -1767,7 +1777,7 @@ export const startBrandExpiryJob = () => {
       } catch (error) {
         console.error("❌ Cron Job Error:", error);
       } finally {
-        jobRunning = false;
+        brandExpiryJobRunning = false;
       }
     },
   );

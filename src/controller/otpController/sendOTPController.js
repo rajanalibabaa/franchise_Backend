@@ -24,6 +24,7 @@ const verifyToken = (token) => {
 // Send Email OTP
 export const requestEmailOtp = async (req, res) => {
   const { email } = req.body;
+  console.log("Email:", email); // Log the email for debugging purposes
 
   // console.log(email);
   const otp = generateOTP();
@@ -45,7 +46,7 @@ export const requestEmailOtp = async (req, res) => {
 // Controller to verify OTP
 export const verifyOTP = async (req, res) => {
   const { identifier, otp, type } = req.body;
-  //  console.log(identifier, otp, type)
+   console.log(identifier, otp, type)
 
   // Validate required fields
   if (!identifier || !otp || !type) {
