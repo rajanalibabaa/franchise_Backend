@@ -1,5 +1,5 @@
 import express from "express";
-import { createLeadPlansCount,getLeadPlansCount,updateLeadPlansCount } from "../../../../controller/CMS/LeadDistributionAdminAccess/LeadPlanCountManage.js";
+import { createLeadPlansCount,getLeadPlansCount,updateLeadPlansCount } from "../../../../controller/CMS/LeadDistributionAdminAccess/leadPlanCountManage.js";
 
 
   const leadPlanCountManage = express.Router();
