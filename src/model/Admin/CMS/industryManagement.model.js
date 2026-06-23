@@ -165,6 +165,6 @@ const industryManagementSchema = new mongoose.Schema(
 );
 
 export const IndustryManagement = mongoose.model(
-  "IndustryManagement",
+  "IndustryManagementcms",
   industryManagementSchema
 );

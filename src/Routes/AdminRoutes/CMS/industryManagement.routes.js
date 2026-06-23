@@ -3,7 +3,7 @@ import {
   createIndustryManagement,
   deleteIndustryById,
   getAllIndustry,
-  getIndustryByIndustryName,
+  // getIndustryByIndustryName,
   updateIndustryById,
 } from "../../../controller/Admin/industryManagement/industryCMScontroller.js";
 import { verifyJWT } from "../../../Middleware/Authentication/authMiddleware.js";
@@ -14,10 +14,10 @@ industryManagementRouter.post(
   "/v1/admin/createIndustryManagement",
   createIndustryManagement,
 );
-industryManagementRouter.get(
-  "/v1/admin/getIndustryByIndustryName",
-  getIndustryByIndustryName,
-);
+// industryManagementRouter.get(
+//   "/v1/admin/getIndustryByIndustryName",
+//   getIndustryByIndustryName,
+// );
 industryManagementRouter.get("/v1/admin/getAllIndustry", getAllIndustry);
 industryManagementRouter.put(
   "/v1/admin/updateIndustryById/:id",
