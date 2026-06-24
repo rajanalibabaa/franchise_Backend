@@ -447,81 +447,109 @@ const getRootDoc = async () => {
   }
   return doc;
 };
-
 export const getIndustryByIndustryName = async (req, res) => {
-  const { industry } = req.query;
+  try {
+    const { industry } = req.query;
+    console.log("getIndustryByIndustryName called with industry:", industry);
 
-  // ── No query param → return flat list of all industries grouped by heading ──
-  if (!industry) {
-    const docs = await IndustryManagement.find({}).select("-__v -_id");
+    // =============================
+    // INITIAL LOAD
+    // =============================
+    if (!industry) {
+      const docs = await IndustryManagement.find({})
+        .select("headings.heading headings.industries.industry -_id");
 
-    // Build:  { Industry: [{ heading, industries: ["IT", "Retail", ...] }] }
-    const grouped = docs.flatMap((doc) =>
-      (doc.headings || []).map((h) => ({
-        heading: h.heading,
-        industries: (h.industries || []).map((ind) => ind.industry),
-      }))
-    );
+      const Industry = [];
 
-    // Also expose a flat array for backwards-compat if needed
-    const flatIndustryNames = grouped.flatMap((g) => g.industries);
+      docs.forEach((doc) => {
+        doc.headings?.forEach((heading) => {
+          Industry.push({
+            heading: heading.heading,
+            industries: heading.industries?.map(
+              (industry) => industry.industry
+            ) || [],
+          });
+        });
+      });
 
-    return res.json(
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          { Industry },
+          "Industries fetched successfully"
+        )
+      );
+    }
+
+    // =============================
+    // SINGLE INDUSTRY DETAILS
+    // =============================
+    const doc = await IndustryManagement.findOne({
+      "headings.industries.industry": industry,
+    }).select("-__v -_id");
+
+    if (!doc) {
+      return res.status(404).json(
+        new ApiResponse(
+          404,
+          {},
+          "Industry not found"
+        )
+      );
+    }
+
+    let foundHeading = null;
+    let foundIndustry = null;
+
+    for (const heading of doc.headings || []) {
+      const industryData = heading.industries?.find(
+        (ind) => ind.industry === industry
+      );
+
+      if (industryData) {
+        foundHeading = heading.heading;
+        foundIndustry = industryData;
+        break;
+      }
+    }
+
+    if (!foundIndustry) {
+      return res.status(404).json(
+        new ApiResponse(
+          404,
+          {},
+          "Industry not found"
+        )
+      );
+    }
+
+    const responseData = {
+      heading: foundHeading,
+      industry: foundIndustry.industry,
+      uuid: foundIndustry.uuid,
+      categories: foundIndustry.categories || [],
+      productTags: foundIndustry.productTags || [],
+      serviceTags: foundIndustry.serviceTags || [],
+    };
+
+    return res.status(200).json(
       new ApiResponse(
         200,
-        { Industry: flatIndustryNames, grouped },
-        "Industries fetched successfully"
+        responseData,
+        "Industry details fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("getIndustryByIndustryName Error:", error);
+
+    return res.status(500).json(
+      new ApiResponse(
+        500,
+        {},
+        error.message || "Internal Server Error"
       )
     );
   }
-
-  // ── Industry param supplied → find the matching industry across all headings ─
-  const doc = await IndustryManagement.findOne({
-    "headings.industries.industry": industry,
-  }).select("-__v -_id");
-
-  if (!doc) {
-    return res.json(new ApiResponse(404, {}, "Industry does not exist"));
-  }
-
-  // Locate the exact heading + industry objects
-  let foundHeading = null;
-  let foundIndustry = null;
-
-  for (const heading of doc.headings || []) {
-    const match = (heading.industries || []).find(
-      (ind) => ind.industry === industry
-    );
-    if (match) {
-      foundHeading = heading.heading;
-      foundIndustry = match;
-      break;
-    }
-  }
-
-  if (!foundIndustry) {
-    return res.json(new ApiResponse(404, {}, "Industry not found"));
-  }
-
-  // Transform to flat arrays (strip internal ids)
-  const transformedData = {
-    heading: foundHeading,
-    industry: foundIndustry.industry,
-    uuid: foundIndustry.uuid,
-    categories: (foundIndustry.categories || []).map((cat) => cat.category),
-    productTags: (foundIndustry.productTags || []).map((pt) => ({
-      parent: pt.parent,
-      tags: (pt.tags || []).map((tag) => tag.tag),
-    })),
-    serviceTags: (foundIndustry.serviceTags || []).map((st) => ({
-      parent: st.parent,
-      tags: (st.tags || []).map((tag) => tag.tag),
-    })),
-  };
-
-  return res.json(
-    new ApiResponse(200, transformedData, "Industry data fetched successfully")
-  );
 };
 
 // ── CREATE  POST /api/v1/admin/createIndustry ─────────────────────────────
