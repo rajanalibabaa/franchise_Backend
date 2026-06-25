@@ -14,6 +14,6 @@ brandPackagePlansRouter.get("/v1/brand-packages-plans/get/:brandOwnerId", getBra
 // brandPackagePlansRouter.get("/v1/brand-packages-plans/update-history/:brandOwnerId", brandPackageHistory);
 brandPackagePlansRouter.get("/v1/brand-packages-plans/get-history/:brandOwnerId", getBrandPackagesHistoryById);
 brandPackagePlansRouter.post("/v1/brand-packages-plans/active-package-status", activePackageStatus);
-brandPackagePlansRouter.patch("/v1/brand-packages-plans/upgrade", upgradeBrandPackages);
+brandPackagePlansRouter.put("/v1/brand-packages-plans/upgrade", upgradeBrandPackages);
 brandPackagePlansRouter.get("/v1/brand-packages-plans/get-all", getAllBrandPackages); 
 export default brandPackagePlansRouter;  

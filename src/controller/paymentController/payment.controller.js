@@ -33,22 +33,17 @@ export const createPayment = async (req, res) => {
 
     console.log(
       "requestbodydata from front end",
-      JSON.stringify(req.body, null, 2)
+      JSON.stringify(req.body, null, 2),
     );
 
     // =====================================================
     // VALIDATION
     // =====================================================
 
-    if (
-      !brandOwnerId ||
-      !Array.isArray(packages) ||
-      packages.length === 0
-    ) {
+    if (!brandOwnerId || !Array.isArray(packages) || packages.length === 0) {
       return res.status(400).json({
         success: false,
-        message:
-          "Missing required fields",
+        message: "Missing required fields",
       });
     }
 
@@ -65,45 +60,47 @@ export const createPayment = async (req, res) => {
     // =====================================================
 
     for (const pkg of packages) {
-      console.log(
-        "🔄 PROCESSING PACKAGE:",
-        JSON.stringify(pkg, null, 2)
-      );
+      console.log("🔄 PROCESSING PACKAGE:", JSON.stringify(pkg, null, 2));
 
       const {
-        packagesType,
+  packagesType,
 
-        packageName,
+  planName,   // CHANGE HERE
 
-        planId,
-        planUniqueId,
+  planId,
+  planUniqueId,
 
-        investmentRangeLabel,
+  investmentRangeLabel,
 
-        totalStates,
+  totalStates,
 
-        uniqueStates = [],
+  uniqueStates = [],
 
-        amount: frontendAmount,
+  amount: frontendAmount,
 
-        selectedLeads,
+  selectedLeads,
 
-        validityDays = 0,
-      } = pkg;
+  validityDays = 0,
+
+} = pkg;
 
       // =====================================================
       // FIND PACKAGE DOC
       // =====================================================
 
-      const packagesDoc =
-        await Packages.findOne({
-          "packagesPlan._id": planId,
-        });
+      const packagesDoc = await Packages.findOne({
 
-      console.log(
-        "📦 PACKAGE DOC FOUND:",
-        packagesDoc?._id
-      );
+ "packagesPlan":{
+
+    $elemMatch:{
+       _id:planId
+    }
+
+ }
+
+});
+
+      console.log("📦 PACKAGE DOC FOUND:", packagesDoc?._id);
 
       if (!packagesDoc) {
         return res.status(404).json({
@@ -116,42 +113,31 @@ export const createPayment = async (req, res) => {
       // MATCH PLAN
       // =====================================================
 
-      const matchedPlan =
-        packagesDoc.packagesPlan.find(
-          (p) => {
-            return (
-              String(p._id) ===
-                String(planId) &&
-              String(
-                p.planUniqueId
-              )
-                .trim()
-                .toLowerCase() ===
-                String(
-                  planUniqueId
-                )
-                  .trim()
-                  .toLowerCase() &&
-              String(p.planName)
-                .trim()
-                .toLowerCase() ===
-                String(packageName)
-                  .trim()
-                  .toLowerCase()
-            );
-          }
-        );
+const matchedPlan =
+packagesDoc.packagesPlan.find((p)=>{
 
-      console.log(
-        "✅ MATCHED PLAN:",
-        matchedPlan?.planName
-      );
+return (
+
+String(p._id) === String(planId)
+
+&&
+
+p.planUniqueId === planUniqueId
+
+&&
+
+p.planName === planName
+
+)
+
+});  
+
+      console.log("✅ MATCHED PLAN:", matchedPlan?.planName);
 
       if (!matchedPlan) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid plan selected",
+          message: "Invalid plan selected",
         });
       }
 
@@ -159,51 +145,37 @@ export const createPayment = async (req, res) => {
       // UNIQUE STATES COUNT
       // =====================================================
 
-      const uniqueStateCount =
-        Array.isArray(uniqueStates)
-          ? uniqueStates.length
-          : 0;
+      const uniqueStateCount = Array.isArray(uniqueStates)
+        ? uniqueStates.length
+        : 0;
 
       // =====================================================
       // LISTING FLOW
       // =====================================================
 
-      if (
-        String(packagesType).toUpperCase() ===
-        "LISTING"
-      ) {
-        console.log(
-          "📦 LISTING FLOW STARTED"
-        );
+      if (String(packagesType).toUpperCase() === "LISTING") {
+        console.log("📦 LISTING FLOW STARTED");
 
         // =====================================================
         // ALL RANGES
         // =====================================================
 
-        const listingRanges =
-          Array.isArray(
-            investmentRangeLabel
-          )
-            ? investmentRangeLabel
-            : [investmentRangeLabel];
+        const listingRanges = Array.isArray(investmentRangeLabel)
+          ? investmentRangeLabel
+          : [investmentRangeLabel];
 
         // =====================================================
         // FIXED PACKAGE
         // =====================================================
 
-        const matchedPackage =
-          matchedPlan.packages?.[0];
+        const matchedPackage = matchedPlan.packages?.[0];
 
-        console.log(
-          "📋 LISTING PACKAGE:",
-          matchedPackage
-        );
+        console.log("📋 LISTING PACKAGE:", matchedPackage);
 
         if (!matchedPackage) {
           return res.status(400).json({
             success: false,
-            message:
-              "Listing package not found",
+            message: "Listing package not found",
           });
         }
 
@@ -211,38 +183,26 @@ export const createPayment = async (req, res) => {
         // FIXED LISTING AMOUNT
         // =====================================================
 
-        const finalCalculatedAmount =
-          Number(
-            matchedPackage.amount ||
-              frontendAmount ||
-              0
-          );
+        const finalCalculatedAmount = Number(
+          matchedPackage.amount || frontendAmount || 0,
+        );
 
         // =====================================================
         // PROCESS EVERY RANGE
         // =====================================================
 
         for (const rangeLabel of listingRanges) {
-          console.log(
-            "📌 PROCESSING RANGE:",
-            rangeLabel
-          );
+          console.log("📌 PROCESSING RANGE:", rangeLabel);
 
           // =====================================================
           // STATES DATA
           // =====================================================
 
-          const statesData =
-            uniqueStates.map(
-              (stateObj) => ({
-                state:
-                  stateObj.state,
+          const statesData = uniqueStates.map((stateObj) => ({
+            state: stateObj.state,
 
-                district:
-                  stateObj.district ||
-                  [],
-              })
-            );
+            district: stateObj.district || [],
+          }));
 
           // =====================================================
           // STORE PACKAGE
@@ -251,25 +211,21 @@ export const createPayment = async (req, res) => {
           processedPackages.push({
             packagesType,
 
-            packageName,
+            planName,
 
             planId,
 
             planUniqueId,
 
-            investmentRangeLabel:
-              rangeLabel,
+            investmentRangeLabel: rangeLabel,
 
-            totalStates:
-              uniqueStateCount,
+            totalStates: uniqueStateCount,
 
-            uniqueStates:
-              statesData,
+            uniqueStates: statesData,
 
             validityDays,
 
-            dbPricePerState:
-              finalCalculatedAmount,
+            dbPricePerState: finalCalculatedAmount,
 
             finalCalculatedAmount: 0,
           });
@@ -279,38 +235,25 @@ export const createPayment = async (req, res) => {
         // ADD TOTAL ONLY ONCE
         // =====================================================
 
-        grandCalculatedAmount +=
-          finalCalculatedAmount;
+        grandCalculatedAmount += finalCalculatedAmount;
 
         // =====================================================
         // VALIDATE
         // =====================================================
 
-        if (
-          Number(frontendAmount) !==
-          Number(
-            finalCalculatedAmount
-          )
-        ) {
+        if (Number(frontendAmount) !== Number(finalCalculatedAmount)) {
           return res.status(400).json({
             success: false,
 
-            message:
-              "Listing amount mismatch",
+            message: "Listing amount mismatch",
 
-            frontendAmount:
-              Number(frontendAmount),
+            frontendAmount: Number(frontendAmount),
 
-            backendAmount:
-              Number(
-                finalCalculatedAmount
-              ),
+            backendAmount: Number(finalCalculatedAmount),
           });
         }
 
-        console.log(
-          "✅ LISTING VALIDATED"
-        );
+        console.log("✅ LISTING VALIDATED");
 
         continue;
       }
@@ -319,42 +262,25 @@ export const createPayment = async (req, res) => {
       // LEAD FLOW
       // =====================================================
 
-      console.log(
-        "📦 LEAD FLOW STARTED"
-      );
+      console.log("📦 LEAD FLOW STARTED");
 
       // =====================================================
       // MATCH PACKAGE
       // =====================================================
 
-      const matchedPackage =
-        matchedPlan.packages.find(
-          (dbPkg) => {
-            return (
-              String(
-                dbPkg.investmentRangeLabel
-              )
-                .trim()
-                .toLowerCase() ===
-              String(
-                investmentRangeLabel
-              )
-                .trim()
-                .toLowerCase()
-            );
-          }
+      const matchedPackage = matchedPlan.packages.find((dbPkg) => {
+        return (
+          String(dbPkg.investmentRangeLabel).trim().toLowerCase() ===
+          String(investmentRangeLabel).trim().toLowerCase()
         );
+      });
 
-      console.log(
-        "📋 MATCHED PACKAGE:",
-        matchedPackage?.investmentRangeLabel
-      );
+      console.log("📋 MATCHED PACKAGE:", matchedPackage?.investmentRangeLabel);
 
       if (!matchedPackage) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid investment range selected",
+          message: "Invalid investment range selected",
         });
       }
 
@@ -362,74 +288,45 @@ export const createPayment = async (req, res) => {
       // DB VALUES
       // =====================================================
 
-      const dbPricePerState =
-        Number(
-          matchedPackage.amount
-        ) || 0;
+      const dbPricePerState = Number(matchedPackage.amount) || 0;
 
-      const minimumLeadCount =
-        Math.min(
-          ...(
-            matchedPackage.totalLeads || [
-              1,
-            ]
-          )
-        );
+      const minimumLeadCount = Math.min(...(matchedPackage.totalLeads || [1]));
 
-      const selectedLeadCount =
-        Number(
-          selectedLeads ||
-            totalLeads ||
-            0
-        );
+      const selectedLeadCount = Number(selectedLeads || totalLeads || 0);
 
       // =====================================================
       // CALCULATE
       // =====================================================
 
-      const amountPerLead =
-        Number(dbPricePerState) /
-        Number(minimumLeadCount);
+      const amountPerLead = Number(dbPricePerState) / Number(minimumLeadCount);
 
       let finalCalculatedAmount =
         amountPerLead *
-        Number(
-          uniqueStateCount || 1
-        ) *
-        Number(
-          selectedLeadCount || 1
-        );
+        Number(uniqueStateCount || 1) *
+        Number(selectedLeadCount || 1);
 
-      finalCalculatedAmount =
-        Number(
-          finalCalculatedAmount.toFixed(
-            2
-          )
-        );
+      finalCalculatedAmount = Number(finalCalculatedAmount.toFixed(2));
 
-      console.log(
-        "💰 FINAL CALCULATION:",
-        {
-          dbPricePerState,
+      console.log("💰 FINAL CALCULATION:", {
+        dbPricePerState,
 
-          minimumLeadCount,
+        minimumLeadCount,
 
-          amountPerLead,
+        amountPerLead,
 
-          uniqueStateCount,
+        uniqueStateCount,
 
-          selectedLeadCount,
+        selectedLeadCount,
 
-          finalCalculatedAmount,
-        }
-      );
+        finalCalculatedAmount,
+        
+      });
 
       // =====================================================
       // ADD TOTAL
       // =====================================================
 
-      grandCalculatedAmount +=
-        finalCalculatedAmount;
+      grandCalculatedAmount += finalCalculatedAmount;
 
       // =====================================================
       // STORE PACKAGE
@@ -438,7 +335,7 @@ export const createPayment = async (req, res) => {
       processedPackages.push({
         packagesType,
 
-        packageName,
+        planName,
 
         planId,
 
@@ -446,8 +343,7 @@ export const createPayment = async (req, res) => {
 
         investmentRangeLabel,
 
-        totalStates:
-          uniqueStateCount,
+        totalStates: uniqueStateCount,
 
         uniqueStates,
 
@@ -468,33 +364,21 @@ export const createPayment = async (req, res) => {
       // VALIDATE PACKAGE
       // =====================================================
 
-      if (
-        Number(frontendAmount) !==
-        Number(
-          finalCalculatedAmount
-        )
-      ) {
-        console.log(
-          "❌ PACKAGE AMOUNT MISMATCH"
-        );
+      if (Number(frontendAmount) !== Number(finalCalculatedAmount)) {
+        console.log("❌ PACKAGE AMOUNT MISMATCH");
 
         return res.status(400).json({
           success: false,
 
-          message:
-            "Package amount mismatch detected",
+          message: "Package amount mismatch detected",
 
           packageName,
 
           investmentRangeLabel,
 
-          frontendAmount:
-            Number(frontendAmount),
+          frontendAmount: Number(frontendAmount),
 
-          backendAmount:
-            Number(
-              finalCalculatedAmount
-            ),
+          backendAmount: Number(finalCalculatedAmount),
         });
       }
     }
@@ -503,85 +387,82 @@ export const createPayment = async (req, res) => {
     // ROUND TOTAL
     // =====================================================
 
-    grandCalculatedAmount =
-      Number(
-        grandCalculatedAmount.toFixed(
-          2
-        )
-      );
+    grandCalculatedAmount = Number(grandCalculatedAmount.toFixed(2));
 
     // =====================================================
     // VALIDATE GRAND TOTAL
     // =====================================================
 
-    if (
-      Number(totalAmount) !==
-      Number(
-        grandCalculatedAmount
-      )
-    ) {
-      console.log(
-        "❌ TOTAL AMOUNT MISMATCH"
-      );
+  const frontendBaseAmount = Number(totalAmount) / 1.18;
 
-      return res.status(400).json({
-        success: false,
 
-        message:
-          "Total amount mismatch detected",
+if (
+  Number(frontendBaseAmount.toFixed(2)) !==
+  Number(grandCalculatedAmount.toFixed(2))
+) {
 
-        frontendAmount:
-          Number(totalAmount),
+  console.log("❌ TOTAL AMOUNT MISMATCH");
 
-        backendAmount:
-          Number(
-            grandCalculatedAmount
-          ),
-      });
-    }
+  return res.status(400).json({
 
-    console.log(
-      "✅ Amount Validated"
-    );
+    success:false,
+
+    message:"Total amount mismatch detected",
+
+    frontendAmount:Number(totalAmount),
+
+    backendAmount:Number(grandCalculatedAmount),
+
+  });
+
+}
+
+    console.log("✅ Amount Validated");
 
     // =====================================================
     // GST
     // =====================================================
 
-    const gstBreakdown =
-      GSTCalculator.calculate(
-        grandCalculatedAmount,
-        companyState,
-        billingState
-      );
+    const gstBreakdown = GSTCalculator.calculate(
+      grandCalculatedAmount,
+      companyState,
+      billingState,
+    );
 
-    const finalAmount =
-      gstBreakdown.finalAmount;
+    const finalAmount = gstBreakdown.finalAmount;
 
-    // =====================================================
-    // CREATE ORDER
-    // =====================================================
+    const {
+      paymentMode = "online",
 
-    const order =
-      await razorpay.orders.create({
-        amount: Math.round(
-          finalAmount * 100
-        ),
+      manualPaymentAmount,
 
-        currency: "INR",
+      manualPaymentDate,
 
-        receipt: `R${Date.now()}`,
-      });
+      manualPaymentMessage,
+    } = req.body;
 
-    // =====================================================
-    // SAVE PAYMENT
-    // =====================================================
+    if (paymentMode === "offline") {
 
-    const payment =
-      await Payment.create({
+      if(
+ Number(manualPaymentAmount) !== Number(finalAmount)
+){
+
+ return res.status(400).json({
+
+ success:false,
+
+ message:"Offline payment amount mismatch"
+
+ });
+
+}
+
+
+      const payment = await Payment.create({
         brandOwnerId,
 
-        orderId: order.id,
+        // no razorpay order
+        orderId: `OFFLINE-${Date.now()}`,
 
         amount: finalAmount,
 
@@ -599,33 +480,113 @@ export const createPayment = async (req, res) => {
           pan,
         },
 
-        packageDetails:
-          processedPackages,
+        packageDetails: processedPackages,
+
+        paymentMode: {
+          type: "offline",
+
+          offlinePayment: {
+            date: manualPaymentDate || new Date(),
+
+            totalManualPayAmount: Number(manualPaymentAmount || finalAmount),
+
+            message: manualPaymentMessage || "Offline payment received",
+          },
+        },
+
+        status: "captured",
+
+        paymentSuccess: true,
 
         breakdown: {
-          baseAmount:
-            grandCalculatedAmount,
+          baseAmount: grandCalculatedAmount,
 
-          cgst:
-            gstBreakdown.cgst,
+          cgst: gstBreakdown.cgst,
 
-          sgst:
-            gstBreakdown.sgst,
+          sgst: gstBreakdown.sgst,
 
-          igst:
-            gstBreakdown.igst,
+          igst: gstBreakdown.igst,
 
-          tax:
-            gstBreakdown.totalGST,
+          tax: gstBreakdown.totalGST,
 
           finalAmount,
         },
       });
 
-    console.log(
-      "✅ PAYMENT SAVED:",
-      payment._id
-    );
+      console.log("OFFLINE PAYMENT SAVED", payment._id);
+
+      return res.status(201).json({
+        success: true,
+
+        message: "Offline payment completed successfully",
+
+        data: {
+          paymentId: payment._id,
+
+          paymentMode: "offline",
+
+          status: "captured",
+        },
+      });
+    }
+
+    // =====================================================
+    // CREATE ORDER
+    // =====================================================
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(finalAmount * 100),
+
+      currency: "INR",
+
+      receipt: `R${Date.now()}`,
+    });
+
+    // =====================================================
+    // SAVE PAYMENT
+    // =====================================================
+
+    const payment = await Payment.create({
+      brandOwnerId,
+
+      orderId: order.id,
+
+      amount: finalAmount,
+      paymentMode: {
+        type: "online",
+      },
+      customer: {
+        brandID,
+
+        email,
+
+        phone,
+
+        name,
+
+        gstNumber,
+
+        pan,
+      },
+
+      packageDetails: processedPackages,
+
+      breakdown: {
+        baseAmount: grandCalculatedAmount,
+
+        cgst: gstBreakdown.cgst,
+
+        sgst: gstBreakdown.sgst,
+
+        igst: gstBreakdown.igst,
+
+        tax: gstBreakdown.totalGST,
+
+        finalAmount,
+      },
+    });
+
+    console.log("✅ PAYMENT SAVED:", payment._id);
 
     // =====================================================
     // RESPONSE
@@ -637,76 +598,65 @@ export const createPayment = async (req, res) => {
       data: {
         orderId: order.id,
 
-        key:
-          process.env
-            .RAZORPAY_KEY_ID,
+        key: process.env.RAZORPAY_KEY_ID,
 
         amount: order.amount,
 
-        amountInRupees:
-          finalAmount,
+        amountInRupees: finalAmount,
 
         paymentId: payment._id,
 
         calculations: {
-          totalPackages:
-            processedPackages.length,
+          totalPackages: processedPackages.length,
 
           totalLeads,
 
-          baseAmount:
-            grandCalculatedAmount,
+          baseAmount: grandCalculatedAmount,
 
           gstBreakdown,
 
           finalAmount,
 
-          packages:
-            processedPackages,
+          packages: processedPackages,
         },
       },
     });
   } catch (err) {
-    console.log(
-      "❌ CREATE PAYMENT ERROR:",
-      err
-    );
+    console.log("❌ CREATE PAYMENT ERROR:", err);
 
     return res.status(500).json({
       success: false,
 
-      message:
-        "Payment creation failed",
+      message: "Payment creation failed",
 
       error: err.message,
     });
   }
 };
 
-
 // ==============================
 // ✅ VERIFY PAYMENT
 // ==============================
 export const verifyPayment = async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Missing required parameters: razorpay_order_id, razorpay_payment_id, razorpay_signature" 
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing required parameters: razorpay_order_id, razorpay_payment_id, razorpay_signature",
       });
     }
 
     if (!process.env.RAZORPAY_KEY_SECRET) {
-      console.error("❌ VERIFY PAYMENT ERROR: Missing RAZORPAY_KEY_SECRET environment variable");
-      return res.status(500).json({ 
-        success: false, 
-        message: "Payment verification failed: missing server configuration" 
+      console.error(
+        "❌ VERIFY PAYMENT ERROR: Missing RAZORPAY_KEY_SECRET environment variable",
+      );
+      return res.status(500).json({
+        success: false,
+        message: "Payment verification failed: missing server configuration",
       });
     }
 
@@ -728,12 +678,12 @@ export const verifyPayment = async (req, res) => {
             source: "verification",
             step: "signature_check",
           },
-        }
+        },
       );
 
-      return res.status(400).json({ 
-        success: false, 
-        message: "Payment verification failed - Invalid signature" 
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed - Invalid signature",
       });
     }
 
@@ -742,16 +692,16 @@ export const verifyPayment = async (req, res) => {
 
     // ✅ Update Payment in DB
     const payment = await Payment.findOneAndUpdate(
-      { 
-        orderId: razorpay_order_id, 
-        status: { $in: ["initiated", "pending", "authorized"] } 
+      {
+        orderId: razorpay_order_id,
+        status: { $in: ["initiated", "pending", "authorized"] },
       },
       {
         status: "captured",
         paymentSuccess: true,
         paymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
-        
+
         paymentMethod: {
           type: razorpayPayment.method,
           provider: razorpayPayment.bank || razorpayPayment.wallet || null,
@@ -763,7 +713,7 @@ export const verifyPayment = async (req, res) => {
           settled: false,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!payment) {
@@ -772,9 +722,6 @@ export const verifyPayment = async (req, res) => {
         message: "Payment record not found or already processed",
       });
     }
-
-   
-
 
     // ✅ Generate Invoice PDF
     // try {
@@ -798,13 +745,12 @@ export const verifyPayment = async (req, res) => {
         invoiceUrl: payment.invoice.invoiceUrl,
       },
     });
-
   } catch (err) {
     console.error("❌ VERIFY PAYMENT ERROR:", err);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Payment verification failed",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   }
 };
@@ -882,7 +828,9 @@ export const webhookHandler = async (req, res) => {
 
       await payment.save();
 
-      return res.status(400).json({ error: "Amount mismatch - potential fraud" });
+      return res
+        .status(400)
+        .json({ error: "Amount mismatch - potential fraud" });
     }
 
     // ✅ Handle Different Event Types
@@ -892,7 +840,7 @@ export const webhookHandler = async (req, res) => {
           payment.status = "captured";
           payment.paymentSuccess = true;
           payment.paymentId = paymentData.id;
-          
+
           payment.paymentMethod = {
             type: paymentData.method,
             provider: paymentData.bank || paymentData.wallet || null,
@@ -960,36 +908,25 @@ export const webhookHandler = async (req, res) => {
 
     await payment.save();
 
-    console.log(`✅ Webhook processed: ${eventType} in ${Date.now() - startTime}ms`);
+    console.log(
+      `✅ Webhook processed: ${eventType} in ${Date.now() - startTime}ms`,
+    );
 
     res.json({ status: "processed", eventId });
-
   } catch (err) {
     console.error("🔥 WEBHOOK ERROR:", err);
 
     // Return 200 to prevent Razorpay retries
-    res.status(200).json({ 
+    res.status(200).json({
       status: "error_logged",
       message: err.message,
     });
   }
 };
 
-
-
-
-export const getallPaymentHistory = async (
-  req,
-  res
-) => {
+export const getallPaymentHistory = async (req, res) => {
   try {
-    const {
-      status,
-      startDate,
-      endDate,
-      page = 1,
-      limit = 20,
-    } = req.query;
+    const { status, startDate, endDate, page = 1, limit = 20 } = req.query;
 
     // =====================================================
     // QUERY
@@ -1015,13 +952,11 @@ export const getallPaymentHistory = async (
       query.createdAt = {};
 
       if (startDate) {
-        query.createdAt.$gte =
-          new Date(startDate);
+        query.createdAt.$gte = new Date(startDate);
       }
 
       if (endDate) {
-        query.createdAt.$lte =
-          new Date(endDate);
+        query.createdAt.$lte = new Date(endDate);
       }
     }
 
@@ -1029,41 +964,33 @@ export const getallPaymentHistory = async (
     // PAGINATION
     // =====================================================
 
-    const currentPage =
-      parseInt(page) || 1;
+    const currentPage = parseInt(page) || 1;
 
-    const perPage =
-      parseInt(limit) || 20;
+    const perPage = parseInt(limit) || 20;
 
-    const skip =
-      (currentPage - 1) * perPage;
+    const skip = (currentPage - 1) * perPage;
 
     // =====================================================
     // GET PAYMENTS
     // =====================================================
 
-    const [payments, total] =
-      await Promise.all([
-        Payment.find(query)
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
 
-          .select(
-            "-razorpaySignature -encryptedData -webhookEvents.payload"
-          )
+        .select("-razorpaySignature -encryptedData -webhookEvents.payload")
 
-          .sort({
-            createdAt: -1,
-          })
+        .sort({
+          createdAt: -1,
+        })
 
-          .skip(skip)
+        .skip(skip)
 
-          .limit(perPage)
+        .limit(perPage)
 
-          .lean(),
+        .lean(),
 
-        Payment.countDocuments(
-          query
-        ),
-      ]);
+      Payment.countDocuments(query),
+    ]);
 
     // =====================================================
     // RESPONSE
@@ -1072,8 +999,7 @@ export const getallPaymentHistory = async (
     return res.status(200).json({
       success: true,
 
-      message:
-        "All payment history fetched successfully",
+      message: "All payment history fetched successfully",
 
       total,
 
@@ -1081,41 +1007,36 @@ export const getallPaymentHistory = async (
 
       limit: perPage,
 
-      totalPages: Math.ceil(
-        total / perPage
-      ),
+      totalPages: Math.ceil(total / perPage),
 
       data: payments,
     });
   } catch (err) {
-    console.error(
-      "GET PAYMENT HISTORY ERROR:",
-      err
-    );
+    console.error("GET PAYMENT HISTORY ERROR:", err);
 
     return res.status(500).json({
       success: false,
 
-      message:
-        "Failed to fetch payment history",
+      message: "Failed to fetch payment history",
 
       error: err.message,
     });
   }
 };
 
-
-
-
-
-
-
 // ==============================
 // ✅ GET PAYMENT HISTORY
 // ==============================
 export const getPaymentHistory = async (req, res) => {
   try {
-    const { brandOwnerId, status, startDate, endDate, page = 1, limit = 20 } = req.query;
+    const {
+      brandOwnerId,
+      status,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 20,
+    } = req.query;
 
     if (!brandOwnerId) {
       return res.status(400).json({
@@ -1130,7 +1051,7 @@ export const getPaymentHistory = async (req, res) => {
     };
 
     if (status) query.status = status;
-    
+
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -1141,12 +1062,12 @@ export const getPaymentHistory = async (req, res) => {
 
     const [payments, total] = await Promise.all([
       Payment.find(query)
-        .select('-razorpaySignature -encryptedData -webhookEvents.payload')
+        .select("-razorpaySignature -encryptedData -webhookEvents.payload")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
         .lean(),
-      
+
       Payment.countDocuments(query),
     ]);
 
@@ -1162,7 +1083,6 @@ export const getPaymentHistory = async (req, res) => {
         },
       },
     });
-
   } catch (err) {
     console.error("❌ GET PAYMENT HISTORY ERROR:", err);
     res.status(500).json({
@@ -1185,7 +1105,7 @@ export const getPaymentDetails = async (req, res) => {
       brandOwnerId,
       isDeleted: false,
     })
-      .select('-razorpaySignature -encryptedData')
+      .select("-razorpaySignature -encryptedData")
       .lean();
 
     if (!payment) {
@@ -1199,7 +1119,6 @@ export const getPaymentDetails = async (req, res) => {
       success: true,
       data: payment,
     });
-
   } catch (err) {
     console.error("❌ GET PAYMENT DETAILS ERROR:", err);
     res.status(500).json({
@@ -1257,7 +1176,7 @@ export const getPaymentAnalytics = async (req, res) => {
 
     analytics.forEach((item) => {
       summary.total += item.count;
-      
+
       if (item._id === "captured") {
         summary.successful = item.count;
         summary.totalRevenue = item.totalAmount;
@@ -1298,7 +1217,6 @@ export const getPaymentAnalytics = async (req, res) => {
         breakdown: analytics,
       },
     });
-
   } catch (err) {
     console.error("❌ GET ANALYTICS ERROR:", err);
     res.status(500).json({
@@ -1337,7 +1255,8 @@ export const initiateRefund = async (req, res) => {
       notes: { reason },
     });
 
-    payment.status = amount === payment.amount ? "refund_initiated" : "partial_refund";
+    payment.status =
+      amount === payment.amount ? "refund_initiated" : "partial_refund";
     payment.refund = {
       refundId: refund.id,
       amount,
@@ -1358,7 +1277,6 @@ export const initiateRefund = async (req, res) => {
         status: payment.status,
       },
     });
-
   } catch (err) {
     console.error("❌ REFUND ERROR:", err);
     res.status(500).json({
@@ -1384,7 +1302,7 @@ export const deletePayment = async (req, res) => {
         deletedAt: new Date(),
         deletedBy,
       },
-      { new: true }
+      { new: true },
     );
 
     if (!payment) {
@@ -1398,7 +1316,6 @@ export const deletePayment = async (req, res) => {
       success: true,
       message: "Payment deleted successfully",
     });
-
   } catch (err) {
     console.error("❌ DELETE PAYMENT ERROR:", err);
     res.status(500).json({
@@ -1435,7 +1352,6 @@ export const downloadInvoice = async (req, res) => {
         invoiceNumber: payment.invoice.invoiceNumber,
       },
     });
-
   } catch (err) {
     console.error("❌ DOWNLOAD INVOICE ERROR:", err);
     res.status(500).json({
