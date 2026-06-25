@@ -959,6 +959,123 @@ export const exportBrandProductTagsReport = async (req, res) => {
   }
 };
 
+export const bulkUpdateFranchiseModelType = async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Request body must be a non-empty array",
+      });
+    }
+
+    // Normalize brand name
+    const normalizeBrandName = (name) => {
+      return String(name || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+    };
+
+    // Load all brands once (faster than querying every row)
+    const brands = await BrandDetails.find(
+      {},
+      {
+        uuid: 1,
+        "brandDetails.brandName": 1,
+      }
+    ).lean();
+
+    // Create brandName -> uuid map
+    const brandMap = new Map();
+
+    brands.forEach((brand) => {
+      const normalizedName = normalizeBrandName(
+        brand?.brandDetails?.brandName
+      );
+
+      if (normalizedName) {
+        brandMap.set(normalizedName, brand.uuid);
+      }
+    });
+
+    const bulkOperations = [];
+    const updatedBrands = [];
+    const notFoundBrands = [];
+
+    for (const item of data) {
+      const {
+        brandName,
+        franchiseModel,
+        franchiseType,
+      } = item;
+
+      const normalizedInputName =
+        normalizeBrandName(brandName);
+
+      const uuid = brandMap.get(normalizedInputName);
+
+      if (!uuid) {
+        notFoundBrands.push({
+          brandName,
+          reason: "Brand not found",
+        });
+        continue;
+      }
+
+      bulkOperations.push({
+        updateOne: {
+          filter: {
+            brandOwnerId: uuid,
+          },
+          update: {
+            $set: {
+              "franchiseDetails.fico.$[].franchiseModel":
+                franchiseModel,
+              "franchiseDetails.fico.$[].franchiseType":
+                franchiseType,
+            },
+          },
+        },
+      });
+
+      updatedBrands.push({
+        brandName,
+        uuid,
+      });
+    }
+
+    let bulkResult = null;
+
+    if (bulkOperations.length > 0) {
+      bulkResult =
+        await BrandFranchiseDetails.bulkWrite(
+          bulkOperations
+        );
+    }
+
+    return res.status(200).json({
+      success: true,
+      totalReceived: data.length,
+      totalMatched: updatedBrands.length,
+      totalNotFound: notFoundBrands.length,
+      modifiedCount: bulkResult?.modifiedCount || 0,
+      matchedCount: bulkResult?.matchedCount || 0,
+      notFoundBrands,
+    });
+  } catch (error) {
+    console.error(
+      "bulkUpdateFranchiseModelType Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 // All brands contact mapping creation for domestic locations 
 

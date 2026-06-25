@@ -91,6 +91,34 @@ customer: {
       network: String, // Visa, Mastercard, etc.
     },
 
+
+    // Payment Mode Details
+paymentMode: {
+  type: {
+    type: String,
+    enum: [
+      "online",
+      "offline",
+      
+    ],
+    default: "online",
+  },
+
+  offlinePayment: {
+    date: Date,
+
+    totalManualPayAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    message: {
+      type: String,
+      trim: true,
+    },
+  },
+},
+
     // Refund Information
     refund: {
       refundId: String,
