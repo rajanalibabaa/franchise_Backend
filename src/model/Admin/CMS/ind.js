@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const tagSchema = new mongoose.Schema(
@@ -46,45 +45,37 @@ const categoriesSchema = new mongoose.Schema(
   { _id: false },
 );
 
-
-const industrySchema = new mongoose.Schema(
+const industryManagement = new mongoose.Schema(
   {
-    industry: String,
-    categories: [categoriesSchema],
-    productTags: [productTagSchema],
-    serviceTags: [productTagSchema],
-    uuid: String,
-  },
-  { _id: false }
-);
-
-const headingSchema = new mongoose.Schema(
-  {
-    heading: {
+    industry: {
       type: String,
-      required: true,
+      require: true,
     },
-    industries: {
-      type: [industrySchema],
+    categories: {
+      type: [categoriesSchema],
+      require: true,
+    },
+    productTags: {
+      type: [productTagSchema],
       default: [],
     },
-  },
-  { _id: false }
-);
-
-const industryManagementSchema = new mongoose.Schema(
-  {
-    headings: {
-      type: [headingSchema],
+    serviceTags: {
+      type: [productTagSchema],
       default: [],
     },
-  },
+    uuid: {
+      type: String,
+      require: true,
+    },
+  },    
   {
     timestamps: true,
-  }
+  },
 );
 
 export const IndustryManagement = mongoose.model(
-  "IndustryManagementcms",
-  industryManagementSchema
+  "IndustryManagement",
+  industryManagement,           
 );
+
+export const OldIndustryModel = IndustryManagement;
