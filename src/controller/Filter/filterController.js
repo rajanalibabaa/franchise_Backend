@@ -432,13 +432,10 @@ const AREA_REQUIRED = [
 ];
 
 const FRANCHISE_MODEL = [
-  "FOFO ",
-  "FOCO ",
-  "FICO ",
-  "COCO ",
-  "KIOSK",
-  "SHOP IN SHOP",
-  "CLOUD KITCHEN",
+  "FRANCHISE",
+  "DEALERS & DISTRIBUTERS",
+  "CHANNEL PARTNERS"
+
 ];
 
 const InvestmentRange = [
@@ -461,10 +458,254 @@ import NodeCache from "node-cache";
 
 const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
+// export const getAllBrandFiltersdata = async (req, res) => {
+//   const { main, sub, district, state, industry } = req.query;
+
+//   console.log("query params:",req.query);
+
+//   // Generate cache key based on query params
+//   const cacheKey = JSON.stringify(req.query);
+//   const cachedData = cache.get(cacheKey);
+
+//   if (cachedData) {
+//     return res.json(cachedData);
+//   }
+
+//   try {
+//     // Early returns with proper validation
+//     if (!main && !sub && !district && !state && !industry) {
+//       // Initial load - get industries and states
+//       const [industriesData, statesData] = await Promise.all([
+//         IndustryManagement.find({})
+//           .select({ _id: 0, industry: 1 })
+//           .lean()
+//           .then((industries) =>
+//             (industries || [])
+//               .map((i) => i.industry)
+//               .filter(Boolean)
+//               .sort(),
+//           ),
+//         BrandExpansionLocationData.aggregate([
+//           {
+//             $unwind:
+//               "$expansionLocationData.expansionLocations.domestic.locations",
+//           },
+//           {
+//             $group: {
+//               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+//             },
+//           },
+//           {
+//             $project: {
+//               _id: 0,
+//               state: "$_id",
+//             },
+//           },
+//           { $sort: { state: 1 } },
+//         ]).then((states) => states.map((s) => s.state)),
+//       ]);
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           maincat: industriesData,
+//           investmentRange: InvestmentRange,
+//           areaRequired: AREA_REQUIRED,
+//           franchiseModel: FRANCHISE_MODEL,
+//           states: statesData,
+//         },
+//         "Brand filters fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Handle sub category tags fetch
+//     if (sub) {
+
+//       console.log("Fetching tags for sub:", sub);
+//       const industryName = main || industry;
+//       const normalizedSub = (sub || "").trim().toLowerCase();
+//       const tagQuery = ((req.query.tag || req.query.searchTerm || "").trim() || "").toLowerCase();
+      
+//       // Ensure tagQuery is a string for validation
+//       if (tagQuery && typeof tagQuery !== "string") {
+//         return res.json(new ApiResponse(400, {}, "Invalid search term"));
+//       }
+
+//       const industryFilter = industryName
+//         ? { industry: industryName }
+//         : {};
+
+//       const industryData = await IndustryManagement.find(industryFilter)
+//         .select({ _id: 0, productTags: 1, serviceTags: 1 })
+//         .lean();
+
+//       if (!industryData || industryData.length === 0) {
+//         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+//       }
+
+//       const productSet = new Set();
+//       const serviceSet = new Set();
+
+//       for (const industry of industryData) {
+//         for (const ptItem of industry.productTags || []) {
+//           const parent = (ptItem?.parent || "").toLowerCase();
+//           if (normalizedSub === "all" || parent === normalizedSub) {
+//             for (const tagObj of ptItem.tags || []) {
+//               const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+//               if (!tagValue) continue;
+//               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+//                 productSet.add(tagValue.trim());
+//               }
+//             }
+//           }
+//         }
+
+//         for (const stItem of industry.serviceTags || []) {
+//           const parent = (stItem?.parent || "").toLowerCase();
+//           if (normalizedSub === "all" || parent === normalizedSub) {
+//             for (const tagObj of stItem.tags || []) {
+//               const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+//               if (!tagValue) continue;
+//               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+//                 serviceSet.add(tagValue.trim());
+//               }
+//             }
+//           }
+//         }
+//       }
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           productTags: Array.from(productSet).sort(),
+//           serviceTags: Array.from(serviceSet).sort(),
+//         },
+//         "Tags fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Handle state districts
+//     if (state) {
+//       const districtsData = await BrandExpansionLocationData.aggregate([
+//         {
+//           $match: {
+//             "expansionLocationData.expansionLocations.domestic.locations.state":
+//               state,
+//           },
+//         },
+//         {
+//           $unwind:
+//             "$expansionLocationData.expansionLocations.domestic.locations",
+//         },
+//         {
+//           $match: {
+//             "expansionLocationData.expansionLocations.domestic.locations.state":
+//               state,
+//           },
+//         },
+//         {
+//           $project: {
+//             districts:
+//               "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
+//           },
+//         },
+//         {
+//           $unwind: "$districts",
+//         },
+//         {
+//           $group: {
+//             _id: "$districts",
+//           },
+//         },
+//         {
+//           $sort: { _id: 1 },
+//         },
+//       ]);
+
+//       const districts = districtsData.map((d) => d._id);
+//       const response = new ApiResponse(
+//         200,
+//         districts,
+//         "Districts fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Handle main/industry category
+//     if (main || industry) {
+//       const industryName = main || industry;
+
+//       const [industryData, statesData] = await Promise.all([
+//         IndustryManagement.findOne({
+//           industry: industryName,
+//         }).select({
+//           _id: 0,
+//           __v: 0,
+//           "categories.id": 0,
+//         }),
+//         BrandExpansionLocationData.aggregate([
+//           {
+//             $unwind:
+//               "$expansionLocationData.expansionLocations.domestic.locations",
+//           },
+//           {
+//             $group: {
+//               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+//             },
+//           },
+//           {
+//             $project: {
+//               _id: 0,
+//               state: "$_id",
+//             },
+//           },
+//           { $sort: { state: 1 } },
+//         ]).then((states) => states.map((s) => s.state)),
+//       ]);
+
+//       if (!industryData) {
+//         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+//       }
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           subcat: (industryData.categories || []).map((c) => c.category),
+//           investmentRange: InvestmentRange,
+//           areaRequired: AREA_REQUIRED,
+//           franchiseModel: FRANCHISE_MODEL,
+//           states: statesData,
+//         },
+//         "Categories fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Fallback - return empty
+//     return res.json(new ApiResponse(200, {}, "No data found"));
+//   } catch (error) {
+//     console.error("Filter API Error:", error);
+//     return res.json(
+//       new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`),
+//     );
+//   }
+// };
+
+
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry } = req.query;
 
-  console.log("query params:",req.query);
+  console.log("query params:", req.query);
 
   // Generate cache key based on query params
   const cacheKey = JSON.stringify(req.query);
@@ -477,17 +718,32 @@ export const getAllBrandFiltersdata = async (req, res) => {
   try {
     // Early returns with proper validation
     if (!main && !sub && !district && !state && !industry) {
-      // Initial load - get industries and states
-      const [industriesData, statesData] = await Promise.all([
+      // Initial load - get industries (flattened from headings[].industries[].industry) and states
+      const [allHeadingsData, statesData] = await Promise.all([
         IndustryManagement.find({})
-          .select({ _id: 0, industry: 1 })
+          .select({ _id: 0, "headings.heading": 1, "headings.industries.industry": 1 })
           .lean()
-          .then((industries) =>
-            (industries || [])
-              .map((i) => i.industry)
-              .filter(Boolean)
-              .sort(),
-          ),
+          .then((docs) => {
+            // Build { heading -> [industry names] } map
+            const headingMap = {};
+            for (const doc of docs || []) {
+              for (const h of doc.headings || []) {
+                const headingName = h.heading;
+                if (!headingName) continue;
+                if (!headingMap[headingName]) headingMap[headingName] = new Set();
+                for (const ind of h.industries || []) {
+                  if (ind.industry) headingMap[headingName].add(ind.industry);
+                }
+              }
+            }
+            // Convert to sorted array of { heading, industries[] }
+            return Object.entries(headingMap)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([heading, industriesSet]) => ({
+                heading,
+                industries: Array.from(industriesSet).sort(),
+              }));
+          }),
         BrandExpansionLocationData.aggregate([
           {
             $unwind:
@@ -511,7 +767,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       const response = new ApiResponse(
         200,
         {
-          maincat: industriesData,
+          maincat: allHeadingsData,   // [{ heading, industries: [] }]
           investmentRange: InvestmentRange,
           areaRequired: AREA_REQUIRED,
           franchiseModel: FRANCHISE_MODEL,
@@ -526,38 +782,48 @@ export const getAllBrandFiltersdata = async (req, res) => {
 
     // Handle sub category tags fetch
     if (sub) {
-
       console.log("Fetching tags for sub:", sub);
       const industryName = main || industry;
       const normalizedSub = (sub || "").trim().toLowerCase();
-      const tagQuery = ((req.query.tag || req.query.searchTerm || "").trim() || "").toLowerCase();
-      
-      // Ensure tagQuery is a string for validation
+      const tagQuery = (
+        (req.query.tag || req.query.searchTerm || "").trim() || ""
+      ).toLowerCase();
+
       if (tagQuery && typeof tagQuery !== "string") {
         return res.json(new ApiResponse(400, {}, "Invalid search term"));
       }
 
-      const industryFilter = industryName
-        ? { industry: industryName }
-        : {};
-
-      const industryData = await IndustryManagement.find(industryFilter)
-        .select({ _id: 0, productTags: 1, serviceTags: 1 })
+      // Fetch all docs and find matching industry inside headings[].industries[]
+      const allDocs = await IndustryManagement.find({})
+        .select({ _id: 0, "headings.industries": 1 })
         .lean();
 
-      if (!industryData || industryData.length === 0) {
+      // Flatten and filter industries by name if provided
+      const matchedIndustries = [];
+      for (const doc of allDocs || []) {
+        for (const h of doc.headings || []) {
+          for (const ind of h.industries || []) {
+            if (!industryName || ind.industry === industryName) {
+              matchedIndustries.push(ind);
+            }
+          }
+        }
+      }
+
+      if (!matchedIndustries.length) {
         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
       }
 
       const productSet = new Set();
       const serviceSet = new Set();
 
-      for (const industry of industryData) {
-        for (const ptItem of industry.productTags || []) {
+      for (const ind of matchedIndustries) {
+        for (const ptItem of ind.productTags || []) {
           const parent = (ptItem?.parent || "").toLowerCase();
           if (normalizedSub === "all" || parent === normalizedSub) {
             for (const tagObj of ptItem.tags || []) {
-              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              const tagValue =
+                typeof tagObj === "string" ? tagObj : tagObj?.tag;
               if (!tagValue) continue;
               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
                 productSet.add(tagValue.trim());
@@ -566,11 +832,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
           }
         }
 
-        for (const stItem of industry.serviceTags || []) {
+        for (const stItem of ind.serviceTags || []) {
           const parent = (stItem?.parent || "").toLowerCase();
           if (normalizedSub === "all" || parent === normalizedSub) {
             for (const tagObj of stItem.tags || []) {
-              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              const tagValue =
+                typeof tagObj === "string" ? tagObj : tagObj?.tag;
               if (!tagValue) continue;
               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
                 serviceSet.add(tagValue.trim());
@@ -642,18 +909,25 @@ export const getAllBrandFiltersdata = async (req, res) => {
       return res.json(response);
     }
 
-    // Handle main/industry category
+    // Handle main/industry category — find the specific industry inside headings
     if (main || industry) {
       const industryName = main || industry;
 
-      const [industryData, statesData] = await Promise.all([
-        IndustryManagement.findOne({
-          industry: industryName,
-        }).select({
-          _id: 0,
-          __v: 0,
-          "categories.id": 0,
-        }),
+      const [matchedIndustry, statesData] = await Promise.all([
+        IndustryManagement.find({})
+          .select({ _id: 0, "headings.industries": 1 })
+          .lean()
+          .then((docs) => {
+            for (const doc of docs || []) {
+              for (const h of doc.headings || []) {
+                const found = (h.industries || []).find(
+                  (ind) => ind.industry === industryName,
+                );
+                if (found) return found;
+              }
+            }
+            return null;
+          }),
         BrandExpansionLocationData.aggregate([
           {
             $unwind:
@@ -674,14 +948,14 @@ export const getAllBrandFiltersdata = async (req, res) => {
         ]).then((states) => states.map((s) => s.state)),
       ]);
 
-      if (!industryData) {
+      if (!matchedIndustry) {
         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
       }
 
       const response = new ApiResponse(
         200,
         {
-          subcat: (industryData.categories || []).map((c) => c.category),
+          subcat: (matchedIndustry.categories || []).map((c) => c.category),
           investmentRange: InvestmentRange,
           areaRequired: AREA_REQUIRED,
           franchiseModel: FRANCHISE_MODEL,

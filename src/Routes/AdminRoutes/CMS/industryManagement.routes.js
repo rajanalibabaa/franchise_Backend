@@ -27,3 +27,5 @@ industryManagementRouter.delete(
   "/v1/admin/deleteIndustryById/:id",
   deleteIndustryById,
 );
+
+
