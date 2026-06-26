@@ -432,13 +432,10 @@ const AREA_REQUIRED = [
 ];
 
 const FRANCHISE_MODEL = [
-  "FOFO ",
-  "FOCO ",
-  "FICO ",
-  "COCO ",
-  "KIOSK",
-  "SHOP IN SHOP",
-  "CLOUD KITCHEN",
+  "FRANCHISE",
+  "DEALERS & DISTRIBUTERS",
+  "CHANNEL PARTNERS"
+
 ];
 
 const InvestmentRange = [
