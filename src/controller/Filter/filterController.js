@@ -23,14 +23,17 @@ export const getAllBrandsAndFilter = async (req, res) => {
       city,
       investmentRange,
       modelType,
+      franchiseType,
       areaRequired,
       serchIndustry,
     } = req.query || {};
 
-    console.log("Received filters:", {
+    console.log("Received filters:", 
       maincat,
       subcat,
-    });
+      franchiseType,
+      
+  );
     let searchterm =
       req.query.searchterm || req.query.searchTerm || req.query.serchterm;
     
@@ -147,11 +150,21 @@ export const getAllBrandsAndFilter = async (req, res) => {
       };
     }
 
-    // Model Type
-    if (modelType) {
-      match["franchiseDetails.franchiseDetails.fico.franchiseModel"] =
-        modelType;
-    }
+  // ==================== MODEL TYPE & FRANCHISE TYPE ====================
+if (modelType || franchiseType) {
+  const ficoMatch = {};
+
+  if (modelType) {
+    ficoMatch.franchiseModel = modelType;
+  }
+  if (franchiseType) {
+    ficoMatch.franchiseType = franchiseType;
+  }
+
+  match["franchiseDetails.franchiseDetails.fico"] = {
+    $elemMatch: ficoMatch,
+  };
+}
 
     // Location filters
     const locationConditions = [];
@@ -434,7 +447,7 @@ const AREA_REQUIRED = [
 const FRANCHISE_MODEL = [
   "FRANCHISE",
   "DEALERS & DISTRIBUTERS",
-  "CHANNEL PARTNERS"
+  "CHANNEL PARTNER"
 
 ];
 
@@ -702,12 +715,289 @@ const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 // };
 
 
+// export const getAllBrandFiltersdata = async (req, res) => {
+//   const { main, sub, district, state, industry } = req.query;
+
+//   console.log("query params:", req.query);
+
+//   // Generate cache key based on query params
+//   const cacheKey = JSON.stringify(req.query);
+//   const cachedData = cache.get(cacheKey);
+
+//   if (cachedData) {
+//     return res.json(cachedData);
+//   }
+
+//   try {
+//     // Early returns with proper validation
+//     if (!main && !sub && !district && !state && !industry) {
+//       // Initial load - get industries (flattened from headings[].industries[].industry) and states
+//       const [allHeadingsData, statesData] = await Promise.all([
+//         IndustryManagement.find({})
+//           .select({ _id: 0, "headings.heading": 1, "headings.industries.industry": 1 })
+//           .lean()
+//           .then((docs) => {
+//             // Build { heading -> [industry names] } map
+//             const headingMap = {};
+//             for (const doc of docs || []) {
+//               for (const h of doc.headings || []) {
+//                 const headingName = h.heading;
+//                 if (!headingName) continue;
+//                 if (!headingMap[headingName]) headingMap[headingName] = new Set();
+//                 for (const ind of h.industries || []) {
+//                   if (ind.industry) headingMap[headingName].add(ind.industry);
+//                 }
+//               }
+//             }
+//             // Convert to sorted array of { heading, industries[] }
+//             return Object.entries(headingMap)
+//               .sort(([a], [b]) => a.localeCompare(b))
+//               .map(([heading, industriesSet]) => ({
+//                 heading,
+//                 industries: Array.from(industriesSet).sort(),
+//               }));
+//           }),
+//         BrandExpansionLocationData.aggregate([
+//           {
+//             $unwind:
+//               "$expansionLocationData.expansionLocations.domestic.locations",
+//           },
+//           {
+//             $group: {
+//               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+//             },
+//           },
+//           {
+//             $project: {
+//               _id: 0,
+//               state: "$_id",
+//             },
+//           },
+//           { $sort: { state: 1 } },
+//         ]).then((states) => states.map((s) => s.state)),
+//       ]);
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           maincat: allHeadingsData,   // [{ heading, industries: [] }]
+//           investmentRange: InvestmentRange,
+//           areaRequired: AREA_REQUIRED,
+//           franchiseModel: FRANCHISE_MODEL,
+//           states: statesData,
+//         },
+//         "Brand filters fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Handle sub category tags fetch
+//     if (sub) {
+//       console.log("Fetching tags for sub:", sub);
+//       const industryName = main || industry;
+//       const normalizedSub = (sub || "").trim().toLowerCase();
+//       const tagQuery = (
+//         (req.query.tag || req.query.searchTerm || "").trim() || ""
+//       ).toLowerCase();
+
+//       if (tagQuery && typeof tagQuery !== "string") {
+//         return res.json(new ApiResponse(400, {}, "Invalid search term"));
+//       }
+
+//       // Fetch all docs and find matching industry inside headings[].industries[]
+//       const allDocs = await IndustryManagement.find({})
+//         .select({ _id: 0, "headings.industries": 1 })
+//         .lean();
+
+//       // Flatten and filter industries by name if provided
+//       const matchedIndustries = [];
+//       for (const doc of allDocs || []) {
+//         for (const h of doc.headings || []) {
+//           for (const ind of h.industries || []) {
+//             if (!industryName || ind.industry === industryName) {
+//               matchedIndustries.push(ind);
+//             }
+//           }
+//         }
+//       }
+
+//       if (!matchedIndustries.length) {
+//         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+//       }
+
+//       const productSet = new Set();
+//       const serviceSet = new Set();
+
+//       for (const ind of matchedIndustries) {
+//         for (const ptItem of ind.productTags || []) {
+//           const parent = (ptItem?.parent || "").toLowerCase();
+//           if (normalizedSub === "all" || parent === normalizedSub) {
+//             for (const tagObj of ptItem.tags || []) {
+//               const tagValue =
+//                 typeof tagObj === "string" ? tagObj : tagObj?.tag;
+//               if (!tagValue) continue;
+//               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+//                 productSet.add(tagValue.trim());
+//               }
+//             }
+//           }
+//         }
+
+//         for (const stItem of ind.serviceTags || []) {
+//           const parent = (stItem?.parent || "").toLowerCase();
+//           if (normalizedSub === "all" || parent === normalizedSub) {
+//             for (const tagObj of stItem.tags || []) {
+//               const tagValue =
+//                 typeof tagObj === "string" ? tagObj : tagObj?.tag;
+//               if (!tagValue) continue;
+//               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+//                 serviceSet.add(tagValue.trim());
+//               }
+//             }
+//           }
+//         }
+//       }
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           productTags: Array.from(productSet).sort(),
+//           serviceTags: Array.from(serviceSet).sort(),
+//         },
+//         "Tags fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Handle state districts
+//     if (state) {
+//       const districtsData = await BrandExpansionLocationData.aggregate([
+//         {
+//           $match: {
+//             "expansionLocationData.expansionLocations.domestic.locations.state":
+//               state,
+//           },
+//         },
+//         {
+//           $unwind:
+//             "$expansionLocationData.expansionLocations.domestic.locations",
+//         },
+//         {
+//           $match: {
+//             "expansionLocationData.expansionLocations.domestic.locations.state":
+//               state,
+//           },
+//         },
+//         {
+//           $project: {
+//             districts:
+//               "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
+//           },
+//         },
+//         {
+//           $unwind: "$districts",
+//         },
+//         {
+//           $group: {
+//             _id: "$districts",
+//           },
+//         },
+//         {
+//           $sort: { _id: 1 },
+//         },
+//       ]);
+
+//       const districts = districtsData.map((d) => d._id);
+//       const response = new ApiResponse(
+//         200,
+//         districts,
+//         "Districts fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Handle main/industry category — find the specific industry inside headings
+//     if (main || industry) {
+//       const industryName = main || industry;
+
+//       const [matchedIndustry, statesData] = await Promise.all([
+//         IndustryManagement.find({})
+//           .select({ _id: 0, "headings.industries": 1 })
+//           .lean()
+//           .then((docs) => {
+//             for (const doc of docs || []) {
+//               for (const h of doc.headings || []) {
+//                 const found = (h.industries || []).find(
+//                   (ind) => ind.industry === industryName,
+//                 );
+//                 if (found) return found;
+//               }
+//             }
+//             return null;
+//           }),
+//         BrandExpansionLocationData.aggregate([
+//           {
+//             $unwind:
+//               "$expansionLocationData.expansionLocations.domestic.locations",
+//           },
+//           {
+//             $group: {
+//               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+//             },
+//           },
+//           {
+//             $project: {
+//               _id: 0,
+//               state: "$_id",
+//             },
+//           },
+//           { $sort: { state: 1 } },
+//         ]).then((states) => states.map((s) => s.state)),
+//       ]);
+
+//       if (!matchedIndustry) {
+//         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+//       }
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           subcat: (matchedIndustry.categories || []).map((c) => c.category),
+//           investmentRange: InvestmentRange,
+//           areaRequired: AREA_REQUIRED,
+//           franchiseModel: FRANCHISE_MODEL,
+//           states: statesData,
+//         },
+//         "Categories fetched successfully",
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     // Fallback - return empty
+//     return res.json(new ApiResponse(200, {}, "No data found"));
+//   } catch (error) {
+//     console.error("Filter API Error:", error);
+//     return res.json(
+//       new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`),
+//     );
+//   }
+// };
+
 export const getAllBrandFiltersdata = async (req, res) => {
-  const { main, sub, district, state, industry } = req.query;
+  const { main, sub, district, state, industry, franchiseModel } = req.query;
+
+
 
   console.log("query params:", req.query);
 
-  // Generate cache key based on query params
   const cacheKey = JSON.stringify(req.query);
   const cachedData = cache.get(cacheKey);
 
@@ -715,16 +1005,167 @@ export const getAllBrandFiltersdata = async (req, res) => {
     return res.json(cachedData);
   }
 
+  // ─── Franchise Types Map ────────────────────────────────────────────────────
+  const franchiseTypes = {
+    "CHANNEL PARTNER": {
+      "CHANNEL PARTNER": [
+        "AUTHORIZED CHANNEL PARTNER",
+        "CHANNEL PARTNERS",
+        "AREA CHANNEL PARTNERS",
+        "CITY CHANNEL PARTNERS",
+        "DISTRICT CHANNEL PARTNERS",
+        "STATE CHANNEL PARTNERS",
+        "IMPLEMENTATION PARTNER",
+        "MASTER CHANNEL PARTNER",
+        "REFERRAL CHANNEL PARTNER",
+        "STRATEGIC ALLIANCE PARTNER",
+        "VALUE-ADDED RESELLER (VAR)",
+      ],
+    },
+    "DEALERS & DISTRIBUTERS": {
+      "C&F Agent": ["C&F Agent"],
+      DEALER: [
+        "AUTHORIZED DEALER",
+        "DEALER",
+        "AREA DEALER",
+        "CITY DEALER",
+        "DISTRICT DEALER",
+        "STATE DEALER",
+      ],
+      DISTRIBUTOR: [
+        "DISTRIBUTOR",
+        "AREA DISTRIBUTOR",
+        "CITY DISTRIBUTOR",
+        "DISTRICT DISTRIBUTOR",
+        "STATE DISTRIBUTOR",
+        "EXCLUSIVE DISTRIBUTOR",
+        "MASTER DISTRIBUTOR",
+        "REGIONAL DISTRIBUTOR",
+        "RETAIL DISTRIBUTOR",
+      ],
+      "IMPORTER / EXPORTER": ["EXPORTER", "IMPORTER"],
+      STOCKIST: [
+        "STOCKIST",
+        "AREA STOCKIST",
+        "CITY STOCKIST",
+        "DISTRICT STOCKIST",
+        "STATE STOCKIST",
+        "SUPER STOCKIST",
+      ],
+      "WHOLESALE SELLER": [
+        "WHOLESALE SELLER",
+        "AREA WHOLESALE SELLER",
+        "CITY WHOLESALE SELLER",
+        "DISTRICT WHOLESALE SELLER",
+        "STATE WHOLESALE SELLER",
+      ],
+    },
+    "FRANCHISE": {
+      "CLOUD KITCHEN": ["CLOUD KITCHEN"],
+      "COMPANY OWNED COMPANY OPERATED (COCO)": [
+        "COCO - Area Franchise",
+        "COCO - City Franchise",
+        "COCO - District Franchise",
+        "COCO - Master Franchise",
+        "COCO - Multi Unit",
+        "COCO - Single Unit",
+        "COCO - State Franchise",
+      ],
+      "COMPANY OWNED FRANCHISE OPERATED (COFO)": [
+        "COFO - Area Franchise",
+        "COFO - City Franchise",
+        "COFO - District Franchise",
+        "COFO - Master Franchise",
+        "COFO - Multi Unit",
+        "COFO - Single Unit",
+        "COFO - State Franchise",
+      ],
+      "FRANCHISE INVESTED COMPANY OPERATED (FICO)": [
+        "FICO - Area Franchise",
+        "FICO - City Franchise",
+        "FICO - District Franchise",
+        "FICO - Master Franchise",
+        "FICO - Multi Unit",
+        "FICO - Single Unit",
+        "FICO - State Franchise",
+      ],
+      "FRANCHISE OWNED COMPANY OPERATED (FOCO)": [
+        "FOCO - Area Franchise",
+        "FOCO - City Franchise",
+        "FOCO - District Franchise",
+        "FOCO - Master Franchise",
+        "FOCO - Multi Unit",
+        "FOCO - Single Unit",
+        "FOCO - State Franchise",
+      ],
+      "FRANCHISE OWNED FRANCHISE OPERATED (FOFO)": [
+        "FOFO - Area Franchise",
+        "FOFO - City Franchise",
+        "FOFO - District Franchise",
+        "FOFO - Master Franchise",
+        "FOFO - Multi Unit",
+        "FOFO - Single Unit",
+        "FOFO - State Franchise",
+      ],
+      KIOSK: ["KIOSK"],
+      "SERVICE PARTNERS": [
+        "SERVICE PARTNERS",
+        "SERVICE PARTNERS - Area Franchise",
+        "SERVICE PARTNERS - City Franchise",
+        "SERVICE PARTNERS - District Franchise",
+        "SERVICE PARTNERS - State Franchise",
+      ],
+      "SHOP IN SHOP": ["SHOP IN SHOP"],
+    },
+  };
+
+  // ─── Franchise Model Handler ─────────────────────────────────────────────────
+  // Query param: ?franchiseModel=FRANCHISE BUSINESS
+  // Returns: { franchiseModel, subTypes: { "FOFO": [...], "FOCO": [...] }, allTypes: [...] }
+  if (franchiseModel) {
+    const normalizedModel = franchiseModel.trim().toUpperCase();
+
+    // Find matching top-level key (case-insensitive)
+    const matchedKey = Object.keys(franchiseTypes).find(
+      (key) => key.toUpperCase() === normalizedModel
+    );
+
+    if (!matchedKey) {
+      return res.json(
+        new ApiResponse(
+          404,
+          {},
+          `Franchise model "${franchiseModel}" not found. Available models: ${Object.keys(franchiseTypes).join(", ")}`
+        )
+      );
+    }
+
+    const franchiseheading = franchiseTypes[matchedKey]; // { "FOFO": [...], "FOCO": [...], ... }
+
+    // Flat list of all individual types under this model (useful for dropdowns)
+    const franchiseTypedata = Object.values(franchiseheading).flat();
+
+    const response = new ApiResponse(
+      200,
+      {
+        franchiseModel: matchedKey,
+        franchiseheading,   // grouped: { subTypeName: [types] }
+        franchiseTypedata,   // flat array of every type string
+      },
+      "Franchise types fetched successfully"
+    );
+
+    cache.set(cacheKey, response);
+    return res.json(response);
+  }
+
   try {
-    // Early returns with proper validation
     if (!main && !sub && !district && !state && !industry) {
-      // Initial load - get industries (flattened from headings[].industries[].industry) and states
       const [allHeadingsData, statesData] = await Promise.all([
         IndustryManagement.find({})
           .select({ _id: 0, "headings.heading": 1, "headings.industries.industry": 1 })
           .lean()
           .then((docs) => {
-            // Build { heading -> [industry names] } map
             const headingMap = {};
             for (const doc of docs || []) {
               for (const h of doc.headings || []) {
@@ -736,7 +1177,6 @@ export const getAllBrandFiltersdata = async (req, res) => {
                 }
               }
             }
-            // Convert to sorted array of { heading, industries[] }
             return Object.entries(headingMap)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([heading, industriesSet]) => ({
@@ -755,10 +1195,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
             },
           },
           {
-            $project: {
-              _id: 0,
-              state: "$_id",
-            },
+            $project: { _id: 0, state: "$_id" },
           },
           { $sort: { state: 1 } },
         ]).then((states) => states.map((s) => s.state)),
@@ -767,20 +1204,19 @@ export const getAllBrandFiltersdata = async (req, res) => {
       const response = new ApiResponse(
         200,
         {
-          maincat: allHeadingsData,   // [{ heading, industries: [] }]
+          maincat: allHeadingsData,
           investmentRange: InvestmentRange,
           areaRequired: AREA_REQUIRED,
           franchiseModel: FRANCHISE_MODEL,
           states: statesData,
         },
-        "Brand filters fetched successfully",
+        "Brand filters fetched successfully"
       );
 
       cache.set(cacheKey, response);
       return res.json(response);
     }
 
-    // Handle sub category tags fetch
     if (sub) {
       console.log("Fetching tags for sub:", sub);
       const industryName = main || industry;
@@ -793,12 +1229,10 @@ export const getAllBrandFiltersdata = async (req, res) => {
         return res.json(new ApiResponse(400, {}, "Invalid search term"));
       }
 
-      // Fetch all docs and find matching industry inside headings[].industries[]
       const allDocs = await IndustryManagement.find({})
         .select({ _id: 0, "headings.industries": 1 })
         .lean();
 
-      // Flatten and filter industries by name if provided
       const matchedIndustries = [];
       for (const doc of allDocs || []) {
         for (const h of doc.headings || []) {
@@ -853,14 +1287,13 @@ export const getAllBrandFiltersdata = async (req, res) => {
           productTags: Array.from(productSet).sort(),
           serviceTags: Array.from(serviceSet).sort(),
         },
-        "Tags fetched successfully",
+        "Tags fetched successfully"
       );
 
       cache.set(cacheKey, response);
       return res.json(response);
     }
 
-    // Handle state districts
     if (state) {
       const districtsData = await BrandExpansionLocationData.aggregate([
         {
@@ -885,31 +1318,22 @@ export const getAllBrandFiltersdata = async (req, res) => {
               "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
           },
         },
-        {
-          $unwind: "$districts",
-        },
-        {
-          $group: {
-            _id: "$districts",
-          },
-        },
-        {
-          $sort: { _id: 1 },
-        },
+        { $unwind: "$districts" },
+        { $group: { _id: "$districts" } },
+        { $sort: { _id: 1 } },
       ]);
 
       const districts = districtsData.map((d) => d._id);
       const response = new ApiResponse(
         200,
         districts,
-        "Districts fetched successfully",
+        "Districts fetched successfully"
       );
 
       cache.set(cacheKey, response);
       return res.json(response);
     }
 
-    // Handle main/industry category — find the specific industry inside headings
     if (main || industry) {
       const industryName = main || industry;
 
@@ -921,7 +1345,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
             for (const doc of docs || []) {
               for (const h of doc.headings || []) {
                 const found = (h.industries || []).find(
-                  (ind) => ind.industry === industryName,
+                  (ind) => ind.industry === industryName
                 );
                 if (found) return found;
               }
@@ -939,10 +1363,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
             },
           },
           {
-            $project: {
-              _id: 0,
-              state: "$_id",
-            },
+            $project: { _id: 0, state: "$_id" },
           },
           { $sort: { state: 1 } },
         ]).then((states) => states.map((s) => s.state)),
@@ -961,19 +1382,18 @@ export const getAllBrandFiltersdata = async (req, res) => {
           franchiseModel: FRANCHISE_MODEL,
           states: statesData,
         },
-        "Categories fetched successfully",
+        "Categories fetched successfully"
       );
 
       cache.set(cacheKey, response);
       return res.json(response);
     }
 
-    // Fallback - return empty
     return res.json(new ApiResponse(200, {}, "No data found"));
   } catch (error) {
     console.error("Filter API Error:", error);
     return res.json(
-      new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`),
+      new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`)
     );
   }
 };
