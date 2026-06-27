@@ -63,42 +63,37 @@ export const createPayment = async (req, res) => {
       console.log("🔄 PROCESSING PACKAGE:", JSON.stringify(pkg, null, 2));
 
       const {
-  packagesType,
+        packagesType,
 
-  planName,   // CHANGE HERE
+        planName, // CHANGE HERE
 
-  planId,
-  planUniqueId,
+        planId,
+        planUniqueId,
 
-  investmentRangeLabel,
+        investmentRangeLabel,
 
-  totalStates,
+        totalStates,
 
-  uniqueStates = [],
+        uniqueStates = [],
 
-  amount: frontendAmount,
+        amount: frontendAmount,
 
-  selectedLeads,
+        selectedLeads,
 
-  validityDays = 0,
-
-} = pkg;
+        validityDays = 0,
+      } = pkg;
 
       // =====================================================
       // FIND PACKAGE DOC
       // =====================================================
 
       const packagesDoc = await Packages.findOne({
-
- "packagesPlan":{
-
-    $elemMatch:{
-       _id:planId
-    }
-
- }
-
-});
+        packagesPlan: {
+          $elemMatch: {
+            _id: planId,
+          },
+        },
+      });
 
       console.log("📦 PACKAGE DOC FOUND:", packagesDoc?._id);
 
@@ -113,24 +108,13 @@ export const createPayment = async (req, res) => {
       // MATCH PLAN
       // =====================================================
 
-const matchedPlan =
-packagesDoc.packagesPlan.find((p)=>{
-
-return (
-
-String(p._id) === String(planId)
-
-&&
-
-p.planUniqueId === planUniqueId
-
-&&
-
-p.planName === planName
-
-)
-
-});  
+      const matchedPlan = packagesDoc.packagesPlan.find((p) => {
+        return (
+          String(p._id) === String(planId) &&
+          p.planUniqueId === planUniqueId &&
+          p.planName === planName
+        );
+      });
 
       console.log("✅ MATCHED PLAN:", matchedPlan?.planName);
 
@@ -319,7 +303,6 @@ p.planName === planName
         selectedLeadCount,
 
         finalCalculatedAmount,
-        
       });
 
       // =====================================================
@@ -393,29 +376,24 @@ p.planName === planName
     // VALIDATE GRAND TOTAL
     // =====================================================
 
-  const frontendBaseAmount = Number(totalAmount) / 1.18;
+    const frontendBaseAmount = Number(totalAmount) / 1.18;
 
+    if (
+      Number(frontendBaseAmount.toFixed(2)) !==
+      Number(grandCalculatedAmount.toFixed(2))
+    ) {
+      console.log("❌ TOTAL AMOUNT MISMATCH");
 
-if (
-  Number(frontendBaseAmount.toFixed(2)) !==
-  Number(grandCalculatedAmount.toFixed(2))
-) {
+      return res.status(400).json({
+        success: false,
 
-  console.log("❌ TOTAL AMOUNT MISMATCH");
+        message: "Total amount mismatch detected",
 
-  return res.status(400).json({
+        frontendAmount: Number(totalAmount),
 
-    success:false,
-
-    message:"Total amount mismatch detected",
-
-    frontendAmount:Number(totalAmount),
-
-    backendAmount:Number(grandCalculatedAmount),
-
-  });
-
-}
+        backendAmount: Number(grandCalculatedAmount),
+      });
+    }
 
     console.log("✅ Amount Validated");
 
@@ -442,21 +420,13 @@ if (
     } = req.body;
 
     if (paymentMode === "offline") {
+      if (Number(manualPaymentAmount) !== Number(finalAmount)) {
+        return res.status(400).json({
+          success: false,
 
-      if(
- Number(manualPaymentAmount) !== Number(finalAmount)
-){
-
- return res.status(400).json({
-
- success:false,
-
- message:"Offline payment amount mismatch"
-
- });
-
-}
-
+          message: "Offline payment amount mismatch",
+        });
+      }
 
       const payment = await Payment.create({
         brandOwnerId,
