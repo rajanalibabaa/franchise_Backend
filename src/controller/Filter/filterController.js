@@ -446,7 +446,7 @@ const AREA_REQUIRED = [
 
 const FRANCHISE_MODEL = [
   "FRANCHISE",
-  "DEALERS & DISTRIBUTERS",
+  "DEALER AND DISTRIBUTOR",
   "CHANNEL PARTNER"
 
 ];
@@ -1022,7 +1022,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         "VALUE-ADDED RESELLER (VAR)",
       ],
     },
-    "DEALERS & DISTRIBUTERS": {
+    "DEALER AND DISTRIBUTOR": {
       "C&F Agent": ["C&F Agent"],
       DEALER: [
         "AUTHORIZED DEALER",
