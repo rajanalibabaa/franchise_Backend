@@ -1307,30 +1307,31 @@ const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 //     );
 //   }
 // };
-
 // ================= TEMPORARY BLOCK =================
 export const BLOCK = {
   headings: [
-    // "FRANCHISE"
+    "Dealer and Distributors",
   ],
   industries: [
-    // "FOOD AND BEVERAGES"
+    // "Food & Beverages"
   ],
   categories: [
-    // "Restaurant"
-  ],
-  productParents: [
-    // "Tea"
+    "",
+    // → blocks category AND its matching productParent + all tags under it
   ],
   productTags: [
-    // "Green Tea",
-    // "Black Tea"
-  ],
-  serviceParents: [
-    // "Installation"
+    // If `tags` is empty/omitted → entire parent + all its tags blocked.
+    // If `tags` has values → only those specific tags blocked (parent stays).
+    {
+      parent: "",
+      tags: [],
+    },
   ],
   serviceTags: [
-    // "Home Installation"
+    {
+      parent: "Services",
+      tags: ["Cleaning Services"],
+    },
   ],
 };
 // ===================================================
@@ -1340,14 +1341,40 @@ const hasBlock = (array = [], value = "") =>
     (item) => item.trim().toLowerCase() === (value || "").trim().toLowerCase()
   );
 
+const findParentEntry = (array = [], parent = "") =>
+  array.find(
+    (e) => (e.parent || "").trim().toLowerCase() === (parent || "").trim().toLowerCase()
+  );
+
 const isHeadingBlocked = (heading) => hasBlock(BLOCK.headings, heading);
 const isIndustryBlocked = (industry) => hasBlock(BLOCK.industries, industry);
 const isCategoryBlocked = (category) => hasBlock(BLOCK.categories, category);
-const isProductParentBlocked = (parent) =>
-  hasBlock(BLOCK.productParents, parent) || hasBlock(BLOCK.categories, parent); // category block also kills its matching product parent
-const isProductTagBlocked = (tag) => hasBlock(BLOCK.productTags, tag);
-const isServiceParentBlocked = (parent) => hasBlock(BLOCK.serviceParents, parent);
-const isServiceTagBlocked = (tag) => hasBlock(BLOCK.serviceTags, tag);
+
+// A product parent is fully blocked if its category is blocked,
+// OR it has a productTags entry with no (or empty) tags list.
+const isProductParentBlocked = (parent) => {
+  if (isCategoryBlocked(parent)) return true;
+  const entry = findParentEntry(BLOCK.productTags, parent);
+  return !!entry && (!entry.tags || entry.tags.length === 0);
+};
+
+// A product tag is blocked only if it's listed under its matching parent entry.
+const isProductTagBlocked = (parent, tag) => {
+  const entry = findParentEntry(BLOCK.productTags, parent);
+  if (!entry || !entry.tags || !entry.tags.length) return false;
+  return hasBlock(entry.tags, tag);
+};
+
+const isServiceParentBlocked = (parent) => {
+  const entry = findParentEntry(BLOCK.serviceTags, parent);
+  return !!entry && (!entry.tags || entry.tags.length === 0);
+};
+
+const isServiceTagBlocked = (parent, tag) => {
+  const entry = findParentEntry(BLOCK.serviceTags, parent);
+  if (!entry || !entry.tags || !entry.tags.length) return false;
+  return hasBlock(entry.tags, tag);
+};
 
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry, franchiseModel } = req.query;
@@ -1360,6 +1387,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
   if (cachedData) {
     return res.json(cachedData);
   }
+  //  const BLOCK = await getBlockConfig();
 
   // ─── Franchise Types Map ────────────────────────────────────────────────────
   const franchiseTypes = {
@@ -1535,10 +1563,10 @@ export const getAllBrandFiltersdata = async (req, res) => {
 
                 if (!headingMap[headingName]) headingMap[headingName] = new Set();
                 for (const ind of h.industries || []) {
-                  // Industry block: the industry name itself can still surface here.
-                  if (ind.industry) {
-                    headingMap[headingName].add(ind.industry);
-                  }
+                  if (!ind.industry) continue;
+                  if (isIndustryBlocked(ind.industry)) continue; // 🚫 industry hidden
+
+                  headingMap[headingName].add(ind.industry);
                 }
               }
             }
@@ -1605,6 +1633,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
           if (isHeadingBlocked(h.heading)) continue; // 🚫 heading gone entirely
 
           for (const ind of h.industries || []) {
+            if (isIndustryBlocked(ind.industry)) continue; // 🚫 blocked industry doesn't exist
+
             if (!industryName || ind.industry === industryName) {
               matchedIndustries.push(ind);
             }
@@ -1620,42 +1650,38 @@ export const getAllBrandFiltersdata = async (req, res) => {
       const serviceSet = new Set();
 
       for (const ind of matchedIndustries) {
-        const industryBlocked = isIndustryBlocked(ind.industry);
+        // ── Product tags (parent-scoped blocking) ──
+        for (const ptItem of ind.productTags || []) {
+          const rawParent = ptItem?.parent || "";
+          const parent = rawParent.toLowerCase();
 
-        // ── Product tags: killed entirely if industry is blocked ──
-        if (!industryBlocked) {
-          for (const ptItem of ind.productTags || []) {
-            const rawParent = ptItem?.parent || "";
-            const parent = rawParent.toLowerCase();
+          if (isProductParentBlocked(rawParent)) continue; // 🚫 whole parent blocked
 
-            if (isProductParentBlocked(rawParent)) continue; // 🚫 parent (or its matching category) blocked
+          if (normalizedSub === "all" || parent === normalizedSub) {
+            for (const tagObj of ptItem.tags || []) {
+              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              if (!tagValue) continue;
+              if (isProductTagBlocked(rawParent, tagValue)) continue; // 🚫 tag blocked under this parent
 
-            if (normalizedSub === "all" || parent === normalizedSub) {
-              for (const tagObj of ptItem.tags || []) {
-                const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
-                if (!tagValue) continue;
-                if (isProductTagBlocked(tagValue)) continue; // 🚫 single tag blocked
-
-                if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
-                  productSet.add(tagValue.trim());
-                }
+              if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+                productSet.add(tagValue.trim());
               }
             }
           }
         }
 
-        // ── Service tags: NOT affected by industry block ──
+        // ── Service tags (parent-scoped blocking) ──
         for (const stItem of ind.serviceTags || []) {
           const rawParent = stItem?.parent || "";
           const parent = rawParent.toLowerCase();
 
-          if (isServiceParentBlocked(rawParent)) continue; // 🚫 whole service parent blocked
+          if (isServiceParentBlocked(rawParent)) continue; // 🚫 whole parent blocked
 
           if (normalizedSub === "all" || parent === normalizedSub) {
             for (const tagObj of stItem.tags || []) {
               const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
               if (!tagValue) continue;
-              if (isServiceTagBlocked(tagValue)) continue; // 🚫 single service tag blocked
+              if (isServiceTagBlocked(rawParent, tagValue)) continue; // 🚫 tag blocked under this parent
 
               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
                 serviceSet.add(tagValue.trim());
@@ -1737,7 +1763,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
                 if (isHeadingBlocked(h.heading)) continue; // 🚫 heading gone
 
                 const found = (h.industries || []).find(
-                  (ind) => ind.industry === industryName
+                  (ind) =>
+                    ind.industry === industryName &&
+                    !isIndustryBlocked(ind.industry) // 🚫 blocked industry = not found
                 );
                 if (found) return found;
               }
@@ -1763,15 +1791,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
       }
 
-      const industryBlocked = isIndustryBlocked(matchedIndustry.industry);
-
-      // Industry block ⇒ categories hidden entirely.
-      // Otherwise filter out individually-blocked categories.
-      const subcat = industryBlocked
-        ? []
-        : (matchedIndustry.categories || [])
-            .filter((c) => !isCategoryBlocked(c.category))
-            .map((c) => c.category);
+      const subcat = (matchedIndustry.categories || [])
+        .filter((c) => !isCategoryBlocked(c.category))
+        .map((c) => c.category);
 
       const response = new ApiResponse(
         200,
@@ -1797,3 +1819,85 @@ export const getAllBrandFiltersdata = async (req, res) => {
     );
   }
 };
+
+
+// import { getBlockConfig } from "../utils/filterBlock.util.js";
+
+// const hasBlock = (array = [], value = "") =>
+//   array.some(
+//     (item) => item.trim().toLowerCase() === (value || "").trim().toLowerCase()
+//   );
+
+// const findParentEntry = (array = [], parent = "") =>
+//   array.find(
+//     (e) => (e.parent || "").trim().toLowerCase() === (parent || "").trim().toLowerCase()
+//   );
+
+// const isHeadingBlocked = (block, heading) => hasBlock(block.headings, heading);
+// const isIndustryBlocked = (block, industry) => hasBlock(block.industries, industry);
+// const isCategoryBlocked = (block, category) => hasBlock(block.categories, category);
+
+// const isProductParentBlocked = (block, parent) => {
+//   if (isCategoryBlocked(block, parent)) return true;
+//   const entry = findParentEntry(block.productTags, parent);
+//   return !!entry && (!entry.tags || entry.tags.length === 0);
+// };
+
+// const isProductTagBlocked = (block, parent, tag) => {
+//   const entry = findParentEntry(block.productTags, parent);
+//   if (!entry || !entry.tags || !entry.tags.length) return false;
+//   return hasBlock(entry.tags, tag);
+// };
+
+// const isServiceParentBlocked = (block, parent) => {
+//   const entry = findParentEntry(block.serviceTags, parent);
+//   return !!entry && (!entry.tags || entry.tags.length === 0);
+// };
+
+// const isServiceTagBlocked = (block, parent, tag) => {
+//   const entry = findParentEntry(block.serviceTags, parent);
+//   if (!entry || !entry.tags || !entry.tags.length) return false;
+//   return hasBlock(entry.tags, tag);
+// };
+
+// export const getAllBrandFiltersdata = async (req, res) => {
+//   const { main, sub, district, state, industry, franchiseModel } = req.query;
+
+//   const cacheKey = JSON.stringify(req.query);
+//   const cachedData = cache.get(cacheKey);
+//   if (cachedData) {
+//     return res.json(cachedData);
+//   }
+
+//   const BLOCK = await getBlockConfig(); // ← fetched once per request, cached internally
+
+//   // ... franchiseModel handler unchanged ...
+
+//   try {
+//     if (!main && !sub && !district && !state && !industry) {
+//       // wherever isHeadingBlocked(headingName) was called, now:
+//       // isHeadingBlocked(BLOCK, headingName)
+//       // isIndustryBlocked(BLOCK, ind.industry)
+//       // ...
+//     }
+
+//     if (sub) {
+//       // isHeadingBlocked(BLOCK, h.heading)
+//       // isIndustryBlocked(BLOCK, ind.industry)
+//       // isProductParentBlocked(BLOCK, rawParent)
+//       // isProductTagBlocked(BLOCK, rawParent, tagValue)
+//       // isServiceParentBlocked(BLOCK, rawParent)
+//       // isServiceTagBlocked(BLOCK, rawParent, tagValue)
+//     }
+
+//     if (main || industry) {
+//       // isHeadingBlocked(BLOCK, h.heading)
+//       // isIndustryBlocked(BLOCK, ind.industry)
+//       // isCategoryBlocked(BLOCK, c.category)
+//     }
+
+//     // ... rest unchanged ...
+//   } catch (error) {
+//     // unchanged
+//   }
+// };

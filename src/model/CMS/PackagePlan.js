@@ -7,6 +7,7 @@ const packageSchema = new mongoose.Schema(
     investmentRangeLabel: String,
     investmentRange: [String],
     validityDays: Number,
+    basicLeadCount:Number,
     amount: {
       type: Number,
       required: true
