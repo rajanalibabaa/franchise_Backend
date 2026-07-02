@@ -880,6 +880,475 @@ const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 //   }
 // };
 
+// export const getAllBrandFiltersdata = async (req, res) => {
+//   const { main, sub, district, state, industry, franchiseModel } = req.query;
+
+//   console.log("query params:", req.query);
+
+//   const cacheKey = JSON.stringify(req.query);
+//   const cachedData = cache.get(cacheKey);
+
+//   if (cachedData) {
+//     return res.json(cachedData);
+//   }
+
+//   // ─── TEMPORARY BLOCK LISTS ───────────────────────────────────────────────
+//   // TODO: REMOVE THESE ARRAYS LATER TO UNBLOCK EVERYTHING.
+//   const BLOCKED_HEADINGS = ["Dealer and Distributors"];
+//   const BLOCKED_INDUSTRIES = [""];
+
+//   const isHeadingBlocked = (heading) =>
+//     BLOCKED_HEADINGS.some(
+//       (h) => h.trim().toUpperCase() === (heading || "").trim().toUpperCase()
+//     );
+
+//   const isIndustryBlocked = (industry) =>
+//     BLOCKED_INDUSTRIES.some(
+//       (i) => i.trim().toUpperCase() === (industry || "").trim().toUpperCase()
+//     );
+//   // ──────────────────────────────────────────────────────────────────────────
+
+//   // ─── Franchise Types Map ────────────────────────────────────────────────────
+//   const franchiseTypes = {
+//     "CHANNEL PARTNER": {
+//       "CHANNEL PARTNER": [
+//         "AUTHORIZED CHANNEL PARTNER",
+//         "CHANNEL PARTNERS",
+//         "AREA CHANNEL PARTNERS",
+//         "CITY CHANNEL PARTNERS",
+//         "DISTRICT CHANNEL PARTNERS",
+//         "STATE CHANNEL PARTNERS",
+//         "IMPLEMENTATION PARTNER",
+//         "MASTER CHANNEL PARTNER",
+//         "REFERRAL CHANNEL PARTNER",
+//         "STRATEGIC ALLIANCE PARTNER",
+//         "VALUE-ADDED RESELLER (VAR)",
+//       ],
+//     },
+//     "DEALER AND DISTRIBUTOR": {
+//       "C&F Agent": ["C&F Agent"],
+//       DEALER: [
+//         "AUTHORIZED DEALER",
+//         "DEALER",
+//         "AREA DEALER",
+//         "CITY DEALER",
+//         "DISTRICT DEALER",
+//         "STATE DEALER",
+//       ],
+//       DISTRIBUTOR: [
+//         "DISTRIBUTOR",
+//         "AREA DISTRIBUTOR",
+//         "CITY DISTRIBUTOR",
+//         "DISTRICT DISTRIBUTOR",
+//         "STATE DISTRIBUTOR",
+//         "EXCLUSIVE DISTRIBUTOR",
+//         "MASTER DISTRIBUTOR",
+//         "REGIONAL DISTRIBUTOR",
+//         "RETAIL DISTRIBUTOR",
+//       ],
+//       "IMPORTER / EXPORTER": ["EXPORTER", "IMPORTER"],
+//       STOCKIST: [
+//         "STOCKIST",
+//         "AREA STOCKIST",
+//         "CITY STOCKIST",
+//         "DISTRICT STOCKIST",
+//         "STATE STOCKIST",
+//         "SUPER STOCKIST",
+//       ],
+//       "WHOLESALE SELLER": [
+//         "WHOLESALE SELLER",
+//         "AREA WHOLESALE SELLER",
+//         "CITY WHOLESALE SELLER",
+//         "DISTRICT WHOLESALE SELLER",
+//         "STATE WHOLESALE SELLER",
+//       ],
+//     },
+//     "FRANCHISE": {
+//       "CLOUD KITCHEN": ["CLOUD KITCHEN"],
+//       "COMPANY OWNED COMPANY OPERATED (COCO)": [
+//         "COCO - Area Franchise",
+//         "COCO - City Franchise",
+//         "COCO - District Franchise",
+//         "COCO - Master Franchise",
+//         "COCO - Multi Unit",
+//         "COCO - Single Unit",
+//         "COCO - State Franchise",
+//       ],
+//       "COMPANY OWNED FRANCHISE OPERATED (COFO)": [
+//         "COFO - Area Franchise",
+//         "COFO - City Franchise",
+//         "COFO - District Franchise",
+//         "COFO - Master Franchise",
+//         "COFO - Multi Unit",
+//         "COFO - Single Unit",
+//         "COFO - State Franchise",
+//       ],
+//       "FRANCHISE INVESTED COMPANY OPERATED (FICO)": [
+//         "FICO - Area Franchise",
+//         "FICO - City Franchise",
+//         "FICO - District Franchise",
+//         "FICO - Master Franchise",
+//         "FICO - Multi Unit",
+//         "FICO - Single Unit",
+//         "FICO - State Franchise",
+//       ],
+//       "FRANCHISE OWNED COMPANY OPERATED (FOCO)": [
+//         "FOCO - Area Franchise",
+//         "FOCO - City Franchise",
+//         "FOCO - District Franchise",
+//         "FOCO - Master Franchise",
+//         "FOCO - Multi Unit",
+//         "FOCO - Single Unit",
+//         "FOCO - State Franchise",
+//       ],
+//       "FRANCHISE OWNED FRANCHISE OPERATED (FOFO)": [
+//         "FOFO - Area Franchise",
+//         "FOFO - City Franchise",
+//         "FOFO - District Franchise",
+//         "FOFO - Master Franchise",
+//         "FOFO - Multi Unit",
+//         "FOFO - Single Unit",
+//         "FOFO - State Franchise",
+//       ],
+//       KIOSK: ["KIOSK"],
+//       "SERVICE PARTNERS": [
+//         "SERVICE PARTNERS",
+//         "SERVICE PARTNERS - Area Franchise",
+//         "SERVICE PARTNERS - City Franchise",
+//         "SERVICE PARTNERS - District Franchise",
+//         "SERVICE PARTNERS - State Franchise",
+//       ],
+//       "SHOP IN SHOP": ["SHOP IN SHOP"],
+//     },
+//   };
+
+//   // ─── Franchise Model Handler ─────────────────────────────────────────────────
+//   if (franchiseModel) {
+//     const normalizedModel = franchiseModel.trim().toUpperCase();
+
+//     const matchedKey = Object.keys(franchiseTypes).find(
+//       (key) => key.toUpperCase() === normalizedModel
+//     );
+
+//     if (!matchedKey) {
+//       return res.json(
+//         new ApiResponse(
+//           404,
+//           {},
+//           `Franchise model "${franchiseModel}" not found. Available models: ${Object.keys(franchiseTypes).join(", ")}`
+//         )
+//       );
+//     }
+
+//     const franchiseheading = franchiseTypes[matchedKey];
+//     const franchiseTypedata = Object.values(franchiseheading).flat();
+
+//     const response = new ApiResponse(
+//       200,
+//       {
+//         franchiseModel: matchedKey,
+//         franchiseheading,
+//         franchiseTypedata,
+//       },
+//       "Franchise types fetched successfully"
+//     );
+
+//     cache.set(cacheKey, response);
+//     return res.json(response);
+//   }
+
+//   try {
+//     if (!main && !sub && !district && !state && !industry) {
+//       const [allHeadingsData, statesData] = await Promise.all([
+//         IndustryManagement.find({})
+//           .select({ _id: 0, "headings.heading": 1, "headings.industries.industry": 1 })
+//           .lean()
+//           .then((docs) => {
+//             const headingMap = {};
+//             for (const doc of docs || []) {
+//               for (const h of doc.headings || []) {
+//                 const headingName = h.heading;
+//                 if (!headingName) continue;
+//                 if (isHeadingBlocked(headingName)) continue; // 🚫 skip blocked heading entirely
+
+//                 if (!headingMap[headingName]) headingMap[headingName] = new Set();
+//                 for (const ind of h.industries || []) {
+//                   if (ind.industry && !isIndustryBlocked(ind.industry)) {
+//                     headingMap[headingName].add(ind.industry);
+//                   }
+//                 }
+//               }
+//             }
+//             return Object.entries(headingMap)
+//               .sort(([a], [b]) => a.localeCompare(b))
+//               .map(([heading, industriesSet]) => ({
+//                 heading,
+//                 industries: Array.from(industriesSet).sort(),
+//               }));
+//           }),
+//         BrandExpansionLocationData.aggregate([
+//           {
+//             $unwind:
+//               "$expansionLocationData.expansionLocations.domestic.locations",
+//           },
+//           {
+//             $group: {
+//               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+//             },
+//           },
+//           {
+//             $project: { _id: 0, state: "$_id" },
+//           },
+//           { $sort: { state: 1 } },
+//         ]).then((states) => states.map((s) => s.state)),
+//       ]);
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           maincat: allHeadingsData,
+//           investmentRange: InvestmentRange,
+//           areaRequired: AREA_REQUIRED,
+//           franchiseModel: FRANCHISE_MODEL,
+//           states: statesData,
+//         },
+//         "Brand filters fetched successfully"
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     if (sub) {
+//       console.log("Fetching tags for sub:", sub);
+//       const industryName = main || industry;
+//       const normalizedSub = (sub || "").trim().toLowerCase();
+//       const tagQuery = (
+//         (req.query.tag || req.query.searchTerm || "").trim() || ""
+//       ).toLowerCase();
+
+//       if (tagQuery && typeof tagQuery !== "string") {
+//         return res.json(new ApiResponse(400, {}, "Invalid search term"));
+//       }
+
+//       const allDocs = await IndustryManagement.find({})
+//         .select({ _id: 0, "headings.industries": 1 })
+//         .lean();
+
+//       const matchedIndustries = [];
+//       for (const doc of allDocs || []) {
+//         for (const h of doc.headings || []) {
+//           if (isHeadingBlocked(h.heading)) continue; // 🚫 skip blocked heading
+
+//           for (const ind of h.industries || []) {
+//             if (isIndustryBlocked(ind.industry)) continue; // 🚫 skip blocked industry
+
+//             if (!industryName || ind.industry === industryName) {
+//               matchedIndustries.push(ind);
+//             }
+//           }
+//         }
+//       }
+
+//       if (!matchedIndustries.length) {
+//         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+//       }
+
+//       const productSet = new Set();
+//       const serviceSet = new Set();
+
+//       for (const ind of matchedIndustries) {
+//         for (const ptItem of ind.productTags || []) {
+//           const parent = (ptItem?.parent || "").toLowerCase();
+//           if (normalizedSub === "all" || parent === normalizedSub) {
+//             for (const tagObj of ptItem.tags || []) {
+//               const tagValue =
+//                 typeof tagObj === "string" ? tagObj : tagObj?.tag;
+//               if (!tagValue) continue;
+//               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+//                 productSet.add(tagValue.trim());
+//               }
+//             }
+//           }
+//         }
+
+//         for (const stItem of ind.serviceTags || []) {
+//           const parent = (stItem?.parent || "").toLowerCase();
+//           if (normalizedSub === "all" || parent === normalizedSub) {
+//             for (const tagObj of stItem.tags || []) {
+//               const tagValue =
+//                 typeof tagObj === "string" ? tagObj : tagObj?.tag;
+//               if (!tagValue) continue;
+//               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+//                 serviceSet.add(tagValue.trim());
+//               }
+//             }
+//           }
+//         }
+//       }
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           productTags: Array.from(productSet).sort(),
+//           serviceTags: Array.from(serviceSet).sort(),
+//         },
+//         "Tags fetched successfully"
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     if (state) {
+//       const districtsData = await BrandExpansionLocationData.aggregate([
+//         {
+//           $match: {
+//             "expansionLocationData.expansionLocations.domestic.locations.state":
+//               state,
+//           },
+//         },
+//         {
+//           $unwind:
+//             "$expansionLocationData.expansionLocations.domestic.locations",
+//         },
+//         {
+//           $match: {
+//             "expansionLocationData.expansionLocations.domestic.locations.state":
+//               state,
+//           },
+//         },
+//         {
+//           $project: {
+//             districts:
+//               "$expansionLocationData.expansionLocations.domestic.locations.districts.district",
+//           },
+//         },
+//         { $unwind: "$districts" },
+//         { $group: { _id: "$districts" } },
+//         { $sort: { _id: 1 } },
+//       ]);
+
+//       const districts = districtsData.map((d) => d._id);
+//       const response = new ApiResponse(
+//         200,
+//         districts,
+//         "Districts fetched successfully"
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     if (main || industry) {
+//       const industryName = main || industry;
+
+//       const [matchedIndustry, statesData] = await Promise.all([
+//         IndustryManagement.find({})
+//           .select({ _id: 0, "headings.industries": 1 })
+//           .lean()
+//           .then((docs) => {
+//             for (const doc of docs || []) {
+//               for (const h of doc.headings || []) {
+//                 if (isHeadingBlocked(h.heading)) continue; // 🚫 skip blocked heading
+
+//                 const found = (h.industries || []).find(
+//                   (ind) =>
+//                     ind.industry === industryName &&
+//                     !isIndustryBlocked(ind.industry) // 🚫 skip blocked industry
+//                 );
+//                 if (found) return found;
+//               }
+//             }
+//             return null;
+//           }),
+//         BrandExpansionLocationData.aggregate([
+//           {
+//             $unwind:
+//               "$expansionLocationData.expansionLocations.domestic.locations",
+//           },
+//           {
+//             $group: {
+//               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
+//             },
+//           },
+//           {
+//             $project: { _id: 0, state: "$_id" },
+//           },
+//           { $sort: { state: 1 } },
+//         ]).then((states) => states.map((s) => s.state)),
+//       ]);
+
+//       if (!matchedIndustry) {
+//         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
+//       }
+
+//       const response = new ApiResponse(
+//         200,
+//         {
+//           subcat: (matchedIndustry.categories || []).map((c) => c.category),
+//           investmentRange: InvestmentRange,
+//           areaRequired: AREA_REQUIRED,
+//           franchiseModel: FRANCHISE_MODEL,
+//           states: statesData,
+//         },
+//         "Categories fetched successfully"
+//       );
+
+//       cache.set(cacheKey, response);
+//       return res.json(response);
+//     }
+
+//     return res.json(new ApiResponse(200, {}, "No data found"));
+//   } catch (error) {
+//     console.error("Filter API Error:", error);
+//     return res.json(
+//       new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`)
+//     );
+//   }
+// };
+
+// ================= TEMPORARY BLOCK =================
+export const BLOCK = {
+  headings: [
+    // "FRANCHISE"
+  ],
+  industries: [
+    // "FOOD AND BEVERAGES"
+  ],
+  categories: [
+    // "Restaurant"
+  ],
+  productParents: [
+    // "Tea"
+  ],
+  productTags: [
+    // "Green Tea",
+    // "Black Tea"
+  ],
+  serviceParents: [
+    // "Installation"
+  ],
+  serviceTags: [
+    // "Home Installation"
+  ],
+};
+// ===================================================
+
+const hasBlock = (array = [], value = "") =>
+  array.some(
+    (item) => item.trim().toLowerCase() === (value || "").trim().toLowerCase()
+  );
+
+const isHeadingBlocked = (heading) => hasBlock(BLOCK.headings, heading);
+const isIndustryBlocked = (industry) => hasBlock(BLOCK.industries, industry);
+const isCategoryBlocked = (category) => hasBlock(BLOCK.categories, category);
+const isProductParentBlocked = (parent) =>
+  hasBlock(BLOCK.productParents, parent) || hasBlock(BLOCK.categories, parent); // category block also kills its matching product parent
+const isProductTagBlocked = (tag) => hasBlock(BLOCK.productTags, tag);
+const isServiceParentBlocked = (parent) => hasBlock(BLOCK.serviceParents, parent);
+const isServiceTagBlocked = (tag) => hasBlock(BLOCK.serviceTags, tag);
+
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry, franchiseModel } = req.query;
 
@@ -891,22 +1360,6 @@ export const getAllBrandFiltersdata = async (req, res) => {
   if (cachedData) {
     return res.json(cachedData);
   }
-
-  // ─── TEMPORARY BLOCK LISTS ───────────────────────────────────────────────
-  // TODO: REMOVE THESE ARRAYS LATER TO UNBLOCK EVERYTHING.
-  const BLOCKED_HEADINGS = ["Dealer and Distributors"];
-  const BLOCKED_INDUSTRIES = [""];
-
-  const isHeadingBlocked = (heading) =>
-    BLOCKED_HEADINGS.some(
-      (h) => h.trim().toUpperCase() === (heading || "").trim().toUpperCase()
-    );
-
-  const isIndustryBlocked = (industry) =>
-    BLOCKED_INDUSTRIES.some(
-      (i) => i.trim().toUpperCase() === (industry || "").trim().toUpperCase()
-    );
-  // ──────────────────────────────────────────────────────────────────────────
 
   // ─── Franchise Types Map ────────────────────────────────────────────────────
   const franchiseTypes = {
@@ -963,7 +1416,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         "STATE WHOLESALE SELLER",
       ],
     },
-    "FRANCHISE": {
+    FRANCHISE: {
       "CLOUD KITCHEN": ["CLOUD KITCHEN"],
       "COMPANY OWNED COMPANY OPERATED (COCO)": [
         "COCO - Area Franchise",
@@ -1035,7 +1488,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
         new ApiResponse(
           404,
           {},
-          `Franchise model "${franchiseModel}" not found. Available models: ${Object.keys(franchiseTypes).join(", ")}`
+          `Franchise model "${franchiseModel}" not found. Available models: ${Object.keys(
+            franchiseTypes
+          ).join(", ")}`
         )
       );
     }
@@ -1058,10 +1513,17 @@ export const getAllBrandFiltersdata = async (req, res) => {
   }
 
   try {
+    // ───────────────────────────────────────────────────────────────────
+    // 1) NO PARAMS → main heading/industry listing
+    // ───────────────────────────────────────────────────────────────────
     if (!main && !sub && !district && !state && !industry) {
       const [allHeadingsData, statesData] = await Promise.all([
         IndustryManagement.find({})
-          .select({ _id: 0, "headings.heading": 1, "headings.industries.industry": 1 })
+          .select({
+            _id: 0,
+            "headings.heading": 1,
+            "headings.industries.industry": 1,
+          })
           .lean()
           .then((docs) => {
             const headingMap = {};
@@ -1069,11 +1531,12 @@ export const getAllBrandFiltersdata = async (req, res) => {
               for (const h of doc.headings || []) {
                 const headingName = h.heading;
                 if (!headingName) continue;
-                if (isHeadingBlocked(headingName)) continue; // 🚫 skip blocked heading entirely
+                if (isHeadingBlocked(headingName)) continue; // 🚫 whole heading gone
 
                 if (!headingMap[headingName]) headingMap[headingName] = new Set();
                 for (const ind of h.industries || []) {
-                  if (ind.industry && !isIndustryBlocked(ind.industry)) {
+                  // Industry block: the industry name itself can still surface here.
+                  if (ind.industry) {
                     headingMap[headingName].add(ind.industry);
                   }
                 }
@@ -1096,9 +1559,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
             },
           },
-          {
-            $project: { _id: 0, state: "$_id" },
-          },
+          { $project: { _id: 0, state: "$_id" } },
           { $sort: { state: 1 } },
         ]).then((states) => states.map((s) => s.state)),
       ]);
@@ -1119,6 +1580,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
       return res.json(response);
     }
 
+    // ───────────────────────────────────────────────────────────────────
+    // 2) sub → productTags / serviceTags
+    // ───────────────────────────────────────────────────────────────────
     if (sub) {
       console.log("Fetching tags for sub:", sub);
       const industryName = main || industry;
@@ -1132,17 +1596,15 @@ export const getAllBrandFiltersdata = async (req, res) => {
       }
 
       const allDocs = await IndustryManagement.find({})
-        .select({ _id: 0, "headings.industries": 1 })
+        .select({ _id: 0, "headings.heading": 1, "headings.industries": 1 })
         .lean();
 
       const matchedIndustries = [];
       for (const doc of allDocs || []) {
         for (const h of doc.headings || []) {
-          if (isHeadingBlocked(h.heading)) continue; // 🚫 skip blocked heading
+          if (isHeadingBlocked(h.heading)) continue; // 🚫 heading gone entirely
 
           for (const ind of h.industries || []) {
-            if (isIndustryBlocked(ind.industry)) continue; // 🚫 skip blocked industry
-
             if (!industryName || ind.industry === industryName) {
               matchedIndustries.push(ind);
             }
@@ -1158,27 +1620,43 @@ export const getAllBrandFiltersdata = async (req, res) => {
       const serviceSet = new Set();
 
       for (const ind of matchedIndustries) {
-        for (const ptItem of ind.productTags || []) {
-          const parent = (ptItem?.parent || "").toLowerCase();
-          if (normalizedSub === "all" || parent === normalizedSub) {
-            for (const tagObj of ptItem.tags || []) {
-              const tagValue =
-                typeof tagObj === "string" ? tagObj : tagObj?.tag;
-              if (!tagValue) continue;
-              if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
-                productSet.add(tagValue.trim());
+        const industryBlocked = isIndustryBlocked(ind.industry);
+
+        // ── Product tags: killed entirely if industry is blocked ──
+        if (!industryBlocked) {
+          for (const ptItem of ind.productTags || []) {
+            const rawParent = ptItem?.parent || "";
+            const parent = rawParent.toLowerCase();
+
+            if (isProductParentBlocked(rawParent)) continue; // 🚫 parent (or its matching category) blocked
+
+            if (normalizedSub === "all" || parent === normalizedSub) {
+              for (const tagObj of ptItem.tags || []) {
+                const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+                if (!tagValue) continue;
+                if (isProductTagBlocked(tagValue)) continue; // 🚫 single tag blocked
+
+                if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
+                  productSet.add(tagValue.trim());
+                }
               }
             }
           }
         }
 
+        // ── Service tags: NOT affected by industry block ──
         for (const stItem of ind.serviceTags || []) {
-          const parent = (stItem?.parent || "").toLowerCase();
+          const rawParent = stItem?.parent || "";
+          const parent = rawParent.toLowerCase();
+
+          if (isServiceParentBlocked(rawParent)) continue; // 🚫 whole service parent blocked
+
           if (normalizedSub === "all" || parent === normalizedSub) {
             for (const tagObj of stItem.tags || []) {
-              const tagValue =
-                typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
               if (!tagValue) continue;
+              if (isServiceTagBlocked(tagValue)) continue; // 🚫 single service tag blocked
+
               if (!tagQuery || tagValue.toLowerCase().includes(tagQuery)) {
                 serviceSet.add(tagValue.trim());
               }
@@ -1200,6 +1678,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
       return res.json(response);
     }
 
+    // ───────────────────────────────────────────────────────────────────
+    // 3) state → districts (unaffected by BLOCK rules)
+    // ───────────────────────────────────────────────────────────────────
     if (state) {
       const districtsData = await BrandExpansionLocationData.aggregate([
         {
@@ -1240,22 +1721,23 @@ export const getAllBrandFiltersdata = async (req, res) => {
       return res.json(response);
     }
 
+    // ───────────────────────────────────────────────────────────────────
+    // 4) main / industry → categories (subcat)
+    // ───────────────────────────────────────────────────────────────────
     if (main || industry) {
       const industryName = main || industry;
 
       const [matchedIndustry, statesData] = await Promise.all([
         IndustryManagement.find({})
-          .select({ _id: 0, "headings.industries": 1 })
+          .select({ _id: 0, "headings.heading": 1, "headings.industries": 1 })
           .lean()
           .then((docs) => {
             for (const doc of docs || []) {
               for (const h of doc.headings || []) {
-                if (isHeadingBlocked(h.heading)) continue; // 🚫 skip blocked heading
+                if (isHeadingBlocked(h.heading)) continue; // 🚫 heading gone
 
                 const found = (h.industries || []).find(
-                  (ind) =>
-                    ind.industry === industryName &&
-                    !isIndustryBlocked(ind.industry) // 🚫 skip blocked industry
+                  (ind) => ind.industry === industryName
                 );
                 if (found) return found;
               }
@@ -1272,9 +1754,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
               _id: "$expansionLocationData.expansionLocations.domestic.locations.state",
             },
           },
-          {
-            $project: { _id: 0, state: "$_id" },
-          },
+          { $project: { _id: 0, state: "$_id" } },
           { $sort: { state: 1 } },
         ]).then((states) => states.map((s) => s.state)),
       ]);
@@ -1283,10 +1763,20 @@ export const getAllBrandFiltersdata = async (req, res) => {
         return res.json(new ApiResponse(404, {}, "Industry does not exist"));
       }
 
+      const industryBlocked = isIndustryBlocked(matchedIndustry.industry);
+
+      // Industry block ⇒ categories hidden entirely.
+      // Otherwise filter out individually-blocked categories.
+      const subcat = industryBlocked
+        ? []
+        : (matchedIndustry.categories || [])
+            .filter((c) => !isCategoryBlocked(c.category))
+            .map((c) => c.category);
+
       const response = new ApiResponse(
         200,
         {
-          subcat: (matchedIndustry.categories || []).map((c) => c.category),
+          subcat,
           investmentRange: InvestmentRange,
           areaRequired: AREA_REQUIRED,
           franchiseModel: FRANCHISE_MODEL,
