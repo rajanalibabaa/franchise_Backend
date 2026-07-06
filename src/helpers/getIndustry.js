@@ -1,61 +1,91 @@
-  // import { IndustryManagement } from "../model/Admin/CMS/industryManagement.model.js";
+// helpers/getIndustry.js
 
-  // export const getIndustryCatTags = async (industryName) => {
-  //   try {
-  //     const filter = industryName ? { industry: industryName } : {};
-  //     const industriesList = await IndustryManagement.find(filter);
-
-  //     return industriesList || [];
-  //   } catch (error) {
-  //     console.error("Error fetching industry categories and tags:", error);
-  //     return [];
-  //   }
-  // };
-
-
-  // helpers/getIndustry.js
 import { IndustryManagement } from "../model/Admin/CMS/industryManagement.model.js";
 
-export const getIndustryCatTags = async (industryName) => {
+// ✅ Module-level cache — persists for lifetime of server process
+let _industryCache = null;
+let _industryCacheTime = 0;
+const INDUSTRY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+export const getIndustryCatTags = async (industryName = "") => {
   try {
+    const now = Date.now();
+
+    // ✅ Return module-level cache if fresh
+    // Industry data rarely changes — safe to cache aggressively
+    if (_industryCache && now - _industryCacheTime < INDUSTRY_CACHE_TTL) {
+      console.log("⚡ [INDUSTRY CACHE HIT] — skipping DB query");
+      return filterIndustries(_industryCache, industryName);
+    }
+
     console.time("⏱️ getIndustryCatTags DB query");
 
-    // ✅ Fetch all industry management documents
-    const documents = await IndustryManagement.find({}).lean(); // lean() = faster
+    // ✅ Only fetch fields we actually need — much faster than full document
+    const documents = await IndustryManagement.find(
+      {},
+      {
+        "headings.industries.industry": 1,    // industry name
+        "headings.industries.categories": 1,  // categories array
+        _id: 0,                               // skip _id — not needed
+      }
+    ).lean(); // lean() = plain JS objects, ~2x faster than Mongoose docs
 
     console.timeEnd("⏱️ getIndustryCatTags DB query");
-    console.log(`📦 Raw documents fetched: ${documents.length}`);
+    console.log(`📦 Raw documents fetched: ${documents?.length || 0}`);
 
     if (!documents || documents.length === 0) return [];
 
-    // ✅ Flatten: documents -> headings -> industries
-    const flatIndustries = [];
+    // ✅ Flatten once and cache at module level
+    const flatIndustries = flattenIndustries(documents);
 
-    for (const doc of documents) {
-      for (const heading of doc.headings || []) {
-        for (const industry of heading.industries || []) {
-          // ✅ Filter by industryName if provided
-          if (
-            industryName &&
-            industry.industry?.toLowerCase() !== industryName.toLowerCase()
-          ) {
-            continue;
-          }
-          flatIndustries.push(industry);
-        }
-      }
-    }
+    console.log(`✅ Flattened industries: ${flatIndustries.length}`);
 
-    console.log(`✅ Flattened industries count: ${flatIndustries.length}`);
+    // ✅ Store in module cache
+    _industryCache = flatIndustries;
+    _industryCacheTime = now;
 
-    // 🔍 Debug: log first industry shape
-    if (flatIndustries.length > 0) {
-      console.log("🔍 Sample industry:", JSON.stringify(flatIndustries[0], null, 2));
-    }
-
-    return flatIndustries;
+    return filterIndustries(flatIndustries, industryName);
   } catch (error) {
-    console.error("❌ Error fetching industry categories and tags:", error);
+    console.error("❌ Error fetching industry categories:", error);
     return [];
   }
+};
+
+// ─── Helpers ──────────────────────────────────────────────
+
+/**
+ * Flatten: documents → headings → industries
+ */
+const flattenIndustries = (documents) => {
+  const flat = [];
+  for (const doc of documents) {
+    for (const heading of doc?.headings || []) {
+      for (const industry of heading?.industries || []) {
+        flat.push(industry);
+      }
+    }
+  }
+  return flat;
+};
+
+/**
+ * Filter by industry name (case-insensitive) — or return all
+ */
+const filterIndustries = (flatIndustries, industryName) => {
+  if (!industryName) return flatIndustries;
+
+  const target = industryName.toLowerCase();
+  return flatIndustries.filter(
+    (ind) => ind?.industry?.toLowerCase() === target
+  );
+};
+
+/**
+ * Call this to manually bust the industry cache
+ * (e.g., after admin updates industry data)
+ */
+export const bustIndustryCache = () => {
+  _industryCache = null;
+  _industryCacheTime = 0;
+  console.log("🗑️ [INDUSTRY CACHE] Busted");
 };

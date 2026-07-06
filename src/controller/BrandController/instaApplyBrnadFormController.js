@@ -29,6 +29,11 @@ export const createInvestorEnquiry = async (req, res) => {
     const brandCategories =
   franchiseDetails?.franchiseDetails?.brandCategories || {};
 
+const enquiryFranchiseType =
+  franchiseDetails?.franchiseDetails?.fico?.[0]?.franchiseModel || "";
+
+console.log(enquiryFranchiseType);
+
     //   if (!franchiseDetails) {
     //     return res.status(404).json({
     //       success: false,
@@ -77,6 +82,10 @@ const enquiry = await InvestorEnquiry.create({
     investor?.city ||
     req.body.city ||
     "",
+investorEnquiryModel:
+  enquiryFranchiseType ||
+  req.body.investorEnquiryModel ||
+  "",
 
   investmentRange:
     investmentRange ||
@@ -116,9 +125,13 @@ const enquiry = await InvestorEnquiry.create({
 });
 
     return res.status(201).json({
+      
       success: true,
       data: enquiry,
+      
     });
+          console.log("response of investor enquiry", enquiry);
+
   } catch (error) {
     console.error(error);
 
@@ -334,4 +347,5 @@ export const updateInvestorEnquiry =
       });
     }
   };
+
 
