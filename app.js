@@ -46,6 +46,7 @@ import leadMatchCMS from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAcce
 import leadMatchingRulePerBrand from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAccess/LeadMatchingRulePerBrand.js";
 import leadPlanCountManage from "./src/Routes/AdminRoutes/CMS/LeadDistributionAdminAccess/leadPlanCountManage.js";
 import domesticContactMappingRouter from "./src/Routes/BrandRoutes/DomesticContactMapping/DomesticContactMapping.js";
+import FilterBlockRouter from "./src/Routes/AdminRoutes/CMS/FillterBlockCMS/FillterBlock.js";
 const router = express.Router();
 
 router.use(thirdPartyAuthRouter);
@@ -138,6 +139,8 @@ router.use(leadPlanCountManage);
 router.use(domesticContactMappingRouter);
 
 router.use(brandPackagePlansRouter);
+
+router.use(FilterBlockRouter); // FilterBlockRouter
 
 //searchRoutes
 router.use(searchRoutes);

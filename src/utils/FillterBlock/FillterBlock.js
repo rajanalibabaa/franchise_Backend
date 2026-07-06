@@ -1,5 +1,5 @@
 // utils/filterBlock.util.js
-import { FilterBlock } from "../models/filterBlock.model.js";
+import { FilterBlock } from "../../model/CMS/FillterBlock/FillterBlock.js";
 
 let cachedBlock = null;
 let cachedAt = 0;
