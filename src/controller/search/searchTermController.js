@@ -1,272 +1,201 @@
-// // searchSuggestions.js
-// import { getBrandsHelperfuntion } from "../../helpers/getbrands.js";
-// import { getIndustryCatTags } from "../../helpers/getIndustry.js";
-// import {
-//   findIndustryCategoriesAndTags,
-//   searchBrandAndCompanyNames,
-// } from "../../helpers/match.js";
-// import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
-
-// export const searchSuggestions = async (req, res) => {
-//   const searchTerm = req.query.searchTerm || req.body.searchTerm;
-//   const industry = req.query?.industry || req.body?.industry || "";
-
-//   if (!searchTerm || searchTerm.trim().length < 2) {
-//     return res.json(
-//       new ApiResponse(
-//         404,
-//         {},
-//         "search term required and must be minimum 2 letters",
-//       ),
-//     );
-//   }
-
-//   const limit = 30;
-//   let skip = 0;
-
-//   let companyNamesMatches = [];
-//   let brandNamesMatches = [];
-//   let industryMatches = [];
-//   let tagsMatches = [];
-//   let categoriesMatches = [];
-
-//   let count =
-//     brandNamesMatches?.length +
-//     companyNamesMatches?.length +
-//     industryMatches.length +
-//     categoriesMatches?.length +
-//     tagsMatches?.length;
-
-//   const pushWithLimit = (source, target) => {
-//     for (let i = 0; i < source?.length && count < 15; i++) {
-//       target.push(source[i]);
-//       count++;
-//     }
-//   };
-
-//   // Only create match if industry is provided
-//   const match =
-//     industry && industry?.length > 0
-//       ? { "franchiseDetails.franchiseDetails.brandCategories.main": industry }
-//       : undefined;
-
-//   const data = await getIndustryCatTags(industry);
-//   let oneTimeFunction = true;
-
-//   while (count < 15) {
-//     if (oneTimeFunction) {
-//       const { industryResults, categoryResults, tagsList } =
-//         findIndustryCategoriesAndTags(data, searchTerm, count);
-//       pushWithLimit(industryResults, industryMatches);
-//       pushWithLimit(categoryResults, categoriesMatches);
-//       pushWithLimit(tagsList, tagsMatches);
-//       oneTimeFunction = false;
-//     }
-
-//     const brands = await getBrandsHelperfuntion(
-//       match,
-//       undefined,
-//       limit,
-//       skip,
-//       true,
-//       true,
-//     );
-
-//     if (!brands || brands.length === 0) break;
-
-//     const { companyNamesResults, brandNamesResults } =
-//       searchBrandAndCompanyNames(brands, searchTerm, count);
-
-//     pushWithLimit(companyNamesResults, companyNamesMatches);
-//     pushWithLimit(brandNamesResults, brandNamesMatches);
-
-//     skip += limit;
-//   }
-
-//   let result = {
-//     brandNamesMatches,
-//     companyNamesMatches,
-//     industryMatches,
-//     tagsMatches,
-//     categoriesMatches,
-//   };
-
-//   if (
-//     result.companyNamesMatches.length === 0 &&
-//     result.brandNamesMatches.length === 0 &&
-//     result.industryMatches.length === 0 &&
-//     result.tagsMatches.length === 0 &&
-//     result.categoriesMatches.length === 0
-//   ) {
-//     return res.json(new ApiResponse(200, [], "suggestions not match"));
-//   }
-
-//   return res.json(
-//     new ApiResponse(200, result, "Fetch suggestions successfully"),
-//   );
-// };
-
-// searchSuggestions.js
-import { getBrandsHelperfuntion } from "../../helpers/getbrands.js";
+import { searchBrandsByName } from "../../helpers/getbrands.js";
 import { getIndustryCatTags } from "../../helpers/getIndustry.js";
 import {
-  findIndustryCategoriesAndTags,
-  searchBrandAndCompanyNames,
+  formatBrandResults,
+  findCategories,
+  findIndustries,
 } from "../../helpers/match.js";
 import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
 
-// ✅ In-memory cache
-const searchCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// ─────────────────────────────────────────────────────────
+// ✅ LRU CACHE
+// ─────────────────────────────────────────────────────────
 
-const getCachedResult = (key) => {
-  const cached = searchCache.get(key);
-  if (!cached) return null;
-  if (Date.now() - cached.timestamp > CACHE_TTL) {
+const searchCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_MAX = 300;
+
+const getCached = (key) => {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
     searchCache.delete(key);
     return null;
   }
-  return cached.data;
+  searchCache.delete(key);
+  searchCache.set(key, entry);
+  return entry.data;
 };
 
-const setCacheResult = (key, data) => {
-  if (searchCache.size >= 200) {
-    // ✅ evict oldest
-    const oldestKey = searchCache.keys().next().value;
-    searchCache.delete(oldestKey);
+const setCache = (key, data) => {
+  if (searchCache.size >= CACHE_MAX) {
+    searchCache.delete(searchCache.keys().next().value);
   }
   searchCache.set(key, { data, timestamp: Date.now() });
 };
 
+// ─────────────────────────────────────────────────────────
+// ✅ SAFE INPUT EXTRACTOR
+// ─────────────────────────────────────────────────────────
+
+const safeGet = (obj, key) => {
+  try {
+    if (!obj || typeof obj !== "object") return "";
+    const val = obj[key];
+    if (val === undefined || val === null) return "";
+    return String(val)
+      .trim()
+      .replace(/[<>{}[\]\\]/g, "")
+      .substring(0, 100);
+  } catch {
+    return "";
+  }
+};
+
+// ─────────────────────────────────────────────────────────
+// ✅ MAIN CONTROLLER
+// ─────────────────────────────────────────────────────────
+
 export const searchSuggestions = async (req, res) => {
-  const TOTAL_START = Date.now();
+  const START = Date.now();
 
-  const searchTerm = (
-    req.query.searchTerm ||
-    req.body.searchTerm ||
-    ""
-  ).trim();
+  // ── Extract inputs ─────────────────────────────────────
+  const searchTerm =
+    safeGet(req.query, "searchTerm") || safeGet(req.body, "searchTerm") || "";
 
-  const industry = (
-    req.query?.industry ||
-    req.body?.industry ||
-    ""
-  ).trim();
+  const industry =
+    safeGet(req.query, "industry") || safeGet(req.body, "industry") || "";
 
-  // ✅ Validate
+  console.log(`🔍 term="${searchTerm}" industry="${industry}"`); 
+
+  // ── Validate ───────────────────────────────────────────
   if (!searchTerm || searchTerm.length < 2) {
-    return res.json(
-      new ApiResponse(404, {}, "Search term required — minimum 2 letters")
-    );
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(400, {}, "Search term required — minimum 2 characters"),
+      );
   }
 
+  // ── Cache check ────────────────────────────────────────
   const cacheKey = `${searchTerm.toLowerCase()}__${industry.toLowerCase()}`;
-
-  // ✅ Return cached result instantly
-  const cached = getCachedResult(cacheKey);
+  const cached = getCached(cacheKey);
   if (cached) {
-    console.log(`⚡ [CACHE HIT] "${searchTerm}" → 0ms`);
-    return res.json(
-      new ApiResponse(200, cached, "Fetch suggestions successfully (cached)")
-    );
+    console.log(`⚡ [CACHE HIT] "${searchTerm}" → ${Date.now() - START}ms`);
+    return res.json(new ApiResponse(200, cached, "Suggestions (cached)"));
   }
-
-  console.log(`\n🔍 [SEARCH START] term="${searchTerm}" industry="${industry}"`);
 
   try {
-    // ✅ Build match for brand query
-    const match =
-      industry.length > 0
-        ? {
-            "franchiseDetails.franchiseDetails.brandCategories.main": industry,
-          }
-        : undefined;
+    const t1 = Date.now();
 
-    // ✅ Run BOTH DB queries in PARALLEL
-    console.time("⏱️ [PARALLEL] Both DB queries");
+    // ── Parallel: DB brand search + industry fetch ─────────
+    const [matchedBrands, industryData] = await Promise.all([
+      // ✅ Searches ALL brands in MongoDB — no 200 limit problem
+      searchBrandsByName(searchTerm, industry, 10).catch((e) => {
+        console.warn("⚠️ searchBrandsByName failed:", e.message);
+        return [];
+      }),
 
-    const [industryData, brands] = await Promise.all([
-      getIndustryCatTags(industry),
-      getBrandsHelperfuntion(
-        match,
-        undefined,
-        200, // ✅ Fetch enough at once - NO while loop needed
-        0,
-        true,
-        true
-      ),
+      // ✅ Industry has module-level cache — often 0ms
+      getIndustryCatTags(industry).catch((e) => {
+        console.warn("⚠️ getIndustryCatTags failed:", e.message);
+        return [];
+      }),
     ]);
 
-    console.timeEnd("⏱️ [PARALLEL] Both DB queries");
-    console.log(`📦 Brands fetched: ${brands?.length || 0}`);
-    console.log(`🏭 Industry docs fetched: ${industryData?.length || 0}`);
+    console.log(
+      `📦 DB: ${Date.now() - t1}ms | ` +
+        `brands=${matchedBrands.length} | industries=${industryData.length}`,
+    );
 
-    // ✅ Process industry/category/tags
-    console.time("⏱️ Processing matches");
+    // ── Format + score results ─────────────────────────────
+    const t2 = Date.now();
 
-    const { industryResults, categoryResults, tagsList } =
-      findIndustryCategoriesAndTags(industryData, searchTerm, 0);
+    const { brandNamesResults } = formatBrandResults(matchedBrands, searchTerm);
+    const { categoryResults } = findCategories(industryData, searchTerm);
+    const { industryResults } = findIndustries(industryData, searchTerm);
 
-    // ✅ Process brand/company names
-    const { companyNamesResults, brandNamesResults } =
-      searchBrandAndCompanyNames(brands || [], searchTerm, 0);
+    console.log(`⚙️  Matching: ${Date.now() - t2}ms`);
 
-    console.timeEnd("⏱️ Processing matches");
-
-    // ✅ Build final result
+    // ── Build result ───────────────────────────────────────
     const result = {
-      brandNamesMatches: brandNamesResults.slice(0, 10),
-      companyNamesMatches: companyNamesResults.slice(0, 5),
-      industryMatches: industryResults.slice(0, 5),
-      tagsMatches: tagsList.slice(0, 5),
-      categoriesMatches: categoryResults.slice(0, 5),
+      brandNamesMatches: brandNamesResults, // max 10 — from ALL brands in DB
+      categoriesMatches: categoryResults, // max 8
+      industryMatches: industryResults, // max 5
     };
 
     const totalResults =
-      result.brandNamesMatches.length +
-      result.companyNamesMatches.length +
-      result.industryMatches.length +
-      result.tagsMatches.length +
-      result.categoriesMatches.length;
+      brandNamesResults.length +
+      categoryResults.length +
+      industryResults.length;
 
-    const totalMs = Date.now() - TOTAL_START;
-
-    // ✅ Speed indicator
+    const totalMs = Date.now() - START;
     const speed =
-      totalMs < 100 ? "🟢 FAST" :
-      totalMs < 300 ? "🟡 MEDIUM" :
-      totalMs < 600 ? "🟠 SLOW" : "🔴 VERY SLOW";
+      totalMs < 100
+        ? "🟢 FAST"
+        : totalMs < 300
+          ? "🟡 MEDIUM"
+          : totalMs < 600
+            ? "🟠 SLOW"
+            : "🔴 VERY SLOW";
 
     console.log(
-      `✅ [SEARCH DONE] "${searchTerm}" → ` +
-      `${totalResults} results in ${totalMs}ms ${speed}`
+      `✅ "${searchTerm}" → ${totalResults} results | ${totalMs}ms ${speed}`,
+      {
+        brands: brandNamesResults.length,
+        categories: categoryResults.length,
+        industries: industryResults.length,
+      },
     );
-    console.log("📊 Result breakdown:", {
-      brands: result.brandNamesMatches.length,
-      companies: result.companyNamesMatches.length,
-      industries: result.industryMatches.length,
-      tags: result.tagsMatches.length,
-      categories: result.categoriesMatches.length,
-    });
 
-    // ✅ No results
+    // ── No results ─────────────────────────────────────────
     if (totalResults === 0) {
       return res.json(
-        new ApiResponse(200, [], "No suggestions matched")
+        new ApiResponse(
+          200,
+          {
+            brandNamesMatches: [],
+            categoriesMatches: [],
+            industryMatches: [],
+          },
+          "No suggestions found",
+        ),
       );
     }
 
-    // ✅ Cache result
-    setCacheResult(cacheKey, result);
-
+    // ── Cache + respond ────────────────────────────────────
+    setCache(cacheKey, result);
     return res.json(
-      new ApiResponse(200, result, "Fetch suggestions successfully")
+      new ApiResponse(200, result, "Suggestions fetched successfully"),
     );
   } catch (error) {
-    const totalMs = Date.now() - TOTAL_START;
-    console.error(`❌ [SEARCH ERROR] after ${totalMs}ms:`, error);
+    console.error(`❌ [ERROR] ${Date.now() - START}ms`, error);
     return res
       .status(500)
       .json(new ApiResponse(500, {}, "Internal server error"));
   }
+};
+
+// ─────────────────────────────────────────────────────────
+// ✅ ADMIN UTILS
+// ─────────────────────────────────────────────────────────
+
+export const clearSearchCache = (_req, res) => {
+  const count = searchCache.size;
+  searchCache.clear();
+  return res.json(new ApiResponse(200, { cleared: count }, "Cache cleared"));
+};
+
+export const getSearchCacheStats = (_req, res) => {
+  return res.json(
+    new ApiResponse(
+      200,
+      {
+        cacheSize: searchCache.size,
+        maxSize: CACHE_MAX,
+        ttlMinutes: CACHE_TTL / 60000,
+      },
+      "Cache stats",
+    ),
+  );
 };

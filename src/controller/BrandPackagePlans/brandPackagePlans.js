@@ -108,213 +108,213 @@ const normalizeInvestmentRanges = (ranges, stateDistrictMap = new Map()) => {
   });
 };
 
-export const createInitialPackages = async ({
-  brandOwnerId,
-  Industry,
-  Category,
-  brandName,
-  packages,
-}) => {
-  try {
-    /* =====================================================
-       VALIDATION
-    ===================================================== */
+  export const createInitialPackages = async ({
+    brandOwnerId,
+    Industry,
+    Category,
+    brandName,
+    packages,
+  }) => {
+    try {
+      /* =====================================================
+        VALIDATION
+      ===================================================== */
 
-    if (!brandOwnerId) {
-      return {
-        success: false,
-        statusCode: 400,
-        message: "brandOwnerId is required",
-      };
-    }
-
-    if (!packages || !Array.isArray(packages) || packages.length === 0) {
-      return {
-        success: false,
-        statusCode: 400,
-        message: "packages array is required",
-      };
-    }
-
-    /* =====================================================
-       ONLY SINGLE FREE PACKAGE ALLOWED
-    ===================================================== */
-
-    if (packages.length > 1) {
-      return {
-        success: false,
-        statusCode: 400,
-        message: "Initially only one FREE package can be created",
-      };
-    }
-
-    const packageData = packages[0];
-
-    if (packageData.packagesType?.toUpperCase() !== "FREE") {
-      return {
-        success: false,
-        statusCode: 400,
-        message: "Initially only FREE package is allowed",
-      };
-    }
-
-    /* =====================================================
-       CHECK EXISTING BRAND PACKAGE
-    ===================================================== */
-
-    const existingBrand = await BrandPackages.findOne({
-      brandOwnerId,
-    });
-
-    if (existingBrand) {
-      return {
-        success: false,
-        statusCode: 400,
-        message: "Initial package already created",
-      };
-    }
-
-    const expansionLocDoc = await BrandExpansionLocationData.findOne({
-      brandOwnerId,
-    }).lean();
-
-    const expansionStateDistrictMap = buildStateDistrictMap(
-      expansionLocDoc?.expansionLocationData,
-    );
-
-    /* =====================================================
-       PROCESS INVESTMENT PACKAGES
-    ===================================================== */
-
-    const processedInvestments = (packageData.investmetPackages || []).map(
-      (inv) => {
-        const validityString = inv.validity || "0";
-
-        /* =========================================
-         EXTRACT DAYS FROM VALIDITY
-         Example: "60 Days"
-      ========================================= */
-
-        const validityDays = parseInt(validityString) || 0;
-
-        const startDate = new Date();
-
-        const endDate = new Date(startDate);
-
-        endDate.setDate(startDate.getDate() + validityDays);
-
+      if (!brandOwnerId) {
         return {
-          packagesName: inv.packagesName || "",
-
-          planUniqueId: inv.planId || "",
-
-          investmetRageLabel: inv.investmetRageLabel || "",
-
-          /* =========================================
-           STORE STATE + DISTRICT
-        =========================================
-        */
-
-          investmentranges: normalizeInvestmentRanges(
-            inv.investmentranges || inv.items || [],
-            expansionStateDistrictMap,
-          ),
-
-          /* =========================================
-           VALIDITY
-        ========================================= */
-
-          validity: validityString,
-
-          /* =========================================
-           LEADS
-        ========================================= */
-
-          totalLeads: Number(inv.totalLeads) || 0,
-
-          sendingLeads: 0,
-
-          sendingPercentage: 0,
-
-          remainingLeads:
-            Number(inv.remainingLeads) || Number(inv.totalLeads) || 0,
-
-          totalAmount: Number(inv.totalAmount) || 0,
-
-          /* =========================================
-           DATES
-        ========================================= */
-
-          packageStartDate: startDate,
-
-          packageEndDate: endDate,
-
-          currentDate: new Date(),
-
-          renewalEndDate: endDate,
-
-          /* =========================================
-           STATUS
-        ========================================= */
-
-          isPaused: false,
-
-          pauseHistory: [],
-
-          isExperied: false,
-
-          isActive: true,
-
-          isPending: false,
+          success: false,
+          statusCode: 400,
+          message: "brandOwnerId is required",
         };
-      },
-    );
+      }
 
-    /* =====================================================
-       CREATE DOCUMENT
-    ===================================================== */
+      if (!packages || !Array.isArray(packages) || packages.length === 0) {
+        return {
+          success: false,
+          statusCode: 400,
+          message: "packages array is required",
+        };
+      }
 
-    const newBrandPackage = new BrandPackages({
-      brandOwnerId,
+      /* =====================================================
+        ONLY SINGLE FREE PACKAGE ALLOWED
+      ===================================================== */
 
-      industry: Industry || "",
+      if (packages.length > 1) {
+        return {
+          success: false,
+          statusCode: 400,
+          message: "Initially only one FREE package can be created",
+        };
+      }
 
-      category: Category || "",
+      const packageData = packages[0];
 
-      brandName: brandName || "",
+      if (packageData.packagesType?.toUpperCase() !== "FREE") {
+        return {
+          success: false,
+          statusCode: 400,
+          message: "Initially only FREE package is allowed",
+        };
+      }
 
-      packages: [
-        {
-          packagesType: "FREE",
+      /* =====================================================
+        CHECK EXISTING BRAND PACKAGE
+      ===================================================== */
 
-          investmetPackages: processedInvestments,
+      const existingBrand = await BrandPackages.findOne({
+        brandOwnerId,
+      });
+
+      if (existingBrand) {
+        return {
+          success: false,
+          statusCode: 400,
+          message: "Initial package already created",
+        };
+      }
+
+      const expansionLocDoc = await BrandExpansionLocationData.findOne({
+        brandOwnerId,
+      }).lean();
+
+      const expansionStateDistrictMap = buildStateDistrictMap(
+        expansionLocDoc?.expansionLocationData,
+      );
+
+      /* =====================================================
+        PROCESS INVESTMENT PACKAGES
+      ===================================================== */
+
+      const processedInvestments = (packageData.investmetPackages || []).map(
+        (inv) => {
+          const validityString = inv.validity || "0";
+
+          /* =========================================
+          EXTRACT DAYS FROM VALIDITY
+          Example: "60 Days"
+        ========================================= */
+
+          const validityDays = parseInt(validityString) || 0;
+
+          const startDate = new Date();
+
+          const endDate = new Date(startDate);
+
+          endDate.setDate(startDate.getDate() + validityDays);
+
+          return {
+            packagesName: inv.packagesName || "",
+
+            planUniqueId: inv.planId || "",
+
+            investmetRageLabel: inv.investmetRageLabel || "",
+
+            /* =========================================
+            STORE STATE + DISTRICT
+          =========================================
+          */
+
+            investmentranges: normalizeInvestmentRanges(
+              inv.investmentranges || inv.items || [],
+              expansionStateDistrictMap,
+            ),
+
+            /* =========================================
+            VALIDITY
+          ========================================= */
+
+            validity: validityString,
+
+            /* =========================================
+            LEADS
+          ========================================= */
+
+            totalLeads: Number(inv.totalLeads) || 0,
+
+            sendingLeads: 0,
+
+            sendingPercentage: 0,
+
+            remainingLeads:
+              Number(inv.remainingLeads) || Number(inv.totalLeads) || 0,
+
+            totalAmount: Number(inv.totalAmount) || 0,
+
+            /* =========================================
+            DATES
+          ========================================= */
+
+            packageStartDate: startDate,
+
+            packageEndDate: endDate,
+
+            currentDate: new Date(),
+
+            renewalEndDate: endDate,
+
+            /* =========================================
+            STATUS
+          ========================================= */
+
+            isPaused: false,
+
+            pauseHistory: [],
+
+            isExperied: false,
+
+            isActive: true,
+
+            isPending: false,
+          };
         },
-      ],
-    });
+      );
 
-    await newBrandPackage.save();
+      /* =====================================================
+        CREATE DOCUMENT
+      ===================================================== */
 
-    /* =====================================================
-       SUCCESS RESPONSE
-    ===================================================== */
+      const newBrandPackage = new BrandPackages({
+        brandOwnerId,
 
-    return {
-      success: true,
-      statusCode: 201,
-      message: "Initial FREE package created successfully",
-      data: newBrandPackage,
-    };
-  } catch (error) {
-    console.error("createInitialPackages Error:", error);
+        industry: Industry || "",
 
-    return {
-      success: false,
-      statusCode: 500,
-      message: "Internal server error",
-      error: error.message,
-    };
-  }
-};
+        category: Category || "",
+
+        brandName: brandName || "",
+
+        packages: [
+          {
+            packagesType: "FREE",
+
+            investmetPackages: processedInvestments,
+          },
+        ],
+      });
+
+      await newBrandPackage.save();
+
+      /* =====================================================
+        SUCCESS RESPONSE
+      ===================================================== */
+
+      return {
+        success: true,
+        statusCode: 201,
+        message: "Initial FREE package created successfully",
+        data: newBrandPackage,
+      };
+    } catch (error) {
+      console.error("createInitialPackages Error:", error);
+
+      return {
+        success: false,
+        statusCode: 500,
+        message: "Internal server error",
+        error: error.message,
+      };
+    }
+  };
 
 export const getBrandPackagesById = async (req, res) => {
   try {
@@ -547,6 +547,22 @@ export const updateBrandPackagecms = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const createBrandPackages = async (req, res) => {
   try {
@@ -1956,3 +1972,8 @@ export const upgradeBrandPackages = async (req, res) => {
     });
   }
 };
+
+
+
+
+

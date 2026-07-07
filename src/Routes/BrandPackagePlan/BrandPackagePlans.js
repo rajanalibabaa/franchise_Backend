@@ -1,6 +1,7 @@
 import express from "express";
 
 import {createInitialPackages,updateBrandPackages,getBrandPackagesById,createBrandPackages,upgradeBrandPackages,getBrandPackagesHistoryById,activePackageStatus,getAllBrandPackages,updateBrandPackagecms} from "../../controller/BrandPackagePlans/brandPackagePlans.js";
+import {assignLeadToPackage,getActivePackageLeadDetails} from "../../controller/BrandPackagePlans/enquiry_LeadManual_ViewUnlock_countUpdate.js";
 
 const brandPackagePlansRouter = express.Router();
 
@@ -16,4 +17,16 @@ brandPackagePlansRouter.get("/v1/brand-packages-plans/get-history/:brandOwnerId"
 brandPackagePlansRouter.post("/v1/brand-packages-plans/active-package-status", activePackageStatus);
 brandPackagePlansRouter.put("/v1/brand-packages-plans/upgrade", upgradeBrandPackages);
 brandPackagePlansRouter.get("/v1/brand-packages-plans/get-all", getAllBrandPackages); 
+
+
+// marketplace lead assignment to package
+brandPackagePlansRouter.patch("/v1/brand-packages-plans/assign-lead", assignLeadToPackage);
+brandPackagePlansRouter.get("/v1/brand-packages-plans/active-lead-details/:brandOwnerId", getActivePackageLeadDetails);
+
+
+
+
+
+
+
 export default brandPackagePlansRouter;  

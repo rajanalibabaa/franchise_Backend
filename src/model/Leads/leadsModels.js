@@ -149,7 +149,7 @@ const InvestorEnquirySchema = new mongoose.Schema(
 
     investorId: {
       type: String,
-      ref: "InstantApplyInvestor",
+      ref: "InstantApplyInvestor",  
       // required: true,
     },
 
@@ -177,7 +177,7 @@ const InvestorEnquirySchema = new mongoose.Schema(
     planToInvest: String,
 
     readyToInvest: String,
-
+investorEnquiryModel: String,
     industry: String,
 
     category: String,
