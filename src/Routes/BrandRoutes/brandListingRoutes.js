@@ -46,6 +46,8 @@ import {
   getRequestById,
   updateRequestById,
 } from "../../controller/BrandController/userRequesChanges/userRequestController.js";
+
+import {downloadBrandExcel} from "../../helpers/brand_details_excel_report/brand_excelreport.js";
 const router = express.Router();
 
 router.post(
@@ -160,5 +162,8 @@ router.patch(
   "/v1/brandlisting/userRequestNotification/:uuid",
   updateRequestById,
 );
+
+
+router.get('/v1/download-excel',downloadBrandExcel)
 
 export default router;
