@@ -335,6 +335,8 @@ export const getAllBrandsAndFilter = async (req, res) => {
       { $limit: limit },
     ];
 
+    console.log("filter aggrigationpieline",aggregationPipeline);
+    
     const countPipeline = [
       {
         $match: {
@@ -521,7 +523,7 @@ const isServiceTagBlocked = (block, parent, tag) => {
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry, franchiseModel } = req.query;
 
-  console.log("query params:", req.query);
+  console.log("comin frm query params:", req.query);
 
   const cacheKey = JSON.stringify(req.query);
   const cachedData = cache.get(cacheKey);

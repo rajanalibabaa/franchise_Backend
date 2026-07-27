@@ -47,7 +47,7 @@ import {
   updateRequestById,
 } from "../../controller/BrandController/userRequesChanges/userRequestController.js";
 
-import {downloadBrandExcel} from "../../helpers/brand_details_excel_report/brand_excelreport.js";
+import { downloadBrandExcel } from "../../helpers/brand_details_excel_report/brand_excelreport.js";
 const router = express.Router();
 
 router.post(
@@ -67,8 +67,11 @@ router.post(
 );
 
 router.get("/v1/brandlisting/getAllBrandListing", getAllBrands);
-router.get("/v1/brandlisting/getBrandListingSlug/:identifier", getBrandListingSlug);
-router.get("/v1/brandlisting/getBrandById/:id",  getBrandById);
+router.get(
+  "/v1/brandlisting/getBrandListingSlug/:identifier",
+  getBrandListingSlug,
+);
+router.get("/v1/brandlisting/getBrandById/:id", getBrandById);
 
 router.get("/v1/brandlisting/getBrandListingByUUID/:id", getBrandListingByUUID);
 // router.get("/v1/brandlisting/getTopFoodFranchise", getTopFoodFranchise);
@@ -95,7 +98,7 @@ router.patch(
   ]),
   updateBrandListingByUUID,
 );
-router.patch(  
+router.patch(
   "/v1/brandlisting/updateBrandImageById/:id",
   upload.fields([
     { name: "awardDoc", maxCount: 10 },
@@ -163,7 +166,6 @@ router.patch(
   updateRequestById,
 );
 
-
-router.get('/v1/download-excel',downloadBrandExcel)
+router.get("/v1/download-excel", downloadBrandExcel);
 
 export default router;

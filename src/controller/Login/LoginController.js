@@ -161,7 +161,7 @@ const generateOTPforLogin = async (req, res) => {
     }
 
     if (email) {
-      await sendEmailOTP(email, newOTP);
+      // await sendEmailOTP(email, newOTP);
     } else {
       // await sendMobileSMS(mobileNumber, newOTP);
     }
