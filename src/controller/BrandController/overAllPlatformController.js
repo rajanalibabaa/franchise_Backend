@@ -43,26 +43,20 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     const OverAllCategory = {};
 
     if (main) {
-      OverAllCategory[
-        "franchiseDetails.brandCategories.main"
-      ] = main;
+      OverAllCategory["franchiseDetails.brandCategories.main"] = main;
     }
 
     if (sub) {
-      OverAllCategory[
-        "franchiseDetails.brandCategories.sub"
-      ] = sub;
+      OverAllCategory["franchiseDetails.brandCategories.sub"] = sub;
     }
 
     if (child) {
-      OverAllCategory[
-        "franchiseDetails.brandCategories.child"
-      ] = child;
+      OverAllCategory["franchiseDetails.brandCategories.child"] = child;
     }
 
     console.log(
       "MongoDB Category Filter:",
-      JSON.stringify(OverAllCategory, null, 2)
+      JSON.stringify(OverAllCategory, null, 2),
     );
 
     // ------------------------------------
@@ -75,40 +69,49 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         $match: OverAllCategory,
       },
 
-      // STEP 2: GET BRAND DETAILS
+      // STEP 2: GET ONLY APPROVED BRAND DETAILS
       {
         $lookup: {
           from: "branddetails",
-          localField: "brandOwnerId",
-          foreignField: "uuid",
+
+          let: {
+            franchiseBrandOwnerId: "$brandOwnerId",
+          },
+
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: ["$uuid", "$$franchiseBrandOwnerId"],
+                    },
+                    {
+                      $eq: ["$brandDetails.isApproved", true],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+
           as: "brandInfo",
         },
       },
 
-      // STEP 3: UNWIND BRAND DETAILS
+      // STEP 3: ONLY KEEP RECORDS
+      // WHERE APPROVED BRAND WAS FOUND
       {
         $unwind: {
           path: "$brandInfo",
-          preserveNullAndEmptyArrays: true,
+          preserveNullAndEmptyArrays: false,
         },
       },
 
-      // STEP 4: BRAND STATUS FILTER
-      // TEMPORARILY COMMENTED FOR DEBUGGING
-      /*
-      {
-        $match: {
-          "brandInfo.brandDetails.isBrandPause": {
-            $ne: true,
-          },
-          "brandInfo.brandDetails.isApproved": {
-            $ne: false,
-          },
-        },
-      },
-      */
+      // ------------------------------------
+      // STEP 4: BRAND UPLOADS
+      // ------------------------------------
 
-      // STEP 5: BRAND UPLOADS
       {
         $lookup: {
           from: "branduploads",
@@ -125,14 +128,17 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         },
       },
 
-      // STEP 6: LIKE / SHORTLIST
+      // ------------------------------------
+      // STEP 5: LIKE / SHORTLIST
+      // ------------------------------------
+
       {
         $addFields: {
           isLiked: {
             $in: [
               "$brandInfo._id",
               likedBrands.map(
-                (id) => new mongoose.Types.ObjectId(id)
+                (id) => new mongoose.Types.ObjectId(id),
               ),
             ],
           },
@@ -141,21 +147,27 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
             $in: [
               "$brandInfo._id",
               shortListedBrands.map(
-                (id) => new mongoose.Types.ObjectId(id)
+                (id) => new mongoose.Types.ObjectId(id),
               ),
             ],
           },
         },
       },
 
-      // STEP 7: SORT
+      // ------------------------------------
+      // STEP 6: SORT
+      // ------------------------------------
+
       {
         $sort: {
           createdAt: -1,
         },
       },
 
-      // STEP 8: PROJECT
+      // ------------------------------------
+      // STEP 7: PROJECT
+      // ------------------------------------
+
       {
         $project: {
           _id: 0,
@@ -168,17 +180,13 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
 
           isShortListed: 1,
 
-          brandname:
-            "$brandInfo.brandDetails.brandName",
+          brandname: "$brandInfo.brandDetails.brandName",
 
-          state:
-            "$brandInfo.brandDetails.state",
+          state: "$brandInfo.brandDetails.state",
 
-          district:
-            "$brandInfo.brandDetails.district",
+          district: "$brandInfo.brandDetails.district",
 
-          slug:
-            "$brandInfo.brandDetails.slug",
+          slug: "$brandInfo.brandDetails.slug",
 
           brandCategories: {
             $ifNull: [
@@ -249,7 +257,10 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         },
       },
 
-      // STEP 9: PAGINATION
+      // ------------------------------------
+      // STEP 8: PAGINATION
+      // ------------------------------------
+
       {
         $skip: skip,
       },
@@ -260,55 +271,108 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     ];
 
     // ------------------------------------
-    // COUNT
+    // COUNT ONLY APPROVED BRANDS
     // ------------------------------------
 
     const countAggregationPipeline = [
-      {
-        $match: OverAllCategory,
+  {
+    $match: OverAllCategory,
+  },
+
+  {
+    $lookup: {
+      from: "branddetails",
+
+      let: {
+        franchiseBrandOwnerId: "$brandOwnerId",
       },
 
-      {
-        $count: "totalCount",
-      },
-    ];
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                {
+                  $eq: [
+                    "$uuid",
+                    "$$franchiseBrandOwnerId",
+                  ],
+                },
 
+                {
+                  $eq: [
+                    "$brandDetails.isApproved",
+                    true,
+                  ],
+                },
+
+                {
+                  $eq: [
+                    "$brandDetails.isBrandPause",
+                    false,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+
+      as: "approvedActiveBrand",
+    },
+  },
+
+  {
+    $match: {
+      "approvedActiveBrand.0": {
+        $exists: true,
+      },
+    },
+  },
+
+  {
+    $count: "totalCount",
+  },
+];
     // ------------------------------------
-    // RUN QUERY
+    // RUN QUERIES
     // ------------------------------------
 
     const [brandsData, countResult] =
       await Promise.all([
         BrandFranchiseDetails.aggregate(
-          aggregationPipeline
+          aggregationPipeline,
         ),
 
         BrandFranchiseDetails.aggregate(
-          countAggregationPipeline
+          countAggregationPipeline,
         ),
       ]);
 
     console.log(
-      "BRANDS FOUND:",
-      brandsData.length
+      "APPROVED BRANDS FOUND:",
+      brandsData.length,
     );
 
     console.log(
-      "TOTAL COUNT:",
-      countResult
+      "APPROVED TOTAL COUNT:",
+      countResult,
     );
 
     // ------------------------------------
     // NO DATA
     // ------------------------------------
 
-    if (!brandsData || brandsData.length === 0) {
+    if (
+      !brandsData ||
+      brandsData.length === 0
+    ) {
       return res.json(
         new ApiResponse(
           404,
           null,
-          "No brands found for this category"
-        )
+          "No approved brands found for this category",
+        ),
       );
     }
 
@@ -316,9 +380,7 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     // SHUFFLE
     // ------------------------------------
 
-    const brands = shuffleArray(
-      brandsData
-    );
+    const brands = shuffleArray(brandsData);
 
     const totalCount =
       countResult[0]?.totalCount || 0;
@@ -357,237 +419,21 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           },
         },
 
-        "Brands fetched successfully"
-      )
+        "Approved brands fetched successfully",
+      ),
     );
-
   } catch (error) {
-
     console.error(
-      "Error fetching brands:",
-      error
+      "Error fetching approved brands:",
+      error,
     );
 
     return res.json(
       new ApiResponse(
         500,
         null,
-        `Failed to fetch brands: ${error.message}`
-      )
+        `Failed to fetch approved brands: ${error.message}`,
+      ),
     );
   }
 };
-
-
-
-// import mongoose from "mongoose";
-// import { ApiResponse } from "../../utils/ApiResponse/ApiResponse.js";
-// import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDetails.model.js";
-// import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
-// import { likeandshortlist } from "../../controller/BrandController/BrandListingController.js";
-
-// export const overAllPlatformOnlyMainCategory = async (req, res) => {
-//   try {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 20;
-//     const skip = (page - 1) * limit;
-//     const id = req.query.id || null;
-
-//     const { main, sub, child } = req.query;
-//     console.log("overall platform main category",main,sub);
-    
-
-//     const { likedBrands, shortListedBrands } = await likeandshortlist(id);
-
-//     const OverAllCategory = {};
-
-//     if (main) {
-//       OverAllCategory["franchiseDetails.brandCategories.main"] = main;
-//     }
-
-//     if ((main && sub) || sub) {
-//       OverAllCategory["franchiseDetails.brandCategories.sub"] = sub;
-//     }
-
-//     if (main && sub && child) {
-//       OverAllCategory["franchiseDetails.brandCategories.child"] = child;
-//     }
-//     const aggregationPipeline = [
-//       {
-//         $match: { ...OverAllCategory },
-//       },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$brandInfo",
-//           preserveNullAndEmptyArrays: false,
-//         },
-//       },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: false },
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "branduploads",
-//           localField: "brandOwnerId",
-//           foreignField: "brandOwnerId",
-//           as: "uploads",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$uploads",
-//           preserveNullAndEmptyArrays: true,
-//         },
-//       },
-//       {
-//         $addFields: {
-//           isLiked: {
-//             $in: [
-//               "$brandInfo._id",
-//               likedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//           isShortListed: {
-//             $in: [
-//               "$brandInfo._id",
-//               shortListedBrands.map((id) => new mongoose.Types.ObjectId(id)),
-//             ],
-//           },
-//         },
-//       },
-//       { $sort: { createdAt: -1 } },
-//       {
-//         $project: {
-//           _id: 0,
-//           brandID: "$brandInfo.brandID",
-//           uuid: "$brandOwnerId",
-//           isLiked: 1,
-//           isShortListed: 1,
-//           brandname: "$brandInfo.brandDetails.brandName",
-//           state: "$brandInfo.brandDetails.state",
-//           district: "$brandInfo.brandDetails.district",
-//           slug: "$brandInfo.brandDetails.slug",
-//           brandCategories: {
-//             $ifNull: ["$franchiseDetails.brandCategories", null],
-//           },
-//           fico: {
-//             $let: {
-//               vars: {
-//                 data: { $arrayElemAt: ["$franchiseDetails.fico", 0] },
-//               },
-//               in: {
-//                 investmentRange: "$$data.investmentRange",
-//                 areaRequired: "$$data.areaRequired",
-//                 franchiseModel: "$$data.franchiseModel",
-//               },
-//             },
-//           },
-//           logo: {
-//             $cond: {
-//               if: { $isArray: "$uploads.uploads.brandLogo" },
-//               then: { $arrayElemAt: ["$uploads.uploads.brandLogo", 0] },
-//               else: null,
-//             },
-//           },
-//           franchiseVideos: {
-//             $cond: {
-//               if: { $isArray: "$uploads.uploads.franchisePromotionVideo" },
-//               then: {
-//                 $arrayElemAt: ["$uploads.uploads.franchisePromotionVideo", 0],
-//               },
-//               else: null,
-//             },
-//           },
-//         },
-//       },
-
-//       { $skip: skip },
-//       { $limit: limit },
-//     ];
-
-//     const countAggregationPipeline = [
-//       { $match: { ...OverAllCategory } },
-//       {
-//         $lookup: {
-//           from: "branddetails",
-//           localField: "brandOwnerId",
-//           foreignField: "uuid",
-//           as: "brandInfo",
-//         },
-//       },
-//       {
-//         $unwind: {
-//           path: "$brandInfo",
-//           preserveNullAndEmptyArrays: false,
-//         },
-//       },
-//       {
-//         $match: {
-//           "brandInfo.brandDetails.isBrandPause": { $ne: true },
-//           "brandInfo.brandDetails.isApproved": { $ne: false },
-//         },
-//       },
-//       { $count: "totalCount" },
-//     ];
-
-//     const [brandsData, countResult] = await Promise.all([
-//       BrandFranchiseDetails.aggregate(aggregationPipeline),
-//       BrandFranchiseDetails.aggregate(countAggregationPipeline),
-//     ]);
-
-//     const totalCount = countResult[0]?.totalCount || 0;
-
-//     if (!brandsData || brandsData.length === 0) {
-//       return res.json(
-//         new ApiResponse(404, null, "No top food franchises found"),
-//       );
-//     }
-
-//     const brands = shuffleArray(brandsData);
-
-//     const totalPages = Math.ceil(totalCount / limit);
-//     const hasNext = page < totalPages;
-//     const hasPrevious = page > 1;
-
-//     return res.json(
-//       new ApiResponse(
-//         200,
-//         {
-//           brands: brands,
-//           pagination: {
-//             total: totalCount,
-//             totalPages,
-//             currentPage: page,
-//             limit,
-//             hasNext,
-//             hasPrevious,
-//           },
-//         },
-//         "Top food franchises fetched successfully",
-//       ),
-//     );
-
-//     console.log("api res",br);
-    
-//   } catch (error) {
-//     console.error("Error fetching top food franchises:", error);
-//     return res.json(
-//       new ApiResponse(
-//         500,
-//         null,
-//         `Failed to fetch top food franchises: ${error.message}`,
-//       ),
-//     );
-//   }
-// };
