@@ -37,7 +37,7 @@ const generateOTPforLogin = async (req, res) => {
     }
 
     const newOTP = generateOTP().toString().trim();
-    // console.log("Generated OTP:", newOTP);
+    console.log("Generated OTP:", newOTP);
 
     // Store OTP with current timestamp
     const timestamp = Date.now() + 5 * 60 * 1000;

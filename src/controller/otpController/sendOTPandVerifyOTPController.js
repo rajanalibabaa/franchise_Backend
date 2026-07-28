@@ -6,11 +6,11 @@ import { sendEmailOTP } from "../../utils/Centralized Email/centralizedEmail.js"
 
 // In-memory OTP store: Map<email, { otp: string, expiresAt: Date }>
 const otpStore = new Map();
-// console.log("otpStore : ",otpStore)
+console.log("otpStore : ",otpStore)
 
 const generateNewEmailOTP = async (req, res) => {
   const { email, mobileNuber } = req.body;
-  // console.log("===== :", req.body);
+  console.log("===== :", req.body);
 
   const brandExist = await BrandListing.find({
     "personalDetails.email": email,
@@ -42,7 +42,7 @@ const generateNewEmailOTP = async (req, res) => {
 
 const verifynewEmailOTP = async (req, res) => {
   const { email, verifyOTP } = req.body;
-  // console.log("verifyOTP :", verifyOTP);
+  console.log("verifyOTP :", verifyOTP);
 
   const otpEntry = otpStore.get(email);
 
@@ -93,7 +93,7 @@ const verifyExistingEmailOTP = async (req, res) => {
   const { email, verifyOTP } = req.body;
 
   const otpEntry = otpStore.get(email);
-  // console.log("otpEntry :",otpEntry)
+  console.log("otpEntry :",otpEntry)
   if (!otpEntry) {
     return res.json(new ApiResponse(400, false, "please generate OTP first"));
   }

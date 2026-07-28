@@ -26,9 +26,9 @@ export const requestEmailOtp = async (req, res) => {
   const { email } = req.body;
   console.log("Email:", email); // Log the email for debugging purposes
 
-  // console.log(email);
+  console.log(email);
   const otp = generateOTP();
-  // console.log("OTP:", otp); // Log the OTP for debugging purposes
+  console.log("OTP:", otp); // Log the OTP for debugging purposes
   const token = generateToken(email, otp);
   // console.log("Token:", token);
   const subject = "Verify Your Email Address";

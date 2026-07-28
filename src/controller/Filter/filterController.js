@@ -28,15 +28,10 @@ export const getAllBrandsAndFilter = async (req, res) => {
       serchIndustry,
     } = req.query || {};
 
-    console.log("Received filters:", 
-      maincat,
-      subcat,
-      franchiseType,
-      
-  );
+    console.log("Received filters:", maincat, subcat, franchiseType);
     let searchterm =
       req.query.searchterm || req.query.searchTerm || req.query.serchterm;
-    
+
     // Ensure searchterm is a string and not empty
     searchterm = searchterm ? String(searchterm).trim() : null;
 
@@ -260,19 +255,21 @@ export const getAllBrandsAndFilter = async (req, res) => {
       { $match: match },
       {
         $addFields: {
-            isLiked: {
-              $in: [
-                "$_id",
-                (likedBrands || []).map((id) => new mongoose.Types.ObjectId(id)),
-              ],
-            },
-            isShortListed: {
-              $in: [
-                "$_id",
-                (shortListedBrands || []).map((id) => new mongoose.Types.ObjectId(id)),
-              ],
-            },
+          isLiked: {
+            $in: [
+              "$_id",
+              (likedBrands || []).map((id) => new mongoose.Types.ObjectId(id)),
+            ],
           },
+          isShortListed: {
+            $in: [
+              "$_id",
+              (shortListedBrands || []).map(
+                (id) => new mongoose.Types.ObjectId(id),
+              ),
+            ],
+          },
+        },
       },
       {
         $project: {
@@ -448,10 +445,9 @@ const AREA_REQUIRED = [
 ];
 
 const FRANCHISE_MODEL = [
-  "FRANCHISE"
+  "FRANCHISE",
   // "DEALER AND DISTRIBUTOR",
   // "CHANNEL PARTNER"
-
 ];
 
 const InvestmentRange = [
@@ -474,23 +470,25 @@ import NodeCache from "node-cache";
 
 const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
-
-
 import { getBlockConfig } from "../../utils/FillterBlock/FillterBlock.js";
 
 const hasBlock = (array = [], value = "") =>
   array.some(
-    (item) => item.trim().toLowerCase() === (value || "").trim().toLowerCase()
+    (item) => item.trim().toLowerCase() === (value || "").trim().toLowerCase(),
   );
 
 const findParentEntry = (array = [], parent = "") =>
   array.find(
-    (e) => (e.parent || "").trim().toLowerCase() === (parent || "").trim().toLowerCase()
+    (e) =>
+      (e.parent || "").trim().toLowerCase() ===
+      (parent || "").trim().toLowerCase(),
   );
 
 const isHeadingBlocked = (block, heading) => hasBlock(block.headings, heading);
-const isIndustryBlocked = (block, industry) => hasBlock(block.industries, industry);
-const isCategoryBlocked = (block, category) => hasBlock(block.categories, category);
+const isIndustryBlocked = (block, industry) =>
+  hasBlock(block.industries, industry);
+const isCategoryBlocked = (block, category) =>
+  hasBlock(block.categories, category);
 
 // A product parent is fully blocked if its category is blocked,
 // OR it has a productTags entry with no (or empty) tags list.
@@ -521,7 +519,7 @@ const isServiceTagBlocked = (block, parent, tag) => {
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry, franchiseModel } = req.query;
 
-  console.log("query params:", req.query);
+  console.log("comin frm query params:", req.query);
 
   const cacheKey = JSON.stringify(req.query);
   const cachedData = cache.get(cacheKey);
@@ -649,7 +647,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
     const normalizedModel = franchiseModel.trim().toUpperCase();
 
     const matchedKey = Object.keys(franchiseTypes).find(
-      (key) => key.toUpperCase() === normalizedModel
+      (key) => key.toUpperCase() === normalizedModel,
     );
 
     if (!matchedKey) {
@@ -658,9 +656,9 @@ export const getAllBrandFiltersdata = async (req, res) => {
           404,
           {},
           `Franchise model "${franchiseModel}" not found. Available models: ${Object.keys(
-            franchiseTypes
-          ).join(", ")}`
-        )
+            franchiseTypes,
+          ).join(", ")}`,
+        ),
       );
     }
 
@@ -674,7 +672,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
         franchiseheading,
         franchiseTypedata,
       },
-      "Franchise types fetched successfully"
+      "Franchise types fetched successfully",
     );
 
     cache.set(cacheKey, response);
@@ -706,7 +704,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
                 if (!headingName) continue;
                 if (isHeadingBlocked(block, headingName)) continue; // 🚫 whole heading gone
 
-                if (!headingMap[headingName]) headingMap[headingName] = new Set();
+                if (!headingMap[headingName])
+                  headingMap[headingName] = new Set();
                 for (const ind of h.industries || []) {
                   if (!ind.industry) continue;
                   if (isIndustryBlocked(block, ind.industry)) continue; // 🚫 industry hidden
@@ -746,7 +745,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           franchiseModel: FRANCHISE_MODEL,
           states: statesData,
         },
-        "Brand filters fetched successfully"
+        "Brand filters fetched successfully",
       );
 
       cache.set(cacheKey, response);
@@ -804,7 +803,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
 
           if (normalizedSub === "all" || parent === normalizedSub) {
             for (const tagObj of ptItem.tags || []) {
-              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              const tagValue =
+                typeof tagObj === "string" ? tagObj : tagObj?.tag;
               if (!tagValue) continue;
               if (isProductTagBlocked(block, rawParent, tagValue)) continue; // 🚫 tag blocked under this parent
 
@@ -824,7 +824,8 @@ export const getAllBrandFiltersdata = async (req, res) => {
 
           if (normalizedSub === "all" || parent === normalizedSub) {
             for (const tagObj of stItem.tags || []) {
-              const tagValue = typeof tagObj === "string" ? tagObj : tagObj?.tag;
+              const tagValue =
+                typeof tagObj === "string" ? tagObj : tagObj?.tag;
               if (!tagValue) continue;
               if (isServiceTagBlocked(block, rawParent, tagValue)) continue; // 🚫 tag blocked under this parent
 
@@ -842,7 +843,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           productTags: Array.from(productSet).sort(),
           serviceTags: Array.from(serviceSet).sort(),
         },
-        "Tags fetched successfully"
+        "Tags fetched successfully",
       );
 
       cache.set(cacheKey, response);
@@ -885,7 +886,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
       const response = new ApiResponse(
         200,
         districts,
-        "Districts fetched successfully"
+        "Districts fetched successfully",
       );
 
       cache.set(cacheKey, response);
@@ -910,7 +911,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
                 const found = (h.industries || []).find(
                   (ind) =>
                     ind.industry === industryName &&
-                    !isIndustryBlocked(block, ind.industry) // 🚫 blocked industry = not found
+                    !isIndustryBlocked(block, ind.industry), // 🚫 blocked industry = not found
                 );
                 if (found) return found;
               }
@@ -949,7 +950,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
           franchiseModel: FRANCHISE_MODEL,
           states: statesData,
         },
-        "Categories fetched successfully"
+        "Categories fetched successfully",
       );
 
       cache.set(cacheKey, response);
@@ -960,7 +961,7 @@ export const getAllBrandFiltersdata = async (req, res) => {
   } catch (error) {
     console.error("Filter API Error:", error);
     return res.json(
-      new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`)
+      new ApiResponse(500, null, `Failed to fetch filters: ${error.message}`),
     );
   }
 };
