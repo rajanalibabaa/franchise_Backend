@@ -164,6 +164,8 @@ const generateOTPforLogin = async (req, res) => {
       await sendEmailOTP(email, newOTP);
     } else {
       // await sendMobileSMS(mobileNumber, newOTP);
+      console.log("OTP NOT SEND,check this generate otologin");
+      
     }
 
     return res.json(new ApiResponse(200, {}, "OTP sent successfully"));
