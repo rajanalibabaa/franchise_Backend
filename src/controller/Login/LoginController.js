@@ -37,7 +37,7 @@ const generateOTPforLogin = async (req, res) => {
     }
 
     const newOTP = generateOTP().toString().trim();
-    // console.log("Generated OTP:", newOTP);
+    console.log("Generated OTP:", newOTP);
 
     // Store OTP with current timestamp
     const timestamp = Date.now() + 5 * 60 * 1000;
@@ -161,7 +161,7 @@ const generateOTPforLogin = async (req, res) => {
     }
 
     if (email) {
-      // await sendEmailOTP(email, newOTP);
+      await sendEmailOTP(email, newOTP);
     } else {
       // await sendMobileSMS(mobileNumber, newOTP);
     }
