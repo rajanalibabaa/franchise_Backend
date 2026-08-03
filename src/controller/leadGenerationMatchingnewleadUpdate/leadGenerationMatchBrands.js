@@ -283,6 +283,8 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
       uuid: investorUuid,
     });
 
+    console.log("enquiry data",enquiry);
+    
     if (!enquiry) {
       return res.status(404).json({
         success: false,
@@ -292,7 +294,7 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
 
     const investmentRange = req.body.investmentRange || enquiry.investmentRange;
     const state = req.body.state || enquiry.state;
-    const district = req.body.district || enquiry.district;
+    // const district = req.body.district || enquiry.district;
     const industry = enquiry.industry;
 
     if (!industry || !investmentRange || !state) {
@@ -309,6 +311,7 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
     ========================================== */
 
     const brands = await BrandPackages.find({ industry });
+console.log("brands search",brands);
 
     /* ==========================================
        STEP 3 : SEPARATE PACKAGES BY TYPE
@@ -323,14 +326,18 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
     brands.forEach((brand) => {
       (brand.packages || []).forEach((pkg) => {
         const packageType = pkg.packagesType; // "FREE" | "LEAD" | "LISTING"
+console.log("packages type",packageType);
 
         (pkg.investmetPackages || []).forEach((plan) => {
+
+          console.log("plan",plan);
+          
           separatedPackages[packageType]?.push({
             ...plan._doc,
             brandOwnerId: brand.brandOwnerId,
             brandName: brand.brandName,
             industry: brand.industry,
-            category: brand.category,
+            // category: brand.category,
           });
         });
       });
@@ -361,7 +368,7 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
          - state must match exactly
          - district rules same as above
     ========================================== */
-
+ 
     const isPackageActive = (pkg) => {
       if (!pkg.isActive) return false;
       if (pkg.isPaused) return false;
@@ -380,89 +387,135 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
       return normalize(rangeValue) === normalize(investorRange);
     };
 
-    const isLocationMatched = (location, investorState, investorDistrict) => {
-      // State must match
-      const stateMatched =
-        normalize(location.state) === normalize(investorState);
+    // const isLocationMatched = (location, investorState) => {
+    //   // State must match
+    //   const stateMatched =
+    //     normalize(location.state) === normalize(investorState);
 
-      if (!stateMatched) {
-        console.log(
-          `  State mismatch: package="${location.state}" investor="${investorState}"`
-        );
-        return false;
-      }
+    //   if (!stateMatched) {
+    //     console.log(
+    //       `  State mismatch: package="${location.state}" investor="${investorState}"`
+    //     );
+    //     return false;
+    //   }
 
-      const packageDistricts = location.district || [];
+    //   const packageDistricts = location.district || [];
 
-      // If package district list is EMPTY → covers entire state → match
-      if (packageDistricts.length === 0) {
-        console.log(`  State matched, no district restriction → MATCH`);
-        return true;
-      }
+    //   // If package district list is EMPTY → covers entire state → match
+    //   if (packageDistricts.length === 0) {
+    //     console.log(`  State matched, no district restriction → MATCH`);
+    //     return true;
+    //   }
 
-      // If investor has no district → state level match is enough
-      if (!investorDistrict) {
-        console.log(
-          `  State matched, investor has no district → MATCH`
-        );
-        return true;
-      }
+    //   // If investor has no district → state level match is enough
+    //   if (!investorDistrict) {
+    //     console.log(
+    //       `  State matched, investor has no district → MATCH`
+    //     );
+    //     return true;
+    //   }
 
-      // Check if investor district is in package district list
-      const districtMatched = packageDistricts.some(
-        (d) => normalize(d) === normalize(investorDistrict)
-      );
+    //   // Check if investor district is in package district list
+    //   const districtMatched = packageDistricts.some(
+    //     (d) => normalize(d) === normalize(investorDistrict)
+    //   );
+
+    //   console.log(
+    //     `  District check: investor="${investorDistrict}" packageDistricts=${JSON.stringify(
+    //       packageDistricts
+    //     )} → ${districtMatched ? "MATCH" : "NO MATCH"}`
+    //   );
+
+    //   return districtMatched;
+    // };
+
+
+    const isLocationMatched = (location, investorState) => {
+  return (
+    normalize(location.state) === normalize(investorState)
+  );
+};
+
+
+const findMatchingPackages = (
+  packages,
+  investorRange,
+  investorState,
+  packageType
+) => {
+  console.log(`\n==============================`);
+  console.log(`CHECKING ${packageType} PACKAGES`);
+  console.log(`==============================`);
+
+  const investmentMatched = [];
+  const stateMatched = [];
+  const finalMatched = [];
+
+  packages.forEach((pkg) => {
+
+    console.log("\n--------------------------------");
+    console.log("Brand :", pkg.brandName);
+    console.log("Package :", pkg.packagesName);
+
+    if (!isPackageActive(pkg)) {
+      console.log("Status : SKIPPED (Inactive)");
+      return;
+    }
+
+    const ranges = pkg.investmentranges || [];
+
+    ranges.forEach((range) => {
 
       console.log(
-        `  District check: investor="${investorDistrict}" packageDistricts=${JSON.stringify(
-          packageDistricts
-        )} → ${districtMatched ? "MATCH" : "NO MATCH"}`
+        `Investment => Package: ${range.selectedPlanInvestmetrange} | Investor: ${investorRange}`
       );
 
-      return districtMatched;
-    };
+      const invMatch = isInvestmentMatched(
+        range.selectedPlanInvestmetrange,
+        investorRange
+      );
 
-    const findMatchingPackages = (packages, investorRange, investorState, investorDistrict) => {
-      return packages.filter((pkg) => {
-        // Check if package is active
-        if (!isPackageActive(pkg)) {
-          console.log(`Package "${pkg.packagesName}" is inactive/paused/expired → SKIP`);
-          return false;
-        }
+      if (!invMatch) {
+        console.log("Investment : NO MATCH");
+        return;
+      }
 
-        const ranges = pkg.investmentranges || [];
+      console.log("Investment : MATCH");
 
-        // Check if ANY investment range block matches
-        const matched = ranges.some((range) => {
-          console.log(`\nChecking package: "${pkg.packagesName}"`);
+      investmentMatched.push(pkg);
+
+      const stateOk = (range.selectedPlanStateAndDistrict || []).some(
+        (location) => {
+
           console.log(
-            `  Investment: package="${range.selectedPlanInvestmetrange}" investor="${investorRange}"`
+            `State => Package: ${location.state} | Investor: ${investorState}`
           );
 
-          // Check investment range
-          const investmentMatched = isInvestmentMatched(
-            range.selectedPlanInvestmetrange,
-            investorRange
-          );
+          return isLocationMatched(location, investorState);
+        }
+      );
 
-          if (!investmentMatched) {
-            console.log(`  Investment mismatch → SKIP`);
-            return false;
-          }
+      if (!stateOk) {
+        console.log("State : NO MATCH");
+        return;
+      }
 
-          console.log(`  Investment MATCHED`);
+      console.log("State : MATCH");
 
-          // Check state and district
-          const locations = range.selectedPlanStateAndDistrict || [];
+      stateMatched.push(pkg);
+      finalMatched.push(pkg);
+    });
 
-          return locations.some((location) =>
-            isLocationMatched(location, investorState, investorDistrict)
-          );
-        });
+  });
 
-        return matched;
-      });
-    };
+  console.log("\n=========== SUMMARY ===========");
+  console.log("Investment Match :", investmentMatched.length);
+  console.log("State Match      :", stateMatched.length);
+  console.log("Final Match      :", finalMatched.length);
+
+  return finalMatched;
+};
+
 
     /* ==========================================
        STEP 6 : RUN MATCHING
@@ -472,21 +525,21 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
       separatedPackages.LEAD,
       investmentRange,
       state,
-      district
+      // district
     );
 
     const matchedListingBrands = findMatchingPackages(
       separatedPackages.LISTING,
       investmentRange,
       state,
-      district
+      // district
     );
 
     const matchedFreeBrands = findMatchingPackages(
       separatedPackages.FREE,
       investmentRange,
       state,
-      district
+      // district
     );
 
     console.log("\n=== MATCH RESULTS ===");
@@ -521,7 +574,7 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
         industry,
         investmentRange,
         state,
-        district: district || null,
+        // district: district || null,
       },
 
       summary: {
@@ -535,9 +588,35 @@ export const findMatchingBrandsForEnquiry = async (req, res) => {
         LEAD: matchedLeadBrands,
         LISTING: matchedListingBrands,
         FREE: matchedFreeBrands,
-        // ALL: finalMatchedBrands,
+        ALL: finalMatchedBrands,
       },
     });
+
+    console.log("\n========================================");
+console.log("FINAL MATCHING SUMMARY");
+console.log("========================================");
+
+console.log("Industry :", industry);
+console.log("Investment Range :", investmentRange);
+console.log("State :", state);
+
+console.log("----------------------------------------");
+
+console.log("LEAD Matched :", matchedLeadBrands.length);
+console.log("LISTING Matched :", matchedListingBrands.length);
+console.log("FREE Matched :", matchedFreeBrands.length);
+
+console.log("----------------------------------------");
+
+console.log("TOTAL UNIQUE BRANDS :", finalMatchedBrands.length);
+
+finalMatchedBrands.forEach((brand, index) => {
+  console.log(
+    `${index + 1}. ${brand.brandName} (${brand.brandOwnerId})`
+  );
+});
+
+console.log("========================================");
   } catch (error) {
     console.error("Matching Error:", error);
 

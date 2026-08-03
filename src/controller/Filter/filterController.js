@@ -28,7 +28,7 @@ export const getAllBrandsAndFilter = async (req, res) => {
       serchIndustry,
     } = req.query || {};
 
-    console.log("Received filters:", maincat, subcat, franchiseType);
+    console.log("Received filters coming fromfrontend:", maincat, subcat, franchiseType);
     let searchterm =
       req.query.searchterm || req.query.searchTerm || req.query.serchterm;
 
@@ -446,7 +446,7 @@ const AREA_REQUIRED = [
 
 const FRANCHISE_MODEL = [
   "FRANCHISE",
-  // "DEALER AND DISTRIBUTOR",
+  "DEALER AND DISTRIBUTOR",
   // "CHANNEL PARTNER"
 ];
 
@@ -519,7 +519,8 @@ const isServiceTagBlocked = (block, parent, tag) => {
 export const getAllBrandFiltersdata = async (req, res) => {
   const { main, sub, district, state, industry, franchiseModel } = req.query;
 
-  console.log("comin frm query params:", req.query);
+  console.log("comin frm query params query:", req.query);
+console.log("sub from frontend",sub);
 
   const cacheKey = JSON.stringify(req.query);
   const cachedData = cache.get(cacheKey);
@@ -965,3 +966,6 @@ export const getAllBrandFiltersdata = async (req, res) => {
     );
   }
 };
+
+
+

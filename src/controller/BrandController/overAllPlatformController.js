@@ -4,6 +4,7 @@ import { BrandFranchiseDetails } from "../../model/Brand/Brand.model/FranchiseDe
 import { shuffleArray } from "../../utils/HelperFunction/shuffle.js";
 import { likeandshortlist } from "../../controller/BrandController/BrandListingController.js";
 
+
 export const overAllPlatformOnlyMainCategory = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -12,7 +13,18 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
 
     const id = req.query.id || null;
 
-    const { main, sub, child } = req.query;
+    const {
+      main,
+      sub,
+      child,
+      search = "",
+    } = req.query;
+
+    // ------------------------------------
+    // CLEAN SEARCH
+    // ------------------------------------
+
+    const searchTerm = search.trim();
 
     console.log("=================================");
     console.log("API QUERY:", req.query);
@@ -20,6 +32,9 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     console.log("SUB:", sub);
     console.log("CHILD:", child);
     console.log("ID:", id);
+    console.log("SEARCH:", searchTerm);
+    console.log("PAGE:", page);
+    console.log("LIMIT:", limit);
     console.log("=================================");
 
     // ------------------------------------
@@ -33,7 +48,8 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
       const result = await likeandshortlist(id);
 
       likedBrands = result?.likedBrands || [];
-      shortListedBrands = result?.shortListedBrands || [];
+      shortListedBrands =
+        result?.shortListedBrands || [];
     }
 
     // ------------------------------------
@@ -43,39 +59,80 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     const OverAllCategory = {};
 
     if (main) {
-      OverAllCategory["franchiseDetails.brandCategories.main"] = main;
+      OverAllCategory[
+        "franchiseDetails.brandCategories.main"
+      ] = main;
     }
 
     if (sub) {
-      OverAllCategory["franchiseDetails.brandCategories.sub"] = sub;
+      OverAllCategory[
+        "franchiseDetails.brandCategories.sub"
+      ] = sub;
     }
 
     if (child) {
-      OverAllCategory["franchiseDetails.brandCategories.child"] = child;
+      OverAllCategory[
+        "franchiseDetails.brandCategories.child"
+      ] = child;
     }
 
     console.log(
       "MongoDB Category Filter:",
-      JSON.stringify(OverAllCategory, null, 2),
+      JSON.stringify(
+        OverAllCategory,
+        null,
+        2
+      )
     );
 
     // ------------------------------------
-    // MAIN AGGREGATION
+    // SEARCH REGEX
     // ------------------------------------
 
+    let brandSearchRegex = null;
+
+    if (searchTerm) {
+      // Escape special regex characters
+      const escapedSearch = searchTerm.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
+      brandSearchRegex = new RegExp(
+        escapedSearch,
+        "i"
+      );
+
+      console.log(
+        "Brand Search Regex:",
+        brandSearchRegex
+      );
+    }
+
+    // =====================================================
+    // MAIN AGGREGATION
+    // =====================================================
+
     const aggregationPipeline = [
+      // ------------------------------------
       // STEP 1: CATEGORY FILTER
+      // ------------------------------------
+
       {
         $match: OverAllCategory,
       },
 
-      // STEP 2: GET ONLY APPROVED BRAND DETAILS
+      // ------------------------------------
+      // STEP 2: GET APPROVED BRAND DETAILS
+      // ------------------------------------
+
       {
         $lookup: {
           from: "branddetails",
 
           let: {
-            franchiseBrandOwnerId: "$brandOwnerId",
+            franchiseBrandOwnerId:
+              "$brandOwnerId",
           },
 
           pipeline: [
@@ -84,10 +141,24 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
                 $expr: {
                   $and: [
                     {
-                      $eq: ["$uuid", "$$franchiseBrandOwnerId"],
+                      $eq: [
+                        "$uuid",
+                        "$$franchiseBrandOwnerId",
+                      ],
                     },
+
                     {
-                      $eq: ["$brandDetails.isApproved", true],
+                      $eq: [
+                        "$brandDetails.isApproved",
+                        true,
+                      ],
+                    },
+
+                    {
+                      $eq: [
+                        "$brandDetails.isBrandPause",
+                        false,
+                      ],
                     },
                   ],
                 },
@@ -99,8 +170,10 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         },
       },
 
-      // STEP 3: ONLY KEEP RECORDS
-      // WHERE APPROVED BRAND WAS FOUND
+      // ------------------------------------
+      // STEP 3: ONLY KEEP APPROVED BRANDS
+      // ------------------------------------
+
       {
         $unwind: {
           path: "$brandInfo",
@@ -108,15 +181,33 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
         },
       },
 
+      // =====================================================
+      // STEP 4: BRAND NAME SEARCH
+      // =====================================================
+
+      ...(brandSearchRegex
+        ? [
+            {
+              $match: {
+                "brandInfo.brandDetails.brandName":
+                  brandSearchRegex,
+              },
+            },
+          ]
+        : []),
+
       // ------------------------------------
-      // STEP 4: BRAND UPLOADS
+      // STEP 5: BRAND UPLOADS
       // ------------------------------------
 
       {
         $lookup: {
           from: "branduploads",
+
           localField: "brandOwnerId",
+
           foreignField: "brandOwnerId",
+
           as: "uploads",
         },
       },
@@ -124,12 +215,13 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
       {
         $unwind: {
           path: "$uploads",
+
           preserveNullAndEmptyArrays: true,
         },
       },
 
       // ------------------------------------
-      // STEP 5: LIKE / SHORTLIST
+      // STEP 6: LIKE / SHORTLIST
       // ------------------------------------
 
       {
@@ -137,8 +229,12 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           isLiked: {
             $in: [
               "$brandInfo._id",
+
               likedBrands.map(
-                (id) => new mongoose.Types.ObjectId(id),
+                (id) =>
+                  new mongoose.Types.ObjectId(
+                    id
+                  )
               ),
             ],
           },
@@ -146,8 +242,12 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           isShortListed: {
             $in: [
               "$brandInfo._id",
+
               shortListedBrands.map(
-                (id) => new mongoose.Types.ObjectId(id),
+                (id) =>
+                  new mongoose.Types.ObjectId(
+                    id
+                  )
               ),
             ],
           },
@@ -155,7 +255,7 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
       },
 
       // ------------------------------------
-      // STEP 6: SORT
+      // STEP 7: SORT
       // ------------------------------------
 
       {
@@ -165,14 +265,15 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
       },
 
       // ------------------------------------
-      // STEP 7: PROJECT
+      // STEP 8: PROJECT
       // ------------------------------------
 
       {
         $project: {
           _id: 0,
 
-          brandID: "$brandInfo.brandID",
+          brandID:
+            "$brandInfo.brandID",
 
           uuid: "$brandOwnerId",
 
@@ -180,13 +281,17 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
 
           isShortListed: 1,
 
-          brandname: "$brandInfo.brandDetails.brandName",
+          brandname:
+            "$brandInfo.brandDetails.brandName",
 
-          state: "$brandInfo.brandDetails.state",
+          state:
+            "$brandInfo.brandDetails.state",
 
-          district: "$brandInfo.brandDetails.district",
+          district:
+            "$brandInfo.brandDetails.district",
 
-          slug: "$brandInfo.brandDetails.slug",
+          slug:
+            "$brandInfo.brandDetails.slug",
 
           brandCategories: {
             $ifNull: [
@@ -258,7 +363,7 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
       },
 
       // ------------------------------------
-      // STEP 8: PAGINATION
+      // STEP 9: PAGINATION
       // ------------------------------------
 
       {
@@ -270,93 +375,125 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
       },
     ];
 
-    // ------------------------------------
-    // COUNT ONLY APPROVED BRANDS
-    // ------------------------------------
+    // =====================================================
+    // COUNT PIPELINE
+    // =====================================================
 
     const countAggregationPipeline = [
-  {
-    $match: OverAllCategory,
-  },
+      // ------------------------------------
+      // CATEGORY FILTER
+      // ------------------------------------
 
-  {
-    $lookup: {
-      from: "branddetails",
-
-      let: {
-        franchiseBrandOwnerId: "$brandOwnerId",
+      {
+        $match: OverAllCategory,
       },
 
-      pipeline: [
-        {
-          $match: {
-            $expr: {
-              $and: [
-                {
-                  $eq: [
-                    "$uuid",
-                    "$$franchiseBrandOwnerId",
-                  ],
-                },
+      // ------------------------------------
+      // BRAND DETAILS
+      // ------------------------------------
 
-                {
-                  $eq: [
-                    "$brandDetails.isApproved",
-                    true,
-                  ],
-                },
+      {
+        $lookup: {
+          from: "branddetails",
 
-                {
-                  $eq: [
-                    "$brandDetails.isBrandPause",
-                    false,
-                  ],
-                },
-              ],
-            },
+          let: {
+            franchiseBrandOwnerId:
+              "$brandOwnerId",
           },
+
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: [
+                        "$uuid",
+                        "$$franchiseBrandOwnerId",
+                      ],
+                    },
+
+                    {
+                      $eq: [
+                        "$brandDetails.isApproved",
+                        true,
+                      ],
+                    },
+
+                    {
+                      $eq: [
+                        "$brandDetails.isBrandPause",
+                        false,
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+
+          as: "approvedActiveBrand",
         },
-      ],
-
-      as: "approvedActiveBrand",
-    },
-  },
-
-  {
-    $match: {
-      "approvedActiveBrand.0": {
-        $exists: true,
       },
-    },
-  },
 
-  {
-    $count: "totalCount",
-  },
-];
-    // ------------------------------------
-    // RUN QUERIES
-    // ------------------------------------
+      // ------------------------------------
+      // ONLY APPROVED ACTIVE BRANDS
+      // ------------------------------------
+
+      {
+        $unwind: {
+          path: "$approvedActiveBrand",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+
+      // =====================================================
+      // SEARCH IN COUNT ALSO
+      // =====================================================
+
+      ...(brandSearchRegex
+        ? [
+            {
+              $match: {
+                "approvedActiveBrand.brandDetails.brandName":
+                  brandSearchRegex,
+              },
+            },
+          ]
+        : []),
+
+      // ------------------------------------
+      // COUNT
+      // ------------------------------------
+
+      {
+        $count: "totalCount",
+      },
+    ];
+
+    // =====================================================
+    // RUN BOTH QUERIES
+    // =====================================================
 
     const [brandsData, countResult] =
       await Promise.all([
         BrandFranchiseDetails.aggregate(
-          aggregationPipeline,
+          aggregationPipeline
         ),
 
         BrandFranchiseDetails.aggregate(
-          countAggregationPipeline,
+          countAggregationPipeline
         ),
       ]);
 
     console.log(
       "APPROVED BRANDS FOUND:",
-      brandsData.length,
+      brandsData.length
     );
 
     console.log(
       "APPROVED TOTAL COUNT:",
-      countResult,
+      countResult
     );
 
     // ------------------------------------
@@ -369,10 +506,29 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     ) {
       return res.json(
         new ApiResponse(
-          404,
-          null,
-          "No approved brands found for this category",
-        ),
+          200,
+          {
+            brands: [],
+
+            pagination: {
+              total: 0,
+
+              totalPages: 0,
+
+              currentPage: page,
+
+              limit,
+
+              hasNext: false,
+
+              hasPrevious: page > 1,
+            },
+          },
+
+          searchTerm
+            ? `No brands found for "${searchTerm}"`
+            : "No approved brands found for this category"
+        )
       );
     }
 
@@ -380,7 +536,13 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     // SHUFFLE
     // ------------------------------------
 
-    const brands = shuffleArray(brandsData);
+    const brands = shuffleArray(
+      brandsData
+    );
+
+    // ------------------------------------
+    // TOTAL COUNT
+    // ------------------------------------
 
     const totalCount =
       countResult[0]?.totalCount || 0;
@@ -401,6 +563,7 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
     return res.json(
       new ApiResponse(
         200,
+
         {
           brands,
 
@@ -419,21 +582,21 @@ export const overAllPlatformOnlyMainCategory = async (req, res) => {
           },
         },
 
-        "Approved brands fetched successfully",
-      ),
+        "Approved brands fetched successfully"
+      )
     );
   } catch (error) {
     console.error(
       "Error fetching approved brands:",
-      error,
+      error
     );
 
     return res.json(
       new ApiResponse(
         500,
         null,
-        `Failed to fetch approved brands: ${error.message}`,
-      ),
+        `Failed to fetch approved brands: ${error.message}`
+      )
     );
   }
 };
