@@ -369,7 +369,7 @@ export const generateOTPforAdminLogin = async (req, res) => {
     }
 
     const newOTP = generateOTP();
-    // console.log("otp", newOTP);
+    console.log("otp", newOTP);
     const timestamp = Date.now() + 5 * 60 * 1000;
 
     // console.log(Date.now());
